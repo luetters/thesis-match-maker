@@ -15,6 +15,7 @@ import Onboarding from "./pages/Onboarding";
 import ExaminerProfile from "./pages/ExaminerProfile";
 import ColloquiumManagement from "./pages/ColloquiumManagement";
 import ExaminerDirectory from "./pages/ExaminerDirectory";
+import SuperadminDashboard from "./pages/SuperadminDashboard";
 
 function Router() {
   return (
@@ -49,6 +50,10 @@ function Router() {
       {/* Admin-Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/:tab" component={AdminDashboard} />
+
+      {/* Superadmin-Bereich */}
+      <Route path="/superadmin" component={SuperadminDashboard} />
+      <Route path="/superadmin/:tab" component={SuperadminDashboard} />
 
       {/* Kolloquiums-Verwaltung */}
       <Route path="/admin/colloquiums" component={ColloquiumManagement} />

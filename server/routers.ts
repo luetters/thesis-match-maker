@@ -30,6 +30,7 @@ import {
   upsertExaminerProfile,
   getThesisStats,
   getUserByEmail,
+  setUserPasswordHash,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -92,6 +93,25 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8, "Das neue Passwort muss mindestens 8 Zeichen lang sein."),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Aktuelles Passwort prüfen
+        const user = await getUserByEmail(ctx.user.email ?? "");
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Kein Passwort-Login für dieses Konto eingerichtet." });
+        }
+        const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Das aktuelle Passwort ist falsch." });
+        }
+        const newHash = await bcrypt.hash(input.newPassword, 12);
+        await setUserPasswordHash(ctx.user.id, newHash);
+        return { success: true };
+      }),
     loginWithPassword: publicProcedure
       .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
@@ -506,7 +526,7 @@ export const appRouter = router({
     users: adminProcedure.query(async () => {
       return getAllUsersWithProfiles();
     }),
-    updateUserRole: adminProcedure
+    updateUserRole: superadminProcedure
       .input(
         z.object({
           userId: z.number(),

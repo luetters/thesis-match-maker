@@ -4,6 +4,69 @@ import { LanguageSwitcher } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
+// ─── Passwort-ändern-Dialog ─────────────────────────────────────────────────
+function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const changePassword = trpc.auth.changePassword.useMutation({
+    onSuccess: () => setSuccess(true),
+    onError: (e) => setError(e.message),
+  });
+  const handleSubmit = () => {
+    setError("");
+    if (newPassword !== confirm) { setError("Die neuen Passwörter stimmen nicht überein."); return; }
+    if (newPassword.length < 8) { setError("Das neue Passwort muss mindestens 8 Zeichen lang sein."); return; }
+    changePassword.mutate({ currentPassword, newPassword });
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-gray-900 mb-5">Passwort ändern</h2>
+        {success ? (
+          <div className="text-center py-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#F1F8E9" }}>
+              <svg className="w-6 h-6" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-gray-700 font-medium mb-4">Passwort erfolgreich geändert.</p>
+            <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">Schließen</button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Aktuelles Passwort</label>
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort bestätigen</label>
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <button onClick={handleSubmit} disabled={changePassword.isPending}
+              className="w-full py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: "#76B900" }}>
+              {changePassword.isPending ? "Wird gespeichert..." : "Passwort ändern"}
+            </button>
+            <button onClick={onClose} className="w-full text-sm text-gray-500 hover:text-gray-700">Abbrechen</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
@@ -308,9 +371,23 @@ export function ThesisDashboardLayout({
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => navigate("/"),
   });
+
+  // Profil-Dropdown schließen wenn außerhalb geklickt
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -365,12 +442,56 @@ export function ThesisDashboardLayout({
             >
               Startseite
             </button>
+            <div className="w-px h-5 bg-gray-200" />
+            {/* Profil-Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setShowProfileMenu((v) => !v)}
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: "#76B900" }}>
+                  {(user?.name ?? user?.email ?? "?").slice(0, 2).toUpperCase()}
+                </div>
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showProfileMenu && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user?.name ?? "Nutzer:in"}</p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
+                  </div>
+                  {user?.loginMethod === "password" && (
+                    <button
+                      onClick={() => { setShowProfileMenu(false); setShowChangePassword(true); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      Passwort ändern
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowProfileMenu(false); logoutMutation.mutate(); }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Abmelden
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
+      {showChangePassword && <ChangePasswordDialog onClose={() => setShowChangePassword(false)} />}
     </div>
   );
 }

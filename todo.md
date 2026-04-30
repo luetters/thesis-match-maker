@@ -126,3 +126,16 @@
 - [x] Zweitprüfer SecondSupervisor@htw-berlin.com mit Rolle "examiner" anlegen
 - [x] Verwaltung Verwaltung@htw-berlin.com mit Rolle "admin" anlegen
 - [x] Passwort "Borschtsch05" für alle 5 Konten setzen
+
+## Phase 9: Passwort-Ändern, Superadmin-Bereich, Deployment
+- [x] Backend: auth.changePassword tRPC-Prozedur (altes PW prüfen, neues setzen)
+- [x] Profil-UI: Passwort-ändern-Dialog im Dashboard-Header/Profil
+- [x] Superadmin-Dashboard: eigener Tab "Superadmin" mit Systemkonfiguration
+- [x] Superadmin: Rollen-Vergabe für alle Nutzer:innen (inkl. superadmin-Rolle)
+- [x] Superadmin: Audit-Log-Export als CSV
+- [x] Superadmin: Systemstatistiken (Gesamtübersicht aller Rollen/Aktivitäten)
+
+## Phase 9b: Superadmin-Sicherheit & Systemkonfiguration
+- [x] Backend: superadminProcedure einführen – nur Superadmins dürfen Rolle "superadmin" vergeben
+- [x] Backend: updateUserRole absichern – Vergabe von "superadmin" nur durch superadminProcedure erlaubt
+- [ ] Superadmin-Dashboard: Systemkonfigurations-Tab mit persistierten Einstellungen (z.B. Systemname, Kontakt-E-Mail, Wartungsmodus) [OFFEN - für spätere Phase]
