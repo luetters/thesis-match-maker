@@ -250,6 +250,7 @@ export default function Home() {
               { label: "Studierende:r", path: "/student" },
               { label: "Prüfer:in", path: "/examiner" },
               { label: "Verwaltung", path: "/admin" },
+              { label: "Prüfer:innen-Verzeichnis", path: "/examiners" },
             ].map((item) => (
               <button
                 key={item.path}

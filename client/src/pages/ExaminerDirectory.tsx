@@ -1,0 +1,326 @@
+import { trpc } from "@/lib/trpc";
+import { useState } from "react";
+import { Link } from "wouter";
+
+// ─── Examiner Card ────────────────────────────────────────────────────────────
+type ExaminerListItem = {
+  user: {
+    id: number;
+    name: string | null;
+    email: string | null;
+    role: string;
+  };
+  profile: {
+    id: number;
+    userId: number;
+    title?: string | null;
+    department?: string | null;
+    bio?: string | null;
+    tags?: unknown;
+    languages?: unknown;
+    studyPrograms?: unknown;
+    maxSupervisions?: number | null;
+    photoUrl?: string | null;
+    photoKey?: string | null;
+    researchFocus?: string | null;
+    officeHours?: string | null;
+    websiteUrl?: string | null;
+  } | null;
+};
+
+function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
+  const profile = examiner.profile;
+  const tags = Array.isArray(profile?.tags) ? profile.tags as string[] : [];
+  const languages = Array.isArray(profile?.languages) ? profile.languages as string[] : [];
+  const studyPrograms = Array.isArray(profile?.studyPrograms) ? profile.studyPrograms as string[] : [];
+  const available = profile?.maxSupervisions ?? 0;
+  const isAvailable = available > 0;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      {/* Header */}
+      <div className="p-5 pb-4">
+        <div className="flex items-start gap-4">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            {profile?.photoUrl ? (
+              <img
+                src={profile.photoUrl}
+                alt={examiner.user?.name ?? "Prüfer:in"}
+                className="w-14 h-14 rounded-xl object-cover"
+              />
+            ) : (
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {(examiner.user?.name ?? "?")[0]?.toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-gray-900 leading-tight">
+                  {profile?.title ? `${profile.title} ` : ""}{examiner.user?.name ?? "Unbekannt"}
+                </h3>
+                {profile?.department && (
+                  <p className="text-sm text-gray-500 mt-0.5">{profile.department}</p>
+                )}
+              </div>
+              <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                isAvailable ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+              }`}>
+                {isAvailable ? `${available} frei` : "Ausgebucht"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bio */}
+        {profile?.bio && (
+          <p className="text-sm text-gray-600 mt-3 line-clamp-2">{profile.bio}</p>
+        )}
+
+        {/* Research Focus */}
+        {profile?.researchFocus && (
+          <p className="text-xs text-gray-500 mt-2 italic line-clamp-1">
+            Forschungsschwerpunkt: {profile.researchFocus}
+          </p>
+        )}
+      </div>
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
+          {tags.slice(0, 4).map((tag) => (
+            <span
+              key={tag}
+              className="px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{ backgroundColor: "#F1F8E9", color: "#4A7C00" }}
+            >
+              {tag}
+            </span>
+          ))}
+          {tags.length > 4 && (
+            <span className="px-2 py-0.5 rounded-full text-xs text-gray-400 bg-gray-50">
+              +{tags.length - 4}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Study Programs */}
+      {studyPrograms.length > 0 && (
+        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
+          {studyPrograms.slice(0, 3).map((prog) => (
+            <span key={prog} className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">
+              {prog}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between">
+        <div className="flex items-center gap-3 text-xs text-gray-400">
+          {languages.length > 0 && (
+            <span>{languages.join(" · ")}</span>
+          )}
+          {profile?.websiteUrl && (
+            <a
+              href={profile.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-600 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Website ↗
+            </a>
+          )}
+        </div>
+        <Link
+          href={`/examiner/profile/${examiner.user.id}`}
+          className="text-xs font-semibold transition-opacity hover:opacity-80"
+          style={{ color: "#76B900" }}
+        >
+          Profil ansehen →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function ExaminerDirectory() {
+  const [search, setSearch] = useState("");
+  const [filterDept, setFilterDept] = useState("");
+  const [filterAvailable, setFilterAvailable] = useState(false);
+
+  const { data: examiners, isLoading } = trpc.examiner.list.useQuery();
+
+  const filtered = (examiners ?? []).filter((ex) => {
+    const name = ex.user?.name ?? "";
+    const dept = ex.profile?.department ?? "";
+    const bio = ex.profile?.bio ?? "";
+    const tags = Array.isArray(ex.profile?.tags) ? (ex.profile.tags as string[]).join(" ") : "";
+    const searchLower = search.toLowerCase();
+
+    const matchesSearch = !search ||
+      name.toLowerCase().includes(searchLower) ||
+      dept.toLowerCase().includes(searchLower) ||
+      bio.toLowerCase().includes(searchLower) ||
+      tags.toLowerCase().includes(searchLower);
+
+    const matchesDept = !filterDept || dept.toLowerCase().includes(filterDept.toLowerCase());
+
+    const available = ex.profile?.maxSupervisions ?? 0;
+    const matchesAvailable = !filterAvailable || available > 0;
+
+    return matchesSearch && matchesDept && matchesAvailable;
+  });
+
+  // Unique departments for filter
+  const departments = Array.from(
+    new Set((examiners ?? []).map((ex) => ex.profile?.department).filter(Boolean) as string[])
+  ).sort();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                T
+              </div>
+              <span className="font-semibold text-gray-900 hidden sm:block">Thesis Match Maker</span>
+            </Link>
+            <span className="text-gray-300">|</span>
+            <h1 className="text-sm font-semibold text-gray-700">Prüfer:innen-Verzeichnis</h1>
+          </div>
+          <Link
+            href="/"
+            className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ← Zurück
+          </Link>
+        </div>
+      </div>
+
+      {/* Hero Banner */}
+      <div className="text-white py-10 px-4" style={{ backgroundColor: "#76B900" }}>
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl font-bold mb-1">Prüfer:innen-Verzeichnis</h2>
+          <p className="text-white/80 text-sm">
+            Finden Sie die passende Betreuung für Ihre Abschlussarbeit an der HTW Berlin.
+          </p>
+          <p className="text-white/60 text-xs mt-1">
+            {examiners?.length ?? 0} Prüfer:innen registriert
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white border-b border-gray-100 py-4 px-4">
+        <div className="max-w-6xl mx-auto flex flex-wrap gap-3 items-center">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Name, Fachbereich, Thema suchen..."
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200 transition-all"
+            />
+          </div>
+
+          {/* Department Filter */}
+          {departments.length > 0 && (
+            <select
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value)}
+              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200 bg-white"
+            >
+              <option value="">Alle Fachbereiche</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Available Filter */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              onClick={() => setFilterAvailable(!filterAvailable)}
+              className={`w-10 h-5 rounded-full transition-colors relative ${
+                filterAvailable ? "bg-green-500" : "bg-gray-200"
+              }`}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                filterAvailable ? "translate-x-5" : "translate-x-0.5"
+              }`} />
+            </div>
+            <span className="text-sm text-gray-600">Nur verfügbare</span>
+          </label>
+
+          {/* Result count */}
+          <span className="text-sm text-gray-400 ml-auto">
+            {filtered.length} Ergebnis{filtered.length !== 1 ? "se" : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-56 bg-white rounded-2xl animate-pulse border border-gray-100" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">Keine Prüfer:innen gefunden</h3>
+            <p className="text-sm text-gray-500">
+              {search || filterDept || filterAvailable
+                ? "Versuchen Sie es mit anderen Suchbegriffen oder Filtern."
+                : "Noch keine Prüfer:innen registriert."}
+            </p>
+            {(search || filterDept || filterAvailable) && (
+              <button
+                onClick={() => { setSearch(""); setFilterDept(""); setFilterAvailable(false); }}
+                className="mt-4 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{ color: "#76B900" }}
+              >
+                Filter zurücksetzen
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((ex) => (
+              <ExaminerCard key={ex.user.id} examiner={ex} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

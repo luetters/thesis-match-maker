@@ -14,6 +14,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Onboarding from "./pages/Onboarding";
 import ExaminerProfile from "./pages/ExaminerProfile";
 import ColloquiumManagement from "./pages/ColloquiumManagement";
+import ExaminerDirectory from "./pages/ExaminerDirectory";
 
 function Router() {
   return (
@@ -35,6 +36,9 @@ function Router() {
       {/* Prüfer:innen-Dashboard */}
       <Route path="/examiner" component={ExaminerDashboard} />
       <Route path="/examiner/:tab" component={ExaminerDashboard} />
+
+      {/* Öffentliches Prüfer:innen-Verzeichnis */}
+      <Route path="/examiners" component={ExaminerDirectory} />
 
       {/* Öffentliche Prüfer:innen-Profilseite */}
       <Route path="/examiner/profile/:id" component={ExaminerProfile} />

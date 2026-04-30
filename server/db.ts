@@ -561,3 +561,24 @@ export async function deleteColloquium(id: number): Promise<void> {
   if (!db) throw new Error("Datenbank nicht verfügbar");
   await db.delete(colloquiums).where(eq(colloquiums.id, id));
 }
+
+export async function getColloquiumsByExaminer(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Kolloquien über Thesis-Anfragen des Prüfers
+  const theses = await getThesisRequestsByExaminer(examinerId);
+  if (theses.length === 0) return [];
+  const thesisIds = theses.map((t) => t.id);
+  const all = await getAllColloquiums();
+  return all.filter((c) => thesisIds.includes(c.thesisRequestId));
+}
+
+export async function getColloquiumsByStudent(studentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const theses = await getThesisRequestsByStudent(studentId);
+  if (theses.length === 0) return [];
+  const thesisIds = theses.map((t) => t.id);
+  const all = await getAllColloquiums();
+  return all.filter((c) => thesisIds.includes(c.thesisRequestId));
+}

@@ -68,13 +68,26 @@
 
 ## Phase 5: Profilseiten, Kolloquium & SMTP
 
-- [ ] SMTP-Verbindungstest-Button im Admin-Dashboard
-- [ ] SMTP-Secrets über webdev_request_secrets einrichten
-- [ ] Öffentliche Prüfer:innen-Profilseite /examiner/:id
-- [ ] Foto-Upload für Prüfer:innen-Profil (S3)
-- [ ] Betreuungskapazität-Anzeige (aktuell / maximal)
-- [ ] DB-Tabelle colloquiums (Termin, Ort, Thesis-Bezug, Teilnehmer)
-- [ ] Admin-UI: Kolloquiumstermin anlegen und bearbeiten
-- [ ] ICS-Einladung für Kolloquiumstermin (Studierende + Prüfer:innen)
-- [ ] Kolloquiums-Übersicht im Admin-Dashboard
-- [ ] Benachrichtigungen bei Kolloquiums-Termin-Erstellung
+- [x] SMTP-Verbindungstest-Button im Admin-Dashboard
+- [x] SMTP-Secrets über webdev_request_secrets einrichten
+- [x] Öffentliche Prüfer:innen-Profilseite /examiner/:id
+- [x] Foto-Upload für Prüfer:innen-Profil (S3)
+- [x] Betreuungskapazität-Anzeige (aktuell / maximal)
+- [x] DB-Tabelle colloquiums (Termin, Ort, Thesis-Bezug, Teilnehmer)
+- [x] Admin-UI: Kolloquiumstermin anlegen und bearbeiten
+- [x] ICS-Einladung für Kolloquiumstermin (Studierende + Prüfer:innen)
+- [x] Kolloquiums-Übersicht im Admin-Dashboard
+- [x] Benachrichtigungen bei Kolloquiums-Termin-Erstellung
+
+## Phase 6: Dashboards, Verzeichnis, Zeitstrahl
+
+- [ ] Kolloquiums-Termine im Studierenden-Dashboard (Tab "Mein Kolloquium")
+- [ ] Kolloquiums-Termine im Prüfer:innen-Dashboard (Tab "Kolloquien")
+- [ ] ICS-Download-Button pro Kolloquiumstermin in beiden Dashboards
+- [ ] Öffentliches Prüfer:innen-Verzeichnis /examiners mit Suchfeld
+- [ ] Profilkarten mit Foto, Titel, Fachbereich, Kapazität und Profil-Link
+- [ ] Filterung nach Fachbereich im Verzeichnis
+- [ ] Statushistorie-Tab in Thesis-Detailansicht (Studierenden-Dashboard)
+- [ ] Zeitstrahl-Visualisierung der AuditLog-Einträge pro Anfrage
+- [ ] tRPC-Prozedur: colloquium.byThesis (Kolloquien einer Anfrage)
+- [ ] tRPC-Prozedur: thesis.auditHistory (AuditLog einer Anfrage)

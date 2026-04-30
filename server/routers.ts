@@ -34,6 +34,8 @@ import {
   createColloquium,
   getAllColloquiums,
   getColloquiumsByThesis,
+  getColloquiumsByExaminer,
+  getColloquiumsByStudent,
   updateColloquiumStatus,
   deleteColloquium,
 } from "./db";
@@ -670,6 +672,14 @@ export const appRouter = router({
         });
         return { icsContent, filename: `kolloquium-${col.id}.ics` };
       }),
+    // Studierende: Eigene Kolloquien abrufen
+    myStudentColloquiums: studentProcedure.query(async ({ ctx }) => {
+      return getColloquiumsByStudent(ctx.user.id);
+    }),
+    // Prüfer:innen: Eigene Kolloquien abrufen
+    myExaminerColloquiums: examinerProcedure.query(async ({ ctx }) => {
+      return getColloquiumsByExaminer(ctx.user.id);
+    }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({
