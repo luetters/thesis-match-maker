@@ -43,15 +43,21 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
+  /* HTW Berlin: Primärfarbe Grün #006937 */
+  --primary: oklch(38.5% 0.12 152);
+  --primary-foreground: oklch(100% 0 0);
+  --sidebar-primary: oklch(38.5% 0.12 152);
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  /* HTW Navy für Hero-Bereich */
+  --htw-navy: oklch(22% 0.06 250);
+  --htw-navy-light: oklch(28% 0.07 250);
+  /* HTW Gold Akzent */
+  --htw-gold: oklch(78% 0.16 85);
+  --chart-1: oklch(38.5% 0.12 152);
+  --chart-2: oklch(55% 0.13 152);
+  --chart-3: oklch(65% 0.12 152);
+  --chart-4: oklch(78% 0.16 85);
+  --chart-5: oklch(22% 0.06 250);
   --radius: 0.65rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.235 0.015 65);
