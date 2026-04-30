@@ -22,6 +22,20 @@
       "when": 1777541889910,
       "tag": "0002_jittery_prodigy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1777543690972,
+      "tag": "0003_absurd_loki",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1777544318043,
+      "tag": "0004_fearless_red_skull",
+      "breakpoints": true
     }
   ]
 }

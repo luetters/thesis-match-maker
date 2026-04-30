@@ -38,6 +38,18 @@ vi.mock("./db", () => ({
   upsertExaminerProfile: vi.fn().mockResolvedValue(undefined),
   getAllUsers: vi.fn().mockResolvedValue([]),
   updateUserRole: vi.fn().mockResolvedValue(undefined),
+  getUserById: vi.fn().mockResolvedValue({ id: 1, name: "Max Mustermann", email: "student@htw-berlin.de" }),
+  getNotificationsByUser: vi.fn().mockResolvedValue([]),
+  getUnreadCount: vi.fn().mockResolvedValue(0),
+  markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  markAllNotificationsRead: vi.fn().mockResolvedValue(undefined),
+  notifyThesisParticipants: vi.fn().mockResolvedValue(undefined),
+  createNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./emailHelper", () => ({
+  sendStatusChangeEmail: vi.fn().mockResolvedValue(undefined),
+  sendExaminerCTAEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./jwtHelper", () => ({

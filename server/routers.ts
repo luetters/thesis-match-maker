@@ -11,19 +11,26 @@ import {
   getAllUsers,
   getAuditLogByThesis,
   getExaminerProfileByUserId,
+  getNotificationsByUser,
   getThesisRequestById,
   getThesisRequestsByExaminer,
   getThesisRequestsByStudent,
+  getUnreadCount,
+  getUserById,
+  markAllNotificationsRead,
+  markNotificationRead,
+  notifyThesisParticipants,
   updateThesisRequestStatus,
   updateUserRole,
   upsertExaminerProfile,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
+import { sendExaminerCTAEmail, sendStatusChangeEmail } from "./emailHelper";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
-// ─── Role guards ─────────────────────────────────────────────────────────────
+// ─── Role guards ──────────────────────────────────────────────────────────────
 
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "student" && ctx.user.role !== "admin") {
@@ -46,7 +53,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-// ─── App Router ──────────────────────────────────────────────────────────────
+// ─── App Router ───────────────────────────────────────────────────────────────
 
 export const appRouter = router({
   system: systemRouter,
@@ -60,7 +67,7 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Thesis Requests ───────────────────────────────────────────────────────
+  // ─── Thesis Requests ──────────────────────────────────────────────────────
 
   thesis: router({
     // Student: Neue Anfrage einreichen
@@ -88,14 +95,15 @@ export const appRouter = router({
           degreeType: input.degreeType,
           status: "PENDING",
         });
+        const insertId = (result as { insertId: number }).insertId;
         await createAuditLogEntry({
-          thesisRequestId: (result as { insertId: number }).insertId,
+          thesisRequestId: insertId,
           actorId: ctx.user.id,
           actorRole: ctx.user.role,
           action: "THESIS_CREATED",
           toStatus: "PENDING",
         });
-        return { success: true, insertId: (result as { insertId: number }).insertId };
+        return { success: true, insertId };
       }),
 
     // Student: Eigene Anfragen abrufen
@@ -125,8 +133,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const existing = await getThesisRequestById(input.id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
-        // Prüfer:in darf nur eigene zugewiesene Anfragen bearbeiten
-        if (existing.examinerId !== ctx.user.id && existing.secondExaminerId !== ctx.user.id && ctx.user.role !== "admin") {
+        if (
+          existing.examinerId !== ctx.user.id &&
+          existing.secondExaminerId !== ctx.user.id &&
+          ctx.user.role !== "admin"
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist dir nicht zugewiesen." });
         }
         const newStatus = input.action === "accept" ? "ACCEPTED" : "REJECTED";
@@ -142,16 +153,27 @@ export const appRouter = router({
           toStatus: newStatus,
           reason: input.rejectionReason,
         });
+        // In-App-Benachrichtigung
+        await notifyThesisParticipants({
+          thesisRequestId: input.id,
+          studentId: existing.studentId,
+          examinerId: existing.examinerId,
+          secondExaminerId: existing.secondExaminerId,
+          title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
+          message: `Ihre Anfrage "${existing.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.${input.rejectionReason ? ` Begründung: ${input.rejectionReason}` : ""}`,
+          type: "status_change",
+        });
         return { success: true };
       }),
 
-    // Admin: Status ändern (mit AuditLog)
+    // Admin: Status ändern (mit AuditLog + Benachrichtigungen)
     updateStatus: adminProcedure
       .input(
         z.object({
           id: z.number(),
           status: z.enum(["PENDING", "ACCEPTED", "REJECTED", "MATCHED"]),
           reason: z.string().optional(),
+          origin: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -170,19 +192,56 @@ export const appRouter = router({
           toStatus: input.status,
           reason: input.reason,
         });
+
+        // In-App-Benachrichtigung + E-Mail
+        if (["ACCEPTED", "REJECTED", "MATCHED"].includes(input.status)) {
+          const statusLabel: Record<string, string> = {
+            ACCEPTED: "Angenommen",
+            REJECTED: "Abgelehnt",
+            MATCHED: "Matched",
+          };
+          await notifyThesisParticipants({
+            thesisRequestId: input.id,
+            studentId: existing.studentId,
+            examinerId: existing.examinerId,
+            secondExaminerId: existing.secondExaminerId,
+            title: `Status geändert: ${statusLabel[input.status] ?? input.status}`,
+            message: `"${existing.title}" hat den Status ${statusLabel[input.status] ?? input.status} erhalten.${input.reason ? ` Begründung: ${input.reason}` : ""}`,
+            type: "status_change",
+          });
+          const student = await getUserById(existing.studentId);
+          if (student?.email) {
+            const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
+            await sendStatusChangeEmail({
+              to: student.email,
+              studentName: student.name ?? "Studierende:r",
+              thesisTitle: existing.title,
+              newStatus: input.status as "ACCEPTED" | "REJECTED" | "MATCHED",
+              reason: input.reason,
+              dashboardUrl: `${origin}/student`,
+            });
+          }
+        }
         return { success: true };
       }),
 
-    // Admin: Prüfer zuweisen (mit AuditLog)
+    // Admin: Prüfer zuweisen (mit AuditLog + JWT-E-Mail + Benachrichtigung)
     assignExaminer: adminProcedure
       .input(
         z.object({
           thesisId: z.number(),
           examinerId: z.number(),
           slot: z.enum(["first", "second"]),
+          origin: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const thesis = await getThesisRequestById(input.thesisId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND" });
+        const examiner = await getUserById(input.examinerId);
+        if (!examiner) throw new TRPCError({ code: "NOT_FOUND", message: "Prüfer:in nicht gefunden." });
+        const student = await getUserById(thesis.studentId);
+
         await assignExaminerToThesis(input.thesisId, input.examinerId, input.slot);
         await createAuditLogEntry({
           thesisRequestId: input.thesisId,
@@ -191,6 +250,37 @@ export const appRouter = router({
           action: input.slot === "first" ? "FIRST_EXAMINER_ASSIGNED" : "SECOND_EXAMINER_ASSIGNED",
           metadata: { examinerId: input.examinerId, slot: input.slot },
         });
+
+        // In-App-Benachrichtigung
+        await notifyThesisParticipants({
+          thesisRequestId: input.thesisId,
+          studentId: thesis.studentId,
+          examinerId: input.examinerId,
+          title: "Prüfer:in zugewiesen",
+          message: `Ihrer Anfrage "${thesis.title}" wurde ${input.slot === "first" ? "eine Erstprüfer:in" : "eine Zweitprüfer:in"} zugewiesen.`,
+          type: "examiner_assigned",
+        });
+
+        // JWT-CTA-E-Mail an Prüfer:in senden
+        if (examiner.email) {
+          const token = await signExaminerActionToken({
+            thesisRequestId: input.thesisId,
+            examinerId: input.examinerId,
+            action: "accept",
+            studentName: student?.name ?? "Studierende:r",
+            thesisTitle: thesis.title,
+          });
+          const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
+          await sendExaminerCTAEmail({
+            to: examiner.email,
+            examinerName: examiner.name ?? "Prüfer:in",
+            studentName: student?.name ?? "Studierende:r",
+            thesisTitle: thesis.title,
+            department: thesis.department,
+            acceptUrl: `${origin}/examiner/respond?token=${token}&action=accept`,
+            rejectUrl: `${origin}/examiner/respond?token=${token}&action=reject`,
+          });
+        }
         return { success: true };
       }),
 
@@ -202,7 +292,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Examiner ──────────────────────────────────────────────────────────────
+  // ─── Examiner ─────────────────────────────────────────────────────────────
 
   examiner: router({
     // Öffentlich: Alle Prüfer-Profile abrufen
@@ -250,10 +340,8 @@ export const appRouter = router({
             message: "Ungültiger oder abgelaufener Token.",
           });
         }
-
         const thesis = await getThesisRequestById(payload.thesisRequestId);
         if (!thesis) throw new TRPCError({ code: "NOT_FOUND" });
-
         const newStatus = input.action === "accept" ? "ACCEPTED" : "REJECTED";
         await updateThesisRequestStatus(payload.thesisRequestId, newStatus, {
           rejectionReason: input.rejectionReason,
@@ -266,6 +354,15 @@ export const appRouter = router({
           fromStatus: thesis.status,
           toStatus: newStatus,
           reason: input.rejectionReason,
+        });
+        // In-App-Benachrichtigung
+        await notifyThesisParticipants({
+          thesisRequestId: payload.thesisRequestId,
+          studentId: thesis.studentId,
+          examinerId: payload.examinerId,
+          title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
+          message: `Ihre Anfrage "${thesis.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.`,
+          type: "status_change",
         });
         return { success: true, action: input.action };
       }),
@@ -287,7 +384,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Audit Log ─────────────────────────────────────────────────────────────
+  // ─── Audit Log ────────────────────────────────────────────────────────────
 
   auditLog: router({
     all: adminProcedure.query(async () => {
@@ -300,7 +397,28 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Admin: User-Management ────────────────────────────────────────────────
+  // ─── Notifications ────────────────────────────────────────────────────────
+
+  notifications: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getNotificationsByUser(ctx.user.id);
+    }),
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      return getUnreadCount(ctx.user.id);
+    }),
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await markNotificationRead(input.id, ctx.user.id);
+        return { success: true };
+      }),
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
+  }),
+
+  // ─── Admin: User-Management ───────────────────────────────────────────────
 
   admin: router({
     users: adminProcedure.query(async () => {

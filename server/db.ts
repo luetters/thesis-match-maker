@@ -5,8 +5,10 @@ import {
   examinerProfiles,
   InsertAuditLogEntry,
   InsertExaminerProfile,
+  InsertNotification,
   InsertThesisRequest,
   InsertUser,
+  notifications,
   thesisRequests,
   users,
 } from "../drizzle/schema";
@@ -214,6 +216,16 @@ export async function assignExaminerToThesis(
   await db.update(thesisRequests).set(field).where(eq(thesisRequests.id, thesisId));
 }
 
+export async function updateThesisExpose(
+  id: number,
+  exposeUrl: string,
+  exposeKey: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(thesisRequests).set({ exposeUrl, exposeKey }).where(eq(thesisRequests.id, id));
+}
+
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 
 export async function createAuditLogEntry(entry: InsertAuditLogEntry) {
@@ -236,4 +248,82 @@ export async function getAllAuditLogs() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt));
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────────
+
+export async function createNotification(entry: InsertNotification) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(notifications).values(entry);
+}
+
+export async function getNotificationsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+}
+
+export async function getUnreadCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select()
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, 0)));
+  return rows.length;
+}
+
+export async function markNotificationRead(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ read: 1 })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ read: 1 })
+    .where(eq(notifications.userId, userId));
+}
+
+/**
+ * Erstellt Benachrichtigungen für alle Beteiligten einer Anfrage.
+ * Wird bei Statuswechseln und Prüfer-Zuweisungen aufgerufen.
+ */
+export async function notifyThesisParticipants({
+  thesisRequestId,
+  studentId,
+  examinerId,
+  secondExaminerId,
+  title,
+  message,
+  type,
+}: {
+  thesisRequestId: number;
+  studentId: number;
+  examinerId?: number | null;
+  secondExaminerId?: number | null;
+  title: string;
+  message: string;
+  type: InsertNotification["type"];
+}) {
+  const recipientSet = new Set<number>([studentId]);
+  if (examinerId) recipientSet.add(examinerId);
+  if (secondExaminerId) recipientSet.add(secondExaminerId);
+  const recipientIds = Array.from(recipientSet);
+
+  for (const userId of recipientIds) {
+    await createNotification({ userId, title, message, type, thesisRequestId });
+  }
 }

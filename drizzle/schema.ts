@@ -61,6 +61,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
   degreeType: mysqlEnum("degreeType", ["bachelor", "master"]).default("bachelor"),
   status: mysqlEnum("status", ["PENDING", "ACCEPTED", "REJECTED", "MATCHED"]).default("PENDING").notNull(),
   rejectionReason: text("rejectionReason"),
+  exposeUrl: text("exposeUrl"),
+  exposeKey: varchar("exposeKey", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -85,3 +87,19 @@ export const auditLog = mysqlTable("audit_log", {
 
 export type AuditLogEntry = typeof auditLog.$inferSelect;
 export type InsertAuditLogEntry = typeof auditLog.$inferInsert;
+
+// ─── Notifications ────────────────────────────────────────────────────────────────
+
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: mysqlEnum("type", ["status_change", "examiner_assigned", "expose_uploaded", "system"]).default("system").notNull(),
+  read: int("read").default(0).notNull(),
+  thesisRequestId: int("thesisRequestId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
