@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -288,10 +288,123 @@ function SystemStatsTab() {
 
 // ─── Hauptkomponente ──────────────────────────────────────────────────────────
 
+
+// --- Systemkonfiguration ---
+
+function SystemConfigTab() {
+  const utils = trpc.useUtils();
+  const { data: settings, isLoading } = trpc.superadmin.getSettings.useQuery();
+  const updateSettings = trpc.superadmin.updateSettings.useMutation({
+    onSuccess: () => utils.superadmin.getSettings.invalidate(),
+  });
+
+  type FormState = {
+    systemName: string;
+    contactEmail: string;
+    maintenanceMode: "true" | "false";
+    maxSupervisionDefault: string;
+    allowStudentRegistration: "true" | "false";
+    footerText: string;
+    thesisDeadlineWarningDays: string;
+  };
+  const [form, setForm] = useState<FormState | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  // Formular mit Serverdaten befüllen (einmalig nach dem ersten Laden)
+  useEffect(() => {
+    if (settings && !form) {
+      setForm({
+        systemName: settings.systemName,
+        contactEmail: settings.contactEmail,
+        maintenanceMode: settings.maintenanceMode as "true" | "false",
+        maxSupervisionDefault: settings.maxSupervisionDefault,
+        allowStudentRegistration: settings.allowStudentRegistration as "true" | "false",
+        footerText: settings.footerText,
+        thesisDeadlineWarningDays: settings.thesisDeadlineWarningDays,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  const handleSave = async () => {
+    if (!form) return;
+    await updateSettings.mutateAsync(form);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  if (isLoading || !form) {
+    return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" /></div>;
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 text-base">Allgemeine Einstellungen</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Systemname</label>
+          <input type="text" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.systemName} onChange={(e) => setForm((f) => f ? { ...f, systemName: e.target.value } : f)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Kontakt-E-Mail</label>
+          <input type="email" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.contactEmail} onChange={(e) => setForm((f) => f ? { ...f, contactEmail: e.target.value } : f)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Fusszeilen-Text</label>
+          <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" rows={3} value={form.footerText} onChange={(e) => setForm((f) => f ? { ...f, footerText: e.target.value } : f)} />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <h3 className="font-semibold text-gray-900 text-base">Betrieb</h3>
+        <div className="flex items-start gap-4">
+          <button type="button" onClick={() => setForm((f) => f ? { ...f, maintenanceMode: f.maintenanceMode === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.maintenanceMode === "true" ? "bg-green-600" : "bg-gray-200")}>
+            <span className={"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 " + (form.maintenanceMode === "true" ? "translate-x-5" : "translate-x-0")} />
+          </button>
+          <div>
+            <div className="text-sm font-medium text-gray-700">Wartungsmodus</div>
+            <div className="text-xs text-gray-500">Wenn aktiv, ist das System fuer normale Nutzer:innen gesperrt.</div>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <button type="button" onClick={() => setForm((f) => f ? { ...f, allowStudentRegistration: f.allowStudentRegistration === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.allowStudentRegistration === "true" ? "bg-green-600" : "bg-gray-200")}>
+            <span className={"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 " + (form.allowStudentRegistration === "true" ? "translate-x-5" : "translate-x-0")} />
+          </button>
+          <div>
+            <div className="text-sm font-medium text-gray-700">Studierenden-Registrierung erlauben</div>
+            <div className="text-xs text-gray-500">Wenn deaktiviert, koennen sich keine neuen Studierenden registrieren.</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900 text-base">Schwellenwerte</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Standard-Betreuungskapazitaet (Pruefer:in)</label>
+          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.maxSupervisionDefault} onChange={(e) => setForm((f) => f ? { ...f, maxSupervisionDefault: e.target.value } : f)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Deadline-Warnung (Tage vorher)</label>
+          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.thesisDeadlineWarningDays} onChange={(e) => setForm((f) => f ? { ...f, thesisDeadlineWarningDays: e.target.value } : f)} />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button onClick={handleSave} disabled={updateSettings.isPending} className="px-6 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors">
+          {updateSettings.isPending ? "Wird gespeichert..." : "Einstellungen speichern"}
+        </button>
+        {saved && <span className="text-sm text-green-600 font-medium">Gespeichert</span>}
+        {updateSettings.isError && <span className="text-sm text-red-600">{updateSettings.error?.message}</span>}
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "stats", label: "Systemstatistiken", icon: "📊" },
   { id: "users", label: "Nutzer:innen & Rollen", icon: "👥" },
   { id: "audit", label: "Audit-Log", icon: "📋" },
+  { id: "config", label: "Systemkonfiguration", icon: "⚙️" },
 ];
 
 const navItems = [
@@ -346,6 +459,7 @@ export default function SuperadminDashboard() {
       {activeTab === "stats" && <SystemStatsTab />}
       {activeTab === "users" && <UserManagementTab />}
       {activeTab === "audit" && <AuditLogTab />}
+      {activeTab === "config" && <SystemConfigTab />}
     </ThesisDashboardLayout>
   );
 }

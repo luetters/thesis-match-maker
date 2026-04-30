@@ -654,3 +654,38 @@ export async function createUserWithPassword(data: {
     });
   return getUserByEmail(data.email);
 }
+
+// ─── System Settings ──────────────────────────────────────────────────────────
+import { systemSettings, InsertSystemSetting } from "../drizzle/schema";
+
+export async function getSystemSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(systemSettings).orderBy(systemSettings.key);
+}
+
+export async function getSystemSetting(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(systemSettings)
+    .where(eq(systemSettings.key, key))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function upsertSystemSetting(key: string, value: string, updatedById?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getSystemSetting(key);
+  if (existing) {
+    await db
+      .update(systemSettings)
+      .set({ value, updatedById: updatedById ?? null } as Partial<InsertSystemSetting>)
+      .where(eq(systemSettings.key, key));
+  } else {
+    await db.insert(systemSettings).values({ key, value, updatedById: updatedById ?? null } as InsertSystemSetting);
+  }
+  return getSystemSetting(key);
+}

@@ -290,12 +290,11 @@ function Sidebar({
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-            style={{ backgroundColor: "#76B900" }}
-          >
-            T
-          </div>
+          <img
+            src="/manus-storage/thesis-logo-512_d468512d.png"
+            alt="Thesis Match Maker Logo"
+            className="w-8 h-8 object-contain flex-shrink-0"
+          />
           <div>
             <div className="text-sm font-bold text-white leading-tight">Thesis Match</div>
             <div className="text-xs text-white/40 leading-tight">HTW Berlin · FB 3</div>

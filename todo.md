@@ -138,4 +138,12 @@
 ## Phase 9b: Superadmin-Sicherheit & Systemkonfiguration
 - [x] Backend: superadminProcedure einführen – nur Superadmins dürfen Rolle "superadmin" vergeben
 - [x] Backend: updateUserRole absichern – Vergabe von "superadmin" nur durch superadminProcedure erlaubt
-- [ ] Superadmin-Dashboard: Systemkonfigurations-Tab mit persistierten Einstellungen (z.B. Systemname, Kontakt-E-Mail, Wartungsmodus) [OFFEN - für spätere Phase]
+- [x] Superadmin-Dashboard: Systemkonfigurations-Tab mit persistierten Einstellungen (z.B. Systemname, Kontakt-E-Mail, Wartungsmodus)
+
+## Phase 10: Logo, Favicon und drei Vorschläge
+- [x] Icon als Favicon (32x32, 16x16 ICO) aufbereiten
+- [x] Icon als App-Logo (512x512 PNG) hochladen und in Webdev-Secrets setzen
+- [x] Favicon in index.html einbinden
+- [x] i18n vertiefen: useLanguage-Hook in StudentDashboard, ExaminerDashboard, AdminDashboard einsetzen
+- [x] PDF-Vorschau-Modal im Prüfer:innen-Dashboard (iframe-basiert)
+- [x] Superadmin: Systemkonfigurations-Tab mit persistierten Einstellungen (Systemname, Kontakt-E-Mail, Wartungsmodus)

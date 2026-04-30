@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -17,14 +18,17 @@ const Icons2 = {
   calendar: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   history: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
-const navItems = [
-  { href: "/student", label: "Übersicht", icon: Icons.home },
-  { href: "/student/new", label: "Neue Anfrage", icon: Icons.plus },
-  { href: "/student/requests", label: "Meine Anfragen", icon: Icons.list },
-  { href: "/student/examiners", label: "Prüfer:innen finden", icon: Icons.search },
-  { href: "/student/colloquiums", label: "Mein Kolloquium", icon: Icons2.calendar },
-  { href: "/student/history", label: "Statushistorie", icon: Icons2.history },
-];
+function useNavItems() {
+  const { t } = useLanguage();
+  return [
+    { href: "/student", label: t.student.title.replace("-Dashboard", "") || "Übersicht", icon: Icons.home },
+    { href: "/student/new", label: t.student.newRequest, icon: Icons.plus },
+    { href: "/student/requests", label: t.student.myRequests, icon: Icons.list },
+    { href: "/student/examiners", label: t.nav.examiners, icon: Icons.search },
+    { href: "/student/colloquiums", label: t.student.colloquiums, icon: Icons2.calendar },
+    { href: "/student/history", label: t.student.history, icon: Icons2.history },
+  ];
+}
 
 // ─── New Request Form ─────────────────────────────────────────────────────────
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
@@ -624,6 +628,7 @@ export default function StudentDashboard() {
 
   const utils = trpc.useUtils();
 
+  const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {

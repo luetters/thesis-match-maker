@@ -80,12 +80,11 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg font-bold"
-            style={{ backgroundColor: "#76B900" }}
-          >
-            T
-          </div>
+          <img
+            src="/manus-storage/thesis-logo-512_d468512d.png"
+            alt="Thesis Match Maker Logo"
+            className="w-10 h-10 object-contain"
+          />
           <div>
             <div className="font-bold text-gray-900">Thesis Match Maker</div>
             <div className="text-xs text-gray-500">HTW Berlin</div>
@@ -297,12 +296,11 @@ export default function Home() {
             onClick={() => navigate("/")}
             className="flex items-center gap-3 text-white hover:opacity-80 transition-opacity"
           >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: "#76B900" }}
-            >
-              T
-            </div>
+            <img
+              src="/manus-storage/thesis-logo-512_d468512d.png"
+              alt="Thesis Match Maker Logo"
+              className="w-8 h-8 object-contain"
+            />
             <div className="text-left">
               <div className="text-sm font-bold leading-tight">Thesis Match Maker</div>
               <div className="text-xs opacity-60 leading-tight">HTW Berlin · FB 3</div>

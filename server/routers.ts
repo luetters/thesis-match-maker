@@ -31,6 +31,8 @@ import {
   getThesisStats,
   getUserByEmail,
   setUserPasswordHash,
+  getSystemSettings,
+  upsertSystemSetting,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -741,6 +743,42 @@ export const appRouter = router({
     myExaminerColloquiums: examinerProcedure.query(async ({ ctx }) => {
       return getColloquiumsByExaminer(ctx.user.id);
     }),
+  }),
+  // --- Superadmin: Systemkonfiguration ---
+  superadmin: router({
+    getSettings: superadminProcedure.query(async () => {
+      const rows = await getSystemSettings();
+      const map: Record<string, string> = {};
+      for (const r of rows) map[r.key] = r.value;
+      return {
+        systemName: map["systemName"] ?? "HTW Berlin Thesis Match Maker",
+        contactEmail: map["contactEmail"] ?? "",
+        maintenanceMode: map["maintenanceMode"] ?? "false",
+        maxSupervisionDefault: map["maxSupervisionDefault"] ?? "5",
+        allowStudentRegistration: map["allowStudentRegistration"] ?? "true",
+        footerText: map["footerText"] ?? "",
+        thesisDeadlineWarningDays: map["thesisDeadlineWarningDays"] ?? "14",
+      };
+    }),
+    updateSettings: superadminProcedure
+      .input(
+        z.object({
+          systemName: z.string().min(1).max(128).optional(),
+          contactEmail: z.string().email().or(z.literal("")).optional(),
+          maintenanceMode: z.enum(["true", "false"]).optional(),
+          maxSupervisionDefault: z.string().optional(),
+          allowStudentRegistration: z.enum(["true", "false"]).optional(),
+          footerText: z.string().max(512).optional(),
+          thesisDeadlineWarningDays: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const entries = Object.entries(input).filter(([, v]) => v !== undefined) as [string, string][];
+        for (const [key, value] of entries) {
+          await upsertSystemSetting(key, value, ctx.user.id);
+        }
+        return { success: true };
+      }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({

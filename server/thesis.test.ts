@@ -66,7 +66,7 @@ vi.mock("./jwtHelper", () => ({
 // --- Context Factories --------------------------------------------------------
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function makeCtx(role: "student" | "examiner" | "admin" | "user"): TrpcContext {
+function makeCtx(role: "student" | "examiner" | "admin" | "user" | "superadmin"): TrpcContext {
   const user: AuthenticatedUser = {
     id: 1,
     openId: `test-${role}`,
@@ -223,10 +223,15 @@ describe("auditLog.all (Admin)", () => {
 });
 
 describe("admin.updateUserRole", () => {
-  it("erlaubt Admins, Rollen zu ändern", async () => {
-    const caller = appRouter.createCaller(makeCtx("admin"));
+  it("erlaubt Superadmins, Rollen zu ändern", async () => {
+    const caller = appRouter.createCaller(makeCtx("superadmin"));
     const result = await caller.admin.updateUserRole({ userId: 2, role: "examiner" });
     expect(result.success).toBe(true);
+  });
+
+  it("verweigert normalen Admins die Rollenvergabe (nur Superadmin)", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(caller.admin.updateUserRole({ userId: 2, role: "examiner" })).rejects.toThrow();
   });
 
   it("verweigert Studierenden die Rollenänderung", async () => {

@@ -143,3 +143,14 @@ export const colloquiums = mysqlTable("colloquiums", {
 
 export type Colloquium = typeof colloquiums.$inferSelect;
 export type InsertColloquium = typeof colloquiums.$inferInsert;
+
+// ─── System Settings ──────────────────────────────────────────────────────────
+export const systemSettings = mysqlTable("system_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 128 }).notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  updatedById: int("updated_by_id"),
+});
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;

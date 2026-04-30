@@ -2,6 +2,7 @@ import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboard
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -14,18 +15,70 @@ const Icons2 = {
   calendar: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   history: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
-const navItems = [
-  { href: "/examiner", label: "Übersicht", icon: Icons.home },
-  { href: "/examiner/requests", label: "Anfragen", icon: Icons.inbox },
-  { href: "/examiner/colloquiums", label: "Meine Kolloquien", icon: Icons2.calendar },
-  { href: "/examiner/history", label: "Statushistorie", icon: Icons2.history },
-  { href: "/examiner/profile", label: "Mein Profil", icon: Icons.profile },
-];
+function useNavItems() {
+  const { t } = useLanguage();
+  return [
+    { href: "/examiner", label: t.examiner.title.replace("-Dashboard", "") || "Übersicht", icon: Icons.home },
+    { href: "/examiner/requests", label: t.examiner.requests, icon: Icons.inbox },
+    { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
+    { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
+    { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
+  ];
+}
 
 // ─── Request Card ─────────────────────────────────────────────────────────────
+function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col"
+        style={{ height: "85vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+          <span className="font-semibold text-gray-900">Exposé Vorschau</span>
+          <div className="flex items-center gap-2">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              style={{ backgroundColor: "#F1F8E9", color: "#76B900" }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Herunterladen
+            </a>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden rounded-b-2xl">
+          <iframe
+            src={url}
+            className="w-full h-full"
+            title="Exposé PDF"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null } }) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
   const utils = trpc.useUtils();
 
   const examinerRespond = trpc.thesis.examinerRespond.useMutation({
@@ -50,18 +103,33 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       </div>
       <p className="text-sm text-gray-600 line-clamp-2 mb-4">{req.description}</p>
       {req.exposéUrl && (
-        <a
-          href={req.exposéUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg mb-3 transition-colors"
-          style={{ backgroundColor: "#F1F8E9", color: "#76B900" }}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Exposé herunterladen (PDF)
-        </a>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => setShowPdfPreview(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            style={{ backgroundColor: "#F1F8E9", color: "#76B900" }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Exposé anzeigen
+          </button>
+          <a
+            href={req.exposéUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Herunterladen
+          </a>
+        </div>
+      )}
+      {showPdfPreview && req.exposéUrl && (
+        <PdfPreviewModal url={req.exposéUrl} onClose={() => setShowPdfPreview(false)} />
       )}
 
       <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
@@ -490,6 +558,7 @@ function ExaminerStatusHistory() {
 export default function ExaminerDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile">("overview");
 
+  const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
