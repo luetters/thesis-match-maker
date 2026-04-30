@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AuthVerify from "./pages/AuthVerify";
 import StudentDashboard from "./pages/StudentDashboard";
+import Onboarding from "./pages/Onboarding";
 
 function Router() {
   return (
@@ -21,6 +22,9 @@ function Router() {
       {/* Auth-Routen (Magic Link) */}
       <Route path="/login" component={Login} />
       <Route path="/auth/verify" component={AuthVerify} />
+
+      {/* Onboarding: Rollenwahl nach erstem Login */}
+      <Route path="/onboarding" component={Onboarding} />
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />

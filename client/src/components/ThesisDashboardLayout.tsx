@@ -73,7 +73,7 @@ function NotificationBell() {
         {unread > 0 && (
           <span
             className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             {unread > 9 ? "9+" : unread}
           </span>
@@ -89,7 +89,7 @@ function NotificationBell() {
               <button
                 onClick={() => markAllRead.mutate()}
                 className="text-xs font-medium transition-colors hover:opacity-70"
-                style={{ color: "oklch(38.5% 0.12 152)" }}
+                style={{ color: "#76B900" }}
               >
                 Alle als gelesen markieren
               </button>
@@ -136,7 +136,7 @@ function NotificationBell() {
                     {!n.read && (
                       <span
                         className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-                        style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                        style={{ backgroundColor: "#76B900" }}
                       />
                     )}
                   </div>
@@ -172,7 +172,7 @@ function NavItem({
           ? "text-white"
           : "text-white/60 hover:text-white hover:bg-white/10"
       }`}
-      style={active ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+      style={active ? { backgroundColor: "#76B900" } : undefined}
       aria-current={active ? "page" : undefined}
     >
       <span className="w-5 h-5 flex-shrink-0">{icon}</span>
@@ -222,13 +222,13 @@ function Sidebar({
         className={`fixed top-0 left-0 h-full w-64 z-40 flex flex-col transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
-        style={{ backgroundColor: "oklch(22% 0.06 250)" }}
+        style={{ backgroundColor: "#0e2a06" }}
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             T
           </div>
@@ -242,7 +242,7 @@ function Sidebar({
         <div className="px-4 py-3 border-b border-white/10">
           <span
             className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             {roleLabel[role] ?? role}
           </span>
@@ -270,7 +270,7 @@ function Sidebar({
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+              style={{ backgroundColor: "#76B900" }}
             >
               {userName.slice(0, 2).toUpperCase()}
             </div>
@@ -313,7 +313,7 @@ export function ThesisDashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "oklch(22% 0.06 250)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0e2a06" }}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           <p className="text-white/60 text-sm">Lade...</p>

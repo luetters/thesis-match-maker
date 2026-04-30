@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { sdk } from "./_core/sdk";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById } from "./db";
+import { generateDeadlineIcs } from "./icsHelper";
 import { storagePut } from "./storage";
 
 // In-memory storage: Datei wird direkt zu S3 weitergeleitet
@@ -83,4 +84,30 @@ export function registerUploadRoutes(app: Express) {
       }
     }
   );
+
+  // --- ICS-Kalender-Export für Thesis-Deadline ---
+  app.get("/api/thesis/:id/deadline.ics", async (req: Request, res: Response) => {
+    const thesisId = parseInt(req.params.id, 10);
+    if (isNaN(thesisId)) { res.status(400).json({ error: "Ungültige Thesis-ID" }); return; }
+    try {
+      const thesis = await getThesisRequestById(thesisId);
+      if (!thesis) { res.status(404).json({ error: "Thesis nicht gefunden" }); return; }
+      if (!thesis.deadline) { res.status(404).json({ error: "Keine Deadline gesetzt" }); return; }
+      const student = thesis.studentId ? await getUserById(thesis.studentId) : null;
+      const icsContent = generateDeadlineIcs({
+        title: thesis.title,
+        description: thesis.description ?? undefined,
+        deadline: new Date(thesis.deadline),
+        studentName: student?.name ?? undefined,
+        department: thesis.department ?? undefined,
+        thesisId,
+      });
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="thesis-deadline-${thesisId}.ics"`);
+      res.send(icsContent);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
+      res.status(500).json({ error: message });
+    }
+  });
 }

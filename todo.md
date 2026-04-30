@@ -53,15 +53,15 @@
 
 ## Phase 3: Auth-Umbau & Admin-Verwaltung
 
-- [ ] Eigenes Auth-System: Magic-Link per SMTP ohne Manus-Account
-- [ ] DB-Tabelle magic_links (token, email, expiresAt, used)
-- [ ] POST /api/auth/magic-link – E-Mail mit Token versenden
-- [ ] GET /api/auth/verify?token=... – Token validieren, Session setzen
-- [ ] Login-Seite mit E-Mail-Eingabe (kein OAuth)
-- [ ] Admin-Dashboard: Prüfer anlegen (Name, E-Mail, Fachbereich, Titel)
-- [ ] Admin-Dashboard: Prüfer bearbeiten und deaktivieren
-- [ ] Admin-Dashboard: Nutzer-Rollen ändern (student/examiner/admin)
-- [ ] Admin-Dashboard: Nutzer per E-Mail einladen
-- [ ] Landing Page: HTW-Hintergrundbild /manus-storage/htw-banner_ee222f9c.jpg
-- [ ] Landing Page: Titel "Thesis Match Maker" und Untertitel aktualisieren
-- [ ] Landing Page: HTW-Farben #76b900 durchgängig anwenden
+- [x] Eigenes Auth-System: Magic-Link per SMTP ohne Manus-Account
+- [x] DB-Tabelle magic_links (token, email, expiresAt, used)
+- [x] POST /api/auth/magic-link – E-Mail mit Token versenden
+- [x] GET /api/auth/verify?token=... – Token validieren, Session setzen
+- [x] Login-Seite mit E-Mail-Eingabe (kein OAuth)
+- [x] Admin-Dashboard: Prüfer anlegen (Name, E-Mail, Fachbereich, Titel)
+- [x] Admin-Dashboard: Prüfer bearbeiten und deaktivieren
+- [x] Admin-Dashboard: Nutzer-Rollen ändern (student/examiner/admin)
+- [x] Admin-Dashboard: Nutzer per E-Mail einladen
+- [x] Landing Page: HTW-Hintergrundbild /manus-storage/htw-banner_ee222f9c.jpg
+- [x] Landing Page: Titel "Thesis Match Maker" und Untertitel aktualisieren
+- [x] Landing Page: HTW-Farben #76b900 durchgängig anwenden

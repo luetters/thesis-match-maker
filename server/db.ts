@@ -28,7 +28,7 @@ export async function getDb() {
   return _db;
 }
 
-// ─── Users ────────────────────────────────────────────────────────────────────
+// --- Users --------------------------------------------------------------------
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
@@ -91,7 +91,7 @@ export async function updateUserRole(userId: number, role: "student" | "examiner
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }
 
-// ─── Examiner Profiles ────────────────────────────────────────────────────────
+// --- Examiner Profiles --------------------------------------------------------
 
 export async function upsertExaminerProfile(profile: InsertExaminerProfile) {
   const db = await getDb();
@@ -137,7 +137,7 @@ export async function getAllExaminers() {
   return result;
 }
 
-// ─── Thesis Requests ──────────────────────────────────────────────────────────
+// --- Thesis Requests ----------------------------------------------------------
 
 export async function createThesisRequest(data: InsertThesisRequest) {
   const db = await getDb();
@@ -226,7 +226,7 @@ export async function updateThesisExpose(
   await db.update(thesisRequests).set({ exposeUrl, exposeKey }).where(eq(thesisRequests.id, id));
 }
 
-// ─── Audit Log ────────────────────────────────────────────────────────────────
+// --- Audit Log ----------------------------------------------------------------
 
 export async function createAuditLogEntry(entry: InsertAuditLogEntry) {
   const db = await getDb();
@@ -250,7 +250,7 @@ export async function getAllAuditLogs() {
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt));
 }
 
-// ─── Notifications ────────────────────────────────────────────────────────────────
+// --- Notifications ----------------------------------------------------------------
 
 export async function createNotification(entry: InsertNotification) {
   const db = await getDb();
@@ -328,7 +328,7 @@ export async function notifyThesisParticipants({
   }
 }
 
-// ─── Admin: Prüfer-Verwaltung ─────────────────────────────────────────────────
+// --- Admin: Prüfer-Verwaltung -------------------------------------------------
 
 /**
  * Legt einen neuen Prüfer-User an und erstellt gleichzeitig ein Profil.
@@ -489,4 +489,16 @@ export async function deleteUserByAdmin(userId: number): Promise<void> {
   // Profil zuerst löschen (FK-Constraint)
   await db.delete(examinerProfiles).where(eq(examinerProfiles.userId, userId));
   await db.delete(users).where(eq(users.id, userId));
+}
+
+/**
+ * Setzt oder entfernt die Deadline einer Thesis-Anfrage (Admin-Aktion).
+ */
+export async function updateThesisDeadline(thesisId: number, deadline: Date | null): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db
+    .update(thesisRequests)
+    .set({ deadline, updatedAt: new Date() })
+    .where(eq(thesisRequests.id, thesisId));
 }

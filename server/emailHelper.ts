@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-// ─── Konfiguration ────────────────────────────────────────────────────────────
+// - Konfiguration -
 function getTransporter() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587");
@@ -24,7 +24,7 @@ function getTransporter() {
   };
 }
 
-// ─── HTML-Template ────────────────────────────────────────────────────────────
+// - HTML-Template -
 function buildEmailHtml({
   title,
   greeting,
@@ -124,7 +124,7 @@ function buildEmailHtml({
 </html>`;
 }
 
-// ─── Generische sendEmail-Funktion ──────────────────────────────────────────────────────────────────
+// - Generische sendEmail-Funktion -
 
 export async function sendEmail({
   to,
@@ -143,7 +143,7 @@ export async function sendEmail({
   await cfg.transporter.sendMail({ from: cfg.from, to, subject, html });
 }
 
-// ─── E-Mail-Typen ──────────────────────────────────────────────────────────────────
+// - E-Mail-Typen -
 
 /**
  * Sendet einen JWT-gesicherten CTA-Link an eine Prüfer:in. * Kein Login erforderlich – der Link enthält das signierte Token.

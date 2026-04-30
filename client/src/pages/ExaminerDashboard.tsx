@@ -17,7 +17,7 @@ const navItems = [
 ];
 
 // ─── Request Card ─────────────────────────────────────────────────────────────
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null } }) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const utils = trpc.useUtils();
@@ -43,6 +43,20 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         <StatusBadge status={req.status} />
       </div>
       <p className="text-sm text-gray-600 line-clamp-2 mb-4">{req.description}</p>
+      {req.exposéUrl && (
+        <a
+          href={req.exposéUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg mb-3 transition-colors"
+          style={{ backgroundColor: "#F1F8E9", color: "#76B900" }}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Exposé herunterladen (PDF)
+        </a>
+      )}
 
       <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
         {req.targetSemester && <span>📅 {req.targetSemester}</span>}
@@ -83,7 +97,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 onClick={() => examinerRespond.mutate({ id: req.id, action: "accept" })}
                   disabled={examinerRespond.isPending}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -287,7 +301,7 @@ function ProfileEdit() {
             type="submit"
             disabled={updateProfile.isPending}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             {updateProfile.isPending ? (
               <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Speichern...</>

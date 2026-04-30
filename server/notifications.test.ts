@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-// ─── Mock DB ──────────────────────────────────────────────────────────────────
+// --- Mock DB ------------------------------------------------------------------
 vi.mock("./db", () => ({
   getNotificationsByUser: vi.fn().mockResolvedValue([
     {
@@ -60,7 +60,7 @@ vi.mock("./jwtHelper", () => ({
   verifyExaminerActionToken: vi.fn().mockResolvedValue(null),
 }));
 
-// ─── Context Factory ──────────────────────────────────────────────────────────
+// --- Context Factory ----------------------------------------------------------
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
 function makeCtx(role: "student" | "examiner" | "admin" | "user", id = 1): TrpcContext {
@@ -82,7 +82,7 @@ function makeCtx(role: "student" | "examiner" | "admin" | "user", id = 1): TrpcC
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// --- Tests --------------------------------------------------------------------
 
 describe("notifications.list", () => {
   it("gibt Benachrichtigungen des eingeloggten Nutzers zurück", async () => {

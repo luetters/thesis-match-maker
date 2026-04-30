@@ -13,7 +13,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { COOKIE_NAME } from "../shared/const";
 
 export function registerMagicLinkRoutes(app: Express) {
-  // ─── Magic Link anfordern ────────────────────────────────────────────────
+  // --- Magic Link anfordern ------------------------------------------------
   app.post("/api/auth/magic-link", async (req: Request, res: Response) => {
     const { email, role = "student" } = req.body as {
       email?: string;
@@ -47,7 +47,7 @@ export function registerMagicLinkRoutes(app: Express) {
     }
   });
 
-  // ─── Token verifizieren & Session setzen ────────────────────────────────
+  // --- Token verifizieren & Session setzen --------------------------------
   app.get("/api/auth/verify", async (req: Request, res: Response) => {
     const { token } = req.query as { token?: string };
 
@@ -73,13 +73,14 @@ export function registerMagicLinkRoutes(app: Express) {
       });
 
       // Zur rollenspezifischen Seite weiterleiten
+      // Nutzer ohne spezifische Rolle ("user") -> Onboarding-Rollenwahl
       const roleRedirects: Record<string, string> = {
         student: "/student",
         examiner: "/examiner",
         admin: "/admin",
-        user: "/student",
+        user: "/onboarding",
       };
-      const redirect = roleRedirects[result.user.role] ?? "/student";
+      const redirect = roleRedirects[result.user.role] ?? "/onboarding";
       res.redirect(redirect);
     } catch (err) {
       console.error("[MagicLink] Verify-Fehler:", err);
@@ -87,7 +88,7 @@ export function registerMagicLinkRoutes(app: Express) {
     }
   });
 
-  // ─── Logout ─────────────────────────────────────────────────────────────
+  // --- Logout -------------------------------------------------------------
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     const cookieOptions = getSessionCookieOptions(req);
     res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

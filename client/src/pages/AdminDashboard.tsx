@@ -58,7 +58,7 @@ function AssignExaminerModal({
                 className={`px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${
                   slot === s ? "border-transparent text-white" : "border-gray-200 text-gray-600"
                 }`}
-                style={slot === s ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+                style={slot === s ? { backgroundColor: "#76B900" } : undefined}
               >
                 {s === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}
               </button>
@@ -76,13 +76,13 @@ function AssignExaminerModal({
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
                   selectedExaminer === user.id ? "text-white" : "hover:bg-gray-50"
                 }`}
-                style={selectedExaminer === user.id ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+                style={selectedExaminer === user.id ? { backgroundColor: "#76B900" } : undefined}
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                     selectedExaminer === user.id ? "bg-white/20 text-white" : "text-white"
                   }`}
-                  style={selectedExaminer !== user.id ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+                  style={selectedExaminer !== user.id ? { backgroundColor: "#76B900" } : undefined}
                 >
                   {(user.name ?? "?").slice(0, 2).toUpperCase()}
                 </div>
@@ -112,7 +112,7 @@ function AssignExaminerModal({
             }}
             disabled={assignMutation.isPending || !selectedExaminer}
             className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             {assignMutation.isPending ? "Wird zugewiesen..." : "Zuweisen"}
           </button>
@@ -125,12 +125,53 @@ function AssignExaminerModal({
   );
 }
 
+// ─── Deadline Modal ──────────────────────────────────────────────────────────
+function DeadlineModal({
+  thesisId, thesisTitle, currentDeadline, onClose,
+}: { thesisId: number; thesisTitle: string; currentDeadline?: Date | string | null; onClose: () => void; }) {
+  const utils = trpc.useUtils();
+  const [dateValue, setDateValue] = useState(
+    currentDeadline ? new Date(currentDeadline).toISOString().split("T")[0] : ""
+  );
+  const setDeadlineMutation = trpc.admin.setDeadline.useMutation({
+    onSuccess: () => { toast.success("Deadline gespeichert!"); utils.thesis.all.invalidate(); onClose(); },
+    onError: (err) => toast.error(err.message),
+  });
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-gray-900 mb-1">Deadline setzen</h3>
+        <p className="text-sm text-gray-500 mb-5 truncate">{thesisTitle}</p>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Abgabedatum</label>
+        <input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)}
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none mb-5" />
+        <div className="flex gap-3">
+          <button onClick={() => setDeadlineMutation.mutate({ thesisId, deadline: dateValue || null })}
+            disabled={setDeadlineMutation.isPending}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+            style={{ backgroundColor: "#76B900" }}>
+            {setDeadlineMutation.isPending ? "Speichern..." : "Deadline speichern"}
+          </button>
+          {currentDeadline && (
+            <button onClick={() => setDeadlineMutation.mutate({ thesisId, deadline: null })}
+              disabled={setDeadlineMutation.isPending}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50">
+              Entfernen
+            </button>
+          )}
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // ─── All Requests ─────────────────────────────────────────────────────────────
 function AllRequests() {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
   const [search, setSearch] = useState("");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
+  const [deadlineModal, setDeadlineModal] = useState<{ id: number; title: string; deadline?: Date | string | null } | null>(null);
   const utils = trpc.useUtils();
 
   const updateStatus = trpc.thesis.updateStatus.useMutation({
@@ -177,7 +218,7 @@ function AllRequests() {
               className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
                 filter === s ? "text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
               }`}
-              style={filter === s ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+              style={filter === s ? { backgroundColor: "#76B900" } : undefined}
             >
               {s === "ALL" ? "Alle" : s === "PENDING" ? "Ausstehend" : s === "ACCEPTED" ? "Angenommen" : s === "REJECTED" ? "Abgelehnt" : "Matched"}
             </button>
@@ -221,6 +262,23 @@ function AllRequests() {
                         >
                           Prüfer:in
                         </button>
+                        <button
+                          onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: req.deadline })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                          title={req.deadline ? `Deadline: ${new Date(req.deadline).toLocaleDateString("de-DE")}` : "Deadline setzen"}
+                        >
+                          {req.deadline ? "📅" : "Deadline"}
+                        </button>
+                        {req.deadline && (
+                          <a
+                            href={`/api/thesis/${req.id}/deadline.ics`}
+                            download
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                            title="Kalender-Export (.ics)"
+                          >
+                            .ics
+                          </a>
+                        )}
                         <select
                           value={req.status}
                           onChange={(e) =>
@@ -251,6 +309,14 @@ function AllRequests() {
           thesisId={assignModal.id}
           thesisTitle={assignModal.title}
           onClose={() => setAssignModal(null)}
+        />
+      )}
+      {deadlineModal && (
+        <DeadlineModal
+          thesisId={deadlineModal.id}
+          thesisTitle={deadlineModal.title}
+          currentDeadline={deadlineModal.deadline}
+          onClose={() => setDeadlineModal(null)}
         />
       )}
     </div>
@@ -411,7 +477,7 @@ function CreateExaminerModal({ onClose }: { onClose: () => void }) {
             onClick={() => createExaminer.mutate(form)}
             disabled={createExaminer.isPending || !form.name || !form.email}
             className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             {createExaminer.isPending ? "Wird angelegt..." : "Anlegen"}
           </button>
@@ -472,7 +538,7 @@ function UserManagement() {
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           Prüfer:in anlegen
@@ -496,7 +562,7 @@ function UserManagement() {
                     <div className="flex items-center gap-3">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                        style={{ backgroundColor: "#76B900" }}
                       >
                         {(user.name ?? "?").slice(0, 2).toUpperCase()}
                       </div>

@@ -17,13 +17,13 @@ import { SignJWT, jwtVerify } from "jose";
 const SECRET = new TextEncoder().encode(ENV.cookieSecret);
 const LINK_EXPIRY_MINUTES = 30;
 
-// ─── Token generieren ─────────────────────────────────────────────────────────
+// --- Token generieren ---------------------------------------------------------
 
 function generateToken(): string {
   return crypto.randomBytes(48).toString("hex");
 }
 
-// ─── Magic Link versenden ─────────────────────────────────────────────────────
+// --- Magic Link versenden -----------------------------------------------------
 
 export async function sendMagicLink(
   email: string,
@@ -90,7 +90,7 @@ export async function sendMagicLink(
   return { success: true, message: "Anmeldelink wurde an Ihre E-Mail-Adresse gesendet" };
 }
 
-// ─── Token verifizieren & Session erstellen ───────────────────────────────────
+// --- Token verifizieren & Session erstellen -----------------------------------
 
 export async function verifyMagicLink(token: string): Promise<{
   sessionToken: string;

@@ -24,6 +24,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   notifyThesisParticipants,
+  updateThesisDeadline,
   updateThesisRequestStatus,
   updateUserRole,
   upsertExaminerProfile,
@@ -34,7 +35,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
-// ─── Role guards ──────────────────────────────────────────────────────────────
+// --- Role guards --------------------------------------------------------------
 
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "student" && ctx.user.role !== "admin") {
@@ -57,7 +58,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-// ─── App Router ───────────────────────────────────────────────────────────────
+// --- App Router ---------------------------------------------------------------
 
 export const appRouter = router({
   system: systemRouter,
@@ -71,7 +72,7 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Thesis Requests ──────────────────────────────────────────────────────
+  // --- Thesis Requests ------------------------------------------------------
 
   thesis: router({
     // Student: Neue Anfrage einreichen
@@ -296,7 +297,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Examiner ─────────────────────────────────────────────────────────────
+  // --- Examiner -------------------------------------------------------------
 
   examiner: router({
     // Öffentlich: Alle Prüfer-Profile abrufen
@@ -388,7 +389,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Audit Log ────────────────────────────────────────────────────────────
+  // --- Audit Log ------------------------------------------------------------
 
   auditLog: router({
     all: adminProcedure.query(async () => {
@@ -401,7 +402,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Notifications ────────────────────────────────────────────────────────
+  // --- Notifications --------------------------------------------------------
 
   notifications: router({
     list: protectedProcedure.query(async ({ ctx }) => {
@@ -422,7 +423,7 @@ export const appRouter = router({
     }),
   }),
 
-  // ─  // ─── Admin: User-Management & Prüfer-CRUD ───────────────────────────────────────────
+  // -  // --- Admin: User-Management & Prüfer-CRUD -------------------------------------------
   admin: router({
     users: adminProcedure.query(async () => {
       return getAllUsersWithProfiles();
@@ -505,6 +506,39 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+    setDeadline: adminProcedure
+      .input(
+        z.object({
+          thesisId: z.number(),
+          deadline: z.string().nullable(), // ISO-String oder null
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const thesis = await getThesisRequestById(input.thesisId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND" });
+        const deadlineDate = input.deadline ? new Date(input.deadline) : null;
+        await updateThesisDeadline(input.thesisId, deadlineDate);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: deadlineDate ? "DEADLINE_SET" : "DEADLINE_REMOVED",
+          metadata: { deadline: input.deadline },
+        });
+        // Benachrichtigungen an Beteiligte
+        await notifyThesisParticipants({
+          thesisRequestId: input.thesisId,
+          studentId: thesis.studentId,
+          examinerId: thesis.examinerId,
+          secondExaminerId: thesis.secondExaminerId,
+          title: deadlineDate ? "Deadline gesetzt" : "Deadline entfernt",
+          message: deadlineDate
+            ? `Für Ihre Anfrage "${thesis.title}" wurde eine Deadline gesetzt: ${deadlineDate.toLocaleDateString("de-DE")}.`
+            : `Die Deadline für Ihre Anfrage "${thesis.title}" wurde entfernt.`,
+          type: "status_change",
+        });
+        return { success: true };
+      }),
     sendInvite: adminProcedure
       .input(
         z.object({
@@ -522,6 +556,16 @@ export const appRouter = router({
           metadata: { email: input.email, role: input.role },
         });
         return result;
+      }),
+  }),
+
+  // --- Onboarding: Rolle nach erstem Login setzen ---
+  onboarding: router({
+    setRole: protectedProcedure
+      .input(z.object({ role: z.enum(["student", "examiner"]) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserRole(ctx.user.id, input.role);
+        return { success: true, role: input.role };
       }),
   }),
 });

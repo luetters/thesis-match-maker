@@ -62,7 +62,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-3 mb-6">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-lg font-bold"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             T
           </div>
@@ -73,8 +73,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         </div>
         {sent ? (
           <div className="text-center py-4">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "oklch(94% 0.08 145)" }}>
-              <svg className="w-7 h-7" style={{ color: "oklch(40% 0.18 145)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#F1F8E9" }}>
+              <svg className="w-7 h-7" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
@@ -107,7 +107,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               onClick={handleSend}
               disabled={loading || !email}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-              style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+              style={{ backgroundColor: "#76B900" }}
             >
               {loading ? (
                 <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -122,7 +122,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               {loading ? "Wird gesendet..." : "Anmeldelink senden"}
             </button>
             <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(38.5% 0.12 152)" }} fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <p className="text-xs text-gray-600">
@@ -159,7 +159,7 @@ function PhaseStep({
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover">
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold mb-4"
-        style={{ backgroundColor: "oklch(28% 0.10 152)" }}
+        style={{ backgroundColor: "#0e2a06" }}
       >
         {number}
       </div>
@@ -189,7 +189,7 @@ function RoleCard({
       <ul className="space-y-2 mb-6 flex-1">
         {features.map((f) => (
           <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-            <svg className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(38.5% 0.12 152)" }} fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 flex-shrink-0" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             {f}
@@ -199,7 +199,7 @@ function RoleCard({
       <button
         onClick={onClick}
         className="flex items-center gap-2 text-sm font-semibold transition-colors"
-        style={{ color: "oklch(38.5% 0.12 152)" }}
+        style={{ color: "#76B900" }}
       >
         Bereich öffnen
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -227,7 +227,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── Navigation ─────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10" style={{ backgroundColor: "oklch(28% 0.10 152)" }}>
+      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10" style={{ backgroundColor: "#0e2a06" }}>
         <div className="container flex items-center justify-between h-16">
           <button
             onClick={() => navigate("/")}
@@ -235,7 +235,7 @@ export default function Home() {
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+              style={{ backgroundColor: "#76B900" }}
             >
               T
             </div>
@@ -272,7 +272,7 @@ export default function Home() {
                   else navigate("/student");
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 Dashboard
               </button>
@@ -280,7 +280,7 @@ export default function Home() {
               <button
                 onClick={() => setShowLogin(true)}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 Anmelden
               </button>
@@ -296,7 +296,7 @@ export default function Home() {
             <div>
               <span
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6"
-                style={{ backgroundColor: "oklch(38.5% 0.12 152)", color: "white" }}
+                style={{ backgroundColor: "#76B900", color: "white" }}
               >
                 <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
                 Fachbereich 3
@@ -304,7 +304,7 @@ export default function Home() {
               <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4">
                 Thesis Match Maker
               </h1>
-              <p className="text-xl text-white/90 font-medium mb-3 leading-snug max-w-lg" style={{ color: "oklch(88% 0.18 122)" }}>
+              <p className="text-xl text-white/90 font-medium mb-3 leading-snug max-w-lg" style={{ color: "#76B900" }}>
                 Find your 2 supervisors with your brilliant academic idea
               </p>
               <p className="text-base text-white/65 mb-8 leading-relaxed max-w-lg">
@@ -315,7 +315,7 @@ export default function Home() {
                 <button
                   onClick={() => handleRoleNavigate("/student")}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95"
-                  style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                  style={{ backgroundColor: "#76B900" }}
                 >
                   Als Studierende:r starten
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -349,13 +349,13 @@ export default function Home() {
             <div className="hidden lg:block">
               <div
                 className="rounded-2xl p-6 shadow-2xl border border-white/10"
-                style={{ backgroundColor: "oklch(32% 0.10 152)" }}
+                style={{ backgroundColor: "#1a3a08" }}
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-white/60 text-sm font-medium">Matching-Anfrage</span>
                   <span
                     className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
-                    style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                    style={{ backgroundColor: "#76B900" }}
                   >
                     Bestätigt
                   </span>
@@ -376,7 +376,7 @@ export default function Home() {
                 <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                    style={{ backgroundColor: "#76B900" }}
                   >
                     AS
                   </div>
@@ -385,7 +385,7 @@ export default function Home() {
                     <div className="text-white/50 text-xs">Erstprüferin</div>
                   </div>
                   <div className="ml-auto">
-                    <svg className="w-5 h-5" style={{ color: "oklch(38.5% 0.12 152)" }} fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -434,7 +434,7 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "oklch(38.5% 0.12 152)" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
               Der Ablauf
             </p>
             <h2 className="text-3xl font-bold text-gray-900">Von der Idee bis zur Urkunde</h2>
@@ -481,10 +481,10 @@ export default function Home() {
       </section>
 
       {/* ─── Technischer Rahmen ──────────────────────────────────────────── */}
-      <section className="py-20" style={{ backgroundColor: "oklch(24% 0.08 152)" }}>
+      <section className="py-20" style={{ backgroundColor: "#0e2a06" }}>
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "oklch(78% 0.16 85)" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#FF5F00" }}>
               Technischer Rahmen
             </p>
             <h2 className="text-3xl font-bold text-white">Selbstgehostet. Souverän. Sicher.</h2>
@@ -522,7 +522,7 @@ export default function Home() {
               <div
                 key={item.title}
                 className="rounded-2xl p-6 border border-white/10"
-                style={{ backgroundColor: "oklch(32% 0.10 152)" }}
+                style={{ backgroundColor: "#1a3a08" }}
               >
                 <div className="text-2xl mb-3">{item.icon}</div>
                 <h3 className="font-semibold text-white mb-2">{item.title}</h3>
@@ -534,14 +534,14 @@ export default function Home() {
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────────────────── */}
-      <footer style={{ backgroundColor: "oklch(18% 0.05 250)" }}>
+      <footer style={{ backgroundColor: "#0e2a06" }}>
         <div className="container py-12">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                  style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                  style={{ backgroundColor: "#76B900" }}
                 >
                   T
                 </div>

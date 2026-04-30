@@ -59,6 +59,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
   targetSemester: varchar("targetSemester", { length: 32 }),
   language: varchar("language", { length: 8 }).default("de"),
   degreeType: mysqlEnum("degreeType", ["bachelor", "master"]).default("bachelor"),
+  deadline: timestamp("deadline"),
   status: mysqlEnum("status", ["PENDING", "ACCEPTED", "REJECTED", "MATCHED"]).default("PENDING").notNull(),
   rejectionReason: text("rejectionReason"),
   exposeUrl: text("exposeUrl"),

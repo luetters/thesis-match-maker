@@ -40,7 +40,7 @@ export default function ExaminerAction() {
           <button
             onClick={() => navigate("/")}
             className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             Zur Startseite
           </button>
@@ -57,9 +57,9 @@ export default function ExaminerAction() {
             <>
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: "oklch(95% 0.05 152)" }}
+                style={{ backgroundColor: "#F1F8E9" }}
               >
-                <svg className="w-8 h-8" style={{ color: "oklch(38.5% 0.12 152)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-8 h-8" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -89,7 +89,7 @@ export default function ExaminerAction() {
           <button
             onClick={() => navigate("/")}
             className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             Zur Startseite
           </button>
@@ -105,7 +105,7 @@ export default function ExaminerAction() {
         <div className="flex items-center gap-3 mb-6">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             T
           </div>
@@ -130,7 +130,7 @@ export default function ExaminerAction() {
                 ? "border-transparent text-white"
                 : "border-gray-200 text-gray-600 hover:border-gray-300"
             }`}
-            style={action === "accept" ? { backgroundColor: "oklch(38.5% 0.12 152)" } : undefined}
+            style={action === "accept" ? { backgroundColor: "#76B900" } : undefined}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -187,7 +187,7 @@ export default function ExaminerAction() {
           className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
           style={{
             backgroundColor:
-              action === "accept" ? "oklch(38.5% 0.12 152)" : "oklch(55% 0.22 27)",
+              action === "accept" ? "#76B900" : "#DC2626",
           }}
         >
           {respondMutation.isPending ? (

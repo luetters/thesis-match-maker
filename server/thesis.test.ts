@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-// ─── Mock DB ──────────────────────────────────────────────────────────────────
+// --- Mock DB ------------------------------------------------------------------
 vi.mock("./db", () => ({
   createThesisRequest: vi.fn().mockResolvedValue({ insertId: 42 }),
   getThesisRequestsByStudent: vi.fn().mockResolvedValue([
@@ -63,7 +63,7 @@ vi.mock("./jwtHelper", () => ({
   }),
 }));
 
-// ─── Context Factories ────────────────────────────────────────────────────────
+// --- Context Factories --------------------------------------------------------
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
 function makeCtx(role: "student" | "examiner" | "admin" | "user"): TrpcContext {
@@ -93,7 +93,7 @@ function makePublicCtx(): TrpcContext {
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// --- Tests --------------------------------------------------------------------
 
 describe("auth.me", () => {
   it("gibt null zurück wenn nicht angemeldet", async () => {

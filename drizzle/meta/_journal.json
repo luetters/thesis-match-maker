@@ -43,6 +43,13 @@
       "when": 1777561970884,
       "tag": "0005_lovely_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1777565949110,
+      "tag": "0006_nifty_spitfire",
+      "breakpoints": true
     }
   ]
 }
