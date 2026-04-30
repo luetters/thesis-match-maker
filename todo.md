@@ -113,3 +113,16 @@
 - [x] Uebersetzungen fuer Landing Page, Studierenden-Dashboard und Pruefer-Dashboard
 - [x] PDF-Vorschau-Modal im Pruefer-Dashboard (iframe + Download-Button)
 - [x] Expose-Link in der Anfragen-Uebersicht des Pruefer-Dashboards hervorheben
+
+## Phase 8: Testkonten & Passwort-Login
+- [x] bcrypt-Abhängigkeit installieren
+- [x] DB-Schema: passwordHash-Spalte in users-Tabelle ergänzen
+- [x] Backend: auth.loginWithPassword tRPC-Prozedur (E-Mail + Passwort → Session)
+- [x] Login-UI: Passwort-Feld im Magic-Link-Modal ergänzen (Tab-Umschalter)
+- [x] Seed-Skript: 5 Testkonten anlegen (Superadmin, Student, Erstprüfer, Zweitprüfer, Verwaltung)
+- [x] Superadmin Holger@Luetters.net mit Rolle "admin" anlegen
+- [x] Student Student@Htw-berlin.com mit Rolle "student" anlegen
+- [x] Erstprüfer Firstsupervisor@htw-berlin.com mit Rolle "examiner" anlegen
+- [x] Zweitprüfer SecondSupervisor@htw-berlin.com mit Rolle "examiner" anlegen
+- [x] Verwaltung Verwaltung@htw-berlin.com mit Rolle "admin" anlegen
+- [x] Passwort "Borschtsch05" für alle 5 Konten setzen

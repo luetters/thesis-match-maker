@@ -605,3 +605,52 @@ export async function getThesisStats() {
     byMonth: Object.entries(byMonth).sort().map(([month, count]) => ({ month, count })),
   };
 }
+
+// ─── Password Auth Helpers ────────────────────────────────────────────────────
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email.toLowerCase()))
+    .limit(1);
+  return result[0];
+}
+
+export async function setUserPasswordHash(userId: number, hash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash: hash } as any).where(eq(users.id, userId));
+}
+
+export async function createUserWithPassword(data: {
+  email: string;
+  name: string;
+  role: "student" | "examiner" | "admin" | "user";
+  passwordHash: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const openId = `pw_${data.email.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+  await db
+    .insert(users)
+    .values({
+      openId,
+      email: data.email.toLowerCase(),
+      name: data.name,
+      role: data.role,
+      loginMethod: "password",
+      passwordHash: data.passwordHash,
+      lastSignedIn: new Date(),
+    } as any)
+    .onDuplicateKeyUpdate({
+      set: {
+        name: data.name,
+        role: data.role,
+        passwordHash: data.passwordHash,
+        loginMethod: "password",
+      } as any,
+    });
+  return getUserByEmail(data.email);
+}

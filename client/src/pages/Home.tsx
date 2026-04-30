@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher } from "@/contexts/LanguageContext";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -29,10 +30,28 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Login Modal (Magic Link) ────────────────────────────────────────────────
 function LoginModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginMode, setLoginMode] = useState<"magic" | "password">("magic");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [, navigate] = useLocation();
+  const loginWithPassword = trpc.auth.loginWithPassword.useMutation({
+    onSuccess: (data) => {
+      onClose();
+      if (data.role === "student") navigate("/student");
+      else if (data.role === "examiner") navigate("/examiner");
+      else if (data.role === "admin") navigate("/admin");
+      else navigate("/student");
+    },
+    onError: (e) => setError(e.message),
+  });
+  const handlePasswordLogin = () => {
+    if (!email.includes("@")) { setError("Bitte eine gültige E-Mail-Adresse eingeben."); return; }
+    if (!password) { setError("Bitte ein Passwort eingeben."); return; }
+    setError("");
+    loginWithPassword.mutate({ email, password });
+  };
   const handleSend = async () => {
     if (!email.includes("@")) { setError("Bitte eine gültige E-Mail-Adresse eingeben."); return; }
     setLoading(true); setError("");
@@ -87,49 +106,93 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Anmelden</h2>
-            <p className="text-gray-600 mb-6 text-sm">
-              Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen sicheren Anmeldelink.
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Anmelden</h2>
+            {/* Tab-Umschalter */}
+            <div className="flex rounded-xl bg-gray-100 p-1 mb-5">
+              <button
+                onClick={() => { setLoginMode("magic"); setError(""); }}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${loginMode === "magic" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Magic Link
+              </button>
+              <button
+                onClick={() => { setLoginMode("password"); setError(""); }}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${loginMode === "password" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                Passwort
+              </button>
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">E-Mail-Adresse</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onKeyDown={(e) => e.key === "Enter" && (loginMode === "password" ? handlePasswordLogin() : handleSend())}
                 placeholder="vorname.nachname@htw-berlin.de"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
                 autoFocus
               />
-              {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
             </div>
-            <button
-              onClick={handleSend}
-              disabled={loading || !email}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-              style={{ backgroundColor: "#76B900" }}
-            >
-              {loading ? (
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            {loginMode === "password" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Passwort</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
+                  placeholder="Ihr Passwort"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
+                />
+              </div>
+            )}
+            {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+            {loginMode === "password" ? (
+              <button
+                onClick={handlePasswordLogin}
+                disabled={loginWithPassword.isPending || !email || !password}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {loginWithPassword.isPending ? (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : null}
+                {loginWithPassword.isPending ? "Anmelden..." : "Anmelden"}
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={loading || !email}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {loading ? (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                )}
+                {loading ? "Wird gesendet..." : "Anmeldelink senden"}
+              </button>
+            )}
+            {loginMode === "magic" && (
+              <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              )}
-              {loading ? "Wird gesendet..." : "Anmeldelink senden"}
-            </button>
-            <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <p className="text-xs text-gray-600">
-                Kein Passwort erforderlich. Der Link ist 24 Stunden gültig und kann nur einmal verwendet werden.
-              </p>
-            </div>
+                <p className="text-xs text-gray-600">
+                  Kein Passwort erforderlich. Der Link ist 24 Stunden gültig und kann nur einmal verwendet werden.
+                </p>
+              </div>
+            )}
             <button
               onClick={onClose}
               className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"

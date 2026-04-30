@@ -16,10 +16,11 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "student", "examiner"]).default("student").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "student", "examiner", "superadmin"]).default("student").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
 });
 
 export type User = typeof users.$inferSelect;

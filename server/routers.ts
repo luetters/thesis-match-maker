@@ -29,8 +29,12 @@ import {
   updateUserRole,
   upsertExaminerProfile,
   getThesisStats,
+  getUserByEmail,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
+import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
+import { ONE_YEAR_MS } from "@shared/const";
 import {
   createColloquium,
   getAllColloquiums,
@@ -49,22 +53,29 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 // --- Role guards --------------------------------------------------------------
 
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "student" && ctx.user.role !== "admin") {
+  if (ctx.user.role !== "student" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Studierende haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "examiner" && ctx.user.role !== "admin") {
+  if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") {
+  if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Admins haben Zugriff." });
+  }
+  return next({ ctx });
+});
+
+const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "superadmin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins haben Zugriff." });
   }
   return next({ ctx });
 });
@@ -81,6 +92,32 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    loginWithPassword: publicProcedure
+      .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserByEmail(input.email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        const valid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
+        const sessionToken = await new SignJWT({
+          openId: user.openId,
+          appId: process.env.VITE_APP_ID ?? "",
+          name: user.name ?? user.email ?? "",
+        })
+          .setProtectedHeader({ alg: "HS256" })
+          .setIssuedAt()
+          .setExpirationTime(Math.floor((Date.now() + ONE_YEAR_MS) / 1000))
+          .sign(secret);
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return { success: true, role: user.role };
+      }),
   }),
 
   // --- Thesis Requests ------------------------------------------------------
@@ -473,11 +510,11 @@ export const appRouter = router({
       .input(
         z.object({
           userId: z.number(),
-          role: z.enum(["student", "examiner", "admin", "user"]),
+          role: z.enum(["student", "examiner", "admin", "user", "superadmin"]),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        await updateUserRole(input.userId, input.role);
+        await updateUserRole(input.userId, input.role as any);
         await createAuditLogEntry({
           action: "ROLE_CHANGED",
           actorId: ctx.user.id,
