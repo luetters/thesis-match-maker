@@ -50,6 +50,13 @@
       "when": 1777565949110,
       "tag": "0006_nifty_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1777567877528,
+      "tag": "0007_curly_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

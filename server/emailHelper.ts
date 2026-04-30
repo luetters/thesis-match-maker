@@ -130,17 +130,25 @@ export async function sendEmail({
   to,
   subject,
   html,
+  text,
 }: {
   to: string;
   subject: string;
   html: string;
-}): Promise<void> {
+  text?: string;
+}): Promise<boolean> {
   const cfg = getTransporter();
   if (!cfg) {
     console.warn(`[Email] Kein Transporter – E-Mail an ${to} nicht gesendet.`);
-    return;
+    return false;
   }
-  await cfg.transporter.sendMail({ from: cfg.from, to, subject, html });
+  try {
+    await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text });
+    return true;
+  } catch (err) {
+    console.error("[Email] Fehler beim Senden:", err);
+    return false;
+  }
 }
 
 // - E-Mail-Typen -

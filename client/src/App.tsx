@@ -12,6 +12,8 @@ import Login from "./pages/Login";
 import AuthVerify from "./pages/AuthVerify";
 import StudentDashboard from "./pages/StudentDashboard";
 import Onboarding from "./pages/Onboarding";
+import ExaminerProfile from "./pages/ExaminerProfile";
+import ColloquiumManagement from "./pages/ColloquiumManagement";
 
 function Router() {
   return (
@@ -34,12 +36,18 @@ function Router() {
       <Route path="/examiner" component={ExaminerDashboard} />
       <Route path="/examiner/:tab" component={ExaminerDashboard} />
 
+      {/* Öffentliche Prüfer:innen-Profilseite */}
+      <Route path="/examiner/profile/:id" component={ExaminerProfile} />
+
       {/* JWT-gesicherte CTA-Seite für Prüfer:innen (Login-frei) */}
       <Route path="/examiner/respond" component={ExaminerAction} />
 
       {/* Admin-Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/:tab" component={AdminDashboard} />
+
+      {/* Kolloquiums-Verwaltung */}
+      <Route path="/admin/colloquiums" component={ColloquiumManagement} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />

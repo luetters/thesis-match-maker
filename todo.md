@@ -65,3 +65,16 @@
 - [x] Landing Page: HTW-Hintergrundbild /manus-storage/htw-banner_ee222f9c.jpg
 - [x] Landing Page: Titel "Thesis Match Maker" und Untertitel aktualisieren
 - [x] Landing Page: HTW-Farben #76b900 durchgängig anwenden
+
+## Phase 5: Profilseiten, Kolloquium & SMTP
+
+- [ ] SMTP-Verbindungstest-Button im Admin-Dashboard
+- [ ] SMTP-Secrets über webdev_request_secrets einrichten
+- [ ] Öffentliche Prüfer:innen-Profilseite /examiner/:id
+- [ ] Foto-Upload für Prüfer:innen-Profil (S3)
+- [ ] Betreuungskapazität-Anzeige (aktuell / maximal)
+- [ ] DB-Tabelle colloquiums (Termin, Ort, Thesis-Bezug, Teilnehmer)
+- [ ] Admin-UI: Kolloquiumstermin anlegen und bearbeiten
+- [ ] ICS-Einladung für Kolloquiumstermin (Studierende + Prüfer:innen)
+- [ ] Kolloquiums-Übersicht im Admin-Dashboard
+- [ ] Benachrichtigungen bei Kolloquiums-Termin-Erstellung

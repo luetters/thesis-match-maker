@@ -502,3 +502,62 @@ export async function updateThesisDeadline(thesisId: number, deadline: Date | nu
     .set({ deadline, updatedAt: new Date() })
     .where(eq(thesisRequests.id, thesisId));
 }
+
+/**
+ * Aktualisiert das Profilfoto eines Prüfers/einer Prüferin.
+ */
+export async function updateExaminerPhoto(userId: number, photoUrl: string, photoKey: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const existing = await db
+    .select()
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(examinerProfiles)
+      .set({ photoUrl, photoKey })
+      .where(eq(examinerProfiles.userId, userId));
+  } else {
+    await db.insert(examinerProfiles).values({ userId, photoUrl, photoKey });
+  }
+}
+
+// --- Kolloquien ---------------------------------------------------------------
+
+import { colloquiums, InsertColloquium } from "../drizzle/schema";
+
+export async function createColloquium(data: InsertColloquium): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const [result] = await db.insert(colloquiums).values(data);
+  return (result as { insertId: number }).insertId;
+}
+
+export async function getColloquiumsByThesis(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(colloquiums).where(eq(colloquiums.thesisRequestId, thesisRequestId));
+}
+
+export async function getAllColloquiums() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(colloquiums).orderBy(colloquiums.scheduledAt);
+}
+
+export async function updateColloquiumStatus(
+  id: number,
+  status: "SCHEDULED" | "CANCELLED" | "COMPLETED"
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.update(colloquiums).set({ status }).where(eq(colloquiums.id, id));
+}
+
+export async function deleteColloquium(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.delete(colloquiums).where(eq(colloquiums.id, id));
+}

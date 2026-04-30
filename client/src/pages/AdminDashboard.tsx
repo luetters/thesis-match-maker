@@ -16,6 +16,8 @@ const navItems = [
   { href: "/admin/requests", label: "Alle Anfragen", icon: Icons.list },
   { href: "/admin/audit", label: "Audit-Log", icon: Icons.log },
   { href: "/admin/users", label: "Nutzerverwaltung", icon: Icons.users },
+  { href: "/admin/settings", label: "Einstellungen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+  { href: "/admin/colloquiums", label: "Kolloquien", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
 ];
 
 // ─── Assign Examiner Modal ────────────────────────────────────────────────────
@@ -689,10 +691,69 @@ function Overview() {
   );
 }
 
+// // ─── Settings (SMTP-Test) ─────────────────────────────────────────────────────
+function SettingsView() {
+  const [testEmail, setTestEmail] = useState("");
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const testSmtp = trpc.system2.testSmtp.useMutation({
+    onSuccess: (data) => setResult(data),
+    onError: (err) => setResult({ success: false, message: err.message }),
+  });
+  return (
+    <div className="max-w-xl">
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">SMTP-Verbindungstest</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          Senden Sie eine Test-E-Mail, um zu prüfen, ob der SMTP-Server korrekt konfiguriert ist.
+        </p>
+        <div className="flex gap-3">
+          <input
+            type="email"
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            placeholder="test@htw-berlin.de"
+            className="flex-1 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+          />
+          <button
+            onClick={() => { setResult(null); testSmtp.mutate({ email: testEmail }); }}
+            disabled={!testEmail || testSmtp.isPending}
+            className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: "#76B900" }}
+          >
+            {testSmtp.isPending ? "Wird gesendet..." : "Test senden"}
+          </button>
+        </div>
+        {result && (
+          <div className={`mt-4 p-3.5 rounded-xl text-sm font-medium flex items-center gap-2 ${
+            result.success ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+          }`}>
+            {result.success ? (
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            ) : (
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            )}
+            {result.message}
+          </div>
+        )}
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-3">Konfigurierte Variablen</p>
+          <div className="space-y-1.5">
+            {["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_FROM"].map((key) => (
+              <div key={key} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 rounded-lg">
+                <span className="text-xs font-mono text-gray-600">{key}</span>
+                <span className="text-xs text-gray-400">in Geheimnissen gespeichert</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users">("overview");
-
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "settings">("overview");
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
@@ -700,22 +761,23 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/requests") setActiveTab("requests");
       else if (item.href === "/admin/audit") setActiveTab("audit");
       else if (item.href === "/admin/users") setActiveTab("users");
+      else if (item.href === "/admin/settings") setActiveTab("settings");
     },
   }));
-
   const titles: Record<string, string> = {
     overview: "Verwaltungs-Dashboard",
     requests: "Alle Anfragen",
     audit: "Audit-Log",
     users: "Nutzerverwaltung",
+    settings: "Einstellungen",
   };
-
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests />}
       {activeTab === "audit" && <AuditLogView />}
       {activeTab === "users" && <UserManagement />}
+      {activeTab === "settings" && <SettingsView />}
     </ThesisDashboardLayout>
   );
 }

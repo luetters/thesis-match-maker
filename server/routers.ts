@@ -30,7 +30,15 @@ import {
   upsertExaminerProfile,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
-import { sendExaminerCTAEmail, sendStatusChangeEmail } from "./emailHelper";
+import {
+  createColloquium,
+  getAllColloquiums,
+  getColloquiumsByThesis,
+  updateColloquiumStatus,
+  deleteColloquium,
+} from "./db";
+import { createIcsEvent } from "./icsHelper";
+import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail } from "./emailHelper";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -372,6 +380,36 @@ export const appRouter = router({
         return { success: true, action: input.action };
       }),
 
+    // Öffentlich: Einzelnes Prüfer-Profil abrufen (für Profilseite)
+    getPublicProfile: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const rows = await getAllExaminers();
+        const found = rows.find((r) => r.user.id === input.userId);
+        if (!found) throw new TRPCError({ code: "NOT_FOUND", message: "Prüfer:in nicht gefunden" });
+        return found;
+      }),
+    // Prüfer: Erweiterte Profil-Felder aktualisieren
+    updateProfileExtended: examinerProcedure
+      .input(
+        z.object({
+          title: z.string().optional(),
+          department: z.string().optional(),
+          bio: z.string().optional(),
+          tags: z.array(z.string()).optional(),
+          languages: z.array(z.string()).optional(),
+          studyPrograms: z.array(z.string()).optional(),
+          maxSupervisions: z.number().optional(),
+          researchFocus: z.string().optional(),
+          officeHours: z.string().optional(),
+          websiteUrl: z.string().optional(),
+          phone: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await upsertExaminerProfile({ userId: ctx.user.id, ...input });
+        return { success: true };
+      }),
     // Admin: JWT-Token für Prüfer generieren (für E-Mail-CTA)
     generateActionToken: adminProcedure
       .input(
@@ -566,6 +604,89 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await updateUserRole(ctx.user.id, input.role);
         return { success: true, role: input.role };
+      }),
+  }),
+  // --- Kolloquien ---
+  colloquium: router({
+    all: adminProcedure.query(async () => getAllColloquiums()),
+    byThesis: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .query(async ({ input }) => getColloquiumsByThesis(input.thesisRequestId)),
+    create: adminProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        title: z.string().min(3).max(512),
+        scheduledAt: z.number(),
+        location: z.string().max(512).optional(),
+        room: z.string().max(256).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createColloquium({
+          thesisRequestId: input.thesisRequestId,
+          title: input.title,
+          scheduledAt: new Date(input.scheduledAt),
+          location: input.location ?? null,
+          room: input.room ?? null,
+          notes: input.notes ?? null,
+          createdById: ctx.user.id,
+        });
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "COLLOQUIUM_CREATED",
+          metadata: { colloquiumId: id, title: input.title },
+        });
+        return { id };
+      }),
+    updateStatus: adminProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        status: z.enum(["SCHEDULED", "CANCELLED", "COMPLETED"]),
+      }))
+      .mutation(async ({ input }) => {
+        await updateColloquiumStatus(input.id, input.status);
+        return { success: true };
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await deleteColloquium(input.id);
+        return { success: true };
+      }),
+    getIcs: protectedProcedure
+      .input(z.object({ colloquiumId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const all = await getAllColloquiums();
+        const col = all.find(c => c.id === input.colloquiumId);
+        if (!col) throw new TRPCError({ code: "NOT_FOUND", message: "Kolloquium nicht gefunden" });
+        const icsContent = createIcsEvent({
+          title: col.title,
+          start: col.scheduledAt,
+          durationMinutes: 60,
+          location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
+          description: col.notes || undefined,
+        });
+        return { icsContent, filename: `kolloquium-${col.id}.ics` };
+      }),
+  }),
+  // --- System: SMTP-Verbindungstest ---
+  system2: router({
+    testSmtp: adminProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        try {
+          const ok = await sendEmail({
+            to: input.email,
+            subject: "HTW Berlin Thesis Match Maker – SMTP-Test",
+            html: `<div style="font-family:sans-serif;padding:24px"><h2 style="color:#76B900">SMTP-Verbindungstest erfolgreich</h2><p>Diese E-Mail bestätigt, dass der SMTP-Server korrekt konfiguriert ist.</p><p style="color:#888;font-size:12px">HTW Berlin &ndash; Thesis Match Maker</p></div>`,
+            text: "SMTP-Verbindungstest erfolgreich. Der SMTP-Server ist korrekt konfiguriert.",
+          });
+          return { success: ok, message: ok ? "Test-E-Mail erfolgreich versendet." : "SMTP nicht konfiguriert." };
+        } catch (err: unknown) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "SMTP-Fehler" });
+        }
       }),
   }),
 });

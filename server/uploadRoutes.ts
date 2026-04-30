@@ -1,12 +1,23 @@
 import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { sdk } from "./_core/sdk";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto } from "./db";
 import { generateDeadlineIcs } from "./icsHelper";
 import { storagePut } from "./storage";
 
 // In-memory storage: Datei wird direkt zu S3 weitergeleitet
 const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB für Fotos
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      cb(new Error("Nur Bilddateien sind erlaubt."));
+    } else {
+      cb(null, true);
+    }
+  },
+});
+const pdfUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 16 * 1024 * 1024 }, // 16 MB
   fileFilter: (_req, file, cb) => {
@@ -80,6 +91,28 @@ export function registerUploadRoutes(app: Express) {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Upload fehlgeschlagen.";
         console.error("[Upload] Fehler:", err);
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  // --- Foto-Upload für Prüfer:innen-Profil ---
+  app.post(
+    "/api/upload/photo",
+    multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => { if (!file.mimetype.startsWith("image/")) cb(new Error("Nur Bilddateien erlaubt")); else cb(null, true); } }).single("photo"),
+    async (req: Request, res: Response) => {
+      try {
+        let user = null;
+        try { user = await sdk.authenticateRequest(req); } catch { user = null; }
+        if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
+        if (!req.file) { res.status(400).json({ error: "Kein Foto übermittelt." }); return; }
+        const ext = req.file.mimetype.split("/")[1] ?? "jpg";
+        const fileName = `photo-${user.id}-${Date.now()}.${ext}`;
+        const { key, url } = await storagePut(`photos/${fileName}`, req.file.buffer, req.file.mimetype);
+        await updateExaminerPhoto(user.id, url, key);
+        res.json({ success: true, url, key });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Foto-Upload fehlgeschlagen.";
         res.status(500).json({ error: message });
       }
     }

@@ -38,6 +38,11 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
   bio: text("bio"),
   maxSupervisions: int("maxSupervisions").default(5),
   phone: varchar("phone", { length: 64 }),
+  photoUrl: text("photoUrl"),
+  photoKey: varchar("photoKey", { length: 512 }),
+  researchFocus: text("researchFocus"),
+  officeHours: varchar("officeHours", { length: 255 }),
+  websiteUrl: varchar("websiteUrl", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -119,3 +124,21 @@ export const magicLinks = mysqlTable("magic_links", {
 
 export type MagicLink = typeof magicLinks.$inferSelect;
 export type InsertMagicLink = typeof magicLinks.$inferInsert;
+
+// Kolloquien
+export const colloquiums = mysqlTable("colloquiums", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisRequestId: int("thesis_request_id").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  location: varchar("location", { length: 512 }),
+  room: varchar("room", { length: 256 }),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["SCHEDULED", "CANCELLED", "COMPLETED"]).default("SCHEDULED").notNull(),
+  createdById: int("created_by_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Colloquium = typeof colloquiums.$inferSelect;
+export type InsertColloquium = typeof colloquiums.$inferInsert;
