@@ -124,11 +124,29 @@ function buildEmailHtml({
 </html>`;
 }
 
-// ─── E-Mail-Typen ─────────────────────────────────────────────────────────────
+// ─── Generische sendEmail-Funktion ──────────────────────────────────────────────────────────────────
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const cfg = getTransporter();
+  if (!cfg) {
+    console.warn(`[Email] Kein Transporter – E-Mail an ${to} nicht gesendet.`);
+    return;
+  }
+  await cfg.transporter.sendMail({ from: cfg.from, to, subject, html });
+}
+
+// ─── E-Mail-Typen ──────────────────────────────────────────────────────────────────
 
 /**
- * Sendet einen JWT-gesicherten CTA-Link an eine Prüfer:in.
- * Kein Login erforderlich – der Link enthält das signierte Token.
+ * Sendet einen JWT-gesicherten CTA-Link an eine Prüfer:in. * Kein Login erforderlich – der Link enthält das signierte Token.
  */
 export async function sendExaminerCTAEmail({
   to,

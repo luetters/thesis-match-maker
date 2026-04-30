@@ -43,21 +43,23 @@
 }
 
 :root {
-  /* HTW Berlin: Primärfarbe Grün #006937 */
-  --primary: oklch(38.5% 0.12 152);
+  /* HTW Berlin offizielle Farben: #76b900 (Primärgrün), #474747 (Dunkelgrau), #d6d6d6 (Hellgrau) */
+  --primary: oklch(68.5% 0.22 122);   /* #76b900 HTW Grün */
   --primary-foreground: oklch(100% 0 0);
-  --sidebar-primary: oklch(38.5% 0.12 152);
+  --sidebar-primary: oklch(68.5% 0.22 122);
   --sidebar-primary-foreground: oklch(100% 0 0);
-  /* HTW Navy für Hero-Bereich */
-  --htw-navy: oklch(22% 0.06 250);
-  --htw-navy-light: oklch(28% 0.07 250);
-  /* HTW Gold Akzent */
-  --htw-gold: oklch(78% 0.16 85);
-  --chart-1: oklch(38.5% 0.12 152);
-  --chart-2: oklch(55% 0.13 152);
-  --chart-3: oklch(65% 0.12 152);
-  --chart-4: oklch(78% 0.16 85);
-  --chart-5: oklch(22% 0.06 250);
+  /* HTW Grau-Töne */
+  --htw-gray-dark: oklch(32% 0 0);    /* #474747 */
+  --htw-gray-mid: oklch(85% 0 0);     /* #d6d6d6 */
+  --htw-gray-light: oklch(96% 0 0);   /* #f4f4f4 */
+  /* HTW Akzent-Grün (dunkler) */
+  --htw-green-dark: oklch(52% 0.18 122); /* #5a8c00 */
+  /* Chart-Farben im HTW-Stil */
+  --chart-1: oklch(68.5% 0.22 122);
+  --chart-2: oklch(55% 0.18 122);
+  --chart-3: oklch(42% 0.14 122);
+  --chart-4: oklch(32% 0 0);
+  --chart-5: oklch(85% 0 0);
   --radius: 0.65rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.235 0.015 65);
@@ -181,3 +183,33 @@
     }
   }
 }
+/* ─── HTW Hero & Badge Utilities ──────────────────────────────────────────── */
+.hero-gradient {
+  background-color: oklch(22% 0.06 250);
+  background-image: url('/manus-storage/htw-banner_493070b6.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-blend-mode: multiply;
+  position: relative;
+}
+.hero-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    oklch(22% 0.06 250 / 0.88) 0%,
+    oklch(28% 0.10 155 / 0.72) 60%,
+    oklch(38.5% 0.12 152 / 0.55) 100%
+  );
+  pointer-events: none;
+}
+.hero-gradient > * {
+  position: relative;
+  z-index: 1;
+}
+
+.badge-pending  { background-color: oklch(95% 0.05 85);  color: oklch(50% 0.15 85);  }
+.badge-accepted { background-color: oklch(94% 0.08 145); color: oklch(40% 0.18 145); }
+.badge-rejected { background-color: oklch(95% 0.05 25);  color: oklch(45% 0.20 25);  }
+.badge-matched  { background-color: oklch(93% 0.07 255); color: oklch(40% 0.20 255); }

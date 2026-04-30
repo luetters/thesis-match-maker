@@ -50,3 +50,18 @@
 - [x] Vitest: emailHelper SMTP-Konfigurationstest
 - [x] Vitest: jwtHelper Token-Signierung und -Verifikation
 - [x] Vitest: notifications Mock-Tests
+
+## Phase 3: Auth-Umbau & Admin-Verwaltung
+
+- [ ] Eigenes Auth-System: Magic-Link per SMTP ohne Manus-Account
+- [ ] DB-Tabelle magic_links (token, email, expiresAt, used)
+- [ ] POST /api/auth/magic-link – E-Mail mit Token versenden
+- [ ] GET /api/auth/verify?token=... – Token validieren, Session setzen
+- [ ] Login-Seite mit E-Mail-Eingabe (kein OAuth)
+- [ ] Admin-Dashboard: Prüfer anlegen (Name, E-Mail, Fachbereich, Titel)
+- [ ] Admin-Dashboard: Prüfer bearbeiten und deaktivieren
+- [ ] Admin-Dashboard: Nutzer-Rollen ändern (student/examiner/admin)
+- [ ] Admin-Dashboard: Nutzer per E-Mail einladen
+- [ ] Landing Page: HTW-Hintergrundbild /manus-storage/htw-banner_ee222f9c.jpg
+- [ ] Landing Page: Titel "Thesis Match Maker" und Untertitel aktualisieren
+- [ ] Landing Page: HTW-Farben #76b900 durchgängig anwenden

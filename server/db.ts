@@ -327,3 +327,166 @@ export async function notifyThesisParticipants({
     await createNotification({ userId, title, message, type, thesisRequestId });
   }
 }
+
+// ─── Admin: Prüfer-Verwaltung ─────────────────────────────────────────────────
+
+/**
+ * Legt einen neuen Prüfer-User an und erstellt gleichzeitig ein Profil.
+ * Wird vom Admin verwendet, um Prüfer:innen direkt einzurichten.
+ */
+export async function createExaminerByAdmin(data: {
+  name: string;
+  email: string;
+  title?: string;
+  department?: string;
+  bio?: string;
+  maxSupervisions?: number;
+  tags?: string[];
+  languages?: string[];
+  studyPrograms?: string[];
+}): Promise<{ userId: number; profileId: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  const openId = `magic:${data.email}`;
+
+  await db
+    .insert(users)
+    .values({
+      openId,
+      email: data.email,
+      name: data.name,
+      loginMethod: "admin_created",
+      role: "examiner",
+      lastSignedIn: new Date(),
+    })
+    .onDuplicateKeyUpdate({ set: { name: data.name, role: "examiner" } });
+
+  const userRows = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
+
+  if (userRows.length === 0) throw new Error("User konnte nicht angelegt werden");
+  const userId = userRows[0].id;
+
+  const profileData = {
+    userId,
+    title: data.title ?? null,
+    department: data.department ?? null,
+    bio: data.bio ?? null,
+    maxSupervisions: data.maxSupervisions ?? 5,
+    tags: data.tags ?? [],
+    languages: data.languages ?? ["Deutsch"],
+    studyPrograms: data.studyPrograms ?? [],
+  };
+
+  const existingProfile = await db
+    .select()
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+
+  if (existingProfile.length > 0) {
+    await db
+      .update(examinerProfiles)
+      .set(profileData)
+      .where(eq(examinerProfiles.userId, userId));
+  } else {
+    await db.insert(examinerProfiles).values(profileData);
+  }
+
+  const profileRows = await db
+    .select()
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+
+  return { userId, profileId: profileRows[0]?.id ?? 0 };
+}
+
+/**
+ * Aktualisiert ein Prüfer-Profil und den zugehörigen User (Admin-Aktion).
+ */
+export async function updateExaminerByAdmin(
+  userId: number,
+  data: {
+    name?: string;
+    title?: string;
+    department?: string;
+    bio?: string;
+    maxSupervisions?: number;
+    tags?: string[];
+    languages?: string[];
+    studyPrograms?: string[];
+    role?: "examiner" | "admin" | "student" | "user";
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  if (data.name || data.role) {
+    const userUpdate: Record<string, unknown> = {};
+    if (data.name) userUpdate.name = data.name;
+    if (data.role) userUpdate.role = data.role;
+    await db.update(users).set(userUpdate).where(eq(users.id, userId));
+  }
+
+  const profileUpdate: Record<string, unknown> = {};
+  if (data.title !== undefined) profileUpdate.title = data.title;
+  if (data.department !== undefined) profileUpdate.department = data.department;
+  if (data.bio !== undefined) profileUpdate.bio = data.bio;
+  if (data.maxSupervisions !== undefined) profileUpdate.maxSupervisions = data.maxSupervisions;
+  if (data.tags !== undefined) profileUpdate.tags = data.tags;
+  if (data.languages !== undefined) profileUpdate.languages = data.languages;
+  if (data.studyPrograms !== undefined) profileUpdate.studyPrograms = data.studyPrograms;
+
+  if (Object.keys(profileUpdate).length > 0) {
+    const existing = await db
+      .select()
+      .from(examinerProfiles)
+      .where(eq(examinerProfiles.userId, userId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(examinerProfiles)
+        .set(profileUpdate)
+        .where(eq(examinerProfiles.userId, userId));
+    } else {
+      await db.insert(examinerProfiles).values({ userId, ...profileUpdate } as InsertExaminerProfile);
+    }
+  }
+}
+
+/**
+ * Gibt alle Nutzer mit ihren Examiner-Profilen zurück (Admin-Ansicht).
+ */
+export async function getAllUsersWithProfiles() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select({
+      user: users,
+      profile: examinerProfiles,
+    })
+    .from(users)
+    .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
+    .orderBy(desc(users.createdAt));
+
+  return result;
+}
+
+/**
+ * Löscht einen User und sein Profil (Admin-Aktion).
+ */
+export async function deleteUserByAdmin(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  // Profil zuerst löschen (FK-Constraint)
+  await db.delete(examinerProfiles).where(eq(examinerProfiles.userId, userId));
+  await db.delete(users).where(eq(users.id, userId));
+}

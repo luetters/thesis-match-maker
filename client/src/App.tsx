@@ -8,6 +8,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ExaminerAction from "./pages/ExaminerAction";
 import ExaminerDashboard from "./pages/ExaminerDashboard";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
+import AuthVerify from "./pages/AuthVerify";
 import StudentDashboard from "./pages/StudentDashboard";
 
 function Router() {
@@ -15,6 +17,10 @@ function Router() {
     <Switch>
       {/* Landing Page */}
       <Route path="/" component={Home} />
+
+      {/* Auth-Routen (Magic Link) */}
+      <Route path="/login" component={Login} />
+      <Route path="/auth/verify" component={AuthVerify} />
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />

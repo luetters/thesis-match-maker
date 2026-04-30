@@ -353,14 +353,101 @@ function AuditLogView() {
   );
 }
 
-// ─── User Management ──────────────────────────────────────────────────────────
+// ─── Create Examiner Modal ──────────────────────────────────────────────────────────────────
+function CreateExaminerModal({ onClose }: { onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState({ name: "", email: "", title: "", department: "", bio: "", maxSupervisions: 5 });
+  const createExaminer = trpc.admin.createExaminer.useMutation({
+    onSuccess: () => {
+      toast.success("Prüfer:in erfolgreich angelegt!");
+      utils.admin.users.invalidate();
+      utils.examiner.list.invalidate();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const sendInvite = trpc.admin.sendInvite.useMutation({
+    onSuccess: () => toast.success("Einladungs-E-Mail gesendet!"),
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-gray-900 mb-1">Prüfer:in anlegen</h3>
+        <p className="text-sm text-gray-500 mb-5">Neues Konto erstellen und optional Einladung senden</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+              <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Prof. Dr. Muster" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">E-Mail *</label>
+              <input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="muster@htw-berlin.de" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Titel</label>
+              <input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Prof. Dr." className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Fachbereich</label>
+              <input value={form.department} onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))} placeholder="FB 4 – Informatik" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Kurzbiografie</label>
+            <textarea value={form.bio} onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))} rows={2} placeholder="Forschungsschwerpunkte, Interessen ..." className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 resize-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Max. Betreuungen: {form.maxSupervisions}</label>
+            <input type="range" min={1} max={20} value={form.maxSupervisions} onChange={(e) => setForm(f => ({ ...f, maxSupervisions: +e.target.value }))} className="w-full" />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={() => createExaminer.mutate(form)}
+            disabled={createExaminer.isPending || !form.name || !form.email}
+            className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50"
+            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+          >
+            {createExaminer.isPending ? "Wird angelegt..." : "Anlegen"}
+          </button>
+          <button
+            onClick={() => sendInvite.mutate({ email: form.email, role: "examiner", origin: window.location.origin })}
+            disabled={sendInvite.isPending || !form.email}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Einladen
+          </button>
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-gray-100">
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── User Management ──────────────────────────────────────────────────────────────────
 function UserManagement() {
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
+  const [showCreate, setShowCreate] = useState(false);
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
       toast.success("Rolle aktualisiert!");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteUser = trpc.admin.deleteUser.useMutation({
+    onSuccess: () => {
+      toast.success("Nutzer:in gelöscht!");
       utils.admin.users.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -378,55 +465,85 @@ function UserManagement() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Name</th>
-              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">E-Mail</th>
-              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Rolle</th>
-              <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3">Ändern</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users?.map((user) => (
-              <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                      style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
-                    >
-                      {(user.name ?? "?").slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">{user.name ?? "—"}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3 hidden md:table-cell">
-                  <span className="text-sm text-gray-600">{user.email ?? "—"}</span>
-                </td>
-                <td className="px-5 py-3">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                    {roleLabels[user.role] ?? user.role}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-right">
-                  <select
-                    value={user.role}
-                    onChange={(e) => updateRole.mutate({ userId: user.id, role: e.target.value as "student" | "examiner" | "admin" | "user" })}
-                    className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="user">Nutzer:in</option>
-                    <option value="student">Studierende:r</option>
-                    <option value="examiner">Prüfer:in</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </td>
+    <div className="space-y-4">
+      {showCreate && <CreateExaminerModal onClose={() => setShowCreate(false)} />}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">{users?.length ?? 0} Nutzer:innen registriert</p>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
+          style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          Prüfer:in anlegen
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Name</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">E-Mail</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Rolle</th>
+                <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3">Aktionen</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users?.map(({ user, profile }) => (
+                <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+                      >
+                        {(user.name ?? "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{user.name ?? "—"}</span>
+                        {profile?.department && <div className="text-xs text-gray-400">{profile.department}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 hidden md:table-cell">
+                    <span className="text-sm text-gray-600">{user.email ?? "—"}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                      {roleLabels[user.role] ?? user.role}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={user.role}
+                        onChange={(e) => updateRole.mutate({ userId: user.id, role: e.target.value as "student" | "examiner" | "admin" | "user" })}
+                        className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="user">Nutzer:in</option>
+                        <option value="student">Studierende:r</option>
+                        <option value="examiner">Prüfer:in</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Nutzer:in "${user.name}" wirklich löschen?`)) {
+                            deleteUser.mutate({ userId: user.id });
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Löschen"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

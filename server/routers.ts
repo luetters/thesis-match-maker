@@ -9,6 +9,10 @@ import {
   getAllExaminers,
   getAllThesisRequests,
   getAllUsers,
+  getAllUsersWithProfiles,
+  createExaminerByAdmin,
+  updateExaminerByAdmin,
+  deleteUserByAdmin,
   getAuditLogByThesis,
   getExaminerProfileByUserId,
   getNotificationsByUser,
@@ -418,11 +422,10 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── Admin: User-Management ───────────────────────────────────────────────
-
+  // ─  // ─── Admin: User-Management & Prüfer-CRUD ───────────────────────────────────────────
   admin: router({
     users: adminProcedure.query(async () => {
-      return getAllUsers();
+      return getAllUsersWithProfiles();
     }),
     updateUserRole: adminProcedure
       .input(
@@ -431,11 +434,95 @@ export const appRouter = router({
           role: z.enum(["student", "examiner", "admin", "user"]),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         await updateUserRole(input.userId, input.role);
+        await createAuditLogEntry({
+          action: "ROLE_CHANGED",
+          actorId: ctx.user.id,
+          metadata: { userId: input.userId, newRole: input.role },
+        });
         return { success: true };
+      }),
+    createExaminer: adminProcedure
+      .input(
+        z.object({
+          name: z.string().min(2),
+          email: z.string().email(),
+          title: z.string().optional(),
+          department: z.string().optional(),
+          bio: z.string().optional(),
+          maxSupervisions: z.number().min(1).max(20).optional(),
+          tags: z.array(z.string()).optional(),
+          languages: z.array(z.string()).optional(),
+          studyPrograms: z.array(z.string()).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const result = await createExaminerByAdmin(input);
+        await createAuditLogEntry({
+          action: "EXAMINER_CREATED",
+          actorId: ctx.user.id,
+          metadata: { ...result, email: input.email, name: input.name },
+        });
+        return result;
+      }),
+    updateExaminer: adminProcedure
+      .input(
+        z.object({
+          userId: z.number(),
+          name: z.string().min(2).optional(),
+          title: z.string().optional(),
+          department: z.string().optional(),
+          bio: z.string().optional(),
+          maxSupervisions: z.number().min(1).max(20).optional(),
+          tags: z.array(z.string()).optional(),
+          languages: z.array(z.string()).optional(),
+          studyPrograms: z.array(z.string()).optional(),
+          role: z.enum(["examiner", "admin", "student", "user"]).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { userId, ...data } = input;
+        await updateExaminerByAdmin(userId, data);
+        await createAuditLogEntry({
+          action: "EXAMINER_UPDATED",
+          actorId: ctx.user.id,
+          metadata: { userId, changes: data },
+        });
+        return { success: true };
+      }),
+    deleteUser: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Sie können sich nicht selbst löschen." });
+        }
+        await deleteUserByAdmin(input.userId);
+        await createAuditLogEntry({
+          action: "USER_DELETED",
+          actorId: ctx.user.id,
+          metadata: { deletedUserId: input.userId },
+        });
+        return { success: true };
+      }),
+    sendInvite: adminProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          role: z.enum(["student", "examiner"]),
+          origin: z.string().url(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { sendMagicLink: sendLink } = await import("./magicLinkAuth");
+        const result = await sendLink(input.email, input.role, input.origin);
+        await createAuditLogEntry({
+          action: "INVITE_SENT",
+          actorId: ctx.user.id,
+          metadata: { email: input.email, role: input.role },
+        });
+        return result;
       }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
@@ -26,9 +25,31 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Login Modal ──────────────────────────────────────────────────────────────
+// ─── Login Modal (Magic Link) ────────────────────────────────────────────────
 function LoginModal({ onClose }: { onClose: () => void }) {
-  const loginUrl = getLoginUrl();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSend = async () => {
+    if (!email.includes("@")) { setError("Bitte eine gültige E-Mail-Adresse eingeben."); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Fehler"); }
+      setSent(true);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -46,46 +67,81 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             T
           </div>
           <div>
-            <div className="font-bold text-gray-900">Thesis Match</div>
-            <div className="text-xs text-gray-500">HTW Berlin · FB 3</div>
+            <div className="font-bold text-gray-900">Thesis Match Maker</div>
+            <div className="text-xs text-gray-500">HTW Berlin</div>
           </div>
         </div>
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Willkommen zurück</h2>
-        <p className="text-gray-600 mb-6 text-sm">
-          Melde dich mit deinem HTW-Konto an, um fortzufahren.
-        </p>
-
-        <a
-          href={loginUrl}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95"
-          style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-          </svg>
-          Anmelden
-        </a>
-
-        <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
-          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(38.5% 0.12 152)" }} fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <p className="text-xs text-gray-600">
-            Kein Google, kein Microsoft. Deine Anmeldung erfolgt ausschließlich über den HTW-Mailserver – DSGVO-konform und selbstgehostet.
-          </p>
-        </div>
-
-        <button
-          onClick={onClose}
-          className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          Abbrechen
-        </button>
+        {sent ? (
+          <div className="text-center py-4">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "oklch(94% 0.08 145)" }}>
+              <svg className="w-7 h-7" style={{ color: "oklch(40% 0.18 145)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">E-Mail gesendet!</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Wir haben einen Anmeldelink an <strong>{email}</strong> gesendet. Bitte prüfen Sie Ihr Postfach.
+            </p>
+            <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">Schließen</button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Anmelden</h2>
+            <p className="text-gray-600 mb-6 text-sm">
+              Geben Sie Ihre E-Mail-Adresse ein. Wir senden Ihnen einen sicheren Anmeldelink.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">E-Mail-Adresse</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder="vorname.nachname@htw-berlin.de"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
+                autoFocus
+              />
+              {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
+            </div>
+            <button
+              onClick={handleSend}
+              disabled={loading || !email}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+              style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            >
+              {loading ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              )}
+              {loading ? "Wird gesendet..." : "Anmeldelink senden"}
+            </button>
+            <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(38.5% 0.12 152)" }} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xs text-gray-600">
+                Kein Passwort erforderlich. Der Link ist 24 Stunden gültig und kann nur einmal verwendet werden.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Abbrechen
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
+
 
 // ─── Phase Step ───────────────────────────────────────────────────────────────
 function PhaseStep({
@@ -103,7 +159,7 @@ function PhaseStep({
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover">
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold mb-4"
-        style={{ backgroundColor: "oklch(22% 0.06 250)" }}
+        style={{ backgroundColor: "oklch(28% 0.10 152)" }}
       >
         {number}
       </div>
@@ -171,7 +227,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── Navigation ─────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10" style={{ backgroundColor: "oklch(22% 0.06 250)" }}>
+      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10" style={{ backgroundColor: "oklch(28% 0.10 152)" }}>
         <div className="container flex items-center justify-between h-16">
           <button
             onClick={() => navigate("/")}
@@ -184,7 +240,7 @@ export default function Home() {
               T
             </div>
             <div className="text-left">
-              <div className="text-sm font-bold leading-tight">Thesis Match</div>
+              <div className="text-sm font-bold leading-tight">Thesis Match Maker</div>
               <div className="text-xs opacity-60 leading-tight">HTW Berlin · FB 3</div>
             </div>
           </button>
@@ -246,11 +302,13 @@ export default function Home() {
                 Fachbereich 3
               </span>
               <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4">
-                Deine Abschlussarbeit.{" "}
-                <span style={{ color: "oklch(78% 0.16 85)" }}>Endlich strukturiert.</span>
+                Thesis Match Maker
               </h1>
-              <p className="text-lg text-white/70 mb-8 leading-relaxed max-w-lg">
-                Die zentrale Plattform des Fachbereichs für das Matchmaking zwischen Studierenden
+              <p className="text-xl text-white/90 font-medium mb-3 leading-snug max-w-lg" style={{ color: "oklch(88% 0.18 122)" }}>
+                Find your 2 supervisors with your brilliant academic idea
+              </p>
+              <p className="text-base text-white/65 mb-8 leading-relaxed max-w-lg">
+                Die zentrale Plattform der HTW Berlin für das Matchmaking zwischen Studierenden
                 und Prüfer:innen – von der ersten Betreuungsanfrage bis zum Kolloquium.
               </p>
               <div className="flex flex-wrap gap-4">
@@ -291,7 +349,7 @@ export default function Home() {
             <div className="hidden lg:block">
               <div
                 className="rounded-2xl p-6 shadow-2xl border border-white/10"
-                style={{ backgroundColor: "oklch(28% 0.07 250)" }}
+                style={{ backgroundColor: "oklch(32% 0.10 152)" }}
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-white/60 text-sm font-medium">Matching-Anfrage</span>
@@ -423,7 +481,7 @@ export default function Home() {
       </section>
 
       {/* ─── Technischer Rahmen ──────────────────────────────────────────── */}
-      <section className="py-20" style={{ backgroundColor: "oklch(22% 0.06 250)" }}>
+      <section className="py-20" style={{ backgroundColor: "oklch(24% 0.08 152)" }}>
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "oklch(78% 0.16 85)" }}>
@@ -464,7 +522,7 @@ export default function Home() {
               <div
                 key={item.title}
                 className="rounded-2xl p-6 border border-white/10"
-                style={{ backgroundColor: "oklch(28% 0.07 250)" }}
+                style={{ backgroundColor: "oklch(32% 0.10 152)" }}
               >
                 <div className="text-2xl mb-3">{item.icon}</div>
                 <h3 className="font-semibold text-white mb-2">{item.title}</h3>

@@ -74,7 +74,7 @@ export type InsertThesisRequest = typeof thesisRequests.$inferInsert;
 
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),
-  thesisRequestId: int("thesisRequestId").notNull(),
+  thesisRequestId: int("thesisRequestId"),
   actorId: int("actorId"),
   actorRole: varchar("actorRole", { length: 32 }),
   action: varchar("action", { length: 128 }).notNull(),
@@ -103,3 +103,18 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// ─── Magic Links (eigenes Auth-System) ─────────────────────────────────────────────────────
+
+export const magicLinks = mysqlTable("magic_links", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  role: mysqlEnum("role", ["student", "examiner", "admin", "user"]).notNull().default("student"),
+  used: int("used").notNull().default(0),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MagicLink = typeof magicLinks.$inferSelect;
+export type InsertMagicLink = typeof magicLinks.$inferInsert;
