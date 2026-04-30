@@ -28,6 +28,7 @@ import {
   updateThesisRequestStatus,
   updateUserRole,
   upsertExaminerProfile,
+  getThesisStats,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import {
@@ -597,6 +598,9 @@ export const appRouter = router({
         });
         return result;
       }),
+    stats: adminProcedure.query(async () => {
+      return getThesisStats();
+    }),
   }),
 
   // --- Onboarding: Rolle nach erstem Login setzen ---

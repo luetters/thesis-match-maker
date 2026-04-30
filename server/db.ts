@@ -582,3 +582,26 @@ export async function getColloquiumsByStudent(studentId: number) {
   const all = await getAllColloquiums();
   return all.filter((c) => thesisIds.includes(c.thesisRequestId));
 }
+
+// ─── Statistics ──────────────────────────────────────────────────────────────
+export async function getThesisStats() {
+  const db = await getDb();
+  if (!db) return null;
+  const all = await db.select().from(thesisRequests);
+  const byStatus: Record<string, number> = {};
+  const byDepartment: Record<string, number> = {};
+  const byMonth: Record<string, number> = {};
+  for (const r of all) {
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+    const dept = r.department ?? 'Unbekannt';
+    byDepartment[dept] = (byDepartment[dept] ?? 0) + 1;
+    const month = new Date(r.createdAt).toISOString().slice(0, 7);
+    byMonth[month] = (byMonth[month] ?? 0) + 1;
+  }
+  return {
+    total: all.length,
+    byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
+    byDepartment: Object.entries(byDepartment).map(([name, value]) => ({ name, value })),
+    byMonth: Object.entries(byMonth).sort().map(([month, count]) => ({ month, count })),
+  };
+}

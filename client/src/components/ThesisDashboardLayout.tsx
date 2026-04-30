@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { LanguageSwitcher } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -355,6 +356,8 @@ export function ThesisDashboardLayout({
           <div className="ml-auto flex items-center gap-2">
             {/* Benachrichtigungs-Glocke */}
             <NotificationBell />
+            <div className="w-px h-5 bg-gray-200" />
+            <LanguageSwitcher />
             <div className="w-px h-5 bg-gray-200" />
             <button
               onClick={() => navigate("/")}

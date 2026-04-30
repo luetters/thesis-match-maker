@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { LanguageSwitcher } from "@/contexts/LanguageContext";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
@@ -263,6 +264,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher className="text-white/80" />
             {isAuthenticated ? (
               <button
                 onClick={() => {

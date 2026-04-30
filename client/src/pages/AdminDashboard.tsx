@@ -2,6 +2,7 @@ import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboard
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/admin/audit", label: "Audit-Log", icon: Icons.log },
   { href: "/admin/users", label: "Nutzerverwaltung", icon: Icons.users },
   { href: "/admin/settings", label: "Einstellungen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+  { href: "/admin/stats", label: "Statistiken", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
   { href: "/admin/colloquiums", label: "Kolloquien", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
 ];
 
@@ -540,7 +542,7 @@ function UserManagement() {
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ backgroundColor: "#76B900" }}
+          style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           Prüfer:in anlegen
@@ -564,7 +566,7 @@ function UserManagement() {
                     <div className="flex items-center gap-3">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: "#76B900" }}
+                        style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
                       >
                         {(user.name ?? "?").slice(0, 2).toUpperCase()}
                       </div>
@@ -751,9 +753,76 @@ function SettingsView() {
   );
 }
 
+// ─── Statistics ───────────────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: "#F59E0B",
+  ACCEPTED: "#76B900",
+  MATCHED: "#0082D1",
+  REJECTED: "#EF4444",
+};
+function StatisticsView() {
+  const { data: stats, isLoading } = trpc.admin.stats.useQuery();
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
+  if (!stats) return <p className="text-sm text-gray-400 text-center py-8">Keine Statistikdaten verfügbar.</p>;
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.byStatus.map((s) => (
+          <div key={s.name} className="rounded-2xl p-5 border border-gray-100 bg-white shadow-sm">
+            <div className="text-3xl font-bold" style={{ color: STATUS_COLORS[s.name] ?? "#76B900" }}>{s.value}</div>
+            <div className="text-xs text-gray-500 mt-1 font-medium">{s.name}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Status</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={stats.byStatus} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {stats.byStatus.map((entry) => (
+                  <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? "#76B900"} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Fachbereich</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={stats.byDepartment} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#76B900" radius={[4, 4, 0, 0]} name="Anfragen" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      {stats.byMonth.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-4">Anfragen pro Monat</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={stats.byMonth} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="count" stroke="#76B900" strokeWidth={2} dot={{ r: 4 }} name="Anfragen" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings">("overview");
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
@@ -761,6 +830,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/requests") setActiveTab("requests");
       else if (item.href === "/admin/audit") setActiveTab("audit");
       else if (item.href === "/admin/users") setActiveTab("users");
+      else if (item.href === "/admin/stats") setActiveTab("stats");
       else if (item.href === "/admin/settings") setActiveTab("settings");
     },
   }));
@@ -769,6 +839,7 @@ export default function AdminDashboard() {
     requests: "Alle Anfragen",
     audit: "Audit-Log",
     users: "Nutzerverwaltung",
+    stats: "Statistiken",
     settings: "Einstellungen",
   };
   return (
@@ -777,6 +848,7 @@ export default function AdminDashboard() {
       {activeTab === "requests" && <AllRequests />}
       {activeTab === "audit" && <AuditLogView />}
       {activeTab === "users" && <UserManagement />}
+      {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
     </ThesisDashboardLayout>
   );

@@ -81,13 +81,35 @@
 
 ## Phase 6: Dashboards, Verzeichnis, Zeitstrahl
 
-- [ ] Kolloquiums-Termine im Studierenden-Dashboard (Tab "Mein Kolloquium")
-- [ ] Kolloquiums-Termine im Prüfer:innen-Dashboard (Tab "Kolloquien")
-- [ ] ICS-Download-Button pro Kolloquiumstermin in beiden Dashboards
-- [ ] Öffentliches Prüfer:innen-Verzeichnis /examiners mit Suchfeld
-- [ ] Profilkarten mit Foto, Titel, Fachbereich, Kapazität und Profil-Link
-- [ ] Filterung nach Fachbereich im Verzeichnis
-- [ ] Statushistorie-Tab in Thesis-Detailansicht (Studierenden-Dashboard)
-- [ ] Zeitstrahl-Visualisierung der AuditLog-Einträge pro Anfrage
-- [ ] tRPC-Prozedur: colloquium.byThesis (Kolloquien einer Anfrage)
-- [ ] tRPC-Prozedur: thesis.auditHistory (AuditLog einer Anfrage)
+- [x] Kolloquiums-Termine im Studierenden-Dashboard (Tab "Mein Kolloquium")
+- [x] Kolloquiums-Termine im Prüfer:innen-Dashboard (Tab "Kolloquien")
+- [x] ICS-Download-Button pro Kolloquiumstermin in beiden Dashboards
+- [x] Öffentliches Prüfer:innen-Verzeichnis /examiners mit Suchfeld
+- [x] Profilkarten mit Foto, Titel, Fachbereich, Kapazität und Profil-Link
+- [x] Filterung nach Fachbereich im Verzeichnis
+- [x] Statushistorie-Tab in Thesis-Detailansicht (Studierenden-Dashboard)
+- [x] Zeitstrahl-Visualisierung der AuditLog-Einträge pro Anfrage
+- [x] tRPC-Prozedur: colloquium.byThesis (Kolloquien einer Anfrage)
+- [x] tRPC-Prozedur: thesis.auditHistory (AuditLog einer Anfrage)
+
+## Phase 7: Statistiken, i18n und Exposé-Vorschau
+
+- [x] Admin-Statistik-Dashboard: Anfragen pro Status (Donut-Chart), pro Fachbereich (Balken), pro Monat (Linie)
+- [x] tRPC-Prozedur: admin.stats (aggregierte Kennzahlen)
+- [x] Recharts-Diagramme im Admin-Dashboard (neuer Tab "Statistiken")
+- [x] Mehrsprachigkeit DE/EN: i18n-Kontext mit useTranslation-Hook
+- [x] Sprachumschalter (DE/EN) in der Navbar der Landing Page und in allen Dashboards
+- [x] Übersetzungen für Landing Page, Studierenden-Dashboard und Prüfer:innen-Dashboard
+- [x] PDF-Vorschau-Modal im Prüfer:innen-Dashboard (iframe + Download-Button)
+- [x] Exposé-Link in der Anfragen-Übersicht des Prüfer:innen-Dashboards hervorheben
+
+## Phase 7: Statistiken, i18n und Expose-Vorschau
+
+- [x] Admin-Statistik-Dashboard: Anfragen pro Status (Donut-Chart), pro Fachbereich (Balken), pro Monat (Linie)
+- [x] tRPC-Prozedur: admin.stats (aggregierte Kennzahlen)
+- [x] Recharts-Diagramme im Admin-Dashboard (neuer Tab Statistiken)
+- [x] Mehrsprachigkeit DE/EN: i18n-Kontext mit useTranslation-Hook
+- [x] Sprachumschalter (DE/EN) in der Navbar der Landing Page und in allen Dashboards
+- [x] Uebersetzungen fuer Landing Page, Studierenden-Dashboard und Pruefer-Dashboard
+- [x] PDF-Vorschau-Modal im Pruefer-Dashboard (iframe + Download-Button)
+- [x] Expose-Link in der Anfragen-Uebersicht des Pruefer-Dashboards hervorheben
