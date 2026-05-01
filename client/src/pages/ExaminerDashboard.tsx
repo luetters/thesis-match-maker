@@ -263,6 +263,7 @@ function ProfileEdit() {
     studyPrograms: "",
     maxSupervisions: 5,
   });
+  const [alternativeEmail, setAlternativeEmail] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
@@ -275,11 +276,17 @@ function ProfileEdit() {
       studyPrograms: (profile.studyPrograms ?? []).join(", "),
       maxSupervisions: profile.maxSupervisions ?? 5,
     });
+    setAlternativeEmail((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "");
     setInitialized(true);
   }
 
   const updateProfile = trpc.examiner.updateProfile.useMutation({
     onSuccess: () => toast.success("Profil gespeichert!"),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const setAltEmail = trpc.examiner.setAlternativeEmail.useMutation({
+    onSuccess: () => toast.success("Alternative E-Mail gespeichert!"),
     onError: (err) => toast.error(err.message),
   });
 
@@ -294,6 +301,10 @@ function ProfileEdit() {
       studyPrograms: form.studyPrograms.split(",").map((s) => s.trim()).filter(Boolean),
       maxSupervisions: form.maxSupervisions,
     });
+    // Alternative E-Mail separat speichern
+    if (alternativeEmail !== ((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "")) {
+      setAltEmail.mutate({ alternativeEmail: alternativeEmail || null });
+    }
   };
 
   if (isLoading) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />;
@@ -373,9 +384,28 @@ function ProfileEdit() {
               />
             </div>
           </div>
+
+          {/* Alternative E-Mail für Zweitprüfer:innen */}
+          <div className="border-t border-gray-100 pt-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Alternative E-Mail-Adresse
+              <span className="ml-1.5 text-xs font-normal text-gray-400">(optional)</span>
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Als Zweitprüfer:in können Sie hier eine alternative E-Mail-Adresse hinterlegen, über die Sie kontaktiert werden möchten (z. B. eine externe oder persönliche Adresse).
+            </p>
+            <input
+              type="email"
+              value={alternativeEmail}
+              onChange={(e) => setAlternativeEmail(e.target.value)}
+              placeholder="z.B. vorname.nachname@extern.de"
+              className="w-full max-w-sm px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+            />
+          </div>
+
           <button
             type="submit"
-            disabled={updateProfile.isPending}
+            disabled={updateProfile.isPending || setAltEmail.isPending}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: "#76B900" }}
           >

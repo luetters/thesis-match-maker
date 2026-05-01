@@ -179,3 +179,14 @@
 - [x] Frontend: Studiengang-Anzeige im Studierenden-Dashboard (readonly)
 - [x] Frontend: Prüfer-Einstellungen: Studiengänge auswählen (Mehrfachauswahl mit Piktogrammen)
 - [x] Frontend: Studiengang-Badge in Betreuungsanfragen anzeigen
+
+## Phase 14: Studiengang vorausfüllen, Verzeichnis-Filter, Login-Validierung, Alternative E-Mail
+
+- [x] Studiengang im Antragsformular automatisch vorausfüllen (aus Studierenden-Profil)
+- [x] Studiengang-Filter-Dropdown im Prüfer:innen-Verzeichnis (nach Studiengang filtern)
+- [x] Prüfer:innen-Verzeichnis hinter Login sperren (nur eingeloggte Nutzer:innen)
+- [x] Backend: HTW-E-Mail-Validierung beim Passwort-Login (@htw-berlin.de Pflicht für Studierende und Erstprüfer:innen)
+- [x] Backend: Zweitprüfer:innen dürfen auch andere E-Mail-Adressen verwenden
+- [x] DB-Schema: alternativeEmail-Feld in examinerProfiles-Tabelle
+- [x] Frontend: Alternative E-Mail-Adresse im Prüfer:innen-Profil (editierbar)
+- [x] Backend: auth.loginWithPassword prüft E-Mail-Domain je nach Rolle

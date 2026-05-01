@@ -40,6 +40,7 @@ import {
   setStudentProgramme,
   getExaminerProgrammes,
   setExaminerProgrammes,
+  updateExaminerAlternativeEmail,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -192,6 +193,28 @@ export const appRouter = router({
         const valid = await bcrypt.compare(input.password, user.passwordHash);
         if (!valid) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        // HTW-E-Mail-Validierung:
+        // Studierende müssen @htw-berlin.de verwenden.
+        // Erstprüfer:innen (examiner) müssen @htw-berlin.de verwenden, es sei denn sie sind als
+        // Zweitprüfer:in eingetragen (flag canBeSecondExaminer). Admins/Superadmins sind ausgenommen.
+        const isHtwEmail = input.email.toLowerCase().endsWith("@htw-berlin.de");
+        if (!isHtwEmail) {
+          if (user.role === "student") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Studierende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) anmelden.",
+            });
+          }
+          if (user.role !== "examiner" && user.role !== "admin" && user.role !== "superadmin") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) zur Anmeldung.",
+            });
+          }
+          // Prüfer:innen mit externer E-Mail: nur erlaubt wenn sie als Zweitprüfer:in agieren dürfen
+          // (canBeSecondExaminer = true im Profil). Beim ersten Login noch kein Profil → erlaubt,
+          // Einschränkung erfolgt über Onboarding-Prozess.
         }
         // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
         const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
@@ -438,8 +461,8 @@ export const appRouter = router({
   // --- Examiner -------------------------------------------------------------
 
   examiner: router({
-    // Öffentlich: Alle Prüfer-Profile abrufen
-    list: publicProcedure.query(async () => {
+    // Nur für eingeloggte Nutzer:innen: Alle Prüfer-Profile abrufen
+    list: protectedProcedure.query(async () => {
       return getAllExaminers();
     }),
 
@@ -540,6 +563,18 @@ export const appRouter = router({
         await upsertExaminerProfile({ userId: ctx.user.id, ...input });
         return { success: true };
       }),
+    // Prüfer:in: Alternative E-Mail-Adresse setzen (für Zweitprüfer:innen mit externer E-Mail)
+    setAlternativeEmail: examinerProcedure
+      .input(
+        z.object({
+          alternativeEmail: z.string().email().optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await updateExaminerAlternativeEmail(ctx.user.id, input.alternativeEmail ?? null);
+        return { success: true };
+      }),
+
     // Admin: JWT-Token für Prüfer generieren (für E-Mail-CTA)
     generateActionToken: adminProcedure
       .input(

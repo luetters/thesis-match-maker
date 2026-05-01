@@ -1,7 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -33,6 +33,9 @@ function useNavItems() {
 
 // ─── New Request Form ─────────────────────────────────────────────────────────
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
+  // Studiengang aus Profil laden
+  const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -43,10 +46,21 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     degreeType: "bachelor" as "bachelor" | "master",
   });
 
+  // Studiengang und Abschlussart automatisch vorausfüllen sobald Profil geladen
+  useEffect(() => {
+    if (myProgramme) {
+      setForm((f) => ({
+        ...f,
+        department: myProgramme.name,
+        degreeType: myProgramme.level === "master" ? "master" : "bachelor",
+      }));
+    }
+  }, [myProgramme?.id]);
+
   const createMutation = trpc.thesis.create.useMutation({
     onSuccess: () => {
       toast.success("Anfrage erfolgreich eingereicht!");
-      setForm({ title: "", description: "", department: "", abstract: "", targetSemester: "", language: "de", degreeType: "bachelor" });
+      setForm({ title: "", description: "", department: myProgramme?.name ?? "", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor" });
       onSuccess();
     },
     onError: (err) => toast.error(err.message),
@@ -83,10 +97,19 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             type="text"
             required
             value={form.department}
-            onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+            onChange={(e) => !myProgramme && setForm((f) => ({ ...f, department: e.target.value }))}
+            readOnly={!!myProgramme}
             placeholder="z.B. M.Sc. Wirtschaftsinformatik"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+              myProgramme
+                ? "border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium cursor-not-allowed"
+                : "border-gray-200"
+            }`}
+            title={myProgramme ? "Studiengang ist Ihrem Profil fest zugeordnet" : undefined}
           />
+          {myProgramme && (
+            <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
+          )}
         </div>
 
         <div>

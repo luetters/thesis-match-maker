@@ -803,3 +803,23 @@ export async function setExaminerProgrammes(examinerId: number, programmeIds: nu
     );
   }
 }
+
+// ─── Examiner Alternative Email ───────────────────────────────────────────────
+export async function updateExaminerAlternativeEmail(userId: number, alternativeEmail: string | null): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select({ id: examinerProfiles.id })
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(examinerProfiles)
+      .set({ alternativeEmail: alternativeEmail ?? null })
+      .where(eq(examinerProfiles.userId, userId));
+  } else {
+    // Profil noch nicht vorhanden → erstellen
+    await db.insert(examinerProfiles).values({ userId, alternativeEmail: alternativeEmail ?? null });
+  }
+}

@@ -44,6 +44,7 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
   researchFocus: text("researchFocus"),
   officeHours: varchar("officeHours", { length: 255 }),
   websiteUrl: varchar("websiteUrl", { length: 512 }),
+  alternativeEmail: varchar("alternativeEmail", { length: 320 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

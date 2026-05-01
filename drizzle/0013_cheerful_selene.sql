@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_profiles` ADD `alternativeEmail` varchar(320);
