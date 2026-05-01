@@ -400,9 +400,76 @@ function SystemConfigTab() {
   );
 }
 
+// --- PAV-Verwaltungs-Komponente ---
+function PavManagementTab() {
+  const { data: pavUsers, refetch } = trpc.superadmin.getPavUsers.useQuery();
+  const { data: allProgrammes } = trpc.programmes.list.useQuery();
+  const assignProg = trpc.superadmin.assignPavProgramme.useMutation({ onSuccess: () => refetch() });
+  const removeProg = trpc.superadmin.removePavProgramme.useMutation({ onSuccess: () => refetch() });
+
+  if (!pavUsers || pavUsers.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
+        <p className="text-gray-400 text-sm">Keine PAV-Vorsitzenden vorhanden.</p>
+        <p className="text-gray-400 text-xs mt-1">Weisen Sie Nutzer:innen zunaechst die Rolle "PAV" zu (Tab Nutzer:innen & Rollen).</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-gray-500">
+        Weisen Sie PA-Vorsitzenden Studiengaenge zu. PAV-Vorsitzende sehen im PAV-Dashboard nur Studierende ihrer zugeordneten Studiengaenge.
+      </p>
+      {(pavUsers ?? []).map(({ user: u, programmes: assigned }) => (
+        <div key={u.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+            <p className="font-semibold text-gray-900">{u.name ?? u.email}</p>
+            <p className="text-xs text-gray-400">{u.email}</p>
+          </div>
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {(allProgrammes ?? []).map((prog) => {
+              const isAssigned = assigned.some((a) => a.programmeId === prog.id);
+              return (
+                <div
+                  key={prog.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    isAssigned ? "border-[#006937] bg-green-50" : "border-gray-200"
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{prog.name}</p>
+                    <p className="text-xs text-gray-400">{prog.level === "master" ? "Master" : "Bachelor"} - {prog.abbreviation}</p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      isAssigned
+                        ? removeProg.mutate({ userId: u.id, programmeId: prog.id })
+                        : assignProg.mutate({ userId: u.id, programmeId: prog.id })
+                    }
+                    disabled={assignProg.isPending || removeProg.isPending}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      isAssigned
+                        ? "bg-red-50 text-red-600 hover:bg-red-100"
+                        : "bg-[#006937] text-white hover:bg-[#005a2f]"
+                    } disabled:opacity-50`}
+                  >
+                    {isAssigned ? "Entfernen" : "Zuweisen"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "stats", label: "Systemstatistiken", icon: "📊" },
   { id: "users", label: "Nutzer:innen & Rollen", icon: "👥" },
+  { id: "pav", label: "PAV-Verwaltung", icon: "🏫" },
   { id: "audit", label: "Audit-Log", icon: "📋" },
   { id: "config", label: "Systemkonfiguration", icon: "⚙️" },
 ];
@@ -458,6 +525,7 @@ export default function SuperadminDashboard() {
       {/* Tab-Inhalt */}
       {activeTab === "stats" && <SystemStatsTab />}
       {activeTab === "users" && <UserManagementTab />}
+      {activeTab === "pav" && <PavManagementTab />}
       {activeTab === "audit" && <AuditLogTab />}
       {activeTab === "config" && <SystemConfigTab />}
     </ThesisDashboardLayout>

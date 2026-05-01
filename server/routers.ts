@@ -60,6 +60,10 @@ import {
   getAllUsersWithRoles,
   setUserRole,
   resetExaminerOnboarding,
+  getAllPavUsersWithProgrammes,
+  superadminAssignPavProgramme,
+  superadminRemovePavProgramme,
+  getThesisRequestDetailForDean,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -996,6 +1000,24 @@ export const appRouter = router({
         await resetExaminerOnboarding(input.userId);
         return { success: true };
       }),
+    /** Alle PAV-Nutzer:innen mit Studiengaengen */
+    getPavUsers: superadminProcedure.query(async () => {
+      return getAllPavUsersWithProgrammes();
+    }),
+    /** PAV einem Studiengang zuweisen */
+    assignPavProgramme: superadminProcedure
+      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await superadminAssignPavProgramme(input.userId, input.programmeId);
+        return { success: true };
+      }),
+    /** PAV-Studiengang-Zuweisung entfernen */
+    removePavProgramme: superadminProcedure
+      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await superadminRemovePavProgramme(input.userId, input.programmeId);
+        return { success: true };
+      }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({
@@ -1171,6 +1193,12 @@ export const appRouter = router({
       return getAllThesisRequestsForDean();
     }),
 
+    /** Einzelner Antrag mit Details (Prüfer:innen, Statushistorie, Kolloquium) */
+    getRequestDetail: deanProcedure
+      .input(z.object({ requestId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getThesisRequestDetailForDean(input.requestId);
+      }),
     /** CSV-Export aller Anträge */
     exportCsv: deanProcedure.query(async () => {
       const rows = await getAllThesisRequestsForCsv();

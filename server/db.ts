@@ -1162,3 +1162,93 @@ export async function getAllThesisRequestsForCsv() {
     .orderBy(thesisRequests.createdAt);
   return rows;
 }
+
+// --- Superadmin: PAV-Studiengang-Verwaltung ---
+
+/** Alle PAV-Nutzer:innen mit ihren zugeordneten Studiengaengen */
+export async function getAllPavUsersWithProgrammes() {
+  const db = await getDb();
+  if (!db) return [];
+  const pavUsers = await db
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.role, "pav"));
+  const result = [];
+  for (const u of pavUsers) {
+    const progs = await db
+      .select({ programmeId: pavProgrammes.programmeId, programmeName: programmes.name })
+      .from(pavProgrammes)
+      .innerJoin(programmes, eq(pavProgrammes.programmeId, programmes.id))
+      .where(eq(pavProgrammes.pavUserId, u.id));
+    result.push({ user: u, programmes: progs });
+  }
+  return result;
+}
+
+/** Superadmin weist PAV einem Studiengang zu */
+export async function superadminAssignPavProgramme(userId: number, programmeId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(pavProgrammes).ignore().values({ pavUserId: userId, programmeId });
+}
+
+/** Superadmin entfernt PAV-Studiengang-Zuweisung */
+export async function superadminRemovePavProgramme(userId: number, programmeId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(pavProgrammes).where(
+    and(eq(pavProgrammes.pavUserId, userId), eq(pavProgrammes.programmeId, programmeId))
+  );
+}
+
+// --- Dekanat: Detailansicht pro Antrag ---
+
+/** Einzelner Antrag mit Pruefer:innen, Statushistorie und Kolloquium fuer Dekanat */
+export async function getThesisRequestDetailForDean(requestId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db
+    .select({
+      request: thesisRequests,
+      student: { id: users.id, name: users.name, email: users.email },
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(eq(thesisRequests.id, requestId))
+    .limit(1);
+  if (!row) return null;
+
+  // Erstpruefer:in
+  const firstExaminer = row.request.examinerId
+    ? await db.select({ id: users.id, name: users.name, email: users.email })
+        .from(users).where(eq(users.id, row.request.examinerId)).limit(1)
+    : [];
+  // Zweitpruefer:in
+  const secondExaminer = row.request.secondExaminerId
+    ? await db.select({ id: users.id, name: users.name, email: users.email })
+        .from(users).where(eq(users.id, row.request.secondExaminerId)).limit(1)
+    : [];
+
+  // Statushistorie
+  const history = await db
+    .select()
+    .from(auditLog)
+    .where(eq(auditLog.thesisRequestId, requestId))
+    .orderBy(auditLog.createdAt);
+
+  // Kolloquium (erstes gefundenes)
+  const [colloquium] = await db
+    .select()
+    .from(colloquiums)
+    .where(eq(colloquiums.thesisRequestId, requestId))
+    .limit(1);
+
+  return {
+    request: row.request,
+    student: row.student,
+    firstExaminer: firstExaminer[0] ?? null,
+    secondExaminer: secondExaminer[0] ?? null,
+    history,
+    colloquium: colloquium ?? null,
+  };
+}

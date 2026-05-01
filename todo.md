@@ -275,3 +275,20 @@
 ### 18b – CSV-Export Dekanat
 - [x] Backend: dean.exportCsv – alle Anträge als CSV (tRPC-Query)
 - [x] Frontend: Dekanat-Dashboard – „CSV-Export“-Schaltfläche mit Download-Trigger im Header
+
+## Phase 19: Superadmin PAV-Zuweisung, Dekanat-Detailansicht, Deployment
+
+### 19a – Superadmin PAV-Studiengang-Zuweisung
+- [x] Backend: superadmin.getPavUsers – alle PAV-Nutzer:innen mit ihren Studiengängen
+- [x] Backend: superadmin.assignPavProgramme – Superadmin weist PAV einem Studiengang zu
+- [x] Backend: superadmin.removePavProgramme – Zuweisung entfernen
+- [x] Frontend: Superadmin-Panel – neuer Tab "PAV-Verwaltung" mit Nutzer/Studiengang-Matrix
+
+### 19b – Dekanat-Dashboard Detailansicht
+- [x] Backend: dean.getRequestDetail – Antrag mit Prüfer:innen, Statushistorie, Kolloquiumstermin
+- [x] Frontend: DeanDashboard – Klick auf Zeile öffnet Seitenleiste
+- [x] Frontend: Seitenleiste zeigt Antragstitel, Studierende, Prüfer:innen, Statushistorie, Kolloquium, Metadaten
+
+### 19c – Deployment
+- [x] Checkpoint erstellt
+- [x] Nutzer:in über Publish-Button informiert
