@@ -290,3 +290,65 @@ export async function sendStatusChangeEmail({
     return false;
   }
 }
+
+/**
+ * Benachrichtigt PAV-Vorsitzende über eine neue Studiengang-Zuweisung durch den Superadmin.
+ */
+export async function sendPavProgrammeAssignmentEmail({
+  to,
+  pavName,
+  programmeName,
+  programmeLevel,
+  dashboardUrl,
+  removed = false,
+}: {
+  to: string;
+  pavName: string;
+  programmeName: string;
+  programmeLevel: string;
+  dashboardUrl: string;
+  removed?: boolean;
+}): Promise<boolean> {
+  const config = getTransporter();
+  if (!config) return false;
+  const { transporter, from } = config;
+  const action = removed ? "entfernt" : "zugewiesen";
+  const emoji = removed ? "🔴" : "🟢";
+  const html = buildEmailHtml({
+    title: `Studiengang ${removed ? "entfernt" : "zugewiesen"}: ${programmeName}`,
+    greeting: `Guten Tag ${pavName},`,
+    body: `
+      <p>Ihre Zustaendigkeiten als PA-Vorsitzende:r wurden aktualisiert:</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f9fafb; border-radius: 10px; overflow: hidden;">
+        <tr>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">Studiengang</td>
+          <td style="padding: 12px 16px; color: #111827; font-weight: 600; font-size: 13px;">${programmeName}</td>
+        </tr>
+        <tr style="background: #ffffff;">
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Abschluss</td>
+          <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${programmeLevel === "master" ? "Master" : "Bachelor"}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Aktion</td>
+          <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${emoji} Studiengang wurde ${action}</td>
+        </tr>
+      </table>
+      ${!removed ? "<p>Sie koennen ab sofort im PAV-Dashboard unzugeteilte Studierende dieses Studiengangs einsehen und Pruefer:innen vorschlagen.</p>" : "<p>Dieser Studiengang ist nicht mehr in Ihrer Zustaendigkeit. Bereits eingereichte Vorschlaege bleiben bestehen.</p>"}
+    `,
+    ctaAcceptUrl: dashboardUrl,
+    footer: "Melden Sie sich in Ihrem PAV-Dashboard an, um Ihre aktuellen Zustaendigkeiten einzusehen.",
+  });
+  try {
+    await transporter.sendMail({
+      from,
+      to,
+      subject: `PAV-Zustaendigkeit ${removed ? "entfernt" : "aktualisiert"}: ${programmeName}`,
+      html,
+    });
+    console.log(`[Email] PAV-Zuweisung-E-Mail an ${to} gesendet (${action}: ${programmeName}).`);
+    return true;
+  } catch (err) {
+    console.error("[Email] Fehler beim Senden:", err);
+    return false;
+  }
+}

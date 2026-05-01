@@ -508,12 +508,86 @@ function CreateExaminerModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+// ─── Rollenwechsel-Warnungen ──────────────────────────────────────────────────────────────────────────────────
+const ROLE_CHANGE_WARNINGS: Record<string, Record<string, string>> = {
+  examiner: {
+    student: "Diese Person ist als Prüfer:in registriert und hat möglicherweise offene Betreuungsanfragen. Ein Rollenwechsel zu Studierende:r entfernt den Prüfer:innen-Zugang.",
+    pav: "Diese Person ist als Prüfer:in registriert. Ein Wechsel zur PAV-Rolle entfernt den Prüfer:innen-Zugang. Offene Anfragen bleiben bestehen.",
+    user: "Diese Person ist als Prüfer:in registriert. Ein Wechsel zur Nutzer:in-Rolle entfernt alle Prüfer:innen-Rechte.",
+  },
+  pav: {
+    examiner: "Diese Person ist PA-Vorsitzende:r. Ein Wechsel zur Prüfer:in-Rolle entfernt alle PAV-Rechte und Studiengang-Zuweisungen.",
+    student: "Diese Person ist PA-Vorsitzende:r. Ein Wechsel zur Studierenden-Rolle entfernt alle PAV-Rechte.",
+    user: "Diese Person ist PA-Vorsitzende:r. Ein Wechsel zur Nutzer:in-Rolle entfernt alle PAV-Rechte und Studiengang-Zuweisungen.",
+  },
+  admin: {
+    user: "Diese Person ist Admin. Ein Wechsel zur Nutzer:in-Rolle entfernt alle Administrationsrechte.",
+    student: "Diese Person ist Admin. Ein Wechsel zur Studierenden-Rolle entfernt alle Administrationsrechte.",
+    examiner: "Diese Person ist Admin. Ein Wechsel zur Prüfer:in-Rolle entfernt alle Administrationsrechte.",
+  },
+  dean: {
+    user: "Diese Person ist Dekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+    student: "Diese Person ist Dekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+    examiner: "Diese Person ist Dekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+  },
+  vice_dean: {
+    user: "Diese Person ist Prodekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+    student: "Diese Person ist Prodekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+    examiner: "Diese Person ist Prodekan:in. Ein Rollenwechsel entfernt den Lesezugriff auf alle Anträge.",
+  },
+};
 
-// ─── User Management ──────────────────────────────────────────────────────────────────
+const ROLE_LABELS: Record<string, string> = {
+  user: "Nutzer:in", student: "Studierende:r", examiner: "Prüfer:in",
+  pav: "PA-Vorsitzende:r", dean: "Dekan:in", vice_dean: "Prodekan:in",
+  admin: "Admin", superadmin: "Superadmin",
+};
+
+function RoleChangeConfirmDialog({
+  userName, fromRole, toRole, onConfirm, onCancel,
+}: { userName: string; fromRole: string; toRole: string; onConfirm: () => void; onCancel: () => void; }) {
+  const warning = ROLE_CHANGE_WARNINGS[fromRole]?.[toRole];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 text-base">Rolle ändern?</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              <strong>{userName}</strong>: {ROLE_LABELS[fromRole] ?? fromRole} → {ROLE_LABELS[toRole] ?? toRole}
+            </p>
+          </div>
+        </div>
+        {warning && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+            <p className="text-sm text-amber-800">{warning}</p>
+          </div>
+        )}
+        <p className="text-sm text-gray-600 mb-5">Möchten Sie die Rolle wirklich ändern? Diese Aktion kann rückgängig gemacht werden.</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            Abbrechen
+          </button>
+          <button onClick={onConfirm} className="px-4 py-2 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-colors" style={{ backgroundColor: "#006937" }}>
+            Rolle ändern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── User Management ──────────────────────────────────────────────────────────────────────────────────
 function UserManagement() {
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
@@ -561,6 +635,18 @@ function UserManagement() {
   return (
     <div className="space-y-4">
       {showCreate && <CreateExaminerModal onClose={() => setShowCreate(false)} />}
+      {pendingRoleChange && (
+        <RoleChangeConfirmDialog
+          userName={pendingRoleChange.userName}
+          fromRole={pendingRoleChange.fromRole}
+          toRole={pendingRoleChange.toRole}
+          onConfirm={() => {
+            updateRole.mutate({ userId: pendingRoleChange.userId, role: pendingRoleChange.toRole as "student" | "examiner" | "admin" | "user" });
+            setPendingRoleChange(null);
+          }}
+          onCancel={() => setPendingRoleChange(null)}
+        />
+      )}
       <div className="flex justify-between items-center">
         <p className="text-sm text-gray-500">{users?.length ?? 0} Nutzer:innen registriert</p>
         <button
@@ -636,7 +722,17 @@ function UserManagement() {
                       )}
                       <select
                         value={user.role}
-                        onChange={(e) => updateRole.mutate({ userId: user.id, role: e.target.value as "student" | "examiner" | "admin" | "user" })}
+                        onChange={(e) => {
+                          const newRole = e.target.value;
+                          if (newRole === user.role) return;
+                          // Warnung nötig?
+                          const needsWarning = !!ROLE_CHANGE_WARNINGS[user.role]?.[newRole];
+                          if (needsWarning) {
+                            setPendingRoleChange({ userId: user.id, userName: user.name ?? user.email ?? "?", fromRole: user.role, toRole: newRole });
+                          } else {
+                            updateRole.mutate({ userId: user.id, role: newRole as "student" | "examiner" | "admin" | "user" });
+                          }
+                        }}
                         className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
                       >
                         <option value="user">Nutzer:in</option>

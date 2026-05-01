@@ -79,7 +79,7 @@ import {
   deleteColloquium,
 } from "./db";
 import { createIcsEvent } from "./icsHelper";
-import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail } from "./emailHelper";
+import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -1006,16 +1006,46 @@ export const appRouter = router({
     }),
     /** PAV einem Studiengang zuweisen */
     assignPavProgramme: superadminProcedure
-      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive() }))
+      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive(), origin: z.string().url().optional() }))
       .mutation(async ({ input }) => {
         await superadminAssignPavProgramme(input.userId, input.programmeId);
+        // E-Mail an PAV senden
+        const pavUser = await getUserById(input.userId);
+        const allProgs = await getAllProgrammes();
+        const prog = allProgs.find((p) => p.id === input.programmeId);
+        if (pavUser?.email && prog) {
+          const dashboardUrl = `${input.origin ?? "https://thesismatch.manus.space"}/pav`;
+          await sendPavProgrammeAssignmentEmail({
+            to: pavUser.email,
+            pavName: pavUser.name ?? pavUser.email,
+            programmeName: prog.name,
+            programmeLevel: prog.level,
+            dashboardUrl,
+            removed: false,
+          });
+        }
         return { success: true };
       }),
     /** PAV-Studiengang-Zuweisung entfernen */
     removePavProgramme: superadminProcedure
-      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive() }))
+      .input(z.object({ userId: z.number().int().positive(), programmeId: z.number().int().positive(), origin: z.string().url().optional() }))
       .mutation(async ({ input }) => {
         await superadminRemovePavProgramme(input.userId, input.programmeId);
+        // E-Mail an PAV senden
+        const pavUser = await getUserById(input.userId);
+        const allProgs = await getAllProgrammes();
+        const prog = allProgs.find((p) => p.id === input.programmeId);
+        if (pavUser?.email && prog) {
+          const dashboardUrl = `${input.origin ?? "https://thesismatch.manus.space"}/pav`;
+          await sendPavProgrammeAssignmentEmail({
+            to: pavUser.email,
+            pavName: pavUser.name ?? pavUser.email,
+            programmeName: prog.name,
+            programmeLevel: prog.level,
+            dashboardUrl,
+            removed: true,
+          });
+        }
         return { success: true };
       }),
   }),
@@ -1199,27 +1229,42 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getThesisRequestDetailForDean(input.requestId);
       }),
-    /** CSV-Export aller Anträge */
-    exportCsv: deanProcedure.query(async () => {
-      const rows = await getAllThesisRequestsForCsv();
-      const header = [
-        "ID","Titel","Studiengang","Abschluss","Status","Sprache","Eigenes Thema","Erstellt am","Abgabefrist","Studierende:r","E-Mail"
-      ].join(";");
-      const csvRows = rows.map((r) => [
-        r.id,
-        `"${(r.title ?? "").replace(/"/g, '""')}"`,
-        `"${(r.department ?? "").replace(/"/g, '""')}"`,
-        r.degreeType,
-        r.status,
-        r.language,
-        r.hasOwnTopic ? "Ja" : "Nein",
-        r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : "",
-        r.deadline ? new Date(r.deadline).toLocaleDateString("de-DE") : "",
-        `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
-        r.studentEmail,
-      ].join(";"));
-      return { csv: [header, ...csvRows].join("\n") };
-    }),
+    /** CSV-Export – optional gefiltert nach Status und Suchbegriff */
+    exportCsv: deanProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const rows = await getAllThesisRequestsForCsv();
+        // Filtern
+        const filtered = rows.filter((r) => {
+          const matchesStatus = !input?.status || input.status === "all" || r.status === input.status;
+          const q = (input?.search ?? "").toLowerCase();
+          const matchesSearch = !q ||
+            (r.title ?? "").toLowerCase().includes(q) ||
+            (r.studentName ?? "").toLowerCase().includes(q) ||
+            (r.department ?? "").toLowerCase().includes(q);
+          return matchesStatus && matchesSearch;
+        });
+        const header = [
+          "ID","Titel","Studiengang","Abschluss","Status","Sprache","Eigenes Thema","Erstellt am","Abgabefrist","Studierende:r","E-Mail"
+        ].join(";");
+        const csvRows = filtered.map((r) => [
+          r.id,
+          `"${(r.title ?? "").replace(/"/g, '""')}"`,
+          `"${(r.department ?? "").replace(/"/g, '""')}"`,
+          r.degreeType,
+          r.status,
+          r.language,
+          r.hasOwnTopic ? "Ja" : "Nein",
+          r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : "",
+          r.deadline ? new Date(r.deadline).toLocaleDateString("de-DE") : "",
+          `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
+          r.studentEmail,
+        ].join(";"));
+        return { csv: [header, ...csvRows].join("\n"), count: filtered.length };
+      }),
   }),
 
   // ─── Admin-Erweiterung: Onboarding-Reset ──────────────────────────────────

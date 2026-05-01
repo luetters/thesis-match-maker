@@ -211,21 +211,29 @@ export default function DeanDashboard() {
   const { data: requests, isLoading } = trpc.dean.getAllRequests.useQuery(undefined, {
     enabled: !!user,
   });
-  const { data: csvData, refetch: fetchCsv, isFetching: csvLoading } = trpc.dean.exportCsv.useQuery(undefined, {
-    enabled: false,
-  });
+  const [csvFilters, setCsvFilters] = useState<{ status?: string; search?: string } | null>(null);
+  const { refetch: fetchCsv, isFetching: csvLoading } = trpc.dean.exportCsv.useQuery(
+    csvFilters ?? {},
+    { enabled: false }
+  );
 
   function handleCsvDownload() {
-    fetchCsv().then((result) => {
-      if (!result.data?.csv) return;
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `abschlussarbeiten_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+    // Aktuelle Filter mitgeben
+    setCsvFilters({ status: filterStatus !== "all" ? filterStatus : undefined, search: search || undefined });
+    // Kurz warten bis State gesetzt, dann abrufen
+    setTimeout(() => {
+      fetchCsv().then((result) => {
+        if (!result.data?.csv) return;
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const suffix = (filterStatus && filterStatus !== "all") ? `_${filterStatus.toLowerCase()}` : "";
+        a.download = `abschlussarbeiten${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }, 50);
   }
 
   if (loading) {

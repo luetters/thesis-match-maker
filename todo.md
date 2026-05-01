@@ -292,3 +292,12 @@
 ### 19c – Deployment
 - [x] Checkpoint erstellt
 - [x] Nutzer:in über Publish-Button informiert
+
+## Phase 20: PAV-Benachrichtigung, gefilterter CSV-Export, Rollenwechsel-Dialog
+
+- [x] Backend: sendPavProgrammeAssignmentEmail in emailHelper.ts (Zuweisung und Entfernung)
+- [x] Backend: superadmin.assignPavProgramme und removePavProgramme senden E-Mail an PAV
+- [x] Backend: dean.exportCsv mit optionalen Filterparametern (status, search)
+- [x] Frontend: DeanDashboard – CSV-Export übergibt aktuelle Filter (Status + Suchbegriff)
+- [x] Frontend: AdminDashboard – RoleChangeConfirmDialog-Komponente mit Warntext
+- [x] Frontend: AdminDashboard – Select löst Dialog aus bei kritischen Rollenwechseln (examiner, pav, dean, vice_dean, admin)
