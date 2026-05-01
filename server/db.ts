@@ -823,3 +823,47 @@ export async function updateExaminerAlternativeEmail(userId: number, alternative
     await db.insert(examinerProfiles).values({ userId, alternativeEmail: alternativeEmail ?? null });
   }
 }
+
+// ─── Examiner Second Examiner Flag ────────────────────────────────────────────
+export async function updateExaminerSecondExaminerFlag(userId: number, isSecondExaminer: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select({ id: examinerProfiles.id })
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(examinerProfiles)
+      .set({ isSecondExaminer: isSecondExaminer ? 1 : 0 })
+      .where(eq(examinerProfiles.userId, userId));
+  } else {
+    await db.insert(examinerProfiles).values({ userId, isSecondExaminer: isSecondExaminer ? 1 : 0 });
+  }
+}
+
+// ─── Resolve Examiner Email (alternativeEmail bevorzugen) ─────────────────────
+/**
+ * Gibt die E-Mail-Adresse zurück, an die Benachrichtigungen für eine Prüfer:in gesendet werden sollen.
+ * Wenn eine alternativeEmail im Profil hinterlegt ist, wird diese bevorzugt.
+ * Andernfalls wird die Anmelde-E-Mail (users.email) verwendet.
+ */
+export async function resolveExaminerEmail(userId: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const profile = await db
+    .select({ alternativeEmail: examinerProfiles.alternativeEmail })
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+  if (profile.length > 0 && profile[0].alternativeEmail) {
+    return profile[0].alternativeEmail;
+  }
+  const user = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return user[0]?.email ?? null;
+}

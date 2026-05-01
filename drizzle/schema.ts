@@ -45,6 +45,7 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
   officeHours: varchar("officeHours", { length: 255 }),
   websiteUrl: varchar("websiteUrl", { length: 512 }),
   alternativeEmail: varchar("alternativeEmail", { length: 320 }),
+  isSecondExaminer: int("isSecondExaminer").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

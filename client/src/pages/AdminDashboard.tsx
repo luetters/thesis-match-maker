@@ -523,6 +523,14 @@ function UserManagement() {
     onError: (err) => toast.error(err.message),
   });
 
+  const setSecondFlag = trpc.examiner.setSecondExaminerFlag.useMutation({
+    onSuccess: () => {
+      toast.success("Zweitprüfer:in-Flag aktualisiert!");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const deleteUser = trpc.admin.deleteUser.useMutation({
     onSuccess: () => {
       toast.success("Nutzer:in gelöscht!");
@@ -594,6 +602,20 @@ function UserManagement() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {user.role === "examiner" && (
+                        <button
+                          type="button"
+                          title={(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "Zweitprüfer:in (klicken zum Deaktivieren)" : "Erstprüfer:in (klicken für Zweitprüfer:in)"}
+                          onClick={() => setSecondFlag.mutate({ isSecondExaminer: !((profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1), userId: user.id })}
+                          className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                            (profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1
+                              ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                              : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                          }`}
+                        >
+                          {(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "2º Prüfer:in" : "1º Prüfer:in"}
+                        </button>
+                      )}
                       <select
                         value={user.role}
                         onChange={(e) => updateRole.mutate({ userId: user.id, role: e.target.value as "student" | "examiner" | "admin" | "user" })}

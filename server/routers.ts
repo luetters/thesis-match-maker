@@ -41,6 +41,8 @@ import {
   getExaminerProgrammes,
   setExaminerProgrammes,
   updateExaminerAlternativeEmail,
+  updateExaminerSecondExaminerFlag,
+  resolveExaminerEmail,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -195,9 +197,10 @@ export const appRouter = router({
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
         }
         // HTW-E-Mail-Validierung:
-        // Studierende müssen @htw-berlin.de verwenden.
-        // Erstprüfer:innen (examiner) müssen @htw-berlin.de verwenden, es sei denn sie sind als
-        // Zweitprüfer:in eingetragen (flag canBeSecondExaminer). Admins/Superadmins sind ausgenommen.
+        // Studierende müssen immer @htw-berlin.de verwenden.
+        // Erstprüfer:innen (examiner, isSecondExaminer=false) müssen @htw-berlin.de verwenden.
+        // Zweitprüfer:innen (examiner, isSecondExaminer=true) dürfen externe E-Mails nutzen.
+        // Admins/Superadmins sind ausgenommen.
         const isHtwEmail = input.email.toLowerCase().endsWith("@htw-berlin.de");
         if (!isHtwEmail) {
           if (user.role === "student") {
@@ -206,15 +209,22 @@ export const appRouter = router({
               message: "Studierende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) anmelden.",
             });
           }
-          if (user.role !== "examiner" && user.role !== "admin" && user.role !== "superadmin") {
+          if (user.role === "examiner") {
+            // Profil laden um isSecondExaminer-Flag zu prüfen
+            const profile = await getExaminerProfileByUserId(user.id);
+            const isSecondExaminer = profile && (profile as { isSecondExaminer?: number }).isSecondExaminer === 1;
+            if (!isSecondExaminer) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "Erstprüfer:innen müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) anmelden. Wenn Sie als Zweitprüfer:in agieren, aktivieren Sie bitte zunächst das entsprechende Flag in Ihrem Profil.",
+              });
+            }
+          } else if (user.role !== "admin" && user.role !== "superadmin") {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) zur Anmeldung.",
             });
           }
-          // Prüfer:innen mit externer E-Mail: nur erlaubt wenn sie als Zweitprüfer:in agieren dürfen
-          // (canBeSecondExaminer = true im Profil). Beim ersten Login noch kein Profil → erlaubt,
-          // Einschränkung erfolgt über Onboarding-Prozess.
         }
         // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
         const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
@@ -376,8 +386,8 @@ export const appRouter = router({
             type: "status_change",
           });
           const student = await getUserById(existing.studentId);
+          const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
           if (student?.email) {
-            const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
             await sendStatusChangeEmail({
               to: student.email,
               studentName: student.name ?? "Studierende:r",
@@ -385,6 +395,18 @@ export const appRouter = router({
               newStatus: input.status as "ACCEPTED" | "REJECTED" | "MATCHED",
               reason: input.reason,
               dashboardUrl: `${origin}/student`,
+            });
+          }
+          // Prüfer:innen benachrichtigen (resolveExaminerEmail bevorzugt alternativeEmail)
+          const examinerIds = [existing.examinerId, existing.secondExaminerId].filter(Boolean) as number[];
+          for (const exId of examinerIds) {
+            const ex = await getUserById(exId);
+            if (!ex?.email) continue;
+            const exEmailTo = (await resolveExaminerEmail(exId)) ?? ex.email;
+            await sendEmail({
+              to: exEmailTo,
+              subject: `Thesis Match: Statusänderung – ${existing.title}`,
+              html: `<p>Guten Tag ${ex.name ?? "Prüfer:in"},</p><p>der Status der Abschlussarbeit <strong>${existing.title}</strong> hat sich geändert: <strong>${input.status}</strong>.</p>${input.reason ? `<p>Begründung: ${input.reason}</p>` : ""}<p>Weitere Details finden Sie im <a href="${origin}/examiner">Prüfer:innen-Dashboard</a>.</p>`,
             });
           }
         }
@@ -428,7 +450,9 @@ export const appRouter = router({
         });
 
         // JWT-CTA-E-Mail an Prüfer:in senden
+        // resolveExaminerEmail bevorzugt alternativeEmail aus dem Profil
         if (examiner.email) {
+          const emailTo = (await resolveExaminerEmail(input.examinerId)) ?? examiner.email;
           const token = await signExaminerActionToken({
             thesisRequestId: input.thesisId,
             examinerId: input.examinerId,
@@ -438,7 +462,7 @@ export const appRouter = router({
           });
           const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
           await sendExaminerCTAEmail({
-            to: examiner.email,
+            to: emailTo,
             examinerName: examiner.name ?? "Prüfer:in",
             studentName: student?.name ?? "Studierende:r",
             thesisTitle: thesis.title,
@@ -572,6 +596,23 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         await updateExaminerAlternativeEmail(ctx.user.id, input.alternativeEmail ?? null);
+        return { success: true };
+      }),
+
+    // Prüfer:in oder Admin: Zweitprüfer:in-Flag setzen
+    // Admins können userId angeben, Prüfer:innen setzen ihr eigenes Flag
+    setSecondExaminerFlag: examinerProcedure
+      .input(
+        z.object({
+          isSecondExaminer: z.boolean(),
+          userId: z.number().optional(), // nur für Admins
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const targetUserId = (input.userId && (ctx.user.role === "admin" || ctx.user.role === "superadmin"))
+          ? input.userId
+          : ctx.user.id;
+        await updateExaminerSecondExaminerFlag(targetUserId, input.isSecondExaminer);
         return { success: true };
       }),
 

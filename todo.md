@@ -190,3 +190,21 @@
 - [x] DB-Schema: alternativeEmail-Feld in examinerProfiles-Tabelle
 - [x] Frontend: Alternative E-Mail-Adresse im Prüfer:innen-Profil (editierbar)
 - [x] Backend: auth.loginWithPassword prüft E-Mail-Domain je nach Rolle
+
+## Phase 15: isSecondExaminer-Flag & Alternative E-Mail-Versand
+
+- [x] DB-Schema: isSecondExaminer-Flag (boolean) in examinerProfiles-Tabelle
+- [x] DB-Migration: ALTER TABLE examiner_profiles ADD COLUMN isSecondExaminer
+- [x] Backend: examiner.setSecondExaminerFlag tRPC-Prozedur (examinerProcedure)
+- [x] Backend: loginWithPassword – Erstprüfer:innen (isSecondExaminer=false) müssen @htw-berlin.de verwenden; Zweitprüfer:innen dürfen externe E-Mails nutzen
+- [x] Frontend: isSecondExaminer-Toggle im Prüfer:innen-Profil (mit Erklärungstext)
+- [x] Backend: emailHelper – bei Prüfer:innen mit alternativeEmail diese für CTA und Statusbenachrichtigungen verwenden
+- [x] Backend: thesis.assignExaminer – CTA-E-Mail an alternativeEmail senden wenn vorhanden
+- [x] Backend: thesis.updateStatus – Statusbenachrichtigung an alternativeEmail senden wenn vorhanden
+
+## Phase 15b: Lücken aus Gap-Analyse
+
+- [x] Admin-UI: isSecondExaminer-Flag für Prüfer:innen direkt im Admin-Dashboard setzen (ohne Login der Prüfer:in)
+- [x] db.ts: Hilfsfunktion resolveExaminerEmail(userId) zentralisieren (alternativeEmail bevorzugen)
+- [x] routers.ts: assignExaminer und updateStatus nutzen resolveExaminerEmail statt inline-Logik
+- [x] setSecondExaminerFlag: Admin kann userId übergeben, Prüfer:in setzt eigenes Flag

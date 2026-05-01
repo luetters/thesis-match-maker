@@ -264,6 +264,7 @@ function ProfileEdit() {
     maxSupervisions: 5,
   });
   const [alternativeEmail, setAlternativeEmail] = useState("");
+  const [isSecondExaminer, setIsSecondExaminer] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
@@ -277,6 +278,7 @@ function ProfileEdit() {
       maxSupervisions: profile.maxSupervisions ?? 5,
     });
     setAlternativeEmail((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "");
+    setIsSecondExaminer((profile as { isSecondExaminer?: number }).isSecondExaminer === 1);
     setInitialized(true);
   }
 
@@ -287,6 +289,11 @@ function ProfileEdit() {
 
   const setAltEmail = trpc.examiner.setAlternativeEmail.useMutation({
     onSuccess: () => toast.success("Alternative E-Mail gespeichert!"),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const setSecondFlag = trpc.examiner.setSecondExaminerFlag.useMutation({
+    onSuccess: () => toast.success("Prüfer:innen-Rolle gespeichert!"),
     onError: (err) => toast.error(err.message),
   });
 
@@ -304,6 +311,11 @@ function ProfileEdit() {
     // Alternative E-Mail separat speichern
     if (alternativeEmail !== ((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "")) {
       setAltEmail.mutate({ alternativeEmail: alternativeEmail || null });
+    }
+    // Zweitprüfer:in-Flag separat speichern
+    const currentFlag = (profile as { isSecondExaminer?: number }).isSecondExaminer === 1;
+    if (isSecondExaminer !== currentFlag) {
+      setSecondFlag.mutate({ isSecondExaminer });
     }
   };
 
@@ -385,6 +397,29 @@ function ProfileEdit() {
             </div>
           </div>
 
+          {/* Prüfer:innen-Rolle: Erst- oder Zweitprüfer:in */}
+          <div className="border-t border-gray-100 pt-5">
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isSecondExaminer}
+                onClick={() => setIsSecondExaminer((v) => !v)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSecondExaminer ? "bg-green-600" : "bg-gray-200"}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSecondExaminer ? "translate-x-5" : "translate-x-0"}`}
+                />
+              </button>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Ich bin Zweitprüfer:in</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Aktivieren Sie diese Option, wenn Sie als Zweitprüfer:in agieren und keine HTW-Berlin-E-Mail-Adresse verwenden. Erstprüfer:innen müssen sich mit einer <strong>@htw-berlin.de</strong>-Adresse anmelden.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Alternative E-Mail für Zweitprüfer:innen */}
           <div className="border-t border-gray-100 pt-5">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -392,7 +427,7 @@ function ProfileEdit() {
               <span className="ml-1.5 text-xs font-normal text-gray-400">(optional)</span>
             </label>
             <p className="text-xs text-gray-500 mb-2">
-              Als Zweitprüfer:in können Sie hier eine alternative E-Mail-Adresse hinterlegen, über die Sie kontaktiert werden möchten (z. B. eine externe oder persönliche Adresse).
+              Hinterlegen Sie hier eine alternative E-Mail-Adresse, an die Benachrichtigungen und Betreuungsanfragen gesendet werden (z. B. eine externe oder persönliche Adresse). Diese Adresse ersetzt die Anmelde-E-Mail für den E-Mail-Versand.
             </p>
             <input
               type="email"
@@ -405,7 +440,7 @@ function ProfileEdit() {
 
           <button
             type="submit"
-            disabled={updateProfile.isPending || setAltEmail.isPending}
+            disabled={updateProfile.isPending || setAltEmail.isPending || setSecondFlag.isPending}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: "#76B900" }}
           >

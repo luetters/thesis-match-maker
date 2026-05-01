@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_profiles` ADD `isSecondExaminer` int DEFAULT 0 NOT NULL;
