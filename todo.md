@@ -208,3 +208,18 @@
 - [x] db.ts: Hilfsfunktion resolveExaminerEmail(userId) zentralisieren (alternativeEmail bevorzugen)
 - [x] routers.ts: assignExaminer und updateStatus nutzen resolveExaminerEmail statt inline-Logik
 - [x] setSecondExaminerFlag: Admin kann userId übergeben, Prüfer:in setzt eigenes Flag
+
+## Phase 16: Onboarding-Modal & Verzeichnis-Badges
+
+- [x] Backend: examiner.hasCompletedOnboarding tRPC-Prozedur (prüft ob isSecondExaminer gesetzt wurde)
+- [x] Frontend: ExaminerOnboardingModal-Komponente (Erst-/Zweitprüfer:in-Auswahl + optionale alternative E-Mail)
+- [x] Frontend: ExaminerDashboard zeigt Modal beim ersten Login (wenn kein Profil vorhanden oder onboarding nicht abgeschlossen)
+- [x] Frontend: Erst-/Zweitprüfer:in-Badge auf Profilkarten im Prüfer:innen-Verzeichnis (/examiners)
+- [x] Frontend: Badge auch auf öffentlicher Profilseite /examiner/:id anzeigen
+
+## Phase 16b: Lücken aus Gap-Analyse
+
+- [x] DB-Schema: onboardingCompleted-Flag in examinerProfiles (statt isSecondExaminer-Default-Heuristik)
+- [x] Backend: examiner.completeOnboarding tRPC-Prozedur (setzt isSecondExaminer + alternativeEmail + onboardingCompleted in einem Schritt)
+- [x] Frontend: ExaminerDashboard prüft onboardingCompleted statt isSecondExaminer-Null-Heuristik
+- [x] Frontend: Öffentliche Profilseite /examiner/:id um Erst-/Zweitprüfer:in-Badge erweitern (grün für Erstprüfer:in, blau für Zweitprüfer:in)

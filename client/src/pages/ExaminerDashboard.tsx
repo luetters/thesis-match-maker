@@ -1,7 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -634,9 +634,157 @@ function ExaminerStatusHistory() {
     </div>
   );
 }
+// ─── Onboarding Modal ────────────────────────────────────────────────────────
+function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
+  const [step, setStep] = useState<"role" | "email">("role");
+  const [isSecondExaminer, setIsSecondExaminer] = useState<boolean | null>(null);
+  const [alternativeEmail, setAlternativeEmail] = useState("");
+  const utils = trpc.useUtils();
+
+  const completeOnboarding = trpc.examiner.completeOnboarding.useMutation({
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleFinish = async () => {
+    if (isSecondExaminer === null) return;
+    await completeOnboarding.mutateAsync({
+      isSecondExaminer,
+      alternativeEmail: alternativeEmail || null,
+    });
+    utils.examiner.myProfile.invalidate();
+    toast.success("Profil eingerichtet – willkommen!");
+    onComplete();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 pt-8 pb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Willkommen</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Profil einrichten</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Bitte beantworten Sie kurz zwei Fragen, damit das System Ihnen die richtigen Anfragen zuordnen kann.
+          </p>
+        </div>
+
+        {/* Progress */}
+        <div className="px-8 pb-2">
+          <div className="flex gap-2">
+            <div className="h-1 flex-1 rounded-full bg-green-500" />
+            <div className={`h-1 flex-1 rounded-full transition-colors ${step === "email" ? "bg-green-500" : "bg-gray-200"}`} />
+          </div>
+        </div>
+
+        {/* Step 1: Rolle */}
+        {step === "role" && (
+          <div className="px-8 py-6 space-y-4">
+            <p className="text-sm font-semibold text-gray-700">In welcher Rolle sind Sie an der HTW Berlin tätig?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setIsSecondExaminer(false)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  isSecondExaminer === false
+                    ? "border-green-500 bg-green-50 text-green-700"
+                    : "border-gray-200 hover:border-gray-300 text-gray-600"
+                }`}
+              >
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                <span className="text-sm font-semibold">Erstprüfer:in</span>
+                <span className="text-xs text-center opacity-70">HTW-Berlin-Lehrperson</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSecondExaminer(true)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  isSecondExaminer === true
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-gray-200 hover:border-gray-300 text-gray-600"
+                }`}
+              >
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span className="text-sm font-semibold">Zweitprüfer:in</span>
+                <span className="text-xs text-center opacity-70">Externe Fachperson</span>
+              </button>
+            </div>
+            {isSecondExaminer === false && (
+              <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                Als Erstprüfer:in müssen Sie sich mit einer <strong>@htw-berlin.de</strong>-E-Mail-Adresse anmelden.
+              </p>
+            )}
+            {isSecondExaminer === true && (
+              <p className="text-xs text-gray-500 bg-blue-50 rounded-lg p-3">
+                Als Zweitprüfer:in können Sie auch eine externe E-Mail-Adresse verwenden.
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={isSecondExaminer === null}
+              onClick={() => setStep("email")}
+              className="w-full py-3 rounded-xl text-white font-semibold transition-all disabled:opacity-40"
+              style={{ backgroundColor: "#76B900" }}
+            >
+              Weiter
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: Alternative E-Mail */}
+        {step === "email" && (
+          <div className="px-8 py-6 space-y-4">
+            <p className="text-sm font-semibold text-gray-700">Alternative E-Mail-Adresse</p>
+            <p className="text-xs text-gray-500">
+              Optional: Hinterlegen Sie eine E-Mail-Adresse, an die Betreuungsanfragen und Benachrichtigungen gesendet werden sollen. Diese ersetzt die Anmelde-E-Mail für den E-Mail-Versand.
+            </p>
+            <input
+              type="email"
+              value={alternativeEmail}
+              onChange={(e) => setAlternativeEmail(e.target.value)}
+              placeholder="z.B. vorname.nachname@extern.de"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setStep("role")}
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all"
+              >
+                Zurück
+              </button>
+              <button
+                type="button"
+                onClick={handleFinish}
+                disabled={completeOnboarding.isPending}
+                className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {completeOnboarding.isPending ? "Speichern..." : "Einrichtung abschließen"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes">("overview");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Onboarding-Modal anzeigen wenn onboardingCompleted noch nicht gesetzt ist
+  const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
+  useEffect(() => {
+    if (!profileLoading) {
+      const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
+      if (!completed) setShowOnboarding(true);
+    }
+  }, [profile, profileLoading]);
 
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
@@ -662,6 +810,9 @@ export default function ExaminerDashboard() {
 
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
+      {showOnboarding && !profileLoading && (
+        <ExaminerOnboardingModal onComplete={() => setShowOnboarding(false)} />
+      )}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <RequestsView />}
       {activeTab === "colloquiums" && <MyColloquiums />}

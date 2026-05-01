@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_profiles` ADD `onboardingCompleted` int DEFAULT 0 NOT NULL;

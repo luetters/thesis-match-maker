@@ -38,6 +38,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
   const programmes = examiner.programmes ?? [];
   const available = profile?.maxSupervisions ?? 0;
   const isAvailable = available > 0;
+  const isSecondExaminer = (profile as { isSecondExaminer?: number } | null | undefined)?.isSecondExaminer === 1;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -72,11 +73,20 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
                   <p className="text-sm text-gray-500 mt-0.5">{profile.department}</p>
                 )}
               </div>
-              <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                isAvailable ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-              }`}>
-                {isAvailable ? `${available} frei` : "Ausgebucht"}
-              </span>
+              <div className="flex flex-col items-end gap-1">
+                <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  isAvailable ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                }`}>
+                  {isAvailable ? `${available} frei` : "Ausgebucht"}
+                </span>
+                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  isSecondExaminer
+                    ? "bg-blue-50 text-blue-600 border border-blue-100"
+                    : "bg-gray-50 text-gray-500 border border-gray-100"
+                }`}>
+                  {isSecondExaminer ? "Zweitprüfer:in" : "Erstprüfer:in"}
+                </span>
+              </div>
             </div>
           </div>
         </div>

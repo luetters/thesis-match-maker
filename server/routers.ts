@@ -43,6 +43,7 @@ import {
   updateExaminerAlternativeEmail,
   updateExaminerSecondExaminerFlag,
   resolveExaminerEmail,
+  completeExaminerOnboarding,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -613,6 +614,19 @@ export const appRouter = router({
           ? input.userId
           : ctx.user.id;
         await updateExaminerSecondExaminerFlag(targetUserId, input.isSecondExaminer);
+        return { success: true };
+      }),
+
+    // Prüfer:in: Onboarding abschließen (isSecondExaminer + alternativeEmail + onboardingCompleted)
+    completeOnboarding: examinerProcedure
+      .input(
+        z.object({
+          isSecondExaminer: z.boolean(),
+          alternativeEmail: z.string().email().optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await completeExaminerOnboarding(ctx.user.id, input.isSecondExaminer, input.alternativeEmail ?? null);
         return { success: true };
       }),
 

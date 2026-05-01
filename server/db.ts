@@ -867,3 +867,31 @@ export async function resolveExaminerEmail(userId: number): Promise<string | nul
     .limit(1);
   return user[0]?.email ?? null;
 }
+
+// ─── Complete Examiner Onboarding ─────────────────────────────────────────────
+/**
+ * Setzt isSecondExaminer, optional alternativeEmail und onboardingCompleted=1 in einem Schritt.
+ */
+export async function completeExaminerOnboarding(
+  userId: number,
+  isSecondExaminer: boolean,
+  alternativeEmail?: string | null
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select({ id: examinerProfiles.id })
+    .from(examinerProfiles)
+    .where(eq(examinerProfiles.userId, userId))
+    .limit(1);
+  const updateData = {
+    isSecondExaminer: isSecondExaminer ? 1 : 0,
+    alternativeEmail: alternativeEmail ?? null,
+    onboardingCompleted: 1,
+  };
+  if (existing.length > 0) {
+    await db.update(examinerProfiles).set(updateData).where(eq(examinerProfiles.userId, userId));
+  } else {
+    await db.insert(examinerProfiles).values({ userId, ...updateData });
+  }
+}
