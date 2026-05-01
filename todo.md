@@ -262,3 +262,16 @@
 - [x] Frontend: Antragsformular – Toggle „Ich habe ein eigenes Thema“ / „Kein eigenes Thema“
 - [x] Frontend: Wenn kein eigenes Thema → Titel optional, Platzhaltertext angepasst
 - [x] Backend: hasOwnTopic im createThesisRequest speichern und in Übersichten anzeigen
+
+## Phase 18: PAV-Studiengang-Zuordnung, CSV-Export Dekanat
+
+### 18a – PAV-Studiengang-Zuordnung
+- [x] Backend: pav.addProgramme / pav.removeProgramme Prozeduren
+- [x] Backend: pav.getProgrammes – eigene Studiengänge abrufen
+- [x] Backend: pav.getUnassignedStudentsFiltered – nach PAV-Studiengängen filtern
+- [x] Frontend: PAV-Dashboard Tab „Meine Studiengänge“ – Studiengänge zuordnen/entfernen
+- [x] Frontend: PAV-Dashboard Tab „Unzugeteilte Studierende“ – nur Studierende der eigenen Studiengänge
+
+### 18b – CSV-Export Dekanat
+- [x] Backend: dean.exportCsv – alle Anträge als CSV (tRPC-Query)
+- [x] Frontend: Dekanat-Dashboard – „CSV-Export“-Schaltfläche mit Download-Trigger im Header

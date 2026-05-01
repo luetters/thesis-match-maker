@@ -131,15 +131,21 @@ function ProposeDialog({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PavDashboard() {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"unassigned" | "proposals">("unassigned");
+  const [activeTab, setActiveTab] = useState<"unassigned" | "proposals" | "programmes">("unassigned");
   const [proposeFor, setProposeFor] = useState<{ id: number; title: string } | null>(null);
 
-  const { data: unassigned, isLoading: loadingUnassigned } = trpc.pav.getUnassignedStudents.useQuery(undefined, {
+  const { data: unassigned, isLoading: loadingUnassigned } = trpc.pav.getUnassignedStudentsFiltered.useQuery(undefined, {
     enabled: !!user,
   });
   const { data: proposals, isLoading: loadingProposals } = trpc.pav.getProposals.useQuery(undefined, {
     enabled: !!user,
   });
+  const { data: myProgrammes, refetch: refetchProgrammes } = trpc.pav.getProgrammes.useQuery(undefined, {
+    enabled: !!user,
+  });
+  const { data: allProgrammes } = trpc.programmes.list.useQuery();
+  const addProg = trpc.pav.addProgramme.useMutation({ onSuccess: () => refetchProgrammes() });
+  const removeProg = trpc.pav.removeProgramme.useMutation({ onSuccess: () => refetchProgrammes() });
 
   if (loading) {
     return (
@@ -185,7 +191,7 @@ export default function PavDashboard() {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 flex gap-1">
-          {(["unassigned", "proposals"] as const).map((tab) => (
+          {(["unassigned", "proposals", "programmes"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -195,7 +201,8 @@ export default function PavDashboard() {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              {tab === "unassigned" ? "Unzugeteilte Studierende" : (
+              {tab === "unassigned" ? "Unzugeteilte Studierende" :
+               tab === "proposals" ? (
                 <span className="flex items-center gap-1.5">
                   Meine Vorschläge
                   {pendingCount > 0 && (
@@ -204,7 +211,7 @@ export default function PavDashboard() {
                     </span>
                   )}
                 </span>
-              )}
+              ) : "Meine Studiengänge"}
             </button>
           ))}
         </div>
@@ -227,27 +234,36 @@ export default function PavDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(unassigned ?? []).map(({ request, student }) => (
-                  <div key={request.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
+                {(unassigned ?? []).map((row) => {
+                  // Unterstützt sowohl flaches Schema (getUnassignedStudentsByPavProgrammes)
+                  // als auch verschachteltes Schema (getUnassignedStudents)
+                  const isFlat = "studentName" in row;
+                  const id = isFlat ? (row as any).id : (row as any).request.id;
+                  const title = isFlat ? (row as any).title : (row as any).request.title;
+                  const department = isFlat ? (row as any).department : (row as any).request.department;
+                  const degreeType = isFlat ? (row as any).degreeType : (row as any).request.degreeType;
+                  const createdAt = isFlat ? (row as any).createdAt : (row as any).request.createdAt;
+                  const studentName = isFlat ? (row as any).studentName : (row as any).student?.name;
+                  return (
+                  <div key={id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{request.title}</p>
+                      <p className="font-semibold text-gray-900 truncate">{title || "(kein Titel)"}</p>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {student.name ?? "–"} · {request.department} · {request.degreeType === "master" ? "Master" : "Bachelor"}
+                        {studentName ?? "–"} · {department} · {degreeType === "master" ? "Master" : "Bachelor"}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Eingereicht: {formatDate(request.createdAt)}
-                        {!request.examinerId && <span className="ml-2 text-orange-500 font-medium">Kein Erstprüfer:in</span>}
-                        {!request.secondExaminerId && <span className="ml-2 text-blue-500 font-medium">Kein Zweitprüfer:in</span>}
+                        Eingereicht: {formatDate(createdAt)}
                       </p>
                     </div>
                     <button
-                      onClick={() => setProposeFor({ id: request.id, title: request.title })}
+                      onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
                       className="shrink-0 px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors"
                     >
                       Prüfer:in vorschlagen
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -286,6 +302,49 @@ export default function PavDashboard() {
               </div>
             )}
           </>
+        )}
+
+        {/* Tab: Meine Studiengänge */}
+        {activeTab === "programmes" && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">
+              Wählen Sie die Studiengänge aus, für die Sie als PA-Vorsitzende:r zuständig sind.
+              Im Tab "Unzugeteilte Studierende“ werden dann nur Anträge dieser Studiengänge angezeigt.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(allProgrammes ?? []).map((prog) => {
+                const isAssigned = (myProgrammes ?? []).some((p) => p.programmeId === prog.id);
+                return (
+                  <div
+                    key={prog.id}
+                    className={`flex items-center justify-between p-4 rounded-xl border ${
+                      isAssigned ? "border-[#006937] bg-green-50" : "border-gray-200 bg-white"
+                    } shadow-sm`}
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{prog.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{prog.level === "master" ? "Master" : "Bachelor"} · {prog.abbreviation}</p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        isAssigned
+                          ? removeProg.mutate({ programmeId: prog.id })
+                          : addProg.mutate({ programmeId: prog.id })
+                      }
+                      disabled={addProg.isPending || removeProg.isPending}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        isAssigned
+                          ? "bg-red-50 text-red-600 hover:bg-red-100"
+                          : "bg-[#006937] text-white hover:bg-[#005a2f]"
+                      } disabled:opacity-50`}
+                    >
+                      {isAssigned ? "Entfernen" : "Hinzufügen"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 

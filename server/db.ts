@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -1012,30 +1012,8 @@ export async function assignExaminerFromProposal(
   }
 }
 
-/** PAV-Studiengang-Zuordnungen lesen */
-export async function getPavProgrammes(pavUserId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db
-    .select({ programme: programmes })
-    .from(pavProgrammes)
-    .innerJoin(programmes, eq(pavProgrammes.programmeId, programmes.id))
-    .where(eq(pavProgrammes.pavUserId, pavUserId));
-}
 
-/** PAV-Studiengang-Zuordnungen setzen */
-export async function setPavProgrammes(pavUserId: number, programmeIds: number[]) {
-  const db = await getDb();
-  if (!db) return;
-  await db.delete(pavProgrammes).where(eq(pavProgrammes.pavUserId, pavUserId));
-  if (programmeIds.length > 0) {
-    await db.insert(pavProgrammes).values(
-      programmeIds.map((pid) => ({ pavUserId, programmeId: pid }))
-    );
-  }
-}
-
-// ─── Dekanat / SuperAdmin Helpers ─────────────────────────────────────────────
+// --- Dekanat / SuperAdmin Helpers ---
 
 /** Alle Thesis-Requests (für Dekan/Prodekan/SuperAdmin) */
 export async function getAllThesisRequestsForDean() {
@@ -1085,4 +1063,102 @@ export async function resetExaminerOnboarding(userId: number) {
     .update(examinerProfiles)
     .set({ onboardingCompleted: 0 })
     .where(eq(examinerProfiles.userId, userId));
+}
+
+// ─── PAV-Studiengang-Zuordnung ────────────────────────────────────────────────
+
+/** Alle Studiengänge abrufen, denen ein PAV zugeordnet ist */
+export async function getPavProgrammes(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ programmeId: pavProgrammes.programmeId, name: programmes.name, level: programmes.level })
+    .from(pavProgrammes)
+    .innerJoin(programmes, eq(pavProgrammes.programmeId, programmes.id))
+    .where(eq(pavProgrammes.pavUserId, pavUserId));
+  return rows;
+}
+
+/** PAV einem Studiengang zuordnen */
+export async function addPavProgramme(pavUserId: number, programmeId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Duplikat ignorieren
+  await db.execute(
+    `INSERT IGNORE INTO pav_programmes (pav_user_id, programme_id) VALUES (${pavUserId}, ${programmeId})`
+  );
+}
+
+/** PAV-Studiengang-Zuordnung entfernen */
+export async function removePavProgramme(pavUserId: number, programmeId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .delete(pavProgrammes)
+    .where(
+      and(
+        eq(pavProgrammes.pavUserId, pavUserId),
+        eq(pavProgrammes.programmeId, programmeId)
+      )
+    );
+}
+
+/** Unzugeteilte Studierende – gefiltert nach PAV-Studiengängen */
+export async function getUnassignedStudentsByPavProgrammes(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // PAV-Studiengänge ermitteln
+  const pavProgs = await getPavProgrammes(pavUserId);
+  if (pavProgs.length === 0) {
+    // Keine Zuordnung → alle unzugeteilten Studierenden zeigen
+    return getUnassignedStudents();
+  }
+  const progNames = pavProgs.map((p) => p.name);
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      department: thesisRequests.department,
+      degreeType: thesisRequests.degreeType,
+      hasOwnTopic: thesisRequests.hasOwnTopic,
+      createdAt: thesisRequests.createdAt,
+      studentId: thesisRequests.studentId,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        eq(thesisRequests.status, "PENDING"),
+        isNull(thesisRequests.examinerId),
+        inArray(thesisRequests.department, progNames)
+      )
+    )
+    .orderBy(thesisRequests.createdAt);
+  return rows;
+}
+
+/** Alle Anträge für Dekanat-CSV-Export */
+export async function getAllThesisRequestsForCsv() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      department: thesisRequests.department,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      language: thesisRequests.language,
+      hasOwnTopic: thesisRequests.hasOwnTopic,
+      createdAt: thesisRequests.createdAt,
+      deadline: thesisRequests.deadline,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .orderBy(thesisRequests.createdAt);
+  return rows;
 }

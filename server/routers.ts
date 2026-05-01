@@ -52,7 +52,10 @@ import {
   updatePavProposalStatus,
   assignExaminerFromProposal,
   getPavProgrammes,
-  setPavProgrammes,
+  addPavProgramme,
+  removePavProgramme,
+  getUnassignedStudentsByPavProgrammes,
+  getAllThesisRequestsForCsv,
   getAllThesisRequestsForDean,
   getAllUsersWithRoles,
   setUserRole,
@@ -1065,13 +1068,26 @@ export const appRouter = router({
       return getPavProgrammes(ctx.user.id);
     }),
 
-    /** PAV-Studiengang-Zuordnungen setzen */
-    setProgrammes: pavProcedure
-      .input(z.object({ programmeIds: z.array(z.number().int().positive()) }))
+    /** Studiengang hinzufügen */
+    addProgramme: pavProcedure
+      .input(z.object({ programmeId: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
-        await setPavProgrammes(ctx.user.id, input.programmeIds);
+        await addPavProgramme(ctx.user.id, input.programmeId);
         return { success: true };
       }),
+
+    /** Studiengang entfernen */
+    removeProgramme: pavProcedure
+      .input(z.object({ programmeId: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        await removePavProgramme(ctx.user.id, input.programmeId);
+        return { success: true };
+      }),
+
+    /** Unzugeteilte Studierende (gefiltert nach PAV-Studiengängen) */
+    getUnassignedStudentsFiltered: pavProcedure.query(async ({ ctx }) => {
+      return getUnassignedStudentsByPavProgrammes(ctx.user.id);
+    }),
 
     /** Prüfer:in vorschlagen (max. 3 offene Anfragen pro Antrag) */
     proposeExaminer: pavProcedure
@@ -1153,6 +1169,28 @@ export const appRouter = router({
     /** Alle Anträge lesen (Lesezugriff für Dekan/Prodekan) */
     getAllRequests: deanProcedure.query(async () => {
       return getAllThesisRequestsForDean();
+    }),
+
+    /** CSV-Export aller Anträge */
+    exportCsv: deanProcedure.query(async () => {
+      const rows = await getAllThesisRequestsForCsv();
+      const header = [
+        "ID","Titel","Studiengang","Abschluss","Status","Sprache","Eigenes Thema","Erstellt am","Abgabefrist","Studierende:r","E-Mail"
+      ].join(";");
+      const csvRows = rows.map((r) => [
+        r.id,
+        `"${(r.title ?? "").replace(/"/g, '""')}"`,
+        `"${(r.department ?? "").replace(/"/g, '""')}"`,
+        r.degreeType,
+        r.status,
+        r.language,
+        r.hasOwnTopic ? "Ja" : "Nein",
+        r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : "",
+        r.deadline ? new Date(r.deadline).toLocaleDateString("de-DE") : "",
+        `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
+        r.studentEmail,
+      ].join(";"));
+      return { csv: [header, ...csvRows].join("\n") };
     }),
   }),
 

@@ -25,6 +25,22 @@ export default function DeanDashboard() {
   const { data: requests, isLoading } = trpc.dean.getAllRequests.useQuery(undefined, {
     enabled: !!user,
   });
+  const { data: csvData, refetch: fetchCsv, isFetching: csvLoading } = trpc.dean.exportCsv.useQuery(undefined, {
+    enabled: false,
+  });
+
+  function handleCsvDownload() {
+    fetchCsv().then((result) => {
+      if (!result.data?.csv) return;
+      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `abschlussarbeiten_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
 
   if (loading) {
     return (
@@ -81,9 +97,21 @@ export default function DeanDashboard() {
               <p className="text-xs text-gray-500">Lesezugriff auf alle Abschlussarbeiten-Anträge</p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium border border-purple-100">
-            {roleLabel}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCsvDownload}
+              disabled={csvLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#006937] text-white text-xs font-medium hover:bg-[#005a2f] disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {csvLoading ? "Wird erstellt…" : "CSV-Export"}
+            </button>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium border border-purple-100">
+              {roleLabel}
+            </span>
+          </div>
         </div>
       </div>
 
