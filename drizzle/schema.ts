@@ -16,7 +16,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "student", "examiner", "superadmin"]).default("student").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "student", "examiner", "superadmin", "pav", "dean", "vice_dean"]).default("student").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -73,6 +73,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
   rejectionReason: text("rejectionReason"),
   exposeUrl: text("exposeUrl"),
   exposeKey: varchar("exposeKey", { length: 512 }),
+  hasOwnTopic: int("hasOwnTopic").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -192,6 +193,33 @@ export const examinerProgrammes = mysqlTable("examiner_programmes", {
 });
 export type ExaminerProgramme = typeof examinerProgrammes.$inferSelect;
 
-// ─── Student ↔ Programme (one-to-one, immutable after set) ───────────────────
+// ─── Student ←→ Programme (one-to-one, immutable after set) ─────────────────────────────────────────────────────────
 // Stored directly on the student profile (thesisRequests already has studyProgram text field)
 // We add programmeId to users table via ALTER TABLE in migration
+
+// ─── PAV ←→ Programme (many-to-many) ─────────────────────────────────────────────────────────
+export const pavProgrammes = mysqlTable("pav_programmes", {
+  id: int("id").autoincrement().primaryKey(),
+  pavUserId: int("pav_user_id").notNull(),
+  programmeId: int("programme_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PavProgramme = typeof pavProgrammes.$inferSelect;
+
+// ─── PAV Examiner Proposals ────────────────────────────────────────────────────────────────
+export const pavExaminerProposals = mysqlTable("pav_examiner_proposals", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisRequestId: int("thesis_request_id").notNull(),
+  proposedByPavId: int("proposed_by_pav_id").notNull(),
+  examinerId: int("examiner_id").notNull(),
+  examinerRole: mysqlEnum("examiner_role", ["first", "second"]).notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "declined"]).default("pending").notNull(),
+  emailSentAt: timestamp("email_sent_at"),
+  respondedAt: timestamp("responded_at"),
+  declineReason: text("decline_reason"),
+  actionToken: varchar("action_token", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type PavExaminerProposal = typeof pavExaminerProposals.$inferSelect;
+export type InsertPavExaminerProposal = typeof pavExaminerProposals.$inferInsert;

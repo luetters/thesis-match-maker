@@ -213,6 +213,7 @@ export default function ExaminerDirectory() {
   const [search, setSearch] = useState("");
   const [filterProgramme, setFilterProgramme] = useState<number | "">("");
   const [filterAvailable, setFilterAvailable] = useState(false);
+  const [filterRole, setFilterRole] = useState<"all" | "first" | "second">("all");
 
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery(undefined, {
     enabled: !!user,
@@ -253,8 +254,13 @@ export default function ExaminerDirectory() {
 
     const available = ex.profile?.maxSupervisions ?? 0;
     const matchesAvailable = !filterAvailable || available > 0;
+    const isSecond = (ex.profile as { isSecondExaminer?: number } | null)?.isSecondExaminer === 1;
+    const matchesRole =
+      filterRole === "all" ||
+      (filterRole === "first" && !isSecond) ||
+      (filterRole === "second" && isSecond);
 
-    return matchesSearch && matchesProgramme && matchesAvailable;
+    return matchesSearch && matchesProgramme && matchesAvailable && matchesRole;
   });
 
   const bachelorProgrammes = (programmes ?? []).filter((p) => p.level === "bachelor");
@@ -348,6 +354,23 @@ export default function ExaminerDirectory() {
               </optgroup>
             </select>
           )}
+
+          {/* Rollenfilter */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            {(["all", "first", "second"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setFilterRole(r)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  filterRole === r
+                    ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-green-600 text-white shadow"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {r === "all" ? "Alle" : r === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}
+              </button>
+            ))}
+          </div>
 
           {/* Available Filter */}
           <label className="flex items-center gap-2 cursor-pointer select-none">

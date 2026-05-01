@@ -223,3 +223,42 @@
 - [x] Backend: examiner.completeOnboarding tRPC-Prozedur (setzt isSecondExaminer + alternativeEmail + onboardingCompleted in einem Schritt)
 - [x] Frontend: ExaminerDashboard prüft onboardingCompleted statt isSecondExaminer-Null-Heuristik
 - [x] Frontend: Öffentliche Profilseite /examiner/:id um Erst-/Zweitprüfer:in-Badge erweitern (grün für Erstprüfer:in, blau für Zweitprüfer:in)
+
+## Phase 17: PAV-Rolle, Dekanat-Rollen, Rollenfilter, Onboarding-Reset
+
+### 17a – Verzeichnis & Onboarding
+- [x] Frontend: Rollenfilter (Erstprüfer:in / Zweitprüfer:in / Alle) im Prüfer:innen-Verzeichnis
+- [x] Frontend: Admin-Dashboard – Onboarding-Reset-Schaltfläche für Prüfer:innen
+
+### 17b – DB-Schema & Migration
+- [x] DB-Schema: Rollen-Enum erweitern um pav, dean, vice_dean
+- [x] DB-Schema: pav_programmes-Tabelle (PAV ↔ Studiengang many-to-many)
+- [x] DB-Schema: pav_examiner_proposals-Tabelle (PAV-Vorschläge mit Status pending/accepted/declined)
+- [x] DB-Schema: thesisRequests – hasOwnTopic (boolean) Feld hinzufügen
+- [x] DB-Migration: ALTER TABLE + neue Tabellen anlegen
+
+### 17c – Backend PAV
+- [x] Backend: pav.getUnassignedStudents – Liste Studierende ohne Erst- oder Zweitprüfer:in
+- [x] Backend: pav.proposeExaminer – Vorschlag (max. 3 offene Anfragen gleichzeitig) + E-Mail an Prüfer:in
+- [x] Backend: pav.getProposals – eigene Vorschläge mit Status einsehen
+- [x] Backend: pav.respondToProposal – Prüfer:in nimmt an oder lehnt ab (per Token-Link)
+- [x] Backend: E-Mail-Vorlage für PAV-Vorschlag (CTA: Annehmen / Ablehnen)
+
+### 17d – Backend Dekanat & SuperAdmin
+- [x] Backend: dean/vice_dean können alle Thesis-Requests lesen (deanProcedure)
+- [x] Backend: superadmin.setUserRole – SuperAdmin weist alle Rollen zu (inkl. dean/vice_dean/pav)
+- [x] Backend: superadmin.listAllUsers – alle Nutzer:innen mit Rollen einsehen
+
+### 17e – Frontend PAV
+- [x] Frontend: PAV-Dashboard (Route /pav) mit Tab „Unzugeteilte Studierende“
+- [x] Frontend: PAV-Dashboard Tab „Meine Vorschläge“ (Status-Übersicht)
+- [x] Frontend: Vorschlag-Dialog (Prüfer:in auswählen, Erst-/Zweitprüfer:in-Typ, Absenden)
+
+### 17f – Frontend Dekanat
+- [x] Frontend: Dekanat-Dashboard (Route /dean) – Lesezugriff auf alle Anträge mit Statistik
+- [x] Frontend: Admin-Dashboard – erweiterte Rollenliste (pav, dean, vice_dean)
+
+### 17g – Studierenden-Thema-Option
+- [x] Frontend: Antragsformular – Toggle „Ich habe ein eigenes Thema“ / „Kein eigenes Thema“
+- [x] Frontend: Wenn kein eigenes Thema → Titel optional, Platzhaltertext angepasst
+- [x] Backend: hasOwnTopic im createThesisRequest speichern und in Übersichten anzeigen

@@ -136,11 +136,11 @@ describe("thesis.create", () => {
     ).rejects.toThrow();
   });
 
-  it("validiert Mindestlänge des Titels", async () => {
+  it("validiert leeren Titel (Pflichtfeld)", async () => {
     const caller = appRouter.createCaller(makeCtx("student"));
     await expect(
       caller.thesis.create({
-        title: "Kurz",
+        title: "",
         description: "Test Beschreibung für eine Abschlussarbeit",
         department: "Informatik",
         language: "de",

@@ -523,6 +523,14 @@ function UserManagement() {
     onError: (err) => toast.error(err.message),
   });
 
+  const resetOnboarding = trpc.adminExtra.resetExaminerOnboarding.useMutation({
+    onSuccess: () => {
+      toast.success("Onboarding zurückgesetzt – Prüfer:in wird beim nächsten Login erneut befragt.");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const setSecondFlag = trpc.examiner.setSecondExaminerFlag.useMutation({
     onSuccess: () => {
       toast.success("Zweitprüfer:in-Flag aktualisiert!");
@@ -605,6 +613,16 @@ function UserManagement() {
                       {user.role === "examiner" && (
                         <button
                           type="button"
+                          title="Onboarding zurücksetzen (Prüfer:in wird beim nächsten Login erneut befragt)"
+                          onClick={() => resetOnboarding.mutate({ userId: user.id })}
+                          className="px-2 py-1 rounded-lg text-xs font-semibold border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
+                        >
+                          Onboarding ↺
+                        </button>
+                      )}
+                      {user.role === "examiner" && (
+                        <button
+                          type="button"
                           title={(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "Zweitprüfer:in (klicken zum Deaktivieren)" : "Erstprüfer:in (klicken für Zweitprüfer:in)"}
                           onClick={() => setSecondFlag.mutate({ isSecondExaminer: !((profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1), userId: user.id })}
                           className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
@@ -624,6 +642,9 @@ function UserManagement() {
                         <option value="user">Nutzer:in</option>
                         <option value="student">Studierende:r</option>
                         <option value="examiner">Prüfer:in</option>
+                        <option value="pav">PA-Vorsitzende:r</option>
+                        <option value="dean">Dekan:in</option>
+                        <option value="vice_dean">Prodekan:in</option>
                         <option value="admin">Admin</option>
                       </select>
                       <button

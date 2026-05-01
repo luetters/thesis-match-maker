@@ -16,6 +16,9 @@ import ExaminerProfile from "./pages/ExaminerProfile";
 import ColloquiumManagement from "./pages/ColloquiumManagement";
 import ExaminerDirectory from "./pages/ExaminerDirectory";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
+import PavDashboard from "./pages/PavDashboard";
+import PavRespond from "./pages/PavRespond";
+import DeanDashboard from "./pages/DeanDashboard";
 import Maintenance from "./pages/Maintenance";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -56,6 +59,13 @@ function Router() {
       {/* Superadmin-Bereich */}
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/superadmin/:tab" component={SuperadminDashboard} />
+
+      {/* PA-Vorsitz-Dashboard */}
+      <Route path="/pav" component={PavDashboard} />
+      <Route path="/pav/respond" component={PavRespond} />
+
+      {/* Dekanat-Dashboard */}
+      <Route path="/dean" component={DeanDashboard} />
 
       {/* Kolloquiums-Verwaltung */}
       <Route path="/admin/colloquiums" component={ColloquiumManagement} />

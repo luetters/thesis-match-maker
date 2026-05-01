@@ -44,6 +44,19 @@ import {
   updateExaminerSecondExaminerFlag,
   resolveExaminerEmail,
   completeExaminerOnboarding,
+  getUnassignedStudents,
+  countOpenPavProposals,
+  createPavProposal,
+  getPavProposalsByPav,
+  getPavProposalByToken,
+  updatePavProposalStatus,
+  assignExaminerFromProposal,
+  getPavProgrammes,
+  setPavProgrammes,
+  getAllThesisRequestsForDean,
+  getAllUsersWithRoles,
+  setUserRole,
+  resetExaminerOnboarding,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -90,6 +103,21 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "superadmin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins haben Zugriff." });
+  }
+  return next({ ctx });
+});
+
+const pavProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "pav" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Nur PAV haben Zugriff." });
+  }
+  return next({ ctx });
+});
+
+const deanProcedure = protectedProcedure.use(({ ctx, next }) => {
+  const allowed = ["dean", "vice_dean", "superadmin", "admin"];
+  if (!allowed.includes(ctx.user.role)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Nur Dekanat hat Zugriff." });
   }
   return next({ ctx });
 });
@@ -251,13 +279,14 @@ export const appRouter = router({
     create: studentProcedure
       .input(
         z.object({
-          title: z.string().min(5).max(512),
-          description: z.string().min(10),
+          title: z.string().min(1).max(512),
+          description: z.string().min(1),
           department: z.string().min(2),
           abstract: z.string().optional(),
           targetSemester: z.string().optional(),
           language: z.enum(["de", "en"]).default("de"),
           degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
+          hasOwnTopic: z.boolean().default(true),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -270,6 +299,7 @@ export const appRouter = router({
           targetSemester: input.targetSemester,
           language: input.language,
           degreeType: input.degreeType,
+          hasOwnTopic: input.hasOwnTopic ? 1 : 0,
           status: "PENDING",
         });
         const insertId = (result as { insertId: number }).insertId;
@@ -937,6 +967,32 @@ export const appRouter = router({
         }
         return { success: true };
       }),
+
+    /** Alle Nutzer:innen mit Rollen (SuperAdmin) */
+    listAllUsers: superadminProcedure.query(async () => {
+      return getAllUsersWithRoles();
+    }),
+
+    /** Rolle eines Nutzers setzen (SuperAdmin) */
+    setUserRole: superadminProcedure
+      .input(
+        z.object({
+          userId: z.number().int().positive(),
+          role: z.enum(["student", "examiner", "pav", "admin", "dean", "vice_dean", "superadmin"]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await setUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+
+    /** Onboarding-Reset für Prüfer:in (SuperAdmin) */
+    resetExaminerOnboarding: superadminProcedure
+      .input(z.object({ userId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await resetExaminerOnboarding(input.userId);
+        return { success: true };
+      }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({
@@ -988,6 +1044,124 @@ export const appRouter = router({
         if (ctx.user.role !== 'examiner' && ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin')
           throw new TRPCError({ code: 'FORBIDDEN' });
         await setExaminerProgrammes(ctx.user.id, input.programmeIds);
+        return { success: true };
+      }),
+  }),
+
+  // ─── PAV Router ────────────────────────────────────────────────────────────
+  pav: router({
+    /** Unzugeteilte Studierende (kein Erst-/Zweitprüfer:in) */
+    getUnassignedStudents: pavProcedure.query(async () => {
+      return getUnassignedStudents();
+    }),
+
+    /** Eigene Vorschläge des PAV */
+    getProposals: pavProcedure.query(async ({ ctx }) => {
+      return getPavProposalsByPav(ctx.user.id);
+    }),
+
+    /** PAV-Studiengang-Zuordnungen lesen */
+    getProgrammes: pavProcedure.query(async ({ ctx }) => {
+      return getPavProgrammes(ctx.user.id);
+    }),
+
+    /** PAV-Studiengang-Zuordnungen setzen */
+    setProgrammes: pavProcedure
+      .input(z.object({ programmeIds: z.array(z.number().int().positive()) }))
+      .mutation(async ({ input, ctx }) => {
+        await setPavProgrammes(ctx.user.id, input.programmeIds);
+        return { success: true };
+      }),
+
+    /** Prüfer:in vorschlagen (max. 3 offene Anfragen pro Antrag) */
+    proposeExaminer: pavProcedure
+      .input(
+        z.object({
+          thesisRequestId: z.number().int().positive(),
+          examinerId: z.number().int().positive(),
+          examinerRole: z.enum(["first", "second"]),
+          origin: z.string().url(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // Maximal 3 offene Anfragen gleichzeitig
+        const openCount = await countOpenPavProposals(input.thesisRequestId);
+        if (openCount >= 3) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Es sind bereits 3 offene Anfragen für diesen Antrag vorhanden. Bitte warten Sie auf eine Antwort.",
+          });
+        }
+        const crypto = await import("crypto");
+        const token = crypto.randomBytes(32).toString("hex");
+        await createPavProposal({
+          thesisRequestId: input.thesisRequestId,
+          proposedByPavId: ctx.user.id,
+          examinerId: input.examinerId,
+          examinerRole: input.examinerRole,
+          actionToken: token,
+          emailSentAt: new Date(),
+        });
+        // E-Mail an Prüfer:in
+        const examinerEmail = await resolveExaminerEmail(input.examinerId);
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (examinerEmail && thesis) {
+          const { sendEmail } = await import("./emailHelper");
+          const acceptUrl = `${input.origin}/pav/respond?token=${token}&action=accept`;
+          const declineUrl = `${input.origin}/pav/respond?token=${token}&action=decline`;
+          await sendEmail({
+            to: examinerEmail,
+            subject: `HTW Berlin – Anfrage als ${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}: ${thesis.title}`,
+            html: `<p>Sehr geehrte Damen und Herren,</p>
+<p>der Prüfungsausschuss hat Sie als <strong>${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}</strong> für folgende Abschlussarbeit vorgeschlagen:</p>
+<p><strong>${thesis.title}</strong></p>
+<p>Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:</p>
+<p><a href="${acceptUrl}">Anfrage annehmen</a> &nbsp;|&nbsp; <a href="${declineUrl}">Anfrage ablehnen</a></p>
+<p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsausschuss</p>`,
+          });
+        }
+        return { success: true };
+      }),
+
+    /** Prüfer:in antwortet auf Vorschlag (per Token-Link) */
+    respondToProposal: publicProcedure
+      .input(
+        z.object({
+          token: z.string().min(1),
+          action: z.enum(["accept", "decline"]),
+          declineReason: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const proposal = await getPavProposalByToken(input.token);
+        if (!proposal) throw new TRPCError({ code: "NOT_FOUND", message: "Ungültiger oder abgelaufener Link." });
+        if (proposal.status !== "pending") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Diese Anfrage wurde bereits beantwortet." });
+        }
+        if (input.action === "accept") {
+          await updatePavProposalStatus(proposal.id, "accepted");
+          await assignExaminerFromProposal(proposal.thesisRequestId, proposal.examinerId, proposal.examinerRole);
+        } else {
+          await updatePavProposalStatus(proposal.id, "declined", input.declineReason);
+        }
+        return { success: true, action: input.action };
+      }),
+  }),
+
+  // ─── Dekanat Router ────────────────────────────────────────────────────────
+  dean: router({
+    /** Alle Anträge lesen (Lesezugriff für Dekan/Prodekan) */
+    getAllRequests: deanProcedure.query(async () => {
+      return getAllThesisRequestsForDean();
+    }),
+  }),
+
+  // ─── Admin-Erweiterung: Onboarding-Reset ──────────────────────────────────
+  adminExtra: router({
+    resetExaminerOnboarding: adminProcedure
+      .input(z.object({ userId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await resetExaminerOnboarding(input.userId);
         return { success: true };
       }),
   }),

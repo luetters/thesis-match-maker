@@ -36,6 +36,8 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
 
+  const [hasOwnTopic, setHasOwnTopic] = useState(true);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -68,22 +70,44 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(form);
+    createMutation.mutate({ ...form, hasOwnTopic });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Eigenes Thema Toggle */}
+      <div className="flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer select-none"
+        style={{ borderColor: hasOwnTopic ? "#006937" : "#e5e7eb", backgroundColor: hasOwnTopic ? "#f0fdf4" : "#f9fafb" }}
+        onClick={() => setHasOwnTopic(!hasOwnTopic)}
+      >
+        <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+          hasOwnTopic ? "border-[#006937] bg-[#006937]" : "border-gray-300 bg-white"
+        }`}>
+          {hasOwnTopic && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+        </div>
+        <div>
+          <p className="font-semibold text-sm" style={{ color: hasOwnTopic ? "#006937" : "#6b7280" }}>
+            {hasOwnTopic ? "Ich habe ein eigenes Thema" : "Ich habe kein eigenes Thema"}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {hasOwnTopic
+              ? "Sie geben ein konkretes Thema vor. Bitte füllen Sie Titel und Beschreibung aus."
+              : "Sie suchen eine:n Prüfer:in, der/die ein Thema vorschlägt. Titel und Beschreibung sind optional."}
+          </p>
+        </div>
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-5">
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Titel der Abschlussarbeit <span className="text-red-500">*</span>
+            Titel der Abschlussarbeit {hasOwnTopic && <span className="text-red-500">*</span>}
           </label>
           <input
             type="text"
-            required
+            required={hasOwnTopic}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="z.B. Einsatz von LLMs in der Kundenbetreuung"
+            placeholder={hasOwnTopic ? "z.B. Einsatz von LLMs in der Kundenbetreuung" : "(optional – wird vom Prüfer/der Prüferin vorgeschlagen)"}
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
             style={{ "--tw-ring-color": "#76B900" } as React.CSSProperties}
           />

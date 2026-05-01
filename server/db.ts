@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -6,9 +6,14 @@ import {
   InsertAuditLogEntry,
   InsertExaminerProfile,
   InsertNotification,
+  InsertPavExaminerProposal,
   InsertThesisRequest,
   InsertUser,
   notifications,
+  pavExaminerProposals,
+  pavProgrammes,
+  programmes,
+  examinerProgrammes,
   thesisRequests,
   users,
 } from "../drizzle/schema";
@@ -751,10 +756,7 @@ export async function markPasswordResetTokenUsed(token: string): Promise<void> {
     .where(eq(passwordResetTokens.token, token));
 }
 
-
-// ─── Programmes ───────────────────────────────────────────────────────────────
-import { programmes, examinerProgrammes } from "../drizzle/schema";
-
+// ─── Programmes ────────────────────────────────────────────────────────────────
 export async function getAllProgrammes() {
   const db = await getDb();
   if (!db) return [];
@@ -894,4 +896,193 @@ export async function completeExaminerOnboarding(
   } else {
     await db.insert(examinerProfiles).values({ userId, ...updateData });
   }
+}
+
+// ─── PAV Helpers ──────────────────────────────────────────────────────────────
+
+/** Gibt alle Studierende zurück, die noch keinen Erst- oder Zweitprüfer:in haben */
+export async function getUnassignedStudents() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      request: thesisRequests,
+      student: users,
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        or(isNull(thesisRequests.examinerId), eq(thesisRequests.examinerId, 0)),
+        ne(thesisRequests.status, "REJECTED")
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+/** Zählt offene (pending) PAV-Vorschläge für einen bestimmten Antrag */
+export async function countOpenPavProposals(thesisRequestId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(pavExaminerProposals)
+    .where(
+      and(
+        eq(pavExaminerProposals.thesisRequestId, thesisRequestId),
+        eq(pavExaminerProposals.status, "pending")
+      )
+    );
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Erstellt einen neuen PAV-Vorschlag */
+export async function createPavProposal(data: InsertPavExaminerProposal) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(pavExaminerProposals).values(data);
+  return result;
+}
+
+/** Gibt alle Vorschläge eines PAV zurück (mit Antrag- und Prüfer-Infos) */
+export async function getPavProposalsByPav(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const examinerAlias = users;
+  const rows = await db
+    .select({
+      proposal: pavExaminerProposals,
+      request: thesisRequests,
+    })
+    .from(pavExaminerProposals)
+    .innerJoin(thesisRequests, eq(pavExaminerProposals.thesisRequestId, thesisRequests.id))
+    .where(eq(pavExaminerProposals.proposedByPavId, pavUserId))
+    .orderBy(desc(pavExaminerProposals.createdAt));
+  return rows;
+}
+
+/** Gibt einen Vorschlag anhand des Action-Tokens zurück */
+export async function getPavProposalByToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(pavExaminerProposals)
+    .where(eq(pavExaminerProposals.actionToken, token))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Aktualisiert den Status eines PAV-Vorschlags */
+export async function updatePavProposalStatus(
+  id: number,
+  status: "accepted" | "declined",
+  declineReason?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(pavExaminerProposals)
+    .set({
+      status,
+      respondedAt: new Date(),
+      declineReason: declineReason ?? null,
+    })
+    .where(eq(pavExaminerProposals.id, id));
+}
+
+/** Weist Prüfer:in einem Antrag zu (nach Annahme eines PAV-Vorschlags) */
+export async function assignExaminerFromProposal(
+  thesisRequestId: number,
+  examinerId: number,
+  role: "first" | "second"
+) {
+  const db = await getDb();
+  if (!db) return;
+  if (role === "first") {
+    await db
+      .update(thesisRequests)
+      .set({ examinerId, status: "MATCHED" })
+      .where(eq(thesisRequests.id, thesisRequestId));
+  } else {
+    await db
+      .update(thesisRequests)
+      .set({ secondExaminerId: examinerId })
+      .where(eq(thesisRequests.id, thesisRequestId));
+  }
+}
+
+/** PAV-Studiengang-Zuordnungen lesen */
+export async function getPavProgrammes(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({ programme: programmes })
+    .from(pavProgrammes)
+    .innerJoin(programmes, eq(pavProgrammes.programmeId, programmes.id))
+    .where(eq(pavProgrammes.pavUserId, pavUserId));
+}
+
+/** PAV-Studiengang-Zuordnungen setzen */
+export async function setPavProgrammes(pavUserId: number, programmeIds: number[]) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(pavProgrammes).where(eq(pavProgrammes.pavUserId, pavUserId));
+  if (programmeIds.length > 0) {
+    await db.insert(pavProgrammes).values(
+      programmeIds.map((pid) => ({ pavUserId, programmeId: pid }))
+    );
+  }
+}
+
+// ─── Dekanat / SuperAdmin Helpers ─────────────────────────────────────────────
+
+/** Alle Thesis-Requests (für Dekan/Prodekan/SuperAdmin) */
+export async function getAllThesisRequestsForDean() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      request: thesisRequests,
+      student: users,
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+/** Alle Nutzer:innen mit Rollen (für SuperAdmin) */
+export async function getAllUsersWithRoles() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+}
+
+/** Rolle eines Nutzers setzen (SuperAdmin) */
+export async function setUserRole(
+  userId: number,
+  role: "student" | "examiner" | "pav" | "admin" | "dean" | "vice_dean" | "superadmin"
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ role } as any).where(eq(users.id, userId));
+}
+
+/** Onboarding-Reset für Prüfer:in (Admin) */
+export async function resetExaminerOnboarding(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(examinerProfiles)
+    .set({ onboardingCompleted: 0 })
+    .where(eq(examinerProfiles.userId, userId));
 }
