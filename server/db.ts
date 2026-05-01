@@ -1160,7 +1160,19 @@ export async function getAllThesisRequestsForCsv() {
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
     .orderBy(thesisRequests.createdAt);
-  return rows;
+
+  // Statushistorie-Daten aus auditLog anreichern
+  const enriched = await Promise.all(rows.map(async (r) => {
+    const logs = await db
+      .select({ createdAt: auditLog.createdAt, action: auditLog.action })
+      .from(auditLog)
+      .where(and(eq(auditLog.thesisRequestId, r.id), sql`${auditLog.action} LIKE 'STATUS_%'`))
+      .orderBy(auditLog.createdAt);
+    const lastStatusChange = logs.length > 0 ? logs[logs.length - 1].createdAt : null;
+    const statusChangeCount = logs.length;
+    return { ...r, lastStatusChange, statusChangeCount };
+  }));
+  return enriched;
 }
 
 // --- Superadmin: PAV-Studiengang-Verwaltung ---

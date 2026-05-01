@@ -128,11 +128,115 @@ function ProposeDialog({
   );
 }
 
+// ─── DirectAssignDialog ──────────────────────────────────────────────────────
+function DirectAssignDialog({
+  thesisRequestId,
+  thesisTitle,
+  onClose,
+}: {
+  thesisRequestId: number;
+  thesisTitle: string;
+  onClose: () => void;
+}) {
+  const utils = trpc.useUtils();
+  const [examinerId, setExaminerId] = useState<number | "">("");
+  const [examinerRole, setExaminerRole] = useState<ExaminerRole>("first");
+
+  const { data: examiners } = trpc.examiner.list.useQuery();
+  const directAssign = trpc.pav.directAssignExaminer.useMutation({
+    onSuccess: () => {
+      toast.success("Prüfer:in wurde direkt zugewiesen.");
+      utils.pav.getUnassignedStudents.invalidate();
+      utils.pav.getProposals.invalidate();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-1">Prüfer:in direkt zuweisen</h3>
+        <p className="text-sm text-gray-500 mb-1 line-clamp-2">{thesisTitle}</p>
+        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+          Die Zuweisung erfolgt sofort und verbindlich – ohne Rückfrage an die Prüfer:in.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
+            <div className="flex gap-2">
+              {(["first", "second"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setExaminerRole(r)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
+                    examinerRole === r
+                      ? r === "first" ? "bg-green-600 text-white border-green-600" : "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  {r === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prüfer:in auswählen</label>
+            <select
+              value={examinerId}
+              onChange={(e) => setExaminerId(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+            >
+              <option value="">– Bitte auswählen –</option>
+              {(examiners ?? [])
+                .filter((ex) => {
+                  if (examinerRole === "first") return (ex.profile as { isSecondExaminer?: number } | null)?.isSecondExaminer !== 1;
+                  return (ex.profile as { isSecondExaminer?: number } | null)?.isSecondExaminer === 1;
+                })
+                .map((ex) => (
+                  <option key={ex.user?.id} value={ex.user?.id ?? 0}>
+                    {ex.profile?.title ? `${ex.profile.title} ` : ""}{ex.user?.name ?? "–"}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+            disabled={!examinerId || directAssign.isPending}
+            onClick={() => {
+              if (!examinerId) return;
+              directAssign.mutate({
+                thesisRequestId,
+                examinerId: Number(examinerId),
+                examinerRole,
+              });
+            }}
+            className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
+          >
+            {directAssign.isPending ? "Wird zugewiesen…" : "Direkt zuweisen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PavDashboard() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<"unassigned" | "proposals" | "programmes">("unassigned");
   const [proposeFor, setProposeFor] = useState<{ id: number; title: string } | null>(null);
+  const [directAssignFor, setDirectAssignFor] = useState<{ id: number; title: string } | null>(null);
 
   const { data: unassigned, isLoading: loadingUnassigned } = trpc.pav.getUnassignedStudentsFiltered.useQuery(undefined, {
     enabled: !!user,
@@ -255,12 +359,20 @@ export default function PavDashboard() {
                         Eingereicht: {formatDate(createdAt)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
-                      className="shrink-0 px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors"
-                    >
-                      Prüfer:in vorschlagen
-                    </button>
+                    <div className="shrink-0 flex flex-col gap-2">
+                      <button
+                        onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
+                        className="px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors"
+                      >
+                        Vorschlag unterbreiten
+                      </button>
+                      <button
+                        onClick={() => setDirectAssignFor({ id, title: title || "(kein Titel)" })}
+                        className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
+                      >
+                        Direkt zuweisen
+                      </button>
+                    </div>
                   </div>
                   );
                 })}
@@ -353,6 +465,13 @@ export default function PavDashboard() {
           thesisRequestId={proposeFor.id}
           thesisTitle={proposeFor.title}
           onClose={() => setProposeFor(null)}
+        />
+      )}
+      {directAssignFor && (
+        <DirectAssignDialog
+          thesisRequestId={directAssignFor.id}
+          thesisTitle={directAssignFor.title}
+          onClose={() => setDirectAssignFor(null)}
         />
       )}
     </div>

@@ -1214,6 +1214,52 @@ export const appRouter = router({
         }
         return { success: true, action: input.action };
       }),
+
+    /** PAV weist Prüfer:in direkt zu (ohne Rückfrage-E-Mail) */
+    directAssignExaminer: pavProcedure
+      .input(
+        z.object({
+          thesisRequestId: z.number().int().positive(),
+          examinerId: z.number().int().positive(),
+          examinerRole: z.enum(["first", "second"]),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Antrag nicht gefunden." });
+        if (input.examinerRole === "first" && thesis.examinerId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Dieser Antrag hat bereits eine Erstprüfer:in." });
+        }
+        if (input.examinerRole === "second" && thesis.secondExaminerId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Dieser Antrag hat bereits eine Zweitprüfer:in." });
+        }
+        await assignExaminerFromProposal(input.thesisRequestId, input.examinerId, input.examinerRole);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "EXAMINER_ASSIGNED",
+          metadata: { examinerId: input.examinerId, slot: input.examinerRole, assignedByPav: true, directAssignment: true },
+        });
+        // Benachrichtigungs-E-Mail an Prüfer:in
+        const examinerEmail = await resolveExaminerEmail(input.examinerId);
+        if (examinerEmail) {
+          await sendEmail({
+            to: examinerEmail,
+            subject: `HTW Berlin – Sie wurden als ${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"} zugewiesen: ${thesis.title ?? "Abschlussarbeit"}`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+<div style="background:#006937;padding:24px;text-align:center"><h1 style="color:white;margin:0;font-size:20px">HTW Berlin – Thesis Match Maker</h1></div>
+<div style="padding:32px;background:#f9f9f9">
+<p>Sehr geehrte Damen und Herren,</p>
+<p>der Prüfungsausschuss hat Sie als <strong>${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}</strong> für folgende Abschlussarbeit direkt zugewiesen:</p>
+<p><strong>${thesis.title ?? "Abschlussarbeit"}</strong></p>
+<p>Diese Zuweisung ist verbindlich und erfordert keine weitere Bestätigung Ihrerseits. Bei Rückfragen wenden Sie sich bitte an den Prüfungsausschuss.</p>
+<p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsausschuss</p>
+</div></div>`,
+          });
+        }
+        return { success: true };
+      }),
   }),
 
   // ─── Dekanat Router ────────────────────────────────────────────────────────
@@ -1248,7 +1294,7 @@ export const appRouter = router({
           return matchesStatus && matchesSearch;
         });
         const header = [
-          "ID","Titel","Studiengang","Abschluss","Status","Sprache","Eigenes Thema","Erstellt am","Abgabefrist","Studierende:r","E-Mail"
+          "ID","Titel","Studiengang","Abschluss","Status","Sprache","Eigenes Thema","Erstellt am","Abgabefrist","Letzte Status\u00e4nderung","Anzahl Status\u00e4nderungen","Studierende:r","E-Mail"
         ].join(";");
         const csvRows = filtered.map((r) => [
           r.id,
@@ -1260,6 +1306,8 @@ export const appRouter = router({
           r.hasOwnTopic ? "Ja" : "Nein",
           r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : "",
           r.deadline ? new Date(r.deadline).toLocaleDateString("de-DE") : "",
+          (r as any).lastStatusChange ? new Date((r as any).lastStatusChange).toLocaleDateString("de-DE") : "",
+          (r as any).statusChangeCount ?? 0,
           `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
           r.studentEmail,
         ].join(";"));

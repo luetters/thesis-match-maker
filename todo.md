@@ -301,3 +301,25 @@
 - [x] Frontend: DeanDashboard – CSV-Export übergibt aktuelle Filter (Status + Suchbegriff)
 - [x] Frontend: AdminDashboard – RoleChangeConfirmDialog-Komponente mit Warntext
 - [x] Frontend: AdminDashboard – Select löst Dialog aus bei kritischen Rollenwechseln (examiner, pav, dean, vice_dean, admin)
+
+## Phase 21: PAV-Direktzuweisung & erweiterter CSV-Export
+
+- [x] Backend: pav.directAssignExaminer – Prüfer:in direkt zuweisen (ohne Rückfrage-E-Mail)
+- [x] Frontend: PAV-Dashboard – „Direkt zuweisen“-Button neben „Vorschlag unterbreiten“
+- [x] Backend: dean.exportCsv – Spalten „Letzte Statusänderung“ und „Anzahl Statuswechsel“
+- [x] Frontend: DeanDashboard – CSV-Export-Button bleibt unverändert (Backend liefert neue Spalten automatisch)
+
+## Design-Fix & Kontaktdaten
+- [x] Home.tsx: Kontaktdaten aktualisieren (thesis@htw-berlin.com, Treskowallee 8 10318 Berlin, www.htw-berlin.com)
+- [x] Home.tsx: Farben im unteren Bereich (CTA, Footer) an oberen Bereich angleichen (HTW-Grün #006937, #76B900)
+- [x] Systemkonfiguration: contactEmail auf thesis@htw-berlin.com setzen
+
+## Icons & Design-Fix
+- [x] Icons hochladen (IconFemaleFemale, IconMaleMale, Iconallgender) als webdev-static-assets
+- [x] Favicon: IconFemaleFemale als favicon.ico setzen
+- [x] Landing-Page: Icons an passenden Stellen einbinden (Hero, Karten, Navigation)
+- [x] Home.tsx: Kontaktdaten aktualisieren (thesis@htw-berlin.com, Treskowallee 8 10318 Berlin, www.htw-berlin.com)
+- [x] Home.tsx: Farben im unteren Bereich (Technischer Rahmen, Footer) an oberen Bereich angleichen
+
+## Seed-Daten
+- [x] seed-examiners.mjs: 65 Professor:innen (Erstprüfer:innen) und 300 Lehrbeauftragte (Zweitprüfer:innen) angelegt (Passwort: HTWBerlin2024!)

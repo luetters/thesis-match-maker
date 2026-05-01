@@ -262,15 +262,20 @@ function RoleCard({
   title,
   description,
   features,
+  icon,
   onClick,
 }: {
   title: string;
   description: string;
   features: string[];
+  icon?: string;
   onClick: () => void;
 }) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover flex flex-col">
+      {icon && (
+        <img src={icon} alt={title} className="w-16 h-16 object-contain mb-4 rounded-xl" />
+      )}
       <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-500 text-sm mb-4">{description}</p>
       <ul className="space-y-2 mb-6 flex-1">
@@ -321,9 +326,9 @@ export default function Home() {
             className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
           >
             <img
-              src="/manus-storage/thesis-logo-512_d468512d.png"
+              src="/manus-storage/IconFemaleFemale_210f65cb.webp"
               alt="Thesis Match Maker Logo"
-              className="w-8 h-8 object-contain"
+              className="w-9 h-9 object-contain rounded-lg"
             />
             <div className="text-left">
               <div className="text-sm font-bold leading-tight text-gray-900">Thesis Match Maker</div>
@@ -422,8 +427,8 @@ export default function Home() {
               <div className="flex gap-8 mt-12">
                 {[
                   { value: "480+", label: "Arbeiten / Jahr" },
-                  { value: "65", label: "Prüfer:innen" },
-                  { value: "8", label: "Studiengänge" },
+                  { value: "365+", label: "Prüfer:innen" },
+                  { value: "7 + 12", label: "Bachelor / Master" },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl font-extrabold" style={{ color: "#006937" }}>{stat.value}</div>
@@ -507,18 +512,21 @@ export default function Home() {
               title="Studierende"
               description="Thema einreichen, Prüfer:innen finden, Arbeit hochladen und Kolloquium planen."
               features={["Prüfer:innen-Suche", "Matching-Workflow", "Abgabeportal"]}
+              icon="/manus-storage/IconFemaleFemale_210f65cb.webp"
               onClick={() => handleRoleNavigate("/student")}
             />
             <RoleCard
               title="Prüfer:innen"
               description="Verfügbarkeit pflegen, Anfragen beantworten, Betreute verwalten."
               features={["Anfragen verwalten", "Kommissionen bilden", "Gutachten hochladen"]}
+              icon="/manus-storage/IconMaleMale_76ef2e5e.webp"
               onClick={() => handleRoleNavigate("/examiner")}
             />
             <RoleCard
               title="Verwaltung"
               description="Zulassungen erteilen, Akten prüfen, Räume buchen und Dokumente versenden."
               features={["Zulassungs-Workflow", "Akte X", "Audit-Log"]}
+              icon="/manus-storage/Iconallgender_aaebc30a.webp"
               onClick={() => handleRoleNavigate("/admin")}
             />
           </div>
@@ -576,17 +584,17 @@ export default function Home() {
       </section>
 
       {/* ─── Technischer Rahmen ──────────────────────────────────────────── */}
-      <section className="py-20" style={{ backgroundColor: "#0e2a06" }}>
+      <section className="py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#FF5F00" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
               Technischer Rahmen
             </p>
-            <h2 className="text-3xl font-bold text-white">Selbstgehostet. Souverän. Sicher.</h2>
-            <p className="text-white/60 mt-3 max-w-xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900">Selbstgehostet. Souverän. Sicher.</h2>
+            <p className="text-gray-600 mt-3 max-w-xl mx-auto">
               Die Plattform läuft vollständig unter{" "}
-              <code className="text-white/80 bg-white/10 px-1.5 py-0.5 rounded text-sm">
-                thesis.f3.htw-berlin.de
+              <code className="text-gray-800 bg-gray-200 px-1.5 py-0.5 rounded text-sm">
+                thesis@htw-berlin.com
               </code>{" "}
               – ohne externe Authentifizierungs-Dienste oder US-Cloud-Anbieter.
             </p>
@@ -596,7 +604,7 @@ export default function Home() {
               {
                 title: "On-Premise Hosting",
                 desc: "Vollständige Datenhoheit, keine externen Zwischenebenen.",
-                icon: "🏛️",
+                icon: "🏗️",
               },
               {
                 title: "SMTP-Authentifizierung",
@@ -614,14 +622,10 @@ export default function Home() {
                 icon: "🔑",
               },
             ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-2xl p-6 border border-white/10"
-                style={{ backgroundColor: "#1a3a08" }}
-              >
+              <div key={item.title} className="rounded-2xl p-6 bg-gray-50 border border-gray-100">
                 <div className="text-2xl mb-3">{item.icon}</div>
-                <h3 className="font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-sm text-white/60 leading-relaxed">{item.desc}</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -629,19 +633,19 @@ export default function Home() {
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────────────────── */}
-      <footer style={{ backgroundColor: "#0e2a06" }}>
+      <footer style={{ backgroundColor: "#006937" }}>
         <div className="container py-12">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src="/manus-storage/thesis-logo-512_d468512d.png"
+                  src="/manus-storage/IconFemaleFemale_210f65cb.webp"
                   alt="Thesis Match Maker Logo"
-                  className="w-8 h-8 object-contain"
+                  className="w-9 h-9 object-contain rounded-lg"
                 />
                 <div>
                   <div className="text-sm font-bold text-white">Thesis Match</div>
-                  <div className="text-xs text-white/40">thesis.f3.htw-berlin.de</div>
+                  <div className="text-xs text-white/40">thesis@htw-berlin.com</div>
                 </div>
               </div>
               <p className="text-sm text-white/50 leading-relaxed">
@@ -682,19 +686,23 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-semibold text-white mb-4">Kontakt</h4>
               <ul className="space-y-2 text-sm text-white/50">
-                <li>pruefungsamt-f3@htw-berlin.de</li>
-                <li>Wilhelminenhofstraße 75A</li>
-                <li>12459 Berlin</li>
                 <li>
-                  <a href="https://www.htw-berlin.de" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                    www.htw-berlin.de
+                  <a href="mailto:thesis@htw-berlin.com" className="hover:text-white transition-colors">
+                    thesis@htw-berlin.com
+                  </a>
+                </li>
+                <li>Treskowallee 8</li>
+                <li>10318 Berlin</li>
+                <li>
+                  <a href="https://www.htw-berlin.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                    www.htw-berlin.com
                   </a>
                 </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/10 pt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-xs text-white/40">© 2026 HTW Berlin · Fachbereich 3</p>
+            <p className="text-xs text-white/40">© 2026 HTW Berlin</p>
             <div className="flex gap-6">
               {["Impressum", "Datenschutz", "Barrierefreiheit"].map((l) => (
                 <button key={l} className="text-xs text-white/40 hover:text-white/70 transition-colors">
