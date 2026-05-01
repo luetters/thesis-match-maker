@@ -689,3 +689,38 @@ export async function upsertSystemSetting(key: string, value: string, updatedByI
   }
   return getSystemSetting(key);
 }
+
+// ─── Password Reset Tokens ────────────────────────────────────────────────────
+import { passwordResetTokens, InsertPasswordResetToken } from "../drizzle/schema";
+
+export async function createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(passwordResetTokens).values({
+    token,
+    userId,
+    expiresAt,
+    used: 0,
+  } as InsertPasswordResetToken);
+}
+
+export async function getPasswordResetToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.token, token))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function markPasswordResetTokenUsed(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(passwordResetTokens)
+    .set({ used: 1 })
+    .where(eq(passwordResetTokens.token, token));
+}
+

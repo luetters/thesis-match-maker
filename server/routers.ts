@@ -33,6 +33,9 @@ import {
   setUserPasswordHash,
   getSystemSettings,
   upsertSystemSetting,
+  createPasswordResetToken,
+  getPasswordResetToken,
+  markPasswordResetTokenUsed,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -88,6 +91,17 @@ const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const appRouter = router({
   system: systemRouter,
 
+  // Öffentliche Systemstatus-Prozedur (kein Auth erforderlich)
+  maintenanceStatus: publicProcedure.query(async () => {
+    const settings = await getSystemSettings();
+    const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+    return {
+      active: map["maintenanceMode"] === "true",
+      contactEmail: map["contactEmail"] ?? "support@htw-berlin.de",
+      systemName: map["systemName"] ?? "Thesis Match Maker",
+    };
+  }),
+
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -112,6 +126,56 @@ export const appRouter = router({
         }
         const newHash = await bcrypt.hash(input.newPassword, 12);
         await setUserPasswordHash(ctx.user.id, newHash);
+        return { success: true };
+      }),
+    requestPasswordReset: publicProcedure
+      .input(z.object({ email: z.string().email(), origin: z.string().url() }))
+      .mutation(async ({ input }) => {
+        // Kein Fehler zurückgeben wenn E-Mail nicht existiert (Security: kein User-Enumeration)
+        const user = await getUserByEmail(input.email);
+        if (!user || !user.passwordHash) return { success: true };
+        // Token generieren (kryptografisch sicher)
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 Stunde
+        await createPasswordResetToken(user.id, token, expiresAt);
+        const resetUrl = `${input.origin}/reset-password?token=${token}`;
+        await sendEmail({
+          to: input.email,
+          subject: "Passwort zurücksetzen – HTW Berlin Thesis Match Maker",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+              <div style="background: #006937; padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin – Thesis Match Maker</h1>
+              </div>
+              <div style="padding: 32px; background: #f9f9f9;">
+                <h2 style="color: #1a1a1a; margin-top: 0;">Passwort zurücksetzen</h2>
+                <p style="color: #444;">Sie haben eine Anfrage zum Zurücksetzen Ihres Passworts gestellt. Klicken Sie auf den folgenden Button, um ein neues Passwort zu vergeben:</p>
+                <div style="text-align: center; margin: 32px 0;">
+                  <a href="${resetUrl}" style="background: #006937; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort zurücksetzen</a>
+                </div>
+                <p style="color: #888; font-size: 13px;">Dieser Link ist 1 Stunde gültig. Falls Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                <p style="color: #aaa; font-size: 12px;">© ${new Date().getFullYear()} HTW Berlin – Hochschule für Technik und Wirtschaft</p>
+              </div>
+            </div>
+          `,
+        });
+        return { success: true };
+      }),
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
+      }))
+      .mutation(async ({ input }) => {
+        const record = await getPasswordResetToken(input.token);
+        if (!record) throw new TRPCError({ code: "BAD_REQUEST", message: "Ungültiger oder abgelaufener Reset-Link." });
+        if (record.used) throw new TRPCError({ code: "BAD_REQUEST", message: "Dieser Reset-Link wurde bereits verwendet." });
+        if (new Date() > record.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Der Reset-Link ist abgelaufen. Bitte fordern Sie einen neuen an." });
+        const newHash = await bcrypt.hash(input.newPassword, 12);
+        await setUserPasswordHash(record.userId, newHash);
+        await markPasswordResetTokenUsed(input.token);
         return { success: true };
       }),
     loginWithPassword: publicProcedure

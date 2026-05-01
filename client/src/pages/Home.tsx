@@ -35,7 +35,12 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
   const [, navigate] = useLocation();
+  const requestReset = trpc.auth.requestPasswordReset.useMutation({
+    onSuccess: () => setResetSent(true),
+    onError: (e) => setError(e.message),
+  });
   const loginWithPassword = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
       onClose();
@@ -147,6 +152,11 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+            {loginMode === "password" && resetSent && (
+              <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm text-green-700 mb-2">
+                Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
+              </div>
+            )}
             {loginMode === "password" ? (
               <button
                 onClick={handlePasswordLogin}
@@ -180,6 +190,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                   </svg>
                 )}
                 {loading ? "Wird gesendet..." : "Anmeldelink senden"}
+              </button>
+            )}
+            {loginMode === "password" && !resetSent && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!email.includes("@")) { setError("Bitte zuerst Ihre E-Mail-Adresse eingeben."); return; }
+                  setError("");
+                  requestReset.mutate({ email, origin: window.location.origin });
+                }}
+                disabled={requestReset.isPending}
+                className="w-full text-center text-xs text-gray-400 hover:text-[#006937] transition-colors mt-2"
+              >
+                {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
               </button>
             )}
             {loginMode === "magic" && (

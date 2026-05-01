@@ -147,3 +147,15 @@
 - [x] i18n vertiefen: useLanguage-Hook in StudentDashboard, ExaminerDashboard, AdminDashboard einsetzen
 - [x] PDF-Vorschau-Modal im Prüfer:innen-Dashboard (iframe-basiert)
 - [x] Superadmin: Systemkonfigurations-Tab mit persistierten Einstellungen (Systemname, Kontakt-E-Mail, Wartungsmodus)
+
+## Phase 11: Wartungsmodus & Passwort-Reset
+- [x] Backend: Wartungsmodus-Middleware (systemSettings lesen, Nicht-Superadmins blockieren)
+- [x] Frontend: /maintenance Hinweisseite (HTW-Design, Kontakt-E-Mail aus Systemkonfiguration)
+- [x] Frontend: App.tsx prüft Wartungsmodus und leitet um
+- [x] DB-Schema: passwordResetTokens-Tabelle (token, userId, expiresAt, used)
+- [x] Backend: auth.requestPasswordReset (E-Mail eingeben → Reset-Link versenden)
+- [x] Backend: auth.resetPassword (Token validieren → neues Passwort setzen)
+- [x] E-Mail: Reset-Link-E-Mail mit HTW-Branding
+- [x] Frontend: "Passwort vergessen"-Link im Login-Modal
+- [x] Frontend: /reset-password?token=... Seite (neues Passwort eingeben)
+- [x] Vitest: Passwort-Reset-Prozeduren testen (35/35 Tests grün)

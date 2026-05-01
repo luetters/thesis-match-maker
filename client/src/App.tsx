@@ -16,6 +16,8 @@ import ExaminerProfile from "./pages/ExaminerProfile";
 import ColloquiumManagement from "./pages/ColloquiumManagement";
 import ExaminerDirectory from "./pages/ExaminerDirectory";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
+import Maintenance from "./pages/Maintenance";
+import ResetPassword from "./pages/ResetPassword";
 
 function Router() {
   return (
@@ -57,6 +59,12 @@ function Router() {
 
       {/* Kolloquiums-Verwaltung */}
       <Route path="/admin/colloquiums" component={ColloquiumManagement} />
+
+      {/* Wartungsmodus-Seite */}
+      <Route path="/maintenance" component={Maintenance} />
+
+      {/* Passwort-Reset */}
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />

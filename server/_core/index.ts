@@ -10,6 +10,7 @@ import { registerMagicLinkRoutes } from "../magicLinkRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { maintenanceMiddleware } from "../maintenanceMiddleware";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerUploadRoutes(app);
   registerMagicLinkRoutes(app);
+  // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)
+  app.use(maintenanceMiddleware());
   // tRPC API
   app.use(
     "/api/trpc",
