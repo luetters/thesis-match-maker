@@ -1,6 +1,38 @@
 import nodemailer from "nodemailer";
+import { getEmailTemplateByKey } from "./db";
 
-// - Konfiguration -
+// ─── Platzhalter-Ersetzer ────────────────────────────────────────────────────
+/**
+ * Ersetzt alle {{platzhalter}} in einem Template-String durch die übergebenen Werte.
+ */
+function replacePlaceholders(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
+}
+
+// ─── DB-Vorlagen-Loader ──────────────────────────────────────────────────────
+/**
+ * Lädt eine E-Mail-Vorlage aus der DB und ersetzt Platzhalter.
+ * Gibt null zurück, wenn die Vorlage nicht gefunden wurde (Fallback auf hartkodierten Text).
+ */
+async function loadTemplate(
+  key: string,
+  vars: Record<string, string>
+): Promise<{ subject: string; html: string; text: string } | null> {
+  try {
+    const tpl = await getEmailTemplateByKey(key);
+    if (!tpl) return null;
+    return {
+      subject: replacePlaceholders(tpl.subject, vars),
+      html: replacePlaceholders(tpl.htmlBody, vars),
+      text: replacePlaceholders(tpl.textBody, vars),
+    };
+  } catch {
+    // Bei DB-Fehler Fallback auf hartkodierten Text
+    return null;
+  }
+}
+
+// - Konfiguration --
 function getTransporter() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587");
@@ -178,7 +210,20 @@ export async function sendExaminerCTAEmail({
 
   const { transporter, from } = config;
 
-  const html = buildEmailHtml({
+  const vars: Record<string, string> = {
+    examinerName,
+    studentName,
+    thesisTitle,
+    department,
+    actionUrl: acceptUrl,
+    rejectUrl,
+  };
+
+  // DB-Vorlage laden (Fallback auf hartkodierten Text)
+  const tpl = await loadTemplate("examiner_proposal", vars);
+
+  const subject = tpl?.subject ?? `Betreuungsanfrage: ${thesisTitle}`;
+  const html = tpl?.html ?? buildEmailHtml({
     title: "Neue Betreuungsanfrage",
     greeting: `Guten Tag ${examinerName},`,
     body: `
@@ -201,17 +246,12 @@ export async function sendExaminerCTAEmail({
     `,
     ctaAcceptUrl: acceptUrl,
     ctaRejectUrl: rejectUrl,
-    footer: `Dieser Link ist <strong>24 Stunden</strong> gültig. Nach Ablauf ist keine Aktion mehr möglich.
-             Für weitere Verwaltung melden Sie sich im <a href="${acceptUrl.split("/examiner")[0]}/examiner" style="color: #006937;">Prüfer:innen-Dashboard</a> an.`,
+    footer: `Dieser Link ist <strong>24 Stunden</strong> gültig. Nach Ablauf ist keine Aktion mehr möglich.`,
   });
+  const text = tpl?.text;
 
   try {
-    await transporter.sendMail({
-      from,
-      to,
-      subject: `Betreuungsanfrage: ${thesisTitle}`,
-      html,
-    });
+    await transporter.sendMail({ from, to, subject, html, text });
     console.log(`[Email] CTA-E-Mail an ${to} gesendet.`);
     return true;
   } catch (err) {
@@ -240,7 +280,6 @@ export async function sendStatusChangeEmail({
 }): Promise<boolean> {
   const config = getTransporter();
   if (!config) return false;
-
   const { transporter, from } = config;
 
   const statusLabels: Record<string, { label: string; color: string; emoji: string }> = {
@@ -248,10 +287,22 @@ export async function sendStatusChangeEmail({
     REJECTED: { label: "Abgelehnt", color: "#dc2626", emoji: "✕" },
     MATCHED: { label: "Matched", color: "#2563eb", emoji: "🎉" },
   };
-
   const statusInfo = statusLabels[newStatus] ?? { label: newStatus, color: "#6b7280", emoji: "•" };
 
-  const html = buildEmailHtml({
+  const vars: Record<string, string> = {
+    recipientName: studentName,
+    studentName,
+    thesisTitle,
+    newStatus: `${statusInfo.emoji} ${statusInfo.label}`,
+    rejectionReason: reason ?? "",
+    dashboardUrl,
+  };
+
+  // DB-Vorlage laden (Fallback auf hartkodierten Text)
+  const tpl = await loadTemplate("status_change", vars);
+
+  const subject = tpl?.subject ?? `Thesis Match: Status geändert – ${statusInfo.label}`;
+  const html = tpl?.html ?? buildEmailHtml({
     title: `Statusänderung: ${statusInfo.emoji} ${statusInfo.label}`,
     greeting: `Guten Tag ${studentName},`,
     body: `
@@ -276,20 +327,17 @@ export async function sendStatusChangeEmail({
     ctaAcceptUrl: dashboardUrl,
     footer: "Melden Sie sich in Ihrem Dashboard an, um weitere Details einzusehen.",
   });
+  const text = tpl?.text;
 
   try {
-    await transporter.sendMail({
-      from,
-      to,
-      subject: `Thesis Match: Status geändert – ${statusInfo.label}`,
-      html,
-    });
+    await transporter.sendMail({ from, to, subject, html, text });
     return true;
   } catch (err) {
     console.error("[Email] Fehler beim Senden:", err);
     return false;
   }
 }
+
 
 /**
  * Benachrichtigt PAV-Vorsitzende über eine neue Studiengang-Zuweisung durch den Superadmin.

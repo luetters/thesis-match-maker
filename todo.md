@@ -357,3 +357,12 @@
 - [x] Frontend: Vorlagen-Editor (Betreff + HTML-Body + Text-Body als Textarea mit Platzhalter-Hinweisen + HTML-Vorschau)
 - [x] Frontend: SuperadminDashboard – neuer Tab „E-Mail-Vorlagen“
 - [x] 43/43 Tests grün, 0 TypeScript-Fehler
+
+## Phase 23: E-Mail-Versand aus DB-Vorlagen
+
+- [x] emailHelper.ts: loadTemplate(key, vars) – Vorlage aus DB laden, Fallback auf hartkodierten Standard
+- [x] emailHelper.ts: replacePlaceholders() – {{platzhalter}} durch Werte ersetzen
+- [x] emailHelper.ts: sendExaminerCTAEmail – DB-Vorlage examiner_proposal verwenden
+- [x] emailHelper.ts: sendStatusChangeEmail – DB-Vorlage status_change verwenden
+- [x] Platzhalter-Ersetzung: {{studentName}}, {{examinerName}}, {{thesisTitle}}, {{actionUrl}} etc.
+- [x] Vitest: 3 neue Tests für DB-Vorlagen-Integration (46/46 Tests grün)

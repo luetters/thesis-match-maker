@@ -9,7 +9,13 @@ vi.mock("nodemailer", () => ({
   },
 }));
 
+// Mock DB-Zugriff für E-Mail-Vorlagen
+vi.mock("./db", () => ({
+  getEmailTemplateByKey: vi.fn().mockResolvedValue(null), // Fallback-Modus
+}));
+
 import { sendExaminerCTAEmail, sendStatusChangeEmail } from "./emailHelper";
+import { getEmailTemplateByKey } from "./db";
 
 describe("emailHelper: sendExaminerCTAEmail", () => {
   it("gibt false zurück wenn SMTP nicht konfiguriert ist", async () => {
@@ -108,5 +114,99 @@ describe("emailHelper: sendStatusChangeEmail", () => {
     });
 
     expect(result).toBe(true);
+  });
+});
+
+describe("emailHelper: DB-Vorlagen-Integration", () => {
+  it("verwendet DB-Vorlage wenn vorhanden (examiner_proposal)", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user@example.com";
+    process.env.SMTP_PASS = "secret";
+
+    // DB-Vorlage simulieren
+    vi.mocked(getEmailTemplateByKey).mockResolvedValueOnce({
+      id: 1,
+      key: "examiner_proposal",
+      label: "Betreuungsanfrage",
+      subject: "Anfrage: {{thesisTitle}} – HTW Berlin",
+      htmlBody: "<p>Hallo {{examinerName}}, Anfrage für {{thesisTitle}}</p>",
+      textBody: "Hallo {{examinerName}}, Anfrage für {{thesisTitle}}",
+      placeholders: null,
+      updatedAt: new Date(),
+      updatedByUserId: null,
+    });
+
+    const result = await sendExaminerCTAEmail({
+      to: "prof@htw-berlin.de",
+      examinerName: "Prof. Dr. Schmidt",
+      studentName: "Max Mustermann",
+      thesisTitle: "KI-Analyse",
+      department: "Informatik",
+      acceptUrl: "https://app.example.com/examiner/respond?token=abc&action=accept",
+      rejectUrl: "https://app.example.com/examiner/respond?token=abc&action=reject",
+    });
+
+    expect(result).toBe(true);
+    expect(getEmailTemplateByKey).toHaveBeenCalledWith("examiner_proposal");
+  });
+
+  it("fällt auf hartkodierten Text zurück wenn DB-Vorlage fehlt (status_change)", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user@example.com";
+    process.env.SMTP_PASS = "secret";
+
+    // DB gibt null zurück (Vorlage nicht vorhanden)
+    vi.mocked(getEmailTemplateByKey).mockResolvedValueOnce(undefined);
+
+    const result = await sendStatusChangeEmail({
+      to: "student@htw-berlin.de",
+      studentName: "Anna Müller",
+      thesisTitle: "Blockchain im Supply Chain",
+      newStatus: "ACCEPTED",
+      dashboardUrl: "https://app.example.com/student",
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it("ersetzt Platzhalter korrekt in DB-Vorlage (status_change)", async () => {
+    process.env.SMTP_HOST = "smtp.example.com";
+    process.env.SMTP_USER = "user@example.com";
+    process.env.SMTP_PASS = "secret";
+
+    let capturedSubject = "";
+    // Überschreibe sendMail-Mock um Subject zu prüfen
+    const nodemailer = await import("nodemailer");
+    const mockSendMail = vi.fn().mockImplementation((opts: { subject: string }) => {
+      capturedSubject = opts.subject;
+      return Promise.resolve({ messageId: "test" });
+    });
+    vi.mocked(nodemailer.default.createTransport).mockReturnValueOnce({
+      sendMail: mockSendMail,
+    } as ReturnType<typeof nodemailer.default.createTransport>);
+
+    vi.mocked(getEmailTemplateByKey).mockResolvedValueOnce({
+      id: 2,
+      key: "status_change",
+      label: "Statusänderung",
+      subject: "Status: {{newStatus}} – {{thesisTitle}}",
+      htmlBody: "<p>{{recipientName}}, Status: {{newStatus}}</p>",
+      textBody: "{{recipientName}}, Status: {{newStatus}}",
+      placeholders: null,
+      updatedAt: new Date(),
+      updatedByUserId: null,
+    });
+
+    await sendStatusChangeEmail({
+      to: "student@htw-berlin.de",
+      studentName: "Jonas Weber",
+      thesisTitle: "Quantencomputing",
+      newStatus: "ACCEPTED",
+      dashboardUrl: "https://app.example.com/student",
+    });
+
+    // Platzhalter müssen ersetzt worden sein
+    expect(capturedSubject).toContain("Quantencomputing");
+    expect(capturedSubject).not.toContain("{{thesisTitle}}");
   });
 });
