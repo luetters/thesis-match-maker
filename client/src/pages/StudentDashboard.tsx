@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -285,7 +286,14 @@ function MyRequests() {
               <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
               <p className="text-sm text-gray-500 mt-0.5">{req.department}</p>
             </div>
-            <StatusBadge status={req.status} />
+            <div className="flex flex-col items-end gap-1.5">
+              <StatusBadge status={req.status} />
+              {(req as any).programmeName && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#006937]/10 text-[#006937]">
+                  {(req as any).programmeAbbreviation ?? (req as any).programmeName}
+                </span>
+              )}
+            </div>
           </div>
           <p className="text-sm text-gray-600 line-clamp-2 mb-3">{req.description}</p>
           <div className="flex flex-wrap gap-3 text-xs text-gray-500">
@@ -477,6 +485,10 @@ function Overview() {
             ))}
           </div>
         )}
+      </div>
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <h2 className="font-semibold text-gray-900 mb-4">Mein Studiengang</h2>
+        <StudentProgrammeSelector />
       </div>
 
       <div

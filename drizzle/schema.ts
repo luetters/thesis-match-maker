@@ -166,3 +166,29 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 });
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ─── Study Programmes ─────────────────────────────────────────────────────────
+export const programmes = mysqlTable("programmes", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  abbreviation: varchar("abbreviation", { length: 32 }).notNull().unique(),
+  level: mysqlEnum("level", ["bachelor", "master"]).notNull(),
+  pictogramUrl: varchar("pictogram_url", { length: 512 }),
+  sortOrder: int("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type Programme = typeof programmes.$inferSelect;
+export type InsertProgramme = typeof programmes.$inferInsert;
+
+// ─── Examiner ↔ Programme (many-to-many) ─────────────────────────────────────
+export const examinerProgrammes = mysqlTable("examiner_programmes", {
+  id: int("id").autoincrement().primaryKey(),
+  examinerId: int("examiner_id").notNull(),
+  programmeId: int("programme_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ExaminerProgramme = typeof examinerProgrammes.$inferSelect;
+
+// ─── Student ↔ Programme (one-to-one, immutable after set) ───────────────────
+// Stored directly on the student profile (thesisRequests already has studyProgram text field)
+// We add programmeId to users table via ALTER TABLE in migration

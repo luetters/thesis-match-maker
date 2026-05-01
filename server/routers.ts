@@ -36,6 +36,10 @@ import {
   createPasswordResetToken,
   getPasswordResetToken,
   markPasswordResetTokenUsed,
+  getAllProgrammes,
+  setStudentProgramme,
+  getExaminerProgrammes,
+  setExaminerProgrammes,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -860,6 +864,41 @@ export const appRouter = router({
         } catch (err: unknown) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "SMTP-Fehler" });
         }
+      }),
+  }),
+  // --- Studiengänge ---
+  programmes: router({
+    list: publicProcedure.query(async () => {
+      return getAllProgrammes();
+    }),
+    setStudentProgramme: protectedProcedure
+      .input(z.object({ programmeId: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'student') throw new TRPCError({ code: 'FORBIDDEN', message: 'Nur Studierende können einen Studiengang wählen.' });
+        const success = await setStudentProgramme(ctx.user.id, input.programmeId);
+        if (!success) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Studiengang wurde bereits gesetzt und kann nicht geändert werden.' });
+        return { success: true };
+      }),
+    getMyProgramme: protectedProcedure.query(async ({ ctx }) => {
+      const mysql2 = await import('mysql2/promise');
+      const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
+      const [rows] = await conn.execute(
+        'SELECT p.* FROM programmes p INNER JOIN users u ON u.programme_id = p.id WHERE u.id = ?',
+        [ctx.user.id]
+      ) as any;
+      await conn.end();
+      return (rows as any[])[0] ?? null;
+    }),
+    getExaminerProgrammes: protectedProcedure.query(async ({ ctx }) => {
+      return getExaminerProgrammes(ctx.user.id);
+    }),
+    setExaminerProgrammes: protectedProcedure
+      .input(z.object({ programmeIds: z.array(z.number().int().positive()) }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'examiner' && ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin')
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        await setExaminerProgrammes(ctx.user.id, input.programmeIds);
+        return { success: true };
       }),
   }),
 });

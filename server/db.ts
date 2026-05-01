@@ -160,11 +160,38 @@ export async function getThesisRequestById(id: number) {
 export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db
-    .select()
+  // Import programmes here to avoid circular dependency issues
+  const { programmes } = await import('../drizzle/schema');
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      studentId: thesisRequests.studentId,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      department: thesisRequests.department,
+      abstract: thesisRequests.abstract,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      rejectionReason: thesisRequests.rejectionReason,
+      exposeUrl: thesisRequests.exposeUrl,
+      deadline: thesisRequests.deadline,
+      createdAt: thesisRequests.createdAt,
+      updatedAt: thesisRequests.updatedAt,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
+      programmeLevel: programmes.level,
+      programmePictogramUrl: programmes.pictogramUrl,
+    })
     .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq((users as any).programmeId, programmes.id))
     .where(eq(thesisRequests.studentId, studentId))
     .orderBy(desc(thesisRequests.createdAt));
+  return rows;
 }
 
 export async function getThesisRequestsByExaminer(examinerId: number) {
@@ -724,3 +751,55 @@ export async function markPasswordResetTokenUsed(token: string): Promise<void> {
     .where(eq(passwordResetTokens.token, token));
 }
 
+
+// ─── Programmes ───────────────────────────────────────────────────────────────
+import { programmes, examinerProgrammes } from "../drizzle/schema";
+
+export async function getAllProgrammes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(programmes).orderBy(programmes.sortOrder);
+}
+
+export async function getProgrammeById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(programmes).where(eq(programmes.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function setStudentProgramme(userId: number, programmeId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  // Check if already set (immutable after first set)
+  const rows = await db.select({ programmeId: (users as any).programmeId }).from(users).where(eq(users.id, userId)).limit(1);
+  if (rows[0]?.programmeId) return false; // already set, immutable
+  // Use raw mysql2 connection for non-schema column
+  const mysql2 = await import('mysql2/promise');
+  const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
+  await conn.execute('UPDATE users SET programme_id = ? WHERE id = ?', [programmeId, userId]);
+  await conn.end();
+  return true;
+}
+
+export async function getExaminerProgrammes(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ programme: programmes })
+    .from(examinerProgrammes)
+    .innerJoin(programmes, eq(examinerProgrammes.programmeId, programmes.id))
+    .where(eq(examinerProgrammes.examinerId, examinerId));
+  return rows.map(r => r.programme);
+}
+
+export async function setExaminerProgrammes(examinerId: number, programmeIds: number[]): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(examinerProgrammes).where(eq(examinerProgrammes.examinerId, examinerId));
+  if (programmeIds.length > 0) {
+    await db.insert(examinerProgrammes).values(
+      programmeIds.map(pid => ({ examinerId, programmeId: pid }))
+    );
+  }
+}

@@ -164,3 +164,18 @@
 - [x] Hero-Hintergrund: dunkelgrün entfernen, helles/neutrales HTW-CI-Design
 - [x] Foto-Darstellung: ohne grünen Farbüberlagerung zeigen
 - [x] T-Platzhalter-Logo durch echtes App-Icon ersetzen (alle Stellen inkl. E-Mail-Template)
+
+## Phase 13: Studiengänge & Piktogramme
+- [x] HTW-Piktogramme von corporatedesign.htw-berlin.de herunterladen (alle 23 Studiengänge)
+- [x] Piktogramme in Webdev-Storage hochladen und URL-Mapping erstellen
+- [x] DB-Schema: programmes-Tabelle (id, name, abbreviation, level: bachelor/master, pictogramUrl)
+- [x] DB-Schema: studentProfile.programmeId (FK, nicht änderbar nach Erstanlage)
+- [x] DB-Schema: examinerProgrammes-Tabelle (examiner kann mehrere Studiengänge wählen)
+- [x] DB-Migration pushen
+- [x] Backend: programmes.list (öffentlich, alle Studiengänge mit Piktogramm)
+- [x] Backend: student.setProgramme (einmalig setzbar, danach readonly)
+- [x] Backend: examiner.setProgrammes (mehrere Studiengänge auswählen)
+- [x] Frontend: Studiengang-Auswahl beim Onboarding (Student, Dropdown mit Piktogramm)
+- [x] Frontend: Studiengang-Anzeige im Studierenden-Dashboard (readonly)
+- [x] Frontend: Prüfer-Einstellungen: Studiengänge auswählen (Mehrfachauswahl mit Piktogrammen)
+- [x] Frontend: Studiengang-Badge in Betreuungsanfragen anzeigen
