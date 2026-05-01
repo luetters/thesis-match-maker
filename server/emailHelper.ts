@@ -17,7 +17,7 @@ function getTransporter() {
     transporter: nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
+      secure: port === 465 || port === 993,
       auth: { user, pass },
     }),
     from,
