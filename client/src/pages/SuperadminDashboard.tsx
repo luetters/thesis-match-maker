@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { EmailTemplatesTab } from "./EmailTemplatesTab";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
@@ -472,6 +473,7 @@ const TABS = [
   { id: "pav", label: "PAV-Verwaltung", icon: "🏫" },
   { id: "audit", label: "Audit-Log", icon: "📋" },
   { id: "config", label: "Systemkonfiguration", icon: "⚙️" },
+  { id: "email_templates", label: "E-Mail-Vorlagen", icon: "✉️" },
 ];
 
 const navItems = [
@@ -528,6 +530,7 @@ export default function SuperadminDashboard() {
       {activeTab === "pav" && <PavManagementTab />}
       {activeTab === "audit" && <AuditLogTab />}
       {activeTab === "config" && <SystemConfigTab />}
+      {activeTab === "email_templates" && <EmailTemplatesTab />}
     </ThesisDashboardLayout>
   );
 }

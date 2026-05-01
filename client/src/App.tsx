@@ -21,6 +21,8 @@ import PavRespond from "./pages/PavRespond";
 import DeanDashboard from "./pages/DeanDashboard";
 import Maintenance from "./pages/Maintenance";
 import ResetPassword from "./pages/ResetPassword";
+import ExaminerOnboarding from "./pages/ExaminerOnboarding";
+import DeanStats from "./pages/DeanStats";
 
 function Router() {
   return (
@@ -38,6 +40,9 @@ function Router() {
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />
       <Route path="/student/:tab" component={StudentDashboard} />
+
+      {/* Prüfer:innen-Onboarding-Assistent */}
+      <Route path="/examiner/onboarding" component={ExaminerOnboarding} />
 
       {/* Prüfer:innen-Dashboard */}
       <Route path="/examiner" component={ExaminerDashboard} />
@@ -66,6 +71,7 @@ function Router() {
 
       {/* Dekanat-Dashboard */}
       <Route path="/dean" component={DeanDashboard} />
+      <Route path="/dean/stats" component={DeanStats} />
 
       {/* Kolloquiums-Verwaltung */}
       <Route path="/admin/colloquiums" component={ColloquiumManagement} />

@@ -64,6 +64,10 @@ import {
   superadminAssignPavProgramme,
   superadminRemovePavProgramme,
   getThesisRequestDetailForDean,
+  getDeanStats,
+  getAllEmailTemplates,
+  getEmailTemplateByKey,
+  updateEmailTemplate,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -654,16 +658,37 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Prüfer:in: Onboarding abschließen (isSecondExaminer + alternativeEmail + onboardingCompleted)
+    // Prüfer:in: Onboarding abschließen (vollständiger 5-Schritt-Assistent)
     completeOnboarding: examinerProcedure
       .input(
         z.object({
           isSecondExaminer: z.boolean(),
           alternativeEmail: z.string().email().optional().nullable(),
+          // Erweiterte Profildaten
+          title: z.string().optional(),
+          department: z.string().optional(),
+          bio: z.string().optional(),
+          researchFocus: z.string().optional(),
+          officeHours: z.string().optional(),
+          websiteUrl: z.string().optional(),
+          phone: z.string().optional(),
+          languages: z.array(z.string()).optional(),
+          maxSupervisions: z.number().int().min(0).max(20).optional(),
+          programmeIds: z.array(z.number().int().positive()).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        await completeExaminerOnboarding(ctx.user.id, input.isSecondExaminer, input.alternativeEmail ?? null);
+        const { programmeIds, isSecondExaminer, alternativeEmail, ...profileFields } = input;
+        await upsertExaminerProfile({
+          userId: ctx.user.id,
+          ...profileFields,
+          alternativeEmail: alternativeEmail ?? null,
+          isSecondExaminer: isSecondExaminer ? 1 : 0,
+          onboardingCompleted: 1,
+        });
+        if (programmeIds && programmeIds.length > 0) {
+          await setExaminerProgrammes(ctx.user.id, programmeIds);
+        }
         return { success: true };
       }),
 
@@ -1275,6 +1300,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getThesisRequestDetailForDean(input.requestId);
       }),
+    /** Statistiken für das Dekanat-Dashboard */
+    stats: deanProcedure.query(async () => {
+      return getDeanStats();
+    }),
+
     /** CSV-Export – optional gefiltert nach Status und Suchbegriff */
     exportCsv: deanProcedure
       .input(z.object({
@@ -1312,6 +1342,38 @@ export const appRouter = router({
           r.studentEmail,
         ].join(";"));
         return { csv: [header, ...csvRows].join("\n"), count: filtered.length };
+      }),
+  }),
+
+  // ─── E-Mail-Vorlagen (Superadmin) ─────────────────────────────────────────
+  emailTemplates: router({
+    /** Alle Vorlagen abrufen */
+    getAll: superadminProcedure.query(async () => {
+      return getAllEmailTemplates();
+    }),
+
+    /** Einzelne Vorlage abrufen */
+    getByKey: superadminProcedure
+      .input(z.object({ key: z.string() }))
+      .query(async ({ input }) => {
+        return getEmailTemplateByKey(input.key);
+      }),
+
+    /** Vorlage aktualisieren */
+    update: superadminProcedure
+      .input(z.object({
+        key: z.string(),
+        subject: z.string().optional(),
+        htmlBody: z.string().optional(),
+        textBody: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await updateEmailTemplate(
+          input.key,
+          { subject: input.subject, htmlBody: input.htmlBody, textBody: input.textBody },
+          ctx.user.id
+        );
+        return { success: true };
       }),
   }),
 

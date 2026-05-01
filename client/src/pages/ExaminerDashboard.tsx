@@ -2,6 +2,7 @@ import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboard
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -775,16 +776,16 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes">("overview");
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [, navigate] = useLocation();
 
-  // Onboarding-Modal anzeigen wenn onboardingCompleted noch nicht gesetzt ist
+  // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist
   const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
   useEffect(() => {
     if (!profileLoading) {
       const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
-      if (!completed) setShowOnboarding(true);
+      if (!completed) navigate("/examiner/onboarding");
     }
-  }, [profile, profileLoading]);
+  }, [profile, profileLoading, navigate]);
 
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
@@ -810,9 +811,6 @@ export default function ExaminerDashboard() {
 
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
-      {showOnboarding && !profileLoading && (
-        <ExaminerOnboardingModal onComplete={() => setShowOnboarding(false)} />
-      )}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <RequestsView />}
       {activeTab === "colloquiums" && <MyColloquiums />}

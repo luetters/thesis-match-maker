@@ -323,3 +323,37 @@
 
 ## Seed-Daten
 - [x] seed-examiners.mjs: 65 Professor:innen (Erstprüfer:innen) und 300 Lehrbeauftragte (Zweitprüfer:innen) angelegt (Passwort: HTWBerlin2024!)
+
+## Phase 22: Onboarding-Assistent, Dekanat-Statistiken, E-Mail-Vorlagen
+
+### Onboarding-Assistent für Prüfer:innen
+- [x] Frontend: ExaminerOnboarding.tsx – Schritt-für-Schritt-Assistent (5 Schritte: Willkommen, Profildaten, Foto, Studiengänge, Kapazität & Abschluss)
+- [x] Frontend: Schritt 1 – Willkommensseite mit Erklärung der Plattform
+- [x] Frontend: Schritt 2 – Profildaten (Titel, Abteilung, Bio, Forschungsschwerpunkt, Bürozeiten, Website)
+- [x] Frontend: Schritt 3 – Foto-Upload (optional, S3)
+- [x] Frontend: Schritt 4 – Studiengänge auswählen (Mehrfachauswahl mit Piktogrammen)
+- [x] Frontend: Schritt 5 – Kapazität (maxSupervisions, isSecondExaminer) + Abschluss-Bestätigung
+- [x] Frontend: App.tsx – Weiterleitung zu /examiner/onboarding wenn onboardingCompleted=false
+- [x] Backend: examiner.completeOnboarding – onboardingCompleted auf true setzen
+
+### Dekanat-Statistik-Dashboard
+- [x] Backend: dean.stats – aggregierte Kennzahlen (Anträge pro Status, pro Studiengang, Bearbeitungszeit, Prüfer:innen-Auslastung)
+- [x] Frontend: DeanStats.tsx – eigene Seite /dean/stats mit Recharts-Diagrammen
+- [x] Frontend: Donut-Chart: Anträge pro Status
+- [x] Frontend: Balken-Chart: Anträge pro Studiengang
+- [x] Frontend: Linie-Chart: Anträge pro Monat (letzte 12 Monate)
+- [x] Frontend: Tabelle: Top-10 Prüfer:innen nach Auslastung (aktuell/maximal)
+- [x] Frontend: KPI-Karten: Gesamtanträge, Ø Bearbeitungszeit, offene Anträge, Abschlussquote
+- [x] DeanDashboard: Statistiken-Button neben CSV-Export
+
+### Konfigurierbare E-Mail-Vorlagen
+- [x] DB-Schema: email_templates-Tabelle (key, subject, htmlBody, textBody, updatedAt, updatedBy)
+- [x] DB-Migration: Tabelle direkt per SQL angelegt
+- [x] Seed: 6 Standard-Vorlagen eingefügt (thesis_submitted, examiner_proposal, thesis_accepted, thesis_rejected, colloquium_invitation, status_change)
+- [x] Backend: emailTemplates.getAll – alle Vorlagen auflisten (Superadmin)
+- [x] Backend: emailTemplates.getByKey – einzelne Vorlage abrufen (Superadmin)
+- [x] Backend: emailTemplates.update – Vorlage bearbeiten (subject + htmlBody + textBody)
+- [x] Frontend: EmailTemplatesTab.tsx – Vorlagen-Liste mit Bearbeiten-Button
+- [x] Frontend: Vorlagen-Editor (Betreff + HTML-Body + Text-Body als Textarea mit Platzhalter-Hinweisen + HTML-Vorschau)
+- [x] Frontend: SuperadminDashboard – neuer Tab „E-Mail-Vorlagen“
+- [x] 43/43 Tests grün, 0 TypeScript-Fehler

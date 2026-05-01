@@ -223,3 +223,20 @@ export const pavExaminerProposals = mysqlTable("pav_examiner_proposals", {
 });
 export type PavExaminerProposal = typeof pavExaminerProposals.$inferSelect;
 export type InsertPavExaminerProposal = typeof pavExaminerProposals.$inferInsert;
+
+// ─── E-Mail-Vorlagen ───────────────────────────────────────────────────────────────────────────────────────
+const emailTemplateKeyEnum = mysqlEnum("key", ["status_change", "examiner_cta", "colloquium_invite", "password_reset", "magic_link"]);
+
+export const emailTemplates = mysqlTable("email_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  label: varchar("label", { length: 128 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  htmlBody: text("html_body").notNull(),
+  textBody: text("text_body").notNull(),
+  placeholders: text("placeholders"), // JSON-Array der verfügbaren Platzhalter
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  updatedByUserId: int("updated_by_user_id"),
+});
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;

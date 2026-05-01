@@ -16,6 +16,7 @@ import {
   examinerProgrammes,
   thesisRequests,
   users,
+  emailTemplates,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1263,4 +1264,122 @@ export async function getThesisRequestDetailForDean(requestId: number) {
     history,
     colloquium: colloquium ?? null,
   };
+}
+
+// ─── Dekanat-Statistiken ──────────────────────────────────────────────────────
+export async function getDeanStats() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const allRequests = await db
+    .select({
+      id: thesisRequests.id,
+      status: thesisRequests.status,
+      department: thesisRequests.department,
+      degreeType: thesisRequests.degreeType,
+      createdAt: thesisRequests.createdAt,
+      updatedAt: thesisRequests.updatedAt,
+    })
+    .from(thesisRequests);
+
+  const byStatus: Record<string, number> = {};
+  for (const r of allRequests) {
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+  }
+
+  const byDepartment: Record<string, number> = {};
+  for (const r of allRequests) {
+    const dept = r.department || "Unbekannt";
+    byDepartment[dept] = (byDepartment[dept] ?? 0) + 1;
+  }
+
+  const now = new Date();
+  const monthlyData: { month: string; count: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
+    const count = allRequests.filter((r) => {
+      const created = new Date(r.createdAt);
+      return created.getFullYear() === d.getFullYear() && created.getMonth() === d.getMonth();
+    }).length;
+    monthlyData.push({ month: label, count });
+  }
+
+  const examinerLoad = await db
+    .select({
+      examinerName: users.name,
+      examinerId: users.id,
+      maxSupervisions: examinerProfiles.maxSupervisions,
+    })
+    .from(examinerProfiles)
+    .innerJoin(users, eq(examinerProfiles.userId, users.id))
+    .where(eq(examinerProfiles.isSecondExaminer, 0))
+    .limit(20);
+
+  const examinerStats = await Promise.all(
+    examinerLoad.map(async (e) => {
+      const current = await db
+        .select({ id: thesisRequests.id })
+        .from(thesisRequests)
+        .where(eq(thesisRequests.examinerId, e.examinerId));
+      return {
+        name: e.examinerName ?? "Unbekannt",
+        current: current.length,
+        max: e.maxSupervisions ?? 5,
+      };
+    })
+  );
+
+  const total = allRequests.length;
+  const open = (byStatus["PENDING"] ?? 0) + (byStatus["MATCHED"] ?? 0);
+  const accepted = byStatus["ACCEPTED"] ?? 0;
+  const completionRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+
+  const resolved = allRequests.filter((r) => r.status === "ACCEPTED" || r.status === "REJECTED");
+  const avgDays = resolved.length > 0
+    ? Math.round(
+        resolved.reduce((sum, r) => {
+          const diff = new Date(r.updatedAt).getTime() - new Date(r.createdAt).getTime();
+          return sum + diff / (1000 * 60 * 60 * 24);
+        }, 0) / resolved.length
+      )
+    : 0;
+
+  return {
+    kpis: { total, open, accepted, completionRate, avgDays },
+    byStatus: Object.entries(byStatus).map(([status, count]) => ({ status, count })),
+    byDepartment: Object.entries(byDepartment)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([department, count]) => ({ department, count })),
+    monthly: monthlyData,
+    examinerLoad: examinerStats.sort((a, b) => b.current - a.current).slice(0, 10),
+  };
+}
+
+// ─── E-Mail-Vorlagen ──────────────────────────────────────────────────────────
+export async function getAllEmailTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(emailTemplates).orderBy(emailTemplates.key);
+}
+export async function getEmailTemplateByKey(key: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(emailTemplates).where(eq(emailTemplates.key, key)).limit(1);
+  return rows[0];
+}
+export async function updateEmailTemplate(
+  key: string,
+  data: { subject?: string; htmlBody?: string; textBody?: string },
+  updatedByUserId?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Datenbank nicht verfügbar');
+  const update: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.subject !== undefined) update.subject = data.subject;
+  if (data.htmlBody !== undefined) update.htmlBody = data.htmlBody;
+  if (data.textBody !== undefined) update.textBody = data.textBody;
+  if (updatedByUserId !== undefined) update.updatedByUserId = updatedByUserId;
+  await db.update(emailTemplates).set(update).where(eq(emailTemplates.key, key));
 }
