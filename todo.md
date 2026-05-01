@@ -159,3 +159,8 @@
 - [x] Frontend: "Passwort vergessen"-Link im Login-Modal
 - [x] Frontend: /reset-password?token=... Seite (neues Passwort eingeben)
 - [x] Vitest: Passwort-Reset-Prozeduren testen (35/35 Tests grün)
+
+## Phase 12: HTW-Berlin-CI Landing Page
+- [x] Hero-Hintergrund: dunkelgrün entfernen, helles/neutrales HTW-CI-Design
+- [x] Foto-Darstellung: ohne grünen Farbüberlagerung zeigen
+- [x] T-Platzhalter-Logo durch echtes App-Icon ersetzen (alle Stellen inkl. E-Mail-Template)

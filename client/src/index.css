@@ -187,23 +187,20 @@
    HTW Hero Section – Hintergrundbild mit Dunkelgrün-Overlay
    ═══════════════════════════════════════════════════════════════════════════ */
 .hero-gradient {
-  background-image: url('/manus-storage/htw-banner_493070b6.jpg');
-  background-size: cover;
-  background-position: center top;
+  background-color: #ffffff;
   position: relative;
+  overflow: hidden;
 }
-.hero-gradient::before {
+.hero-gradient::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(14, 42, 6, 0.93) 0%,
-    rgba(20, 55, 8, 0.88) 45%,
-    rgba(30, 75, 5, 0.80) 70%,
-    rgba(118, 185, 0, 0.30) 100%
-  );
+  background-image: url('/manus-storage/htw-banner_493070b6.jpg');
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.08;
   pointer-events: none;
+  z-index: 0;
 }
 .hero-gradient > * {
   position: relative;

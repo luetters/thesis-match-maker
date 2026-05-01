@@ -314,11 +314,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── Navigation ─────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-white/10" style={{ backgroundColor: "#0e2a06" }}>
+      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200 bg-white shadow-sm">
         <div className="container flex items-center justify-between h-16">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-3 text-white hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
           >
             <img
               src="/manus-storage/thesis-logo-512_d468512d.png"
@@ -326,8 +326,8 @@ export default function Home() {
               className="w-8 h-8 object-contain"
             />
             <div className="text-left">
-              <div className="text-sm font-bold leading-tight">Thesis Match Maker</div>
-              <div className="text-xs opacity-60 leading-tight">HTW Berlin · FB 3</div>
+              <div className="text-sm font-bold leading-tight text-gray-900">Thesis Match Maker</div>
+              <div className="text-xs text-gray-500 leading-tight">HTW Berlin · FB 3</div>
             </div>
           </button>
 
@@ -341,7 +341,7 @@ export default function Home() {
               <button
                 key={item.path}
                 onClick={() => handleRoleNavigate(item.path)}
-                className="px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
               >
                 {item.label}
               </button>
@@ -349,7 +349,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            <LanguageSwitcher className="text-white/80" />
+            <LanguageSwitcher className="text-gray-600" />
             {isAuthenticated ? (
               <button
                 onClick={() => {
@@ -360,7 +360,7 @@ export default function Home() {
                   else navigate("/student");
                 }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "#76B900" }}
+                style={{ backgroundColor: "#006937" }}
               >
                 Dashboard
               </button>
@@ -368,7 +368,7 @@ export default function Home() {
               <button
                 onClick={() => setShowLogin(true)}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "#76B900" }}
+                style={{ backgroundColor: "#006937" }}
               >
                 Anmelden
               </button>
@@ -389,13 +389,13 @@ export default function Home() {
                 <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
                 Fachbereich 3
               </span>
-              <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4">
+              <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight mb-4" style={{ color: "#0d1b2a" }}>
                 Thesis Match Maker
               </h1>
-              <p className="text-xl text-white/90 font-medium mb-3 leading-snug max-w-lg" style={{ color: "#76B900" }}>
+              <p className="text-xl font-medium mb-3 leading-snug max-w-lg" style={{ color: "#006937" }}>
                 Find your 2 supervisors with your brilliant academic idea
               </p>
-              <p className="text-base text-white/65 mb-8 leading-relaxed max-w-lg">
+              <p className="text-base text-gray-600 mb-8 leading-relaxed max-w-lg">
                 Die zentrale Plattform der HTW Berlin für das Matchmaking zwischen Studierenden
                 und Prüfer:innen – von der ersten Betreuungsanfrage bis zum Kolloquium.
               </p>
@@ -412,7 +412,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => handleRoleNavigate("/examiner")}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border-2 border-white/30 text-white hover:bg-white/10 transition-all"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border-2 text-gray-700 hover:bg-gray-50 transition-all" style={{ borderColor: "#006937" }}
                 >
                   Prüfer:innen-Bereich
                 </button>
@@ -426,8 +426,8 @@ export default function Home() {
                   { value: "8", label: "Studiengänge" },
                 ].map((stat) => (
                   <div key={stat.label}>
-                    <div className="text-3xl font-extrabold text-white">{stat.value}</div>
-                    <div className="text-sm text-white/60">{stat.label}</div>
+                    <div className="text-3xl font-extrabold" style={{ color: "#006937" }}>{stat.value}</div>
+                    <div className="text-sm text-gray-500">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -435,12 +435,19 @@ export default function Home() {
 
             {/* Demo Card */}
             <div className="hidden lg:block">
+              {/* HTW-Foto */}
+              <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200 mb-4">
+                <img
+                  src="/manus-storage/htw-banner_493070b6.jpg"
+                  alt="HTW Berlin Campus"
+                  className="w-full h-48 object-cover"
+                />
+              </div>
               <div
-                className="rounded-2xl p-6 shadow-2xl border border-white/10"
-                style={{ backgroundColor: "#1a3a08" }}
+                className="rounded-2xl p-6 shadow-xl border border-gray-200 bg-white"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-white/60 text-sm font-medium">Matching-Anfrage</span>
+                  <span className="text-gray-500 text-sm font-medium">Matching-Anfrage</span>
                   <span
                     className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
                     style={{ backgroundColor: "#76B900" }}
@@ -456,12 +463,12 @@ export default function Home() {
                     { label: "Semester", value: "WS 2025/26" },
                   ].map((row) => (
                     <div key={row.label} className="flex justify-between">
-                      <span className="text-white/50 text-sm">{row.label}</span>
-                      <span className="text-white text-sm font-medium">{row.value}</span>
+                      <span className="text-gray-400 text-sm">{row.label}</span>
+                      <span className="text-gray-800 text-sm font-medium">{row.value}</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-3">
+                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
                     style={{ backgroundColor: "#76B900" }}
@@ -469,8 +476,8 @@ export default function Home() {
                     AS
                   </div>
                   <div>
-                    <div className="text-white text-sm font-semibold">Prof. Dr. Anna Schmidt</div>
-                    <div className="text-white/50 text-xs">Erstprüferin</div>
+                    <div className="text-gray-800 text-sm font-semibold">Prof. Dr. Anna Schmidt</div>
+                    <div className="text-gray-400 text-xs">Erstprüferin</div>
                   </div>
                   <div className="ml-auto">
                     <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
@@ -627,12 +634,11 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                  style={{ backgroundColor: "#76B900" }}
-                >
-                  T
-                </div>
+                <img
+                  src="/manus-storage/thesis-logo-512_d468512d.png"
+                  alt="Thesis Match Maker Logo"
+                  className="w-8 h-8 object-contain"
+                />
                 <div>
                   <div className="text-sm font-bold text-white">Thesis Match</div>
                   <div className="text-xs text-white/40">thesis.f3.htw-berlin.de</div>
