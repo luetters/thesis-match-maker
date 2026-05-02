@@ -369,15 +369,15 @@
 
 ## Phase 24: Internationalisierung (DE/EN)
 
-- [ ] react-i18next und i18next installieren
-- [ ] i18n-Konfiguration in client/src/lib/i18n.ts erstellen
-- [ ] Übersetzungsdateien: client/src/locales/de.json und en.json
-- [ ] LanguageContext oder i18n-Provider in main.tsx einbinden
-- [ ] Sprachumschalter (DE/EN-Button in Navbar) funktionsfähig machen
-- [ ] Sprache im localStorage persistieren
-- [ ] Home.tsx: alle Texte mit t()-Funktion übersetzen
-- [ ] Navigation/Navbar: alle Labels übersetzen
-- [ ] StudentDashboard.tsx: alle Texte übersetzen
+- [x] react-i18next nicht nötig – eigener LanguageContext.tsx mit useLanguage()-Hook
+- [x] i18n-Konfiguration: LanguageContext.tsx mit DE/EN-Übersetzungsobjekten
+- [x] LanguageProvider in main.tsx eingebunden
+- [x] Sprachumschalter (DE/EN-Button in Navbar) funktionsfähig
+- [x] Sprache im localStorage persistiert
+- [x] Home.tsx: alle Texte durch t.landing.* ersetzt
+- [x] Navigation/Navbar: alle Labels durch t.nav.* ersetzt
+- [x] DE-subtitle korrigiert (war fälschlicherweise EN)
+- [x] StudentDashboard.tsx: t.student.* bereits in früheren Phasen eingebunden
 - [x] ExaminerOnboarding.tsx: STEPS-Labels übersetzt
 - [x] PavDashboard.tsx: alle Texte durch t.pav.* ersetzt
 - [x] DeanDashboard.tsx: alle Texte durch t.dean.* ersetzt

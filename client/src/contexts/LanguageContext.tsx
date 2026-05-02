@@ -19,7 +19,7 @@ const translations = {
     // Landing Page
     landing: {
       title: "Thesis Match Maker",
-      subtitle: "Find your 2 supervisors with your brilliant academic idea",
+      subtitle: "Finden Sie Ihre 2 Betreuungspersonen für Ihre Abschlussarbeit",
       tagline: "Die Plattform der HTW Berlin zur Vermittlung von Abschlussarbeiten",
       loginBtn: "Jetzt anmelden",
       loginMagicLink: "Anmelden via Magic Link",
