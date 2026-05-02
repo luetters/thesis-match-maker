@@ -366,3 +366,22 @@
 - [x] emailHelper.ts: sendStatusChangeEmail – DB-Vorlage status_change verwenden
 - [x] Platzhalter-Ersetzung: {{studentName}}, {{examinerName}}, {{thesisTitle}}, {{actionUrl}} etc.
 - [x] Vitest: 3 neue Tests für DB-Vorlagen-Integration (46/46 Tests grün)
+
+## Phase 24: Internationalisierung (DE/EN)
+
+- [ ] react-i18next und i18next installieren
+- [ ] i18n-Konfiguration in client/src/lib/i18n.ts erstellen
+- [ ] Übersetzungsdateien: client/src/locales/de.json und en.json
+- [ ] LanguageContext oder i18n-Provider in main.tsx einbinden
+- [ ] Sprachumschalter (DE/EN-Button in Navbar) funktionsfähig machen
+- [ ] Sprache im localStorage persistieren
+- [ ] Home.tsx: alle Texte mit t()-Funktion übersetzen
+- [ ] Navigation/Navbar: alle Labels übersetzen
+- [ ] StudentDashboard.tsx: alle Texte übersetzen
+- [x] ExaminerOnboarding.tsx: STEPS-Labels übersetzt
+- [x] PavDashboard.tsx: alle Texte durch t.pav.* ersetzt
+- [x] DeanDashboard.tsx: alle Texte durch t.dean.* ersetzt
+- [x] DeanStats.tsx: Titel, Untertitel, Zurück-Button übersetzt
+- [x] SuperadminDashboard.tsx: Tabs und Titel übersetzt
+- [x] LanguageSwitcher: DE|EN-Button in Navbar, korrekt mit LanguageProvider verbunden
+- [x] 46/46 Tests grün, 0 TypeScript-Fehler

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // --- Hilfsfunktionen ---
 function formatDate(d: Date | string | null | undefined) {
@@ -204,6 +205,7 @@ function RequestDetailSheet({
 // --- Main ---
 export default function DeanDashboard() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
@@ -256,7 +258,7 @@ export default function DeanDashboard() {
     );
   }
 
-  const roleLabel = user.role === "dean" ? "Dekan:in" : user.role === "vice_dean" ? "Prodekan:in" : "Admin";
+  const roleLabel = user.role === "dean" ? t.dean.dean : user.role === "vice_dean" ? t.dean.viceDean : "Admin";
 
   const filtered = (requests ?? []).filter(({ request, student }) => {
     const q = search.toLowerCase();
@@ -277,11 +279,11 @@ export default function DeanDashboard() {
   };
 
   const statCards = [
-    { label: "Gesamt", value: stats.total, cls: "text-gray-900" },
-    { label: "Ausstehend", value: stats.pending, cls: "text-yellow-600" },
-    { label: "Zugeteilt", value: stats.matched, cls: "text-blue-600" },
-    { label: "Angenommen", value: stats.accepted, cls: "text-green-600" },
-    { label: "Abgelehnt", value: stats.rejected, cls: "text-red-600" },
+    { label: t.dean.total, value: stats.total, cls: "text-gray-900" },
+    { label: t.dean.pending, value: stats.pending, cls: "text-yellow-600" },
+    { label: t.dean.matched, value: stats.matched, cls: "text-blue-600" },
+    { label: t.dean.accepted, value: stats.accepted, cls: "text-green-600" },
+    { label: t.dean.rejected, value: stats.rejected, cls: "text-red-600" },
   ];
 
   return (
@@ -300,7 +302,7 @@ export default function DeanDashboard() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-2xl">🏛️</span>
-              <h1 className="text-2xl font-bold text-gray-900">Dekanat-Übersicht</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t.dean.title}</h1>
             </div>
             <p className="text-sm text-gray-500">
               Angemeldet als <span className="font-medium text-gray-700">{user.name ?? user.email}</span>
@@ -318,7 +320,7 @@ export default function DeanDashboard() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              {csvLoading ? "Wird exportiert…" : "CSV-Export"}
+              {csvLoading ? t.dean.exporting : t.dean.csvExport}
             </button>
             <Link
               href="/dean/stats"
@@ -327,10 +329,10 @@ export default function DeanDashboard() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              Statistiken
+              {t.dean.statistics}
             </Link>
             <Link href="/" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-              Startseite
+              {t.nav.home}
             </Link>
           </div>
         </div>
@@ -355,7 +357,7 @@ export default function DeanDashboard() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Titel, Studierende:r, Studiengang…"
+              placeholder={t.dean.searchPlaceholder}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-200"
             />
           </div>
@@ -364,11 +366,11 @@ export default function DeanDashboard() {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200"
           >
-            <option value="all">Alle Status</option>
-            <option value="PENDING">Ausstehend</option>
-            <option value="ACCEPTED">Angenommen</option>
-            <option value="MATCHED">Zugeteilt</option>
-            <option value="REJECTED">Abgelehnt</option>
+            <option value="all">{t.dean.allStatus}</option>
+            <option value="PENDING">{t.dean.pending}</option>
+            <option value="ACCEPTED">{t.dean.accepted}</option>
+            <option value="MATCHED">{t.dean.matched}</option>
+            <option value="REJECTED">{t.dean.rejected}</option>
           </select>
           <span className="self-center text-sm text-gray-400">{filtered.length} Einträge</span>
         </div>
@@ -388,12 +390,12 @@ export default function DeanDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Thema</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Studierende:r</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Studiengang</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Abschluss</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Eingereicht</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colTopic}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colStudent}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colDepartment}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colDegree}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colStatus}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.dean.colSubmitted}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -427,7 +429,7 @@ export default function DeanDashboard() {
               </table>
             </div>
             <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-50">
-              Klicken Sie auf eine Zeile, um Details anzuzeigen.
+              {t.dean.clickForDetails}
             </div>
           </div>
         )}

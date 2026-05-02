@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { LanguageSwitcher } from "@/contexts/LanguageContext";
+import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
@@ -305,6 +305,7 @@ function RoleCard({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [showLogin, setShowLogin] = useState(false);
   const [, navigate] = useLocation();
 
@@ -338,10 +339,10 @@ export default function Home() {
 
           <div className="hidden md:flex items-center gap-1">
             {[
-              { label: "Studierende:r", path: "/student" },
-              { label: "Prüfer:in", path: "/examiner" },
-              { label: "Verwaltung", path: "/admin" },
-              { label: "Prüfer:innen-Verzeichnis", path: "/examiners" },
+              { label: t.nav.student, path: "/student" },
+              { label: t.nav.examiner, path: "/examiner" },
+              { label: t.nav.admin, path: "/admin" },
+              { label: t.nav.directory, path: "/examiners" },
             ].map((item) => (
               <button
                 key={item.path}
@@ -367,7 +368,7 @@ export default function Home() {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#006937" }}
               >
-                Dashboard
+                {t.nav.dashboard}
               </button>
             ) : (
               <button
@@ -375,7 +376,7 @@ export default function Home() {
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#006937" }}
               >
-                Anmelden
+                {t.nav.login}
               </button>
             )}
           </div>
@@ -392,17 +393,16 @@ export default function Home() {
                 style={{ backgroundColor: "#76B900", color: "white" }}
               >
                 <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
-                Fachbereich 3
+                {t.landing.fachbereich}
               </span>
               <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight mb-4" style={{ color: "#0d1b2a" }}>
-                Thesis Match Maker
+                {t.landing.title}
               </h1>
               <p className="text-xl font-medium mb-3 leading-snug max-w-lg" style={{ color: "#006937" }}>
-                Find your 2 supervisors with your brilliant academic idea
+                {t.landing.subtitle}
               </p>
               <p className="text-base text-gray-600 mb-8 leading-relaxed max-w-lg">
-                Die zentrale Plattform der HTW Berlin für das Matchmaking zwischen Studierenden
-                und Prüfer:innen – von der ersten Betreuungsanfrage bis zum Kolloquium.
+                {t.landing.heroDesc}
               </p>
               <div className="flex flex-wrap gap-4">
                 <button
@@ -410,7 +410,7 @@ export default function Home() {
                   className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95"
                   style={{ backgroundColor: "#76B900" }}
                 >
-                  Als Studierende:r starten
+                  {t.landing.startAsStudent}
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -419,15 +419,15 @@ export default function Home() {
                   onClick={() => handleRoleNavigate("/examiner")}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border-2 text-gray-700 hover:bg-gray-50 transition-all" style={{ borderColor: "#006937" }}
                 >
-                  Prüfer:innen-Bereich
+                  {t.landing.examinerArea}
                 </button>
               </div>
 
               {/* Stats */}
               <div className="flex gap-8 mt-12">
                 {[
-                  { value: "480+", label: "Arbeiten / Jahr" },
-                  { value: "365+", label: "Prüfer:innen" },
+                  { value: "480+", label: t.landing.fachbereich === "Fachbereich 3" ? "Arbeiten / Jahr" : "Theses / Year" },
+                  { value: "365+", label: t.landing.fachbereich === "Fachbereich 3" ? "Prüfer:innen" : "Examiners" },
                   { value: "7 + 12", label: "Bachelor / Master" },
                 ].map((stat) => (
                   <div key={stat.label}>
@@ -501,31 +501,31 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Eine Plattform – drei Perspektiven
+              {t.landing.roles.title}
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              Wähle deine Rolle und steige direkt in den für dich relevanten Bereich ein.
+              {t.landing.roles.subtitle}
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <RoleCard
-              title="Studierende"
-              description="Thema einreichen, Prüfer:innen finden, Arbeit hochladen und Kolloquium planen."
-              features={["Prüfer:innen-Suche", "Matching-Workflow", "Abgabeportal"]}
+              title={t.landing.roles.student}
+              description={t.landing.roles.studentFeatures.join(", ")}
+              features={[...t.landing.roles.studentFeatures]}
               icon="/manus-storage/IconFemaleFemale_210f65cb.webp"
               onClick={() => handleRoleNavigate("/student")}
             />
             <RoleCard
-              title="Prüfer:innen"
-              description="Verfügbarkeit pflegen, Anfragen beantworten, Betreute verwalten."
-              features={["Anfragen verwalten", "Kommissionen bilden", "Gutachten hochladen"]}
+              title={t.landing.roles.examiner}
+              description={t.landing.roles.examinerFeatures.join(", ")}
+              features={[...t.landing.roles.examinerFeatures]}
               icon="/manus-storage/IconMaleMale_76ef2e5e.webp"
               onClick={() => handleRoleNavigate("/examiner")}
             />
             <RoleCard
-              title="Verwaltung"
-              description="Zulassungen erteilen, Akten prüfen, Räume buchen und Dokumente versenden."
-              features={["Zulassungs-Workflow", "Akte X", "Audit-Log"]}
+              title={t.landing.roles.admin}
+              description={t.landing.roles.adminFeatures.join(", ")}
+              features={[...t.landing.roles.adminFeatures]}
               icon="/manus-storage/Iconallgender_aaebc30a.webp"
               onClick={() => handleRoleNavigate("/admin")}
             />
@@ -538,47 +538,27 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
-              Der Ablauf
+              {t.landing.process.label}
             </p>
-            <h2 className="text-3xl font-bold text-gray-900">Von der Idee bis zur Urkunde</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{t.landing.process.title}</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <PhaseStep
-              number="01"
-              title="Matchmaking"
-              description="Thema einreichen und passende Prüfer:innen kontaktieren."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>}
-            />
-            <PhaseStep
-              number="02"
-              title="Zulassung"
-              description="Verwaltung prüft Voraussetzungen und erteilt offizielle Zulassung."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
-            />
-            <PhaseStep
-              number="03"
-              title="Abgabe"
-              description="Upload der Arbeit bis 23:59 des Abgabetermins mit Opt-ins."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-            />
-            <PhaseStep
-              number="04"
-              title="Gutachtenphase"
-              description="Erst- und Zweitprüfer:in verfassen unabhängig ihre Gutachten."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
-            />
-            <PhaseStep
-              number="05"
-              title="Kolloquium"
-              description="Terminfindung, Raumbuchung und Einladung mit Kalender-Anhang."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-            />
-            <PhaseStep
-              number="06"
-              title="Abschluss"
-              description="Protokoll, Notenblatt und Urkunde mit digitaler Signatur."
-              icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>}
-            />
+            {t.landing.process.steps.map((step, i) => (
+              <PhaseStep
+                key={step.number}
+                number={step.number}
+                title={step.title}
+                description={step.description}
+                icon={[
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+                  <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+                ][i]}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -588,40 +568,19 @@ export default function Home() {
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
-              Technischer Rahmen
+              {t.landing.tech.label}
             </p>
-            <h2 className="text-3xl font-bold text-gray-900">Selbstgehostet. Souverän. Sicher.</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{t.landing.tech.title}</h2>
             <p className="text-gray-600 mt-3 max-w-xl mx-auto">
-              Die Plattform läuft vollständig unter{" "}
+              {t.landing.tech.desc}{" "}
               <code className="text-gray-800 bg-gray-200 px-1.5 py-0.5 rounded text-sm">
                 thesis@htw-berlin.com
               </code>{" "}
-              – ohne externe Authentifizierungs-Dienste oder US-Cloud-Anbieter.
+              {t.landing.tech.descSuffix}
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: "On-Premise Hosting",
-                desc: "Vollständige Datenhoheit, keine externen Zwischenebenen.",
-                icon: "🏗️",
-              },
-              {
-                title: "SMTP-Authentifizierung",
-                desc: "Login und Benachrichtigungen direkt über den HTW-Mailserver.",
-                icon: "✉️",
-              },
-              {
-                title: "DSGVO-konform",
-                desc: "Studentische Telefonnummern bleiben für Kommilitonen unsichtbar.",
-                icon: "🔒",
-              },
-              {
-                title: "JWT-gesicherte CTAs",
-                desc: "Prüfer:innen können Anfragen per E-Mail-Link ohne Login beantworten.",
-                icon: "🔑",
-              },
-            ].map((item) => (
+            {t.landing.tech.items.map((item) => (
               <div key={item.title} className="rounded-2xl p-6 bg-gray-50 border border-gray-100">
                 <div className="text-2xl mb-3">{item.icon}</div>
                 <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
@@ -649,14 +608,13 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-sm text-white/50 leading-relaxed">
-                Die zentrale Plattform des Fachbereichs 3 für die Abwicklung von Abschlussarbeiten
-                an der HTW Berlin.
+                {t.landing.tagline}
               </p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Für Studierende</h4>
+              <h4 className="text-sm font-semibold text-white mb-4">{t.landing.footer.forStudents}</h4>
               <ul className="space-y-2">
-                {["Prüfer:innen finden", "Thema einreichen", "Abgabeportal", "Kolloquium planen", "FAQ & Leitfaden"].map((l) => (
+                {t.landing.footer.studentLinks.map((l) => (
                   <li key={l}>
                     <button
                       onClick={() => handleRoleNavigate("/student")}
@@ -669,9 +627,9 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Für Prüfer:innen</h4>
+              <h4 className="text-sm font-semibold text-white mb-4">{t.landing.footer.forExaminers}</h4>
               <ul className="space-y-2">
-                {["Anfragen verwalten", "Verfügbarkeit pflegen", "Gutachten-Vorlagen", "LVVO-Export", "Kommissions-Tools"].map((l) => (
+                {t.landing.footer.examinerLinks.map((l) => (
                   <li key={l}>
                     <button
                       onClick={() => handleRoleNavigate("/examiner")}
@@ -684,7 +642,7 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-4">Kontakt</h4>
+              <h4 className="text-sm font-semibold text-white mb-4">{t.landing.footer.contact}</h4>
               <ul className="space-y-2 text-sm text-white/50">
                 <li>
                   <a href="mailto:thesis@htw-berlin.com" className="hover:text-white transition-colors">
@@ -702,9 +660,9 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-white/10 pt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="text-xs text-white/40">© 2026 HTW Berlin</p>
+            <p className="text-xs text-white/40">{t.landing.footer.copyright}</p>
             <div className="flex gap-6">
-              {["Impressum", "Datenschutz", "Barrierefreiheit"].map((l) => (
+              {[t.landing.footer.imprint, t.landing.footer.privacy, t.landing.footer.accessibility].map((l) => (
                 <button key={l} className="text-xs text-white/40 hover:text-white/70 transition-colors">
                   {l}
                 </button>

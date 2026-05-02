@@ -1,3 +1,4 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
@@ -24,7 +25,8 @@ const STATUS_COLORS: Record<string, string> = {
   ACCEPTED: "#10B981",
   REJECTED: "#EF4444",
 };
-const STATUS_LABELS: Record<string, string> = {
+// STATUS_LABELS werden dynamisch in der Komponente erzeugt
+const STATUS_LABELS_DE: Record<string, string> = {
   PENDING: "Ausstehend",
   MATCHED: "Zugeteilt",
   ACCEPTED: "Angenommen",
@@ -67,6 +69,8 @@ function LoadBar({ current, max, name }: { current: number; max: number; name: s
 // ─── Hauptkomponente ─────────────────────────────────────────────────────────
 export default function DeanStats() {
   const { user, loading } = useAuth();
+  const { t, lang } = useLanguage();
+  const STATUS_LABELS = lang === "en" ? { PENDING: "Pending", MATCHED: "Matched", ACCEPTED: "Accepted", REJECTED: "Rejected" } : STATUS_LABELS_DE;
   const { data: stats, isLoading } = trpc.dean.stats.useQuery(undefined, { enabled: !!user });
 
   if (loading || isLoading) {
@@ -103,9 +107,9 @@ export default function DeanStats() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-2xl">📊</span>
-              <h1 className="text-2xl font-bold text-gray-900">Statistik-Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t.dean.stats.title}</h1>
             </div>
-            <p className="text-sm text-gray-500">Auswertungen und Kennzahlen – HTW Berlin Dekanat</p>
+            <p className="text-sm text-gray-500">{t.dean.stats.subtitle}</p>
           </div>
           <div className="flex gap-2">
             <Link
@@ -115,7 +119,7 @@ export default function DeanStats() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Zur Übersicht
+              {t.dean.stats.backToDashboard}
             </Link>
           </div>
         </div>

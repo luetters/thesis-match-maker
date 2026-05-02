@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
@@ -467,14 +468,7 @@ function PavManagementTab() {
   );
 }
 
-const TABS = [
-  { id: "stats", label: "Systemstatistiken", icon: "📊" },
-  { id: "users", label: "Nutzer:innen & Rollen", icon: "👥" },
-  { id: "pav", label: "PAV-Verwaltung", icon: "🏫" },
-  { id: "audit", label: "Audit-Log", icon: "📋" },
-  { id: "config", label: "Systemkonfiguration", icon: "⚙️" },
-  { id: "email_templates", label: "E-Mail-Vorlagen", icon: "✉️" },
-];
+// TABS werden dynamisch in der Komponente erzeugt (abhängig von t)
 
 const navItems = [
   { label: "Superadmin", href: "/superadmin", icon: "🔑" },
@@ -484,8 +478,18 @@ const navItems = [
 
 export default function SuperadminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("stats");
+
+  const TABS = [
+    { id: "stats", label: t.superadmin.tabs.overview, icon: "📊" },
+    { id: "users", label: t.superadmin.tabs.users, icon: "👥" },
+    { id: "pav", label: "PAV", icon: "🏫" },
+    { id: "audit", label: "Audit-Log", icon: "📋" },
+    { id: "config", label: t.superadmin.tabs.settings, icon: "⚙️" },
+    { id: "email_templates", label: t.superadmin.tabs.emailTemplates, icon: "✉️" },
+  ];
 
   if (loading) return null;
   if (!isAuthenticated || (user?.role !== "superadmin")) {
@@ -494,12 +498,12 @@ export default function SuperadminDashboard() {
   }
 
   return (
-    <ThesisDashboardLayout navItems={navItems} title="Superadmin-Bereich">
+      <ThesisDashboardLayout navItems={navItems} title={t.superadmin.title}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
           <span className="text-2xl">🔑</span>
-          <h1 className="text-2xl font-bold text-gray-900">Superadmin-Bereich</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t.superadmin.title}</h1>
         </div>
         <p className="text-sm text-gray-500">
           Exklusiver Bereich für <strong>{user?.name ?? user?.email}</strong> – vollständige Systemverwaltung.

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
@@ -234,6 +235,7 @@ function DirectAssignDialog({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PavDashboard() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"unassigned" | "proposals" | "programmes">("unassigned");
   const [proposeFor, setProposeFor] = useState<{ id: number; title: string } | null>(null);
   const [directAssignFor, setDirectAssignFor] = useState<{ id: number; title: string } | null>(null);
@@ -305,17 +307,17 @@ export default function PavDashboard() {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              {tab === "unassigned" ? "Unzugeteilte Studierende" :
+              {tab === "unassigned" ? t.pav.unassigned :
                tab === "proposals" ? (
                 <span className="flex items-center gap-1.5">
-                  Meine Vorschläge
+                  {t.pav.myProgrammes.replace("Studiengänge", "Vorschläge").replace("Programmes", "Proposals")}
                   {pendingCount > 0 && (
                     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-white text-[10px] font-bold">
                       {pendingCount}
                     </span>
                   )}
                 </span>
-              ) : "Meine Studiengänge"}
+              ) : t.pav.myProgrammes}
             </button>
           ))}
         </div>
@@ -334,7 +336,7 @@ export default function PavDashboard() {
                 <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p>Alle Studierenden sind bereits zugeteilt.</p>
+                <p>{t.pav.noUnassigned}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -364,13 +366,13 @@ export default function PavDashboard() {
                         onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
                         className="px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors"
                       >
-                        Vorschlag unterbreiten
+                        {t.pav.proposeExaminer}
                       </button>
                       <button
                         onClick={() => setDirectAssignFor({ id, title: title || "(kein Titel)" })}
                         className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
                       >
-                        Direkt zuweisen
+                        {t.pav.directAssign}
                       </button>
                     </div>
                   </div>
@@ -400,7 +402,7 @@ export default function PavDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate">{request.title}</p>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          Rolle: {proposal.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"} ·
+                          {t.pav.role}: {proposal.examinerRole === "first" ? t.pav.firstExaminer : t.pav.secondExaminer} ·
                           Gesendet: {formatDate(proposal.emailSentAt)}
                         </p>
                         {proposal.declineReason && (
@@ -420,8 +422,7 @@ export default function PavDashboard() {
         {activeTab === "programmes" && (
           <div className="space-y-4">
             <p className="text-sm text-gray-500">
-              Wählen Sie die Studiengänge aus, für die Sie als PA-Vorsitzende:r zuständig sind.
-              Im Tab "Unzugeteilte Studierende“ werden dann nur Anträge dieser Studiengänge angezeigt.
+              {t.pav.proposalNote}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(allProgrammes ?? []).map((prog) => {
@@ -435,7 +436,7 @@ export default function PavDashboard() {
                   >
                     <div>
                       <p className="font-medium text-gray-900">{prog.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{prog.level === "master" ? "Master" : "Bachelor"} · {prog.abbreviation}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{prog.level === "master" ? t.pav.master : t.pav.bachelor} · {prog.abbreviation}</p>
                     </div>
                     <button
                       onClick={() =>
@@ -450,7 +451,7 @@ export default function PavDashboard() {
                           : "bg-[#006937] text-white hover:bg-[#005a2f]"
                       } disabled:opacity-50`}
                     >
-                      {isAssigned ? "Entfernen" : "Hinzufügen"}
+                      {isAssigned ? t.pav.removeProgramme : t.pav.addProgramme}
                     </button>
                   </div>
                 );

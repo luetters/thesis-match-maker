@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 interface Programme {
@@ -18,21 +19,15 @@ interface Programme {
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-const STEPS = [
-  { id: 1, label: "Willkommen" },
-  { id: 2, label: "Profil" },
-  { id: 3, label: "Foto" },
-  { id: 4, label: "Studiengänge" },
-  { id: 5, label: "Kapazität" },
-];
+// STEPS werden dynamisch in der Komponente erzeugt (abhängig von t)
 
 const LANGUAGE_OPTIONS = ["Deutsch", "Englisch", "Französisch", "Spanisch", "Arabisch", "Türkisch", "Russisch", "Chinesisch", "Japanisch"];
 
 // ─── Fortschrittsleiste ───────────────────────────────────────────────────────
-function StepBar({ current }: { current: Step }) {
+function StepBar({ current, steps }: { current: Step; steps: { id: number; label: string }[] }) {
   return (
     <div className="flex items-center gap-0 mb-8">
-      {STEPS.map((s, i) => (
+      {steps.map((s, i) => (
         <div key={s.id} className="flex items-center flex-1">
           <div className="flex flex-col items-center flex-1">
             <div
@@ -49,7 +44,7 @@ function StepBar({ current }: { current: Step }) {
               {s.label}
             </span>
           </div>
-          {i < STEPS.length - 1 && (
+          {i < steps.length - 1 && (
             <div className={`h-0.5 flex-1 mx-1 rounded transition-all ${current > s.id ? "bg-[#76B900]" : "bg-gray-200"}`} />
           )}
         </div>
@@ -510,6 +505,14 @@ function Step5Capacity({
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function ExaminerOnboarding() {
   const [, navigate] = useLocation();
+  const { t } = useLanguage();
+  const STEPS = [
+    { id: 1, label: t.onboarding.step1 },
+    { id: 2, label: t.onboarding.step2 },
+    { id: 3, label: t.onboarding.step3 },
+    { id: 4, label: t.onboarding.step4 },
+    { id: 5, label: t.onboarding.step5 },
+  ];
   const [step, setStep] = useState<Step>(1);
 
   // Profildaten
@@ -566,7 +569,7 @@ export default function ExaminerOnboarding() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-          <StepBar current={step} />
+          <StepBar current={step} steps={STEPS} />
 
           {step === 1 && <Step1Welcome onNext={() => setStep(2)} />}
           {step === 2 && (
