@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }),
+  preferredLanguage: mysqlEnum("preferredLanguage", ["de", "en"]).default("de").notNull(),
 });
 
 export type User = typeof users.$inferSelect;

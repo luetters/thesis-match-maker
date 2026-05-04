@@ -534,13 +534,13 @@ export default function Home() {
       </section>
 
       {/* ─── Ablauf ──────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#006937" }}>
               {t.landing.process.label}
             </p>
-            <h2 className="text-3xl font-bold text-gray-900">{t.landing.process.title}</h2>
+            <h2 className="text-3xl font-bold" style={{ color: "#006937" }}>{t.landing.process.title}</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {t.landing.process.steps.map((step, i) => (
@@ -564,14 +564,14 @@ export default function Home() {
       </section>
 
       {/* ─── Technischer Rahmen ──────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
+      <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#006937" }}>
               {t.landing.tech.label}
             </p>
-            <h2 className="text-3xl font-bold text-gray-900">{t.landing.tech.title}</h2>
-            <p className="text-gray-600 mt-3 max-w-xl mx-auto">
+            <h2 className="text-3xl font-bold" style={{ color: "#006937" }}>{t.landing.tech.title}</h2>
+            <p className="mt-3 max-w-xl mx-auto" style={{ color: "#555" }}>
               {t.landing.tech.desc}{" "}
               <code className="text-gray-800 bg-gray-200 px-1.5 py-0.5 rounded text-sm">
                 thesis@htw-berlin.com
@@ -581,10 +581,10 @@ export default function Home() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {t.landing.tech.items.map((item) => (
-              <div key={item.title} className="rounded-2xl p-6 bg-gray-50 border border-gray-100">
+              <div key={item.title} className="rounded-2xl p-6 bg-white border-2" style={{ borderColor: "#006937" }}>
                 <div className="text-2xl mb-3">{item.icon}</div>
-                <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                <h3 className="font-semibold mb-2" style={{ color: "#006937" }}>{item.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: "#555" }}>{item.desc}</p>
               </div>
             ))}
           </div>

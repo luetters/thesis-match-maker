@@ -1357,7 +1357,7 @@ export async function getDeanStats() {
   };
 }
 
-// ─── E-Mail-Vorlagen ──────────────────────────────────────────────────────────
+// --- E-Mail-Vorlagen ---
 export async function getAllEmailTemplates() {
   const db = await getDb();
   if (!db) return [];
@@ -1382,4 +1382,11 @@ export async function updateEmailTemplate(
   if (data.textBody !== undefined) update.textBody = data.textBody;
   if (updatedByUserId !== undefined) update.updatedByUserId = updatedByUserId;
   await db.update(emailTemplates).set(update).where(eq(emailTemplates.key, key));
+}
+
+// ─── Sprach-Präferenz ─────────────────────────────────────────────────────────
+export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.update(users).set({ preferredLanguage: lang }).where(eq(users.id, userId));
 }

@@ -385,3 +385,20 @@
 - [x] SuperadminDashboard.tsx: Tabs und Titel übersetzt
 - [x] LanguageSwitcher: DE|EN-Button in Navbar, korrekt mit LanguageProvider verbunden
 - [x] 46/46 Tests grün, 0 TypeScript-Fehler
+
+## Phase 25: i18n-Verbesserungen
+
+- [ ] ExaminerDashboard.tsx: alle Texte durch t.examiner.* ersetzen
+- [ ] ExaminerDashboard.tsx: Tabs, Buttons, Fehlermeldungen übersetzen
+- [ ] DB-Schema: users.preferredLanguage-Spalte (de/en, default: de)
+- [ ] DB-Migration pushen
+- [ ] Backend: auth.me gibt preferredLanguage zurück
+- [ ] Backend: user.setLanguage tRPC-Prozedur (Sprache in DB speichern)
+- [ ] Frontend: LanguageContext beim Login preferredLanguage aus DB laden
+- [ ] Frontend: LanguageSwitcher speichert Auswahl auch in DB (wenn eingeloggt)
+- [ ] LanguageContext.tsx: common.errors-Block mit allen Fehlermeldungen (DE+EN)
+- [ ] LanguageContext.tsx: common.toasts-Block mit allen Toast-Nachrichten (DE+EN)
+- [ ] ExaminerDashboard.tsx: Toast-Nachrichten übersetzen
+- [ ] PavDashboard.tsx: Toast-Nachrichten übersetzen
+- [ ] DeanDashboard.tsx: Toast-Nachrichten übersetzen
+- [ ] StudentDashboard.tsx: Toast-Nachrichten übersetzen

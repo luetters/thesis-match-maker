@@ -79,6 +79,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
 }
 
 function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null } }) {
+  const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
@@ -86,7 +87,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
   const examinerRespond = trpc.thesis.examinerRespond.useMutation({
     onSuccess: (_, vars) => {
-      toast.success(vars.action === "accept" ? "Anfrage angenommen!" : "Anfrage abgelehnt.");
+      toast.success(vars.action === "accept" ? t.examiner.toastAccepted ?? "Anfrage angenommen!" : t.examiner.toastRejected ?? "Anfrage abgelehnt.");
       utils.thesis.examinerRequests.invalidate();
       setShowRejectForm(false);
     },
@@ -137,8 +138,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
       <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
         {req.targetSemester && <span>📅 {req.targetSemester}</span>}
-        {req.language && <span>🌐 {req.language === "de" ? "Deutsch" : "Englisch"}</span>}
-        {req.degreeType && <span>🎓 {req.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
+        {req.language && <span>🌐 {req.language === "de" ? (t.dean?.language_de ?? "Deutsch") : (t.dean?.language_en ?? "Englisch")}</span>}
+        {req.degreeType && <span>🎓 {req.degreeType === "bachelor" ? (t.pav?.bachelor ?? "Bachelor") : (t.pav?.master ?? "Master")}</span>}
       </div>
 
       {isPending && (
@@ -254,6 +255,7 @@ function RequestsView() {
 
 // ─── Profile Edit ─────────────────────────────────────────────────────────────
 function ProfileEdit() {
+  const { t } = useLanguage();
   const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
   const [form, setForm] = useState({
     title: "",
@@ -284,17 +286,17 @@ function ProfileEdit() {
   }
 
   const updateProfile = trpc.examiner.updateProfile.useMutation({
-    onSuccess: () => toast.success("Profil gespeichert!"),
+    onSuccess: () => toast.success(t.examiner.toastProfileSaved ?? "Profil gespeichert!"),
     onError: (err) => toast.error(err.message),
   });
 
   const setAltEmail = trpc.examiner.setAlternativeEmail.useMutation({
-    onSuccess: () => toast.success("Alternative E-Mail gespeichert!"),
+    onSuccess: () => toast.success(t.examiner.toastEmailSaved ?? "Alternative E-Mail gespeichert!"),
     onError: (err) => toast.error(err.message),
   });
 
   const setSecondFlag = trpc.examiner.setSecondExaminerFlag.useMutation({
-    onSuccess: () => toast.success("Prüfer:innen-Rolle gespeichert!"),
+    onSuccess: () => toast.success(t.examiner.toastRoleSaved ?? "Prüfer:innen-Rolle gespeichert!"),
     onError: (err) => toast.error(err.message),
   });
 
@@ -472,6 +474,7 @@ function ProgrammeSettings() {
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview() {
+  const { t } = useLanguage();
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
   const stats = {
     total: requests?.length ?? 0,
@@ -484,10 +487,10 @@ function Overview() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Gesamt", value: stats.total, color: "text-gray-900" },
-          { label: "Offen", value: stats.pending, color: "text-amber-600" },
-          { label: "Angenommen", value: stats.accepted, color: "text-green-600" },
-          { label: "Matched", value: stats.matched, color: "text-blue-600" },
+          { label: t.examiner.statsTotal ?? "Gesamt", value: stats.total, color: "text-gray-900" },
+          { label: t.examiner.statsOpen ?? "Offen", value: stats.pending, color: "text-amber-600" },
+          { label: t.examiner.statsAccepted ?? "Angenommen", value: stats.accepted, color: "text-green-600" },
+          { label: t.examiner.statsMatched ?? "Matched", value: stats.matched, color: "text-blue-600" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
             <div className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
@@ -520,6 +523,7 @@ function Overview() {
 
 // ─── My Colloquiums (Examiner) ──────────────────────────────────────────────────────────
 function MyColloquiums() {
+  const { t } = useLanguage();
   const { data: colloquiums, isLoading } = trpc.colloquium.myExaminerColloquiums.useQuery();
   if (isLoading) return <div className="text-sm text-gray-500">Wird geladen...</div>;
   if (!colloquiums?.length) return (
@@ -547,7 +551,7 @@ function MyColloquiums() {
               col.status === "SCHEDULED" ? "bg-blue-50 text-blue-700" :
               col.status === "COMPLETED" ? "bg-green-50 text-green-700" :
               "bg-red-50 text-red-700"
-            }`}>{col.status === "SCHEDULED" ? "Geplant" : col.status === "COMPLETED" ? "Abgeschlossen" : "Abgesagt"}</span>
+            }`}>{col.status === "SCHEDULED" ? (t.examiner.colStatusScheduled ?? "Geplant") : col.status === "COMPLETED" ? (t.examiner.colStatusCompleted ?? "Abgeschlossen") : (t.examiner.colStatusCancelled ?? "Abgesagt")}</span>
           </div>
           <a
             href={`/api/ics/colloquium/${col.id}`}
@@ -566,6 +570,7 @@ function MyColloquiums() {
 
 // ─── Statushistorie (Prüfer:in) ───────────────────────────────────────────────
 function ExaminerStatusHistory() {
+  const { t } = useLanguage();
   const { data: assignments, isLoading } = trpc.thesis.examinerRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
@@ -579,14 +584,14 @@ function ExaminerStatusHistory() {
     </div>
   );
   const actionLabel: Record<string, string> = {
-    THESIS_CREATED: "Anfrage eingereicht",
-    STATUS_CHANGED: "Status geändert",
-    EXAMINER_ACCEPTED: "Prüfer:in hat angenommen",
-    EXAMINER_REJECTED: "Prüfer:in hat abgelehnt",
-    FIRST_EXAMINER_ASSIGNED: "Erstprüfer:in zugewiesen",
-    SECOND_EXAMINER_ASSIGNED: "Zweitprüfer:in zugewiesen",
-    COLLOQUIUM_CREATED: "Kolloquium angelegt",
-    DEADLINE_SET: "Abgabefrist gesetzt",
+    THESIS_CREATED: t.examiner.auditThesisCreated ?? "Anfrage eingereicht",
+    STATUS_CHANGED: t.examiner.auditStatusChanged ?? "Status geändert",
+    EXAMINER_ACCEPTED: t.examiner.auditExaminerAccepted ?? "Prüfer:in hat angenommen",
+    EXAMINER_REJECTED: t.examiner.auditExaminerRejected ?? "Prüfer:in hat abgelehnt",
+    FIRST_EXAMINER_ASSIGNED: t.examiner.auditFirstAssigned ?? "Erstprüfer:in zugewiesen",
+    SECOND_EXAMINER_ASSIGNED: t.examiner.auditSecondAssigned ?? "Zweitprüfer:in zugewiesen",
+    COLLOQUIUM_CREATED: t.examiner.auditColloquiumCreated ?? "Kolloquium angelegt",
+    DEADLINE_SET: t.examiner.auditDeadlineSet ?? "Abgabefrist gesetzt",
   };
   return (
     <div className="space-y-5">
@@ -637,6 +642,7 @@ function ExaminerStatusHistory() {
 }
 // ─── Onboarding Modal ────────────────────────────────────────────────────────
 function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState<"role" | "email">("role");
   const [isSecondExaminer, setIsSecondExaminer] = useState<boolean | null>(null);
   const [alternativeEmail, setAlternativeEmail] = useState("");
@@ -653,7 +659,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
       alternativeEmail: alternativeEmail || null,
     });
     utils.examiner.myProfile.invalidate();
-    toast.success("Profil eingerichtet – willkommen!");
+    toast.success(t.examiner.toastOnboardingDone ?? "Profil eingerichtet – willkommen!");
     onComplete();
   };
 
@@ -763,7 +769,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
                 className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40"
                 style={{ backgroundColor: "#76B900" }}
               >
-                {completeOnboarding.isPending ? "Speichern..." : "Einrichtung abschließen"}
+                {completeOnboarding.isPending ? (t.onboarding.completing ?? "Speichern...") : (t.onboarding.finish ?? "Einrichtung abschließen")}
               </button>
             </div>
           </div>
@@ -777,6 +783,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
 export default function ExaminerDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes">("overview");
   const [, navigate] = useLocation();
+  const { t } = useLanguage();
 
   // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist
   const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
@@ -801,12 +808,12 @@ export default function ExaminerDashboard() {
   }));
 
   const titles: Record<string, string> = {
-    overview: "Prüfer:innen-Dashboard",
-    requests: "Betreuungsanfragen",
-    colloquiums: "Meine Kolloquien",
-    history: "Statushistorie",
-    profile: "Mein Profil",
-    programmes: "Prüfungsstudiengänge",
+    overview: t.examiner.title,
+    requests: t.examiner.requests,
+    colloquiums: t.examiner.colloquiums,
+    history: t.examiner.history,
+    profile: t.examiner.profile,
+    programmes: t.examiner.programmes ?? "Studiengänge",
   };
 
   return (
