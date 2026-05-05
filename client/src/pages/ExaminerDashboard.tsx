@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -784,15 +785,23 @@ export default function ExaminerDashboard() {
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes">("overview");
   const [, navigate] = useLocation();
   const { t } = useLanguage();
+  const { user } = useAuth();
 
-  // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist
+  // Role-Guard: Nur Prüfer:innen und Superadmins dürfen hier rein
+  useEffect(() => {
+    if (user && user.role !== "examiner" && user.role !== "superadmin") {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist (nur für echte Prüfer:innen, nicht für Superadmins)
   const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
   useEffect(() => {
-    if (!profileLoading) {
+    if (user?.role === "examiner" && !profileLoading) {
       const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
       if (!completed) navigate("/examiner/onboarding");
     }
-  }, [profile, profileLoading, navigate]);
+  }, [profile, profileLoading, navigate, user?.role]);
 
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
