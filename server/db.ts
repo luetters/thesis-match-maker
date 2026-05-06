@@ -1390,3 +1390,64 @@ export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
   if (!db) throw new Error("Datenbank nicht verfügbar");
   await db.update(users).set({ preferredLanguage: lang }).where(eq(users.id, userId));
 }
+
+// ─── SuperAdmin: Prüferinnen-Verwaltung ──────────────────────────────────────
+export async function listExaminers(filters?: { isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let baseQuery = db.select({
+    id: examinerProfiles.id,
+    userId: examinerProfiles.userId,
+    name: users.name,
+    email: users.email,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    bio: examinerProfiles.bio,
+    researchFocus: examinerProfiles.researchFocus,
+    maxSupervisions: examinerProfiles.maxSupervisions,
+    isActive: examinerProfiles.isActive,
+    createdAt: examinerProfiles.createdAt,
+  }).from(examinerProfiles)
+    .leftJoin(users, eq(examinerProfiles.userId, users.id));
+  
+  if (filters?.isActive !== undefined) {
+    return baseQuery.where(eq(examinerProfiles.isActive, filters.isActive ? 1 : 0));
+  }
+  
+  return baseQuery;
+}
+
+export async function updateExaminerProfileByAdmin(
+  examinerId: number,
+  data: {
+    title?: string;
+    department?: string;
+    bio?: string;
+    researchFocus?: string;
+    maxSupervisions?: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  const update: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.title !== undefined) update.title = data.title;
+  if (data.department !== undefined) update.department = data.department;
+  if (data.bio !== undefined) update.bio = data.bio;
+  if (data.researchFocus !== undefined) update.researchFocus = data.researchFocus;
+  if (data.maxSupervisions !== undefined) update.maxSupervisions = data.maxSupervisions;
+  
+  await db.update(examinerProfiles)
+    .set(update)
+    .where(eq(examinerProfiles.id, examinerId));
+}
+
+export async function toggleExaminerStatus(examinerId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  await db.update(examinerProfiles)
+    .set({ isActive: isActive ? 1 : 0, updatedAt: new Date() })
+    .where(eq(examinerProfiles.id, examinerId));
+}

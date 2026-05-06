@@ -480,11 +480,13 @@ export default function SuperadminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const { t } = useLanguage();
   const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("stats");
 
   const TABS = [
     { id: "stats", label: t.superadmin.tabs.overview, icon: "📊" },
     { id: "users", label: t.superadmin.tabs.users, icon: "👥" },
+    { id: "examiners", label: t.superadmin.examinerManagement, icon: "🎓", action: () => setLocation("/superadmin/examiners") },
     { id: "pav", label: "PAV", icon: "🏫" },
     { id: "audit", label: "Audit-Log", icon: "📋" },
     { id: "config", label: t.superadmin.tabs.settings, icon: "⚙️" },
@@ -512,18 +514,21 @@ export default function SuperadminDashboard() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-        {TABS.map((t) => (
+        {TABS.map((tab) => (
           <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
+            key={tab.id}
+            onClick={() => {
+              if (tab.action) tab.action();
+              else setActiveTab(tab.id);
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === t.id
+              activeTab === tab.id
                 ? "bg-white shadow text-gray-900"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            <span>{t.icon}</span>
-            <span className="hidden sm:inline">{t.label}</span>
+            <span>{tab.icon}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>

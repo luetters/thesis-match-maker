@@ -23,6 +23,7 @@ import Maintenance from "./pages/Maintenance";
 import ResetPassword from "./pages/ResetPassword";
 import ExaminerOnboarding from "./pages/ExaminerOnboarding";
 import DeanStats from "./pages/DeanStats";
+import ExaminerManagement from "./pages/ExaminerManagement";
 
 function Router() {
   return (
@@ -72,6 +73,9 @@ function Router() {
       {/* Dekanat-Dashboard */}
       <Route path="/dean" component={DeanDashboard} />
       <Route path="/dean/stats" component={DeanStats} />
+
+      {/* Prüfer:innen-Verwaltung (Superadmin) */}
+      <Route path="/superadmin/examiners" component={ExaminerManagement} />
 
       {/* Kolloquiums-Verwaltung */}
       <Route path="/admin/colloquiums" component={ColloquiumManagement} />

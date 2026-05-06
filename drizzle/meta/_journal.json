@@ -134,6 +134,13 @@
       "when": 1777692234476,
       "tag": "0018_elite_unus",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1777962516792,
+      "tag": "0019_talented_falcon",
+      "breakpoints": true
     }
   ]
 }

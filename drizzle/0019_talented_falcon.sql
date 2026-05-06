@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_profiles` ADD `isActive` int DEFAULT 1 NOT NULL;

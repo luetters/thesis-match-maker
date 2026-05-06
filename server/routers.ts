@@ -68,6 +68,9 @@ import {
   getAllEmailTemplates,
   getEmailTemplateByKey,
   updateEmailTemplate,
+  listExaminers,
+  updateExaminerProfileByAdmin,
+  toggleExaminerStatus,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1071,6 +1074,37 @@ export const appRouter = router({
             removed: true,
           });
         }
+        return { success: true };
+      }),
+    /** Alle Prüfer:innen auflisten */
+    listExaminers: superadminProcedure
+      .input(z.object({ isActive: z.boolean().optional() }).optional())
+      .query(async ({ input }) => {
+        return listExaminers(input);
+      }),
+    /** Prüfer:innen-Profil bearbeiten */
+    updateExaminerProfile: superadminProcedure
+      .input(z.object({
+        examinerId: z.number().int().positive(),
+        title: z.string().optional(),
+        department: z.string().optional(),
+        bio: z.string().optional(),
+        researchFocus: z.string().optional(),
+        maxSupervisions: z.number().int().positive().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { examinerId, ...data } = input;
+        await updateExaminerProfileByAdmin(examinerId, data);
+        return { success: true };
+      }),
+    /** Prüfer:innen-Status aktivieren/deaktivieren */
+    toggleExaminerStatus: superadminProcedure
+      .input(z.object({
+        examinerId: z.number().int().positive(),
+        isActive: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        await toggleExaminerStatus(input.examinerId, input.isActive);
         return { success: true };
       }),
   }),

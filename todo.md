@@ -402,3 +402,27 @@
 - [ ] PavDashboard.tsx: Toast-Nachrichten übersetzen
 - [ ] DeanDashboard.tsx: Toast-Nachrichten übersetzen
 - [ ] StudentDashboard.tsx: Toast-Nachrichten übersetzen
+
+## Phase 26: SuperAdmin-Prüferinnen-Verwaltung
+
+- [ ] DB-Schema: isActive-Spalte zur examiner_profiles-Tabelle hinzufügen (default: true)
+- [ ] Backend: superadmin.listExaminers – alle Prüfer:innen mit Profildaten auflisten (mit isActive-Filter)
+- [ ] Backend: superadmin.updateExaminerProfile – Profildaten bearbeiten (name, email, title, department, bio, researchFocus, maxSupervisions)
+- [ ] Backend: superadmin.toggleExaminerStatus – Prüfer:in aktivieren/deaktivieren (isActive toggle)
+- [ ] Frontend: ExaminerManagement.tsx – Seite mit Tabelle aller Prüfer:innen
+- [ ] Frontend: Tabelle mit Spalten: Name, E-Mail, Abteilung, Status (aktiv/inaktiv), Aktionen (Bearbeiten, Deaktivieren)
+- [ ] Frontend: Bearbeitungs-Modal für Profildaten
+- [ ] Frontend: Bestätigungs-Dialog zum Deaktivieren
+- [ ] Frontend: SuperadminDashboard – neuer Tab "Prüferinnen-Verwaltung" mit Link zu ExaminerManagement
+- [ ] Tests für alle neuen Prozeduren
+
+## Phase 26: SuperAdmin-Prüferinnen-Verwaltung
+
+- [x] Drizzle-Schema: isActive-Spalte zur examiner_profiles-Tabelle hinzugefügt
+- [x] Backend: listExaminers, updateExaminerProfileByAdmin, toggleExaminerStatus in db.ts
+- [x] Backend: superadmin.listExaminers, superadmin.updateExaminerProfile, superadmin.toggleExaminerStatus in routers.ts
+- [x] Frontend: ExaminerManagement.tsx mit Tabelle, Bearbeitungs-Modal und Status-Toggle
+- [x] Frontend: SuperadminDashboard mit Link zur Prüferinnen-Verwaltung
+- [x] Frontend: App.tsx Route /superadmin/examiners registriert
+- [x] LanguageContext.tsx: superadmin.examinerManagement, superadmin.manageExaminerProfiles, common.active, common.inactive hinzugefügt
+- [x] 0 TypeScript-Fehler
