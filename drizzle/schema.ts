@@ -48,7 +48,6 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
   alternativeEmail: varchar("alternativeEmail", { length: 320 }),
   isSecondExaminer: int("isSecondExaminer").default(0).notNull(),
   onboardingCompleted: int("onboardingCompleted").default(0).notNull(),
-  isActive: int("isActive").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

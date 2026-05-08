@@ -70,7 +70,6 @@ import {
   updateEmailTemplate,
   listExaminers,
   updateExaminerProfileByAdmin,
-  toggleExaminerStatus,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1097,16 +1096,7 @@ export const appRouter = router({
         await updateExaminerProfileByAdmin(examinerId, data);
         return { success: true };
       }),
-    /** Prüfer:innen-Status aktivieren/deaktivieren */
-    toggleExaminerStatus: superadminProcedure
-      .input(z.object({
-        examinerId: z.number().int().positive(),
-        isActive: z.boolean(),
-      }))
-      .mutation(async ({ input }) => {
-        await toggleExaminerStatus(input.examinerId, input.isActive);
-        return { success: true };
-      }),
+    // toggleExaminerStatus wurde entfernt (isActive-Spalte nicht in DB vorhanden)
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({

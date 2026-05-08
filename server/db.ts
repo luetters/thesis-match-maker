@@ -1406,14 +1406,9 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
     bio: examinerProfiles.bio,
     researchFocus: examinerProfiles.researchFocus,
     maxSupervisions: examinerProfiles.maxSupervisions,
-    isActive: examinerProfiles.isActive,
     createdAt: examinerProfiles.createdAt,
   }).from(examinerProfiles)
     .leftJoin(users, eq(examinerProfiles.userId, users.id));
-  
-  if (filters?.isActive !== undefined) {
-    return baseQuery.where(eq(examinerProfiles.isActive, filters.isActive ? 1 : 0));
-  }
   
   return baseQuery;
 }
@@ -1443,11 +1438,12 @@ export async function updateExaminerProfileByAdmin(
     .where(eq(examinerProfiles.id, examinerId));
 }
 
-export async function toggleExaminerStatus(examinerId: number, isActive: boolean) {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  
-  await db.update(examinerProfiles)
-    .set({ isActive: isActive ? 1 : 0, updatedAt: new Date() })
-    .where(eq(examinerProfiles.id, examinerId));
-}
+// isActive-Spalte wurde entfernt – Status-Toggle ist derzeit nicht verfügbar
+// export async function toggleExaminerStatus(examinerId: number, isActive: boolean) {
+//   const db = await getDb();
+//   if (!db) throw new Error("Datenbank nicht verfügbar");
+//   
+//   await db.update(examinerProfiles)
+//     .set({ isActive: isActive ? 1 : 0, updatedAt: new Date() })
+//     .where(eq(examinerProfiles.id, examinerId));
+// }

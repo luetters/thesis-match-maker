@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_profiles` DROP COLUMN `isActive`;

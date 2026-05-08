@@ -141,6 +141,13 @@
       "when": 1777962516792,
       "tag": "0019_talented_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1778220860743,
+      "tag": "0020_outstanding_captain_midlands",
+      "breakpoints": true
     }
   ]
 }

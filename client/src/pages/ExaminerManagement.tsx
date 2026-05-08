@@ -53,16 +53,7 @@ export default function ExaminerManagement() {
       toast.error(err.message || t.common.error);
     },
   });
-  const toggleMutation = trpc.superadmin.toggleExaminerStatus.useMutation({
-    onSuccess: () => {
-      toast.success(t.superadmin.statusUpdated);
-      setConfirmToggleId(null);
-      refetch();
-    },
-    onError: (err) => {
-      toast.error(err.message || t.common.error);
-    },
-  });
+  // toggleMutation wurde entfernt (isActive-Spalte nicht in DB vorhanden)
 
   const handleEdit = (examiner: any) => {
     setEditingId(examiner.id);
@@ -83,13 +74,7 @@ export default function ExaminerManagement() {
     });
   };
 
-  const handleToggleStatus = (examinerId: number, currentStatus: number | boolean) => {
-    const isCurrentlyActive = currentStatus === 1 || currentStatus === true;
-    toggleMutation.mutate({
-      examinerId,
-      isActive: !isCurrentlyActive,
-    });
-  };
+  // handleToggleStatus wurde entfernt (isActive-Spalte nicht in DB vorhanden)
 
   return (
     <div className="min-h-screen bg-background">
@@ -248,21 +233,7 @@ export default function ExaminerManagement() {
             <Button variant="outline" onClick={() => setConfirmToggleId(null)}>
               {t.common.cancel}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirmToggleId !== null) {
-                  const examiner = examiners?.find((e: any) => e.id === confirmToggleId);
-                  if (examiner) {
-                    handleToggleStatus(confirmToggleId, examiner.isActive);
-                  }
-                }
-              }}
-              disabled={toggleMutation.isPending}
-            >
-              {toggleMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              {t.common.confirm}
-            </Button>
+            {/* Status-Toggle wurde entfernt (isActive-Spalte nicht in DB vorhanden) */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
