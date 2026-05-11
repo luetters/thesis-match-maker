@@ -166,38 +166,11 @@ export async function getThesisRequestById(id: number) {
 export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
-  // Import programmes here to avoid circular dependency issues
-  const { programmes } = await import('../drizzle/schema');
-  const rows = await db
-    .select({
-      id: thesisRequests.id,
-      studentId: thesisRequests.studentId,
-      title: thesisRequests.title,
-      description: thesisRequests.description,
-      department: thesisRequests.department,
-      abstract: thesisRequests.abstract,
-      targetSemester: thesisRequests.targetSemester,
-      language: thesisRequests.language,
-      degreeType: thesisRequests.degreeType,
-      status: thesisRequests.status,
-      examinerId: thesisRequests.examinerId,
-      secondExaminerId: thesisRequests.secondExaminerId,
-      rejectionReason: thesisRequests.rejectionReason,
-      exposeUrl: thesisRequests.exposeUrl,
-      deadline: thesisRequests.deadline,
-      createdAt: thesisRequests.createdAt,
-      updatedAt: thesisRequests.updatedAt,
-      programmeName: programmes.name,
-      programmeAbbreviation: programmes.abbreviation,
-      programmeLevel: programmes.level,
-      programmePictogramUrl: programmes.pictogramUrl,
-    })
+  return db
+    .select()
     .from(thesisRequests)
-    .leftJoin(users, eq(thesisRequests.studentId, users.id))
-    .leftJoin(programmes, eq((users as any).programmeId, programmes.id))
     .where(eq(thesisRequests.studentId, studentId))
     .orderBy(desc(thesisRequests.createdAt));
-  return rows;
 }
 
 export async function getThesisRequestsByExaminer(examinerId: number) {

@@ -450,6 +450,297 @@ const { t } = useLanguage();
 
 ---
 
+## 6a. Phase 25: Erweiterte Internationalisierung (i18n-Verbesserungen)
+
+### Implementierungsschritte
+
+#### 1. Datenbankschema erweitern
+
+```typescript
+// drizzle/schema.ts
+export const users = sqliteTable('users', {
+  // ... existing fields ...
+  preferredLanguage: text('preferred_language', { enum: ['de', 'en'] }).default('de'),
+});
+```
+
+**Migration ausführen:**
+```bash
+pnpm db:push
+```
+
+#### 2. Backend: `user.setLanguage` tRPC-Prozedur
+
+```typescript
+// server/routers.ts
+export const appRouter = t.router({
+  user: t.router({
+    setLanguage: protectedProcedure
+      .input(z.object({ language: z.enum(['de', 'en']) }))
+      .mutation(async ({ ctx, input }) => {
+        // Sprache in DB speichern
+        await db.users.update(
+          { id: ctx.user.id },
+          { preferredLanguage: input.language }
+        );
+        return { success: true, language: input.language };
+      }),
+  }),
+});
+```
+
+#### 3. Backend: `auth.me` erweitern
+
+```typescript
+// server/routers.ts – auth.me Prozedur
+auth: t.router({
+  me: protectedProcedure.query(async ({ ctx }) => {
+    const user = await db.users.findById(ctx.user.id);
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      preferredLanguage: user.preferredLanguage || 'de', // ← Neu
+    };
+  }),
+}),
+```
+
+#### 4. Frontend: LanguageContext beim Login aktualisieren
+
+```typescript
+// client/src/contexts/LanguageContext.tsx
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLang] = useState<Language>(() => {
+    try {
+      return (localStorage.getItem('htw-lang') as Language) ?? 'de';
+    } catch {
+      return 'de';
+    }
+  });
+
+  // Beim Login: Sprache aus DB laden
+  const { data: user } = useAuth(); // tRPC hook
+  useEffect(() => {
+    if (user?.preferredLanguage) {
+      setLang(user.preferredLanguage as Language);
+      localStorage.setItem('htw-lang', user.preferredLanguage);
+    }
+  }, [user?.preferredLanguage]);
+
+  const handleSetLang = (newLang: Language) => {
+    setLang(newLang);
+    try {
+      localStorage.setItem('htw-lang', newLang);
+      // Optional: In DB speichern wenn eingeloggt
+      if (user?.id) {
+        trpc.user.setLanguage.mutate({ language: newLang });
+      }
+    } catch {}
+  };
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang: handleSetLang, t: translations[lang] }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+```
+
+#### 5. LanguageSwitcher: DB-Speicherung hinzufügen
+
+```typescript
+// client/src/components/LanguageSwitcher.tsx
+export function LanguageSwitcher({ className = '' }: { className?: string }) {
+  const { lang, setLang } = useLanguage();
+  const { data: user } = useAuth();
+  const setLanguageMutation = trpc.user.setLanguage.useMutation();
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang);
+    // In DB speichern wenn eingeloggt
+    if (user?.id) {
+      setLanguageMutation.mutate({ language: newLang });
+    }
+  };
+
+  return (
+    <div className={`flex items-center gap-1 ${className}`}>
+      <button
+        onClick={() => handleLanguageChange('de')}
+        className={`px-2 py-1 text-xs font-semibold rounded transition-colors ${
+          lang === 'de'
+            ? 'bg-[#76B900] text-white'
+            : 'text-gray-500 hover:text-gray-800'
+        }`}
+        aria-label="Deutsch"
+      >
+        DE
+      </button>
+      <span className="text-gray-300 text-xs">|</span>
+      <button
+        onClick={() => handleLanguageChange('en')}
+        className={`px-2 py-1 text-xs font-semibold rounded transition-colors ${
+          lang === 'en'
+            ? 'bg-[#76B900] text-white'
+            : 'text-gray-500 hover:text-gray-800'
+        }`}
+        aria-label="English"
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+```
+
+#### 6. LanguageContext: `common.errors` und `common.toasts` erweitern
+
+```typescript
+// client/src/contexts/LanguageContext.tsx
+const translations = {
+  de: {
+    // ... existing translations ...
+    common: {
+      // ... existing common fields ...
+      errors: {
+        invalidEmail: 'Ungültige E-Mail-Adresse',
+        invalidPassword: 'Passwort muss mindestens 8 Zeichen lang sein',
+        emailRequired: 'E-Mail ist erforderlich',
+        passwordRequired: 'Passwort ist erforderlich',
+        userNotFound: 'Benutzer:in nicht gefunden',
+        unauthorized: 'Authentifizierung erforderlich',
+        forbidden: 'Zugriff verweigert',
+        serverError: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
+        networkError: 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.',
+        invalidToken: 'Ungültiger oder abgelaufener Token',
+        fileTooBig: 'Datei ist zu groß (max. 16 MB)',
+        invalidFileType: 'Ungültiger Dateityp',
+      },
+      toasts: {
+        success: 'Erfolgreich!',
+        error: 'Fehler',
+        warning: 'Warnung',
+        info: 'Information',
+        saved: 'Gespeichert',
+        deleted: 'Gelöscht',
+        copied: 'In die Zwischenablage kopiert',
+        loading: 'Wird geladen…',
+        uploading: 'Wird hochgeladen…',
+        processing: 'Wird verarbeitet…',
+        requestSent: 'Anfrage versendet',
+        profileUpdated: 'Profil aktualisiert',
+        settingsSaved: 'Einstellungen gespeichert',
+      },
+    },
+  },
+  en: {
+    // ... existing translations ...
+    common: {
+      // ... existing common fields ...
+      errors: {
+        invalidEmail: 'Invalid email address',
+        invalidPassword: 'Password must be at least 8 characters long',
+        emailRequired: 'Email is required',
+        passwordRequired: 'Password is required',
+        userNotFound: 'User not found',
+        unauthorized: 'Authentication required',
+        forbidden: 'Access denied',
+        serverError: 'An error occurred. Please try again later.',
+        networkError: 'Network error. Please check your internet connection.',
+        invalidToken: 'Invalid or expired token',
+        fileTooBig: 'File is too large (max. 16 MB)',
+        invalidFileType: 'Invalid file type',
+      },
+      toasts: {
+        success: 'Success!',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Information',
+        saved: 'Saved',
+        deleted: 'Deleted',
+        copied: 'Copied to clipboard',
+        loading: 'Loading…',
+        uploading: 'Uploading…',
+        processing: 'Processing…',
+        requestSent: 'Request sent',
+        profileUpdated: 'Profile updated',
+        settingsSaved: 'Settings saved',
+      },
+    },
+  },
+};
+```
+
+#### 7. Toast-Nachrichten in Dashboards übersetzen
+
+```typescript
+// client/src/pages/ExaminerDashboard.tsx
+const { t } = useLanguage();
+
+const respondMutation = trpc.examiner.respondToRequest.useMutation({
+  onSuccess: (data) => {
+    if (data.accepted) {
+      toast.success(t.common.toasts.success); // Statt hardcodiert
+    } else {
+      toast.info(t.common.toasts.warning);
+    }
+  },
+  onError: (err) => {
+    toast.error(err.message || t.common.toasts.error);
+  },
+});
+```
+
+#### 8. Vitest-Tests für neue Prozeduren
+
+```typescript
+// server/user.setLanguage.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { createMockContext } from './test-utils';
+import { appRouter } from './routers';
+
+describe('user.setLanguage', () => {
+  it('speichert Spracheinstellung in DB', async () => {
+    const ctx = createMockContext({ user: { id: 1, role: 'student' } });
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.user.setLanguage({ language: 'en' });
+
+    expect(result.success).toBe(true);
+    expect(result.language).toBe('en');
+  });
+
+  it('lehnt unauthentifizierte Anfragen ab', async () => {
+    const ctx = createMockContext({ user: null });
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.user.setLanguage({ language: 'de' })
+    ).rejects.toThrow('UNAUTHORIZED');
+  });
+});
+```
+
+#### 9. Checkliste für Phase 25
+
+- [ ] `users.preferredLanguage` Spalte hinzufügen und migrieren
+- [ ] `user.setLanguage` tRPC-Prozedur implementieren
+- [ ] `auth.me` um `preferredLanguage` erweitern
+- [ ] LanguageContext beim Login aktualisieren
+- [ ] LanguageSwitcher DB-Speicherung hinzufügen
+- [ ] `common.errors` und `common.toasts` in LanguageContext ergänzen
+- [ ] ExaminerDashboard.tsx Toast-Nachrichten übersetzen
+- [ ] PavDashboard.tsx Toast-Nachrichten übersetzen
+- [ ] DeanDashboard.tsx Toast-Nachrichten übersetzen
+- [ ] StudentDashboard.tsx Toast-Nachrichten übersetzen
+- [ ] Vitest-Tests schreiben und ausführen (`pnpm test`)
+- [ ] Alle Komponenten mit `useLanguage()` Hook überprüfen
+- [ ] Checkpoint erstellen und testen
+
+---
+
 ## 7. Seed-Daten & Testkonten
 
 ### Testkonten (Passwort: `HTWBerlin2024!`)
@@ -645,3 +936,184 @@ VITE_ANALYTICS_WEBSITE_ID=<id>
 ---
 
 **Viel Erfolg bei der Neuimplementierung! 🚀**
+
+
+---
+
+## 6b. Vollständige Übersetzungsliste (LanguageContext.tsx)
+
+### Struktur der Übersetzungen
+
+Die Übersetzungen sind in `client/src/contexts/LanguageContext.tsx` organisiert nach Funktionsbereichen:
+
+```
+translations = {
+  de: {
+    nav: { ... }                    # Navigation & Layout
+    landing: { ... }                # Landing Page
+    student: { ... }                # Studierenden-Dashboard
+    examiner: { ... }               # Prüfer:innen-Dashboard
+    pav: { ... }                    # PAV-Dashboard
+    dean: { ... }                   # Dekanat-Dashboard
+    superadmin: { ... }             # Superadmin-Dashboard
+    onboarding: { ... }             # Onboarding-Assistent
+    directory: { ... }              # Prüfer:innen-Verzeichnis
+    admin: { ... }                  # Admin-Dashboard
+    status: { ... }                 # Status-Codierung
+    common: {                        # Globale Strings
+      save, cancel, delete, ...
+      errors: { ... }               # Fehlermeldungen
+      toasts: { ... }               # Toast-Benachrichtigungen
+    }
+  },
+  en: { ... }                        # Englische Übersetzungen (identische Struktur)
+}
+```
+
+### Aktuelle Übersetzungsschlüssel
+
+#### Navigation (`nav.*`)
+```
+home, examiners, login, logout, dashboard, student, examiner, admin, directory
+```
+
+#### Landing Page (`landing.*`)
+```
+title, subtitle, tagline, loginBtn, loginMagicLink, loginManus, emailPlaceholder,
+sendLink, sending, linkSent, browseExaminers, openArea, fachbereich, heroDesc,
+startAsStudent, examinerArea,
+features: { match, matchDesc, track, trackDesc, secure, secureDesc },
+roles: { title, subtitle, student, studentFeatures, examiner, examinerFeatures, admin, adminFeatures },
+process: { label, title, steps },
+tech: { label, title, desc, descSuffix, items },
+footer: { forStudents, forExaminers, contact, studentLinks, examinerLinks, imprint, privacy, accessibility, copyright }
+```
+
+#### Studierenden-Dashboard (`student.*`)
+```
+title, newRequest, myRequests, noRequests, submitRequest, thesisTitle, description,
+department, degreeType, targetSemester, language, uploadExpose, uploading, uploadSuccess,
+deadline, downloadIcs, colloquiums, history
+```
+
+#### Prüfer:innen-Dashboard (`examiner.*`)
+```
+title, requests, profile, colloquiums, history, accept, reject, downloadExpose, noRequests,
+programmes, toastAccepted, toastRejected, toastProfileSaved, toastEmailSaved, toastRoleSaved,
+toastOnboardingDone, statsTotal, statsOpen, statsAccepted, statsMatched,
+colStatusScheduled, colStatusCompleted, colStatusCancelled,
+auditThesisCreated, auditStatusChanged, auditExaminerAccepted, auditExaminerRejected,
+auditFirstAssigned, auditSecondAssigned, auditColloquiumCreated, auditDeadlineSet
+```
+
+#### PAV-Dashboard (`pav.*`)
+```
+title, unassigned, myProgrammes, proposeExaminer, directAssign, sendRequest, sending,
+assigning, successPropose, successAssign, role, firstExaminer, secondExaminer,
+selectExaminer, selectRole, noUnassigned, noProgrammes, addProgramme, removeProgramme,
+bachelor, master, proposalNote
+```
+
+#### Dekanat-Dashboard (`dean.*`)
+```
+title, allRequests, csvExport, exporting, statistics, search, filterStatus, total, pending,
+matched, accepted, rejected, dean, viceDean, admin, language_de, language_en, confirmed,
+allStatus, searchPlaceholder, colTopic, colStudent, colDepartment, colDegree, colStatus,
+colSubmitted, clickForDetails,
+stats: {
+  title, subtitle, totalRequests, openRequests, avgProcessingTime, completionRate, days,
+  byStatus, byProgramme, byMonth, examinerLoad, examinerName, current, max, utilization,
+  noData, loading, backToDashboard
+}
+```
+
+#### Superadmin-Dashboard (`superadmin.*`)
+```
+title,
+tabs: { overview, users, programmes, settings, emailTemplates },
+examinerManagement, manageExaminerProfiles, editProfile, profileUpdated, statusUpdated,
+confirmStatusChange, statusChangeWarning, noExaminers, department, bio, researchFocus,
+maxSupervisions,
+emailTemplates: {
+  title, subtitle, edit, save, cancel, subject, htmlBody, textBody, preview,
+  placeholders, saving, successSave, errorSave, noTemplates
+}
+```
+
+#### Onboarding (`onboarding.*`)
+```
+title, subtitle, step1, step2, step3, step4, step5, next, back, finish, skip,
+academicTitle, department, bio, researchFocus, officeHours, website, uploadPhoto,
+maxSupervisions, isSecondExaminer, selectProgrammes, completing, successComplete
+```
+
+#### Prüfer:innen-Verzeichnis (`directory.*`)
+```
+title, subtitle, search, filterProgramme, filterRole, allProgrammes, allRoles,
+firstExaminer, secondExaminer, noResults, capacity, researchFocus, officeHours,
+website, requestSupervision
+```
+
+#### Admin-Dashboard (`admin.*`)
+```
+title, overview, requests, audit, users, stats, settings, colloquiums, totalRequests,
+pending, matched, users_count
+```
+
+#### Status (`status.*`)
+```
+PENDING, ACCEPTED, REJECTED, MATCHED
+```
+
+#### Globale Strings (`common.*`)
+```
+save, cancel, delete, edit, loading, error, success, confirm, back, search, filter,
+all, noData, name, email, status, actions, active, inactive, forbidden, accessDenied,
+backHome, close
+```
+
+### Phase 25: Neue Übersetzungsschlüssel
+
+#### Fehler (`common.errors.*`)
+```
+invalidEmail, invalidPassword, emailRequired, passwordRequired, userNotFound,
+unauthorized, forbidden, serverError, networkError, invalidToken, fileTooBig,
+invalidFileType
+```
+
+#### Toast-Benachrichtigungen (`common.toasts.*`)
+```
+success, error, warning, info, saved, deleted, copied, loading, uploading,
+processing, requestSent, profileUpdated, settingsSaved
+```
+
+### Verwendungsbeispiel
+
+```typescript
+import { useLanguage } from '@/contexts/LanguageContext';
+
+export function MyComponent() {
+  const { t } = useLanguage();
+  
+  return (
+    <div>
+      <h1>{t.landing.title}</h1>
+      <p>{t.landing.subtitle}</p>
+      <button>{t.common.save}</button>
+      <span className="error">{t.common.errors.invalidEmail}</span>
+    </div>
+  );
+}
+```
+
+### Best Practices
+
+1. **Immer `useLanguage()` verwenden** – Nicht direkt auf `translations` zugreifen
+2. **Typsicherheit nutzen** – TypeScript warnt bei fehlenden Schlüsseln
+3. **Neue Schlüssel hinzufügen** – Immer in beiden Sprachen (DE + EN)
+4. **Strukturiert organisieren** – Nach Funktionsbereichen (nav, landing, student, etc.)
+5. **Platzhalter verwenden** – Für dynamische Werte (z.B. `${userName}`)
+
+---
+
+## 7. Seed-Daten & Testkonten
