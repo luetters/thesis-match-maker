@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronLeft, Edit2, Power, AlertCircle } from "lucide-react";
+import { Loader2, ChevronLeft, Edit2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ExaminerManagement() {
@@ -17,7 +17,7 @@ export default function ExaminerManagement() {
   const { data: user } = trpc.auth.me.useQuery();
   
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [confirmToggleId, setConfirmToggleId] = useState<number | null>(null);
+
   const [editData, setEditData] = useState({
     title: "",
     department: "",
@@ -114,7 +114,6 @@ export default function ExaminerManagement() {
                   <th className="text-left p-3 font-semibold">{t.common.email}</th>
                   <th className="text-left p-3 font-semibold">{t.superadmin.department}</th>
                   <th className="text-left p-3 font-semibold">{t.superadmin.maxSupervisions}</th>
-                  <th className="text-left p-3 font-semibold">{t.common.status}</th>
                   <th className="text-right p-3 font-semibold">{t.common.actions}</th>
                 </tr>
               </thead>
@@ -125,28 +124,14 @@ export default function ExaminerManagement() {
                     <td className="p-3">{examiner.email}</td>
                     <td className="p-3">{examiner.department || "—"}</td>
                     <td className="p-3">{examiner.maxSupervisions}</td>
-                    <td className="p-3">
-                      <Badge variant={examiner.isActive ? "default" : "secondary"}>
-                        {examiner.isActive ? t.common.active : t.common.inactive}
-                      </Badge>
-                    </td>
                     <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(examiner)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={examiner.isActive ? "destructive" : "default"}
-                          onClick={() => setConfirmToggleId(examiner.id)}
-                        >
-                          <Power className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(examiner)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -220,23 +205,7 @@ export default function ExaminerManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Toggle Modal */}
-      <Dialog open={confirmToggleId !== null} onOpenChange={() => setConfirmToggleId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t.superadmin.confirmStatusChange}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t.superadmin.statusChangeWarning}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmToggleId(null)}>
-              {t.common.cancel}
-            </Button>
-            {/* Status-Toggle wurde entfernt (isActive-Spalte nicht in DB vorhanden) */}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
