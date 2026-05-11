@@ -71,8 +71,11 @@ function ProgrammeCard({
 
 // ─── Student: Einmalige Studiengang-Zuordnung ─────────────────────────────────
 export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
+  const { data: user } = trpc.auth.me.useQuery();
   const { data: programmes, isLoading } = trpc.programmes.list.useQuery();
-  const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
+  const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery(undefined, {
+    enabled: !!user,
+  });
   const utils = trpc.useUtils();
   const setMutation = trpc.programmes.setStudentProgramme.useMutation({
     onSuccess: () => {
@@ -82,6 +85,8 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     },
     onError: (err) => toast.error(err.message),
   });
+
+  if (!user) return null;
 
   const [selected, setSelected] = useState<number | null>(null);
 
