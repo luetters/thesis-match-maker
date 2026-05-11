@@ -6,6 +6,7 @@
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getLoginUrl } from "@/const";
 
 interface Programme {
   id: number;
@@ -86,7 +87,25 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     onError: (err) => toast.error(err.message),
   });
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-12 px-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-gray-900 mb-2">Studiengang auswählen</div>
+          <p className="text-sm text-gray-600 mb-4">
+            Um einen Studiengang auszuwählen und Ihre Abschlussarbeit einzureichen, müssen Sie sich zuerst anmelden.
+          </p>
+        </div>
+        <a
+          href={getLoginUrl()}
+          className="px-6 py-2.5 rounded-xl text-white font-semibold text-sm transition-all"
+          style={{ backgroundColor: "#006937" }}
+        >
+          Jetzt anmelden
+        </a>
+      </div>
+    );
+  }
 
   const [selected, setSelected] = useState<number | null>(null);
 
