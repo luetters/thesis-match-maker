@@ -99,7 +99,7 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
         <a
           href={getLoginUrl()}
           className="px-6 py-2.5 rounded-xl text-white font-semibold text-sm transition-all"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           Jetzt anmelden
         </a>
