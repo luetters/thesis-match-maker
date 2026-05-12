@@ -343,6 +343,33 @@ const translations = {
       accessDenied: "Sie haben keinen Zugriff auf diesen Bereich.",
       backHome: "Zur Startseite",
       close: "Schließen",
+      errors: {
+        networkError: "Netzwerkfehler. Bitte versuchen Sie es später erneut.",
+        unauthorized: "Sie sind nicht authentifiziert. Bitte melden Sie sich an.",
+        forbidden: "Sie haben keine Berechtigung für diese Aktion.",
+        notFound: "Die angeforderte Ressource wurde nicht gefunden.",
+        validation: "Bitte überprüfen Sie Ihre Eingaben.",
+        serverError: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+        invalidEmail: "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+        passwordTooShort: "Das Passwort muss mindestens 8 Zeichen lang sein.",
+        passwordMismatch: "Die Passwörter stimmen nicht überein.",
+        fileTooBig: "Die Datei ist zu groß. Maximum: 16 MB.",
+        invalidFileType: "Dieser Dateityp wird nicht unterstützt.",
+        duplicateEmail: "Diese E-Mail-Adresse ist bereits registriert.",
+      },
+      toasts: {
+        saved: "Erfolgreich gespeichert!",
+        deleted: "Erfolgreich gelöscht!",
+        created: "Erfolgreich erstellt!",
+        updated: "Erfolgreich aktualisiert!",
+        copied: "In die Zwischenablage kopiert!",
+        fileUploaded: "Datei erfolgreich hochgeladen!",
+        emailSent: "E-Mail erfolgreich versendet!",
+        passwordChanged: "Passwort erfolgreich geändert!",
+        profileUpdated: "Profil erfolgreich aktualisiert!",
+        languageChanged: "Sprache erfolgreich geändert!",
+        loggedOut: "Sie wurden erfolgreich abgemeldet.",
+      },
     },
   },
   en: {
@@ -685,6 +712,33 @@ const translations = {
       accessDenied: "You do not have access to this area.",
       backHome: "Back to Home",
       close: "Close",
+      errors: {
+        networkError: "Network error. Please try again later.",
+        unauthorized: "You are not authenticated. Please sign in.",
+        forbidden: "You do not have permission for this action.",
+        notFound: "The requested resource was not found.",
+        validation: "Please check your input.",
+        serverError: "An error occurred. Please try again later.",
+        invalidEmail: "Please enter a valid email address.",
+        passwordTooShort: "Password must be at least 8 characters long.",
+        passwordMismatch: "Passwords do not match.",
+        fileTooBig: "File is too large. Maximum: 16 MB.",
+        invalidFileType: "This file type is not supported.",
+        duplicateEmail: "This email address is already registered.",
+      },
+      toasts: {
+        saved: "Saved successfully!",
+        deleted: "Deleted successfully!",
+        created: "Created successfully!",
+        updated: "Updated successfully!",
+        copied: "Copied to clipboard!",
+        fileUploaded: "File uploaded successfully!",
+        emailSent: "Email sent successfully!",
+        passwordChanged: "Password changed successfully!",
+        profileUpdated: "Profile updated successfully!",
+        languageChanged: "Language changed successfully!",
+        loggedOut: "You have been signed out.",
+      },
     },
   },
 } as const;
@@ -731,10 +785,28 @@ export function useLanguage() {
 /** Compact language switcher component */
 export function LanguageSwitcher({ className = "" }: { className?: string }) {
   const { lang, setLang } = useLanguage();
+  
+  // Lazy import to avoid circular dependency
+  const handleLanguageChange = async (newLang: Language) => {
+    setLang(newLang);
+    
+    // Wenn eingeloggt, Sprache auch in DB speichern
+    try {
+      const { trpc } = await import("@/lib/trpc");
+      const meQuery = trpc.auth.me.useQuery();
+      if (meQuery.data) {
+        const setLanguageMutation = trpc.auth.setLanguage.useMutation();
+        setLanguageMutation.mutate({ language: newLang });
+      }
+    } catch (error) {
+      // Fehler ignorieren wenn nicht eingeloggt oder Hook nicht verfügbar
+    }
+  };
+  
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       <button
-        onClick={() => setLang("de")}
+        onClick={() => handleLanguageChange("de")}
         className={`px-2 py-1 text-xs font-semibold rounded transition-colors ${
           lang === "de"
             ? "bg-[#76B900] text-white"
@@ -746,7 +818,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
       </button>
       <span className="text-gray-300 text-xs">|</span>
       <button
-        onClick={() => setLang("en")}
+        onClick={() => handleLanguageChange("en")}
         className={`px-2 py-1 text-xs font-semibold rounded transition-colors ${
           lang === "en"
             ? "bg-[#76B900] text-white"

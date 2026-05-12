@@ -1358,10 +1358,14 @@ export async function updateEmailTemplate(
 }
 
 // ─── Sprach-Präferenz ─────────────────────────────────────────────────────────
-export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
+export async function setUserLanguage(userId: number, lang: "de" | "en") {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
   await db.update(users).set({ preferredLanguage: lang }).where(eq(users.id, userId));
+}
+
+export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
+  return setUserLanguage(userId, lang);
 }
 
 // ─── SuperAdmin: Prüferinnen-Verwaltung ──────────────────────────────────────

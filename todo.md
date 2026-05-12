@@ -388,20 +388,20 @@
 
 ## Phase 25: i18n-Verbesserungen
 
-- [ ] ExaminerDashboard.tsx: alle Texte durch t.examiner.* ersetzen
-- [ ] ExaminerDashboard.tsx: Tabs, Buttons, Fehlermeldungen übersetzen
-- [ ] DB-Schema: users.preferredLanguage-Spalte (de/en, default: de)
-- [ ] DB-Migration pushen
-- [ ] Backend: auth.me gibt preferredLanguage zurück
-- [ ] Backend: user.setLanguage tRPC-Prozedur (Sprache in DB speichern)
-- [ ] Frontend: LanguageContext beim Login preferredLanguage aus DB laden
-- [ ] Frontend: LanguageSwitcher speichert Auswahl auch in DB (wenn eingeloggt)
-- [ ] LanguageContext.tsx: common.errors-Block mit allen Fehlermeldungen (DE+EN)
-- [ ] LanguageContext.tsx: common.toasts-Block mit allen Toast-Nachrichten (DE+EN)
-- [ ] ExaminerDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] PavDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] DeanDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] StudentDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] ExaminerDashboard.tsx: alle Texte durch t.examiner.* ersetzen (bereits in früheren Phasen)
+- [x] ExaminerDashboard.tsx: Tabs, Buttons, Fehlermeldungen übersetzen
+- [x] DB-Schema: users.preferredLanguage-Spalte (de/en, default: de) (bereits vorhanden)
+- [x] DB-Migration pushen (bereits durchgeführt)
+- [x] Backend: auth.me gibt preferredLanguage zurück (bereits in User-Typ)
+- [x] Backend: user.setLanguage tRPC-Prozedur (Sprache in DB speichern) - auth.setLanguage implementiert
+- [x] Frontend: LanguageContext beim Login preferredLanguage aus DB laden - LanguageProvider erweitert
+- [x] Frontend: LanguageSwitcher speichert Auswahl auch in DB (wenn eingeloggt) - handleLanguageChange implementiert
+- [x] LanguageContext.tsx: common.errors-Block mit allen Fehlermeldungen (DE+EN) - 12 Fehlertypen hinzugefügt
+- [x] LanguageContext.tsx: common.toasts-Block mit allen Toast-Nachrichten (DE+EN) - 11 Toast-Typen hinzugefügt
+- [x] ExaminerDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] PavDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] DeanDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] StudentDashboard.tsx: Toast-Nachrichten übersetzen
 
 ## Phase 26: SuperAdmin-Prüferinnen-Verwaltung
 

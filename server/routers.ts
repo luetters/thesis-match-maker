@@ -70,6 +70,7 @@ import {
   updateEmailTemplate,
   listExaminers,
   updateExaminerProfileByAdmin,
+  setUserLanguage,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -153,6 +154,13 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    setLanguage: protectedProcedure
+      .input(z.object({ language: z.enum(["de", "en"]) }))
+      .mutation(async ({ ctx, input }) => {
+        // Sprache in DB speichern
+        await setUserLanguage(ctx.user.id, input.language);
+        return { success: true };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
