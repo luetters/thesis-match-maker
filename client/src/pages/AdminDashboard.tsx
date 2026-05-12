@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -969,6 +971,15 @@ function StatisticsView() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Zugriffskontrolle: Nur Admins und Superadmins
+  if (user && user.role !== "admin" && user.role !== "superadmin") {
+    setLocation("/");
+    return null;
+  }
+  
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings">("overview");
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
