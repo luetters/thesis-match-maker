@@ -426,3 +426,68 @@
 - [x] Frontend: App.tsx Route /superadmin/examiners registriert
 - [x] LanguageContext.tsx: superadmin.examinerManagement, superadmin.manageExaminerProfiles, common.active, common.inactive hinzugefügt
 - [x] 0 TypeScript-Fehler
+
+## Phase 27: Anfrageprozess-Verbesserungen
+
+### Datenbankschema & Backend
+- [x] DB: thesisRequests.wantedExaminerId (Foreign Key zu examiner_profiles)
+- [x] DB: thesisRequests.status erweitern (PENDING_FIRST_EXAMINER, FIRST_EXAMINER_ACCEPTED, etc.)
+- [x] DB: thesisRequests.withdrawnAt (Timestamp für Zurückziehen)
+- [x] DB: examinerActionTokens Tabelle erstellt
+- [x] Backend: getQualifiedExaminers – Gutachter:innen nach Studiengang filtern
+- [x] Backend: getSecondExaminers – Zweitgutachter:innen mit Kategorisierung (intern/extern)
+- [x] Backend: hasOpenThesisRequest – Prüfe ob Student offene Anfrage hat
+- [x] Backend: createExaminerActionToken – Token für Accept/Reject Links
+- [x] Backend: verifyExaminerActionToken – Token validieren
+- [x] Backend: acceptThesisRequest / rejectThesisRequest
+- [x] Backend: withdrawThesisRequest – Anfrage zurückziehen
+- [x] Backend: setSecondExaminer – Zweitgutachter speichern
+
+### tRPC-Prozeduren
+- [x] thesisPhase27.getQualifiedExaminers
+- [x] thesisPhase27.getSecondExaminers
+- [x] thesisPhase27.createWithWantedExaminer
+- [x] thesisPhase27.withdraw
+- [x] thesisPhase27.acceptRequest (via Token)
+- [x] thesisPhase27.rejectRequest (via Token)
+- [x] thesisPhase27.setSecondExaminer
+
+### Frontend-Formular
+- [ ] StudentNewThesis.tsx erweitern: Wunschgutachter-Dropdown
+- [ ] StudentNewThesis.tsx erweitern: Semester-Dropdown (maximal 3 Semester in Zukunft)
+- [ ] StudentNewThesis.tsx erweitern: Exposé-Upload (PDF, max 10MB)
+- [ ] Frontend: Semester-Berechnung (WS2025/26, SoSe2027, WS2027/28)
+- [ ] Frontend: PDF-Upload-Validierung (Content-Type, Größe)
+- [ ] Frontend: Fehlerbehandlung für "json Parse unexpected character"
+- [ ] Frontend: Validierung: Nur 1 offene Anfrage pro Student
+- [ ] Frontend: Toast-Nachricht wenn offene Anfrage existiert
+
+### E-Mail-Versand
+- [ ] emailHelper.ts: sendExaminerConfirmationEmail mit Accept/Reject-Buttons
+- [ ] Email-Template: examiner_confirmation mit {{acceptUrl}} und {{rejectUrl}}
+- [ ] Backend: Generiere Accept/Reject-URLs mit Tokens
+- [ ] Frontend: Accept/Reject-Links in E-Mail funktionsfähig
+- [ ] Backend: handleExaminerAcceptance – Anfrage akzeptiert
+- [ ] Backend: handleExaminerRejection – Anfrage abgelehnt
+
+### Zweitgutachter-Suche
+- [ ] Frontend: SecondExaminerSelection.tsx Seite nach Akzeptanz des Erstgutachters
+- [ ] Frontend: Angaben aus Erstanfrage anzeigen (nicht änderbar)
+- [ ] Frontend: Zweitgutachter-Dropdown mit Kategorisierung (Intern/Extern)
+- [ ] Frontend: Intern: Professor:innen der HTW Berlin
+- [ ] Frontend: Extern: Lehrbeauftragte und externe Gutachter:innen
+
+### Anfrage-Verwaltung
+- [ ] Frontend: Zurückziehen-Button auf Anfrage-Detailseite
+- [ ] Frontend: Bestätigungs-Dialog zum Zurückziehen
+- [ ] Frontend: Anfrage-Status anzeigen (Warten auf Erstgutachter, Akzeptiert, Abgelehnt, etc.)
+- [ ] LanguageContext.tsx: Neue Übersetzungsschlüssel für Phase 27
+
+### Tests & Fehlerbehandlung
+- [ ] Backend: Tests für getQualifiedExaminers, getSecondExaminers
+- [ ] Backend: Tests für Accept/Reject-Logik
+- [ ] Backend: Tests für withdrawThesisRequest
+- [ ] Frontend: Tests für Semester-Berechnung
+- [ ] Frontend: Tests für Formular-Validierung
+- [ ] Frontend: Tests für PDF-Upload-Validierung
+- [ ] Fehlerbehandlung: JSON Parse Error bei PDF-Upload beheben

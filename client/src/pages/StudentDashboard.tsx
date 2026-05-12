@@ -32,11 +32,42 @@ function useNavItems() {
 }
 
 // ─── New Request Form ─────────────────────────────────────────────────────────
+// ─── Semester-Berechnung ────────────────────────────────────────────────────────
+function getNextSemesters(): { label: string; value: string }[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  
+  let startYear = currentYear;
+  let startSemester = currentMonth >= 10 ? "WS" : currentMonth >= 4 ? "SoSe" : "WS";
+  if (startSemester === "WS" && currentMonth < 10) startYear -= 1;
+  
+  const semesters = [];
+  for (let i = 0; i < 3; i++) {
+    if (startSemester === "WS") {
+      semesters.push({ label: `WS ${startYear}/${startYear + 1}`, value: `WS${startYear}` });
+      startYear += 1;
+      startSemester = "SoSe";
+    } else {
+      semesters.push({ label: `SoSe ${startYear}`, value: `SoSe${startYear}` });
+      startSemester = "WS";
+    }
+  }
+  return semesters;
+}
+
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
+  
+  // Qualifizierte Gutachter:innen laden
+  const { data: qualifiedExaminers = [] } = trpc.thesisPhase27.getQualifiedExaminers.useQuery(
+    { department: myProgramme?.abbreviation ?? "" },
+    { enabled: !!myProgramme }
+  );
 
   const [hasOwnTopic, setHasOwnTopic] = useState(true);
+  const [exposeFile, setExposeFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -46,6 +77,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     targetSemester: "",
     language: "de" as "de" | "en",
     degreeType: "bachelor" as "bachelor" | "master",
+    wantedExaminerId: 0,
   });
 
   // Studiengang und Abschlussart automatisch vorausfüllen sobald Profil geladen
@@ -59,18 +91,56 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     }
   }, [myProgramme?.id]);
 
-  const createMutation = trpc.thesis.create.useMutation({
+  const createMutation = trpc.thesisPhase27.createWithWantedExaminer.useMutation({
     onSuccess: () => {
       toast.success("Anfrage erfolgreich eingereicht!");
-      setForm({ title: "", description: "", department: myProgramme?.name ?? "", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor" });
+      setForm({ title: "", description: "", department: myProgramme?.name ?? "", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
+      setExposeFile(null);
       onSuccess();
     },
     onError: (err) => toast.error(err.message),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({ ...form, hasOwnTopic });
+    
+    if (!form.wantedExaminerId) {
+      toast.error("Bitte wählen Sie einen Wunschgutachter aus.");
+      return;
+    }
+    
+    if (!form.targetSemester) {
+      toast.error("Bitte wählen Sie ein Zielsemester aus.");
+      return;
+    }
+    
+    let exposeUrl = "";
+    let exposeKey = "";
+    
+    // Exposé hochladen wenn vorhanden
+    if (exposeFile) {
+      try {
+        const formData = new FormData();
+        formData.append("file", exposeFile);
+        const res = await fetch("/api/upload/expose", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Upload fehlgeschlagen");
+        exposeUrl = data.url;
+        exposeKey = data.key;
+      } catch (err: unknown) {
+        toast.error(`Exposé-Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Unbekannter Fehler"}`);
+        return;
+      }
+    }
+    
+    createMutation.mutate({ 
+      ...form, 
+      exposeUrl,
+      exposeKey,
+    });
   };
 
   return (
@@ -137,14 +207,40 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Zielsemester</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Zielsemester <span className="text-red-500">*</span></label>
+          <select
+            required
             value={form.targetSemester}
             onChange={(e) => setForm((f) => ({ ...f, targetSemester: e.target.value }))}
-            placeholder="z.B. WS 2025/26"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
-          />
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+          >
+            <option value="">-- Bitte wählen --</option>
+            {getNextSemesters().map((sem) => (
+              <option key={sem.value} value={sem.value}>
+                {sem.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
+          <select
+            required
+            value={form.wantedExaminerId}
+            onChange={(e) => setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) }))}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+          >
+            <option value={0}>-- Bitte wählen --</option>
+            {qualifiedExaminers.map((examiner: any) => (
+              <option key={examiner.id} value={examiner.id}>
+                {examiner.name} ({examiner.title})
+              </option>
+            ))}
+          </select>
+          {qualifiedExaminers.length === 0 && myProgramme && (
+            <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
+          )}
         </div>
 
         <div>
@@ -194,6 +290,47 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             placeholder="Kurze Zusammenfassung der geplanten Arbeit..."
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
           />
+        </div>
+        
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Exposé (PDF, optional, max. 10 MB)</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  if (file.type !== "application/pdf") {
+                    toast.error("Nur PDF-Dateien sind erlaubt.");
+                    return;
+                  }
+                  if (file.size > 10 * 1024 * 1024) {
+                    toast.error("Datei ist zu groß (max. 10 MB).");
+                    return;
+                  }
+                  setExposeFile(file);
+                }
+              }}
+              className="hidden"
+              id="expose-upload"
+            />
+            <label
+              htmlFor="expose-upload"
+              className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gray-400 transition-all text-sm font-medium text-gray-600"
+            >
+              {exposeFile ? `✓ ${exposeFile.name}` : "PDF auswählen..."}
+            </label>
+            {exposeFile && (
+              <button
+                type="button"
+                onClick={() => setExposeFile(null)}
+                className="text-xs text-red-500 hover:text-red-700 font-medium"
+              >
+                Entfernen
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
