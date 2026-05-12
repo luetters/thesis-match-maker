@@ -60,6 +60,7 @@ export type InsertExaminerProfile = typeof examinerProfiles.$inferInsert;
 export const thesisRequests = mysqlTable("thesis_requests", {
   id: int("id").autoincrement().primaryKey(),
   studentId: int("studentId").notNull(),
+  wantedExaminerId: int("wantedExaminerId"),
   examinerId: int("examinerId"),
   secondExaminerId: int("secondExaminerId"),
   title: varchar("title", { length: 512 }).notNull(),
@@ -70,11 +71,12 @@ export const thesisRequests = mysqlTable("thesis_requests", {
   language: varchar("language", { length: 8 }).default("de"),
   degreeType: mysqlEnum("degreeType", ["bachelor", "master"]).default("bachelor"),
   deadline: timestamp("deadline"),
-  status: mysqlEnum("status", ["PENDING", "ACCEPTED", "REJECTED", "MATCHED"]).default("PENDING").notNull(),
+  status: mysqlEnum("status", ["PENDING", "PENDING_FIRST_EXAMINER", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_REJECTED", "PENDING_SECOND_EXAMINER", "COMPLETED", "ACCEPTED", "REJECTED", "MATCHED"]).default("PENDING").notNull(),
   rejectionReason: text("rejectionReason"),
   exposeUrl: text("exposeUrl"),
   exposeKey: varchar("exposeKey", { length: 512 }),
   hasOwnTopic: int("hasOwnTopic").default(1).notNull(),
+  withdrawnAt: timestamp("withdrawnAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -241,3 +243,16 @@ export const emailTemplates = mysqlTable("email_templates", {
 });
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
+// ─── Examiner Action Tokens (für Accept/Reject-Links in E-Mails) ─────────────────────────
+export const examinerActionTokens = mysqlTable("examiner_action_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisRequestId: int("thesis_request_id").notNull(),
+  examinerId: int("examiner_id").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  action: mysqlEnum("action", ["accept", "reject"]),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ExaminerActionToken = typeof examinerActionTokens.$inferSelect;
+export type InsertExaminerActionToken = typeof examinerActionTokens.$inferInsert;

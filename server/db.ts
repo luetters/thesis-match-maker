@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -1358,14 +1358,10 @@ export async function updateEmailTemplate(
 }
 
 // ─── Sprach-Präferenz ─────────────────────────────────────────────────────────
-export async function setUserLanguage(userId: number, lang: "de" | "en") {
+export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
   await db.update(users).set({ preferredLanguage: lang }).where(eq(users.id, userId));
-}
-
-export async function setPreferredLanguage(userId: number, lang: "de" | "en") {
-  return setUserLanguage(userId, lang);
 }
 
 // ─── SuperAdmin: Prüferinnen-Verwaltung ──────────────────────────────────────
@@ -1424,3 +1420,219 @@ export async function updateExaminerProfileByAdmin(
 //     .set({ isActive: isActive ? 1 : 0, updatedAt: new Date() })
 //     .where(eq(examinerProfiles.id, examinerId));
 // }
+
+
+// ─── Phase 27: Anfrageprozess-Verbesserungen ──────────────────────────────────
+
+/**
+ * Hole alle qualifizierten Gutachter:innen für einen Studiengang
+ * Filtert nach studyPrograms JSON-Array
+ */
+export async function getQualifiedExaminers(department: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select({
+    id: examinerProfiles.id,
+    userId: examinerProfiles.userId,
+    name: users.name,
+    email: users.email,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    studyPrograms: examinerProfiles.studyPrograms,
+  }).from(examinerProfiles)
+    .leftJoin(users, eq(examinerProfiles.userId, users.id));
+  
+  // Filtere nach department in studyPrograms JSON
+  return result.filter(examiner => {
+    const programs = examiner.studyPrograms as string[] | null;
+    return programs && programs.includes(department);
+  });
+}
+
+/**
+ * Hole alle Zweitgutachter:innen für einen Studiengang
+ * Kategorisiere in intern (isSecondExaminer=1) und extern
+ */
+export async function getSecondExaminers(department: string) {
+  const db = await getDb();
+  if (!db) return { internal: [], external: [] };
+  
+  const result = await db.select({
+    id: examinerProfiles.id,
+    userId: examinerProfiles.userId,
+    name: users.name,
+    email: users.email,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    isSecondExaminer: examinerProfiles.isSecondExaminer,
+    studyPrograms: examinerProfiles.studyPrograms,
+  }).from(examinerProfiles)
+    .leftJoin(users, eq(examinerProfiles.userId, users.id));
+  
+  // Filtere nach department und kategorisiere
+  const filtered = result.filter(examiner => {
+    const programs = examiner.studyPrograms as string[] | null;
+    return programs && programs.includes(department);
+  });
+  
+  return {
+    internal: filtered.filter(e => e.isSecondExaminer === 1),
+    external: filtered.filter(e => e.isSecondExaminer === 0),
+  };
+}
+
+/**
+ * Prüfe ob Student eine offene Anfrage hat
+ */
+export async function hasOpenThesisRequest(studentId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const result = await db.select({ id: thesisRequests.id })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.studentId, studentId),
+        inArray(thesisRequests.status, ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"])
+      )
+    )
+    .limit(1);
+  
+  return result.length > 0;
+}
+
+/**
+ * Generiere einen eindeutigen Token für Accept/Reject-Links
+ */
+export function generateExaminerActionToken(): string {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15) +
+         Date.now().toString(36);
+}
+
+/**
+ * Speichere einen Examiner Action Token
+ */
+export async function createExaminerActionToken(
+  thesisRequestId: number,
+  examinerId: number,
+  expiresAt: Date
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  const token = generateExaminerActionToken();
+  
+  // Importiere examinerActionTokens aus schema
+  const { examinerActionTokens } = await import("../drizzle/schema");
+  
+  await db.insert(examinerActionTokens).values({
+    thesisRequestId,
+    examinerId,
+    token,
+    expiresAt,
+  });
+  
+  return token;
+}
+
+/**
+ * Validiere einen Examiner Action Token
+ */
+export async function verifyExaminerActionToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const { examinerActionTokens } = await import("../drizzle/schema");
+  
+  const result = await db.select()
+    .from(examinerActionTokens)
+    .where(
+      and(
+        eq(examinerActionTokens.token, token),
+        gt(examinerActionTokens.expiresAt, new Date()),
+        isNull(examinerActionTokens.usedAt)
+      )
+    )
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Markiere einen Token als verwendet
+ */
+export async function markTokenAsUsed(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  const { examinerActionTokens } = await import("../drizzle/schema");
+  
+  await db.update(examinerActionTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(examinerActionTokens.token, token));
+}
+
+/**
+ * Aktualisiere Anfrage-Status auf FIRST_EXAMINER_ACCEPTED
+ */
+export async function acceptThesisRequest(thesisRequestId: number, examinerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  await db.update(thesisRequests)
+    .set({
+      status: "FIRST_EXAMINER_ACCEPTED",
+      examinerId,
+      updatedAt: new Date(),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/**
+ * Aktualisiere Anfrage-Status auf FIRST_EXAMINER_REJECTED
+ */
+export async function rejectThesisRequest(thesisRequestId: number, rejectionReason?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  await db.update(thesisRequests)
+    .set({
+      status: "FIRST_EXAMINER_REJECTED",
+      rejectionReason: rejectionReason || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/**
+ * Ziehe eine Anfrage zurück
+ */
+export async function withdrawThesisRequest(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  await db.update(thesisRequests)
+    .set({
+      withdrawnAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/**
+ * Speichere Zweitgutachter für Anfrage
+ */
+export async function setSecondExaminer(thesisRequestId: number, secondExaminerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  
+  await db.update(thesisRequests)
+    .set({
+      secondExaminerId,
+      status: "PENDING_SECOND_EXAMINER",
+      updatedAt: new Date(),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+}

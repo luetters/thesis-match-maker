@@ -1,0 +1,3 @@
+ALTER TABLE `thesis_requests` MODIFY COLUMN `status` enum('PENDING','PENDING_FIRST_EXAMINER','FIRST_EXAMINER_ACCEPTED','FIRST_EXAMINER_REJECTED','PENDING_SECOND_EXAMINER','COMPLETED','ACCEPTED','REJECTED','MATCHED') NOT NULL DEFAULT 'PENDING';--> statement-breakpoint
+ALTER TABLE `thesis_requests` ADD `wantedExaminerId` int;--> statement-breakpoint
+ALTER TABLE `thesis_requests` ADD `withdrawnAt` timestamp;

@@ -5,6 +5,15 @@ import {
   assignExaminerToThesis,
   createAuditLogEntry,
   createThesisRequest,
+  getQualifiedExaminers,
+  getSecondExaminers,
+  hasOpenThesisRequest,
+  createExaminerActionToken,
+  markTokenAsUsed,
+  acceptThesisRequest,
+  rejectThesisRequest,
+  withdrawThesisRequest,
+  setSecondExaminer,
   getAllAuditLogs,
   getAllExaminers,
   getAllThesisRequests,
@@ -70,7 +79,6 @@ import {
   updateEmailTemplate,
   listExaminers,
   updateExaminerProfileByAdmin,
-  setUserLanguage,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -154,13 +162,6 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    setLanguage: protectedProcedure
-      .input(z.object({ language: z.enum(["de", "en"]) }))
-      .mutation(async ({ ctx, input }) => {
-        // Sprache in DB speichern
-        await setUserLanguage(ctx.user.id, input.language);
-        return { success: true };
-      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -1418,5 +1419,159 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+  // ─── Phase 27: Anfrageprozess-Verbesserungen ──────────────────────────────
+  thesisPhase27: router({
+    // Student: Qualifizierte Gutachter:innen für Studiengang abrufen
+    getQualifiedExaminers: studentProcedure
+      .input(z.object({ department: z.string() }))
+      .query(async ({ input }) => {
+        return getQualifiedExaminers(input.department);
+      }),
+
+    // Student: Zweitgutachter:innen (intern/extern) abrufen
+    getSecondExaminers: studentProcedure
+      .input(z.object({ department: z.string() }))
+      .query(async ({ input }) => {
+        return getSecondExaminers(input.department);
+      }),
+
+    // Student: Neue Anfrage mit Wunschgutachter
+    createWithWantedExaminer: studentProcedure
+      .input(z.object({
+        title: z.string().min(1).max(512),
+        description: z.string().min(1),
+        department: z.string().min(2),
+        abstract: z.string().optional(),
+        targetSemester: z.string(),
+        language: z.enum(["de", "en"]).default("de"),
+        degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
+        wantedExaminerId: z.number().int().positive(),
+        exposeUrl: z.string().optional(),
+        exposeKey: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        
+        // Prüfe ob Student offene Anfrage hat
+        if (await hasOpenThesisRequest(ctx.user.id)) {
+          throw new TRPCError({ code: "CONFLICT", message: "Student hat bereits eine offene Anfrage" });
+        }
+
+        const result = await createThesisRequest({
+          studentId: ctx.user.id,
+          wantedExaminerId: input.wantedExaminerId,
+          title: input.title,
+          description: input.description,
+          department: input.department,
+          abstract: input.abstract,
+          targetSemester: input.targetSemester,
+          language: input.language,
+          degreeType: input.degreeType,
+          exposeUrl: input.exposeUrl,
+          exposeKey: input.exposeKey,
+          status: "PENDING_FIRST_EXAMINER",
+        });
+
+        const insertId = (result as { insertId: number }).insertId;
+        
+        // Erstelle Action Token für Accept/Reject
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7); // 7 Tage gültig
+        const token = await createExaminerActionToken(insertId, input.wantedExaminerId, expiresAt);
+
+        await createAuditLogEntry({
+          thesisRequestId: insertId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "THESIS_CREATED_WITH_WANTED_EXAMINER",
+          toStatus: "PENDING_FIRST_EXAMINER",
+        });
+
+        return { success: true, insertId, token };
+      }),
+
+    // Student: Anfrage zurückziehen
+    withdraw: studentProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        
+        await withdrawThesisRequest(input.thesisRequestId);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "THESIS_WITHDRAWN",
+        });
+
+        return { success: true };
+      }),
+
+    // Gutachter:in: Anfrage akzeptieren (via Token)
+    acceptRequest: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        
+        const tokenData = await verifyExaminerActionToken(input.token);
+        if (!tokenData) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Token ungültig oder abgelaufen" });
+        }
+
+        await acceptThesisRequest(tokenData.thesisRequestId, tokenData.examinerId);
+        await markTokenAsUsed(input.token);
+        await createAuditLogEntry({
+          thesisRequestId: tokenData.thesisRequestId,
+          actorId: tokenData.examinerId,
+          actorRole: "examiner",
+          action: "THESIS_ACCEPTED",
+          toStatus: "FIRST_EXAMINER_ACCEPTED",
+        });
+
+        return { success: true, thesisRequestId: tokenData.thesisRequestId };
+      }),
+
+    // Gutachter:in: Anfrage ablehnen (via Token)
+    rejectRequest: publicProcedure
+      .input(z.object({ token: z.string(), reason: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        
+        const tokenData = await verifyExaminerActionToken(input.token);
+        if (!tokenData) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Token ungültig oder abgelaufen" });
+        }
+
+        await rejectThesisRequest(tokenData.thesisRequestId, input.reason);
+        await markTokenAsUsed(input.token);
+        await createAuditLogEntry({
+          thesisRequestId: tokenData.thesisRequestId,
+          actorId: tokenData.examinerId,
+          actorRole: "examiner",
+          action: "THESIS_REJECTED",
+          toStatus: "FIRST_EXAMINER_REJECTED",
+          reason: input.reason,
+        });
+
+        return { success: true, thesisRequestId: tokenData.thesisRequestId };
+      }),
+
+    // Student: Zweitgutachter speichern nach Akzeptanz des Erstgutachters
+    setSecondExaminer: studentProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        secondExaminerId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        
+        await setSecondExaminer(input.thesisRequestId, input.secondExaminerId);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "SECOND_EXAMINER_SET",
+          toStatus: "PENDING_SECOND_EXAMINER",
+        });
+
+        return { success: true };
+      }),
+  }),
+
 });
 export type AppRouter = typeof appRouter;
