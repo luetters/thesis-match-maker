@@ -1636,3 +1636,34 @@ export async function setSecondExaminer(thesisRequestId: number, secondExaminerI
     })
     .where(eq(thesisRequests.id, thesisRequestId));
 }
+
+
+// ─── Phase 27 Sprint 2: E-Mail-Versand ────────────────────────────────────────
+export async function sendExaminerConfirmationEmail(
+  thesisRequestId: number,
+  examinerEmail: string,
+  examinerName: string,
+  studentName: string,
+  thesisTitle: string,
+  department: string,
+  acceptToken: string,
+  rejectToken: string
+): Promise<boolean> {
+  const { sendExaminerCTAEmail } = await import("./emailHelper");
+  
+  // Generiere Accept/Reject-URLs mit Tokens
+  const baseUrl = process.env.FRONTEND_URL || "https://thesis.htw-berlin.com";
+  const acceptUrl = `${baseUrl}/api/thesis/accept?token=${acceptToken}`;
+  const rejectUrl = `${baseUrl}/api/thesis/reject?token=${rejectToken}`;
+  
+  return sendExaminerCTAEmail({
+    to: examinerEmail,
+    examinerName,
+    studentName,
+    thesisTitle,
+    department,
+    acceptUrl,
+    rejectUrl,
+  });
+}
+

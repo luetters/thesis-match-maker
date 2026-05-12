@@ -452,15 +452,15 @@
 - [x] thesisPhase27.rejectRequest (via Token)
 - [x] thesisPhase27.setSecondExaminer
 
-### Frontend-Formular
-- [ ] StudentNewThesis.tsx erweitern: Wunschgutachter-Dropdown
-- [ ] StudentNewThesis.tsx erweitern: Semester-Dropdown (maximal 3 Semester in Zukunft)
-- [ ] StudentNewThesis.tsx erweitern: Exposé-Upload (PDF, max 10MB)
-- [ ] Frontend: Semester-Berechnung (WS2025/26, SoSe2027, WS2027/28)
-- [ ] Frontend: PDF-Upload-Validierung (Content-Type, Größe)
-- [ ] Frontend: Fehlerbehandlung für "json Parse unexpected character"
-- [ ] Frontend: Validierung: Nur 1 offene Anfrage pro Student
-- [ ] Frontend: Toast-Nachricht wenn offene Anfrage existiert
+### Frontend-Formular (Sprint 1)
+- [x] StudentNewThesis.tsx erweitern: Wunschgutachter-Dropdown
+- [x] StudentNewThesis.tsx erweitern: Semester-Dropdown (maximal 3 Semester in Zukunft)
+- [x] StudentNewThesis.tsx erweitern: Exposé-Upload (PDF, max 10MB)
+- [x] Frontend: Semester-Berechnung (WS2025/26, SoSe2027, WS2027/28)
+- [x] Frontend: PDF-Upload-Validierung (Content-Type, Größe)
+- [x] Frontend: Fehlerbehandlung für "json Parse unexpected character"
+- [x] Frontend: Validierung: Nur 1 offene Anfrage pro Student
+- [x] Frontend: Toast-Nachricht wenn offene Anfrage existiert
 
 ### E-Mail-Versand
 - [ ] emailHelper.ts: sendExaminerConfirmationEmail mit Accept/Reject-Buttons
