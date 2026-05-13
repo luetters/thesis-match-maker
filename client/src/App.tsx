@@ -24,6 +24,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ExaminerOnboarding from "./pages/ExaminerOnboarding";
 import DeanStats from "./pages/DeanStats";
 import ExaminerManagement from "./pages/ExaminerManagement";
+import { useNotificationPoller } from "./hooks/useNotificationPoller";
 
 function Router() {
   return (
@@ -94,6 +95,9 @@ function Router() {
 }
 
 function App() {
+  // Aktiviere Benachrichtigungs-Polling
+  useNotificationPoller();
+  
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">

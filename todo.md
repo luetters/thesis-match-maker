@@ -537,9 +537,9 @@
 - [x] Benachrichtigungs-Inhalt: Gutachter:in-Name, Datum, Link zur Anfrage
 - [x] Benachrichtigungen als "unread" markieren (read: 0)
 
-### Frontend: Benachrichtigungs-Polling
+### Frontend: Benachrichtigungs-Polling (Sprint 2)
 - [x] NotificationPoller Hook: Alle 5 Sekunden neue Benachrichtigungen abrufen (useNotificationPoller.ts)
-- [ ] useEffect in App.tsx: NotificationPoller aktivieren
+- [x] useEffect in App.tsx: NotificationPoller aktivieren
 - [x] Polling nur wenn Nutzer:in eingeloggt ist
 - [x] Polling pausieren wenn Tab nicht aktiv ist (visibility API)
 
@@ -563,3 +563,16 @@
 - [ ] Frontend-Test: NotificationPoller ruft neue Benachrichtigungen ab
 - [ ] Frontend-Test: Toast wird bei Accept/Reject angezeigt
 - [ ] Error Handling: Polling bei Fehler graceful abbrechen
+
+
+## Phase 31: Logo-Vereinheitlichung überall
+
+### Logo-Konsistenz
+- [x] Alle Logo-Dateien überprüfen (Größen, Formate, Farben) - favicon.ico vorhanden
+- [x] Logo in Header/Navigation vereinheitlichen - ThesisDashboardLayout.tsx
+- [x] Logo in Footer vereinheitlichen - Home.tsx mit HTW Grün
+- [x] Logo in Emails vereinheitlichen - emailHelper.ts mit HTW-Branding
+- [x] Logo in PDF-Exports vereinheitlichen - nicht nötig (noch keine PDF-Exports)
+- [x] Favicon überprüfen und aktualisieren - favicon.ico vorhanden
+- [x] Logo-Größen standardisieren (Header: 40px, Footer: 30px) - konsistent
+- [x] Logo-Farben überprüfen (HTW Grün #76B900) - konsistent
