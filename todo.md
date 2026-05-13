@@ -496,33 +496,33 @@
 ## Phase 28: Examiner-Dashboard für Anfrage-Verwaltung
 
 ### Backend-Funktionen
-- [ ] getExaminerPendingRequests(examinerId) – ausstehende Anfragen (PENDING_FIRST_EXAMINER)
-- [ ] getExaminerAcceptedRequests(examinerId) – akzeptierte Anfragen (FIRST_EXAMINER_ACCEPTED)
-- [ ] getExaminerRejectedRequests(examinerId) – abgelehnte Anfragen (FIRST_EXAMINER_REJECTED)
-- [ ] getExaminerSecondExaminerRequests(examinerId) – Anfragen als Zweitgutachter
-- [ ] getExaminerRequestStats(examinerId) – Statistiken (Anzahl pro Status)
+- [x] getExaminerPendingRequests(examinerId) – ausstehende Anfragen (PENDING_FIRST_EXAMINER)
+- [x] getExaminerAcceptedRequests(examinerId) – akzeptierte Anfragen (FIRST_EXAMINER_ACCEPTED)
+- [x] getExaminerRejectedRequests(examinerId) – abgelehnte Anfragen (FIRST_EXAMINER_REJECTED)
+- [x] getExaminerSecondExaminerRequests(examinerId) – Anfragen als Zweitgutachter
+- [x] getExaminerRequestStats(examinerId) – Statistiken (Anzahl pro Status)
 
 ### tRPC-Prozeduren
-- [ ] examiner.getPendingRequests
-- [ ] examiner.getAcceptedRequests
-- [ ] examiner.getRejectedRequests
-- [ ] examiner.getSecondExaminerRequests
-- [ ] examiner.getRequestStats
+- [x] examiner.getPendingRequests
+- [x] examiner.getAcceptedRequests
+- [x] examiner.getRejectedRequests
+- [x] examiner.getSecondExaminerRequests
+- [x] examiner.getRequestStats
 
-### Frontend: Dashboard UI
-- [ ] ExaminerRequestDashboard.tsx – Hauptkomponente mit Tabs
-- [ ] Tabs: Ausstehend, Akzeptiert, Abgelehnt, Als Zweitgutachter
-- [ ] Statistik-Karten (Anzahl pro Status)
-- [ ] Anfrage-Tabelle mit Spalten: Thema, Student, Studiengang, Eingereicht, Status, Aktionen
+###### Frontend-Komponente
+- [x] ExaminerRequestDashboard.tsx – Hauptkomponente mit Tabs
+- [x] Tabs: Ausstehend, Akzeptiert, Abgelehnt, Als Zweitgutachter
+- [x] Statistik-Karten (Anzahl pro Status)
+- [x] Anfrage-Tabelle mit Spalten: Thema, Student, Studiengang, Eingereicht, Status, Aktionen
 
-### Anfrage-Details und Aktionen
-- [ ] RequestDetailModal.tsx – Modal mit Anfrage-Details
-- [ ] Anzeige: Thema, Beschreibung, Student, Studiengang, Semester, Sprache, Exposé-Link
-- [ ] Accept-Button (mit Bestätigungs-Dialog)
-- [ ] Reject-Button (mit Grund-Eingabe)
-- [ ] Withdraw-Button (für abgelehnte Anfragen)
+###### Modal für Anfrage-Details (Phase 29)
+- [x] RequestDetailModal.tsx – Modal mit Anfrage-Details
+- [x] Anzeige: Thema, Beschreibung, Student, Studiengang, Semester, Sprache, Exposé-Link
+- [x] Accept-Button (mit Bestätigungs-Dialog)
+- [x] Reject-Button (mit Grund-Eingabe)
+- [x] Withdraw-Button (für abgelehnte Anfragen)
 
-### Tests
-- [ ] Backend-Tests für getExaminerPendingRequests, etc.
-- [ ] Frontend-Tests für Dashboard-Tabs
-- [ ] Frontend-Tests für Modal-Funktionalität
+### Tests (Phase 29)
+- [x] Backend-Tests für getExaminerPendingRequests, etc. (examiner.dashboard.test.ts)
+- [x] Frontend-Tests für Dashboard-Tabs (ExaminerRequestDashboard.test.tsx)
+- [x] Frontend-Tests für Modal-Funktionalität (integriert in RequestDetailModal)

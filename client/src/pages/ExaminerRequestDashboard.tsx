@@ -16,11 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { RequestDetailModal } from "@/components/RequestDetailModal";
 
 export function ExaminerRequestDashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("pending");
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Queries für alle Anfrage-Kategorien
   const { data: pendingRequests = [] } = (trpc.examiner as any).getPendingRequests?.useQuery?.() || { data: [] };
@@ -59,6 +62,11 @@ export function ExaminerRequestDashboard() {
     }
   };
 
+  const handleViewRequest = (request: any) => {
+    setSelectedRequest(request);
+    setIsModalOpen(true);
+  };
+
   const RequestTable = ({ requests }: { requests: any[] }) => (
     <div className="rounded-lg border">
       <Table>
@@ -88,7 +96,11 @@ export function ExaminerRequestDashboard() {
                 <TableCell>{request.targetSemester}</TableCell>
                 <TableCell>{getStatusBadge(request.status)}</TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewRequest(request)}
+                  >
                     Ansehen
                   </Button>
                 </TableCell>
@@ -196,6 +208,21 @@ export function ExaminerRequestDashboard() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Request Detail Modal */}
+      <RequestDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        request={selectedRequest}
+        onStatusChange={() => {
+          // Refresh queries
+          (trpc.examiner as any).getPendingRequests?.invalidate?.();
+          (trpc.examiner as any).getAcceptedRequests?.invalidate?.();
+          (trpc.examiner as any).getRejectedRequests?.invalidate?.();
+          (trpc.examiner as any).getSecondExaminerRequests?.invalidate?.();
+          (trpc.examiner as any).getRequestStats?.invalidate?.();
+        }}
+      />
     </div>
   );
 }
