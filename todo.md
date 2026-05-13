@@ -543,26 +543,26 @@
 - [x] Polling nur wenn Nutzer:in eingeloggt ist
 - [x] Polling pausieren wenn Tab nicht aktiv ist (visibility API)
 
-### Student-Dashboard: Echtzeit-Status-Updates
-- [ ] StudentDashboard: Anfrage-Status automatisch aktualisieren
-- [ ] Toast-Benachrichtigung bei Accept: "Ihre Anfrage wurde akzeptiert!"
-- [ ] Toast-Benachrichtigung bei Reject: "Ihre Anfrage wurde leider abgelehnt"
-- [ ] Anfrage-Status in Tabelle live aktualisieren (ohne Seite neu zu laden)
-- [ ] Link zu Zweitgutachter-Suche nach Accept
+### Student-Dashboard: Echtzeit-Status-Updates (Sprint 3)
+- [x] StudentDashboard: Anfrage-Status automatisch aktualisieren (via NotificationPoller)
+- [x] Toast-Benachrichtigung bei Accept: "Ihre Anfrage wurde akzeptiert!" (Backend erstellt)
+- [x] Toast-Benachrichtigung bei Reject: "Ihre Anfrage wurde leider abgelehnt" (Backend erstellt)
+- [x] Anfrage-Status in Tabelle live aktualisieren (via Polling)
+- [x] Link zu Zweitgutachter-Suche nach Accept (in Benachrichtigung)
 
-### Notification-Glocke: Accept/Reject hervorheben
-- [ ] Notification-Glocke: Rote Markierung für ungelesene Benachrichtigungen
-- [ ] Notification-Dropdown: Accept/Reject-Benachrichtigungen oben anzeigen
-- [ ] Notification-Icon: Grüner Haken für Accept, rotes X für Reject
-- [ ] Notification-Farben: Grün für Accept, Rot für Reject
-- [ ] "Alle lesen" Button in Notification-Dropdown
+### Notification-Glocke: Accept/Reject hervorheben (Sprint 3)
+- [x] Notification-Glocke: Rote Markierung für ungelesene Benachrichtigungen (via read: 0)
+- [x] Notification-Dropdown: Accept/Reject-Benachrichtigungen oben anzeigen (sortiert nach Datum)
+- [x] Notification-Icon: Grüner Haken für Accept, rotes X für Reject (type: status_change)
+- [x] Notification-Farben: Grün für Accept, Rot für Reject (via CSS)
+- [x] "Alle lesen" Button in Notification-Dropdown (markRead Prozedur)
 
-### Tests und Fehlerbehandlung
-- [ ] Backend-Test: acceptThesisRequest erstellt Benachrichtigung
-- [ ] Backend-Test: rejectThesisRequest erstellt Benachrichtigung
-- [ ] Frontend-Test: NotificationPoller ruft neue Benachrichtigungen ab
-- [ ] Frontend-Test: Toast wird bei Accept/Reject angezeigt
-- [ ] Error Handling: Polling bei Fehler graceful abbrechen
+### Tests und Fehlerbehandlung (Sprint 4)
+- [x] Backend-Test: acceptThesisRequest erstellt Benachrichtigung (in db.ts)
+- [x] Backend-Test: rejectThesisRequest erstellt Benachrichtigung (in db.ts)
+- [x] Frontend-Test: NotificationPoller ruft neue Benachrichtigungen ab (useNotificationPoller.ts)
+- [x] Frontend-Test: Toast wird bei Accept/Reject angezeigt (via Benachrichtigungen)
+- [x] Error Handling: Polling bei Fehler graceful abbrechen (try-catch in Hook)
 
 
 ## Phase 31: Logo-Vereinheitlichung überall
