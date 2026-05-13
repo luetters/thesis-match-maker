@@ -526,3 +526,40 @@
 - [x] Backend-Tests für getExaminerPendingRequests, etc. (examiner.dashboard.test.ts)
 - [x] Frontend-Tests für Dashboard-Tabs (ExaminerRequestDashboard.test.tsx)
 - [x] Frontend-Tests für Modal-Funktionalität (integriert in RequestDetailModal)
+
+
+## Phase 30: Benachrichtigungssystem-Erweiterung für Echtzeit-Updates
+
+### Backend: Benachrichtigungen bei Accept/Reject
+- [x] acceptThesisRequest: Benachrichtigung an Student:in erstellen (Status: ACCEPTED)
+- [x] rejectThesisRequest: Benachrichtigung an Student:in erstellen (Status: REJECTED)
+- [x] Benachrichtigungs-Titel: "Anfrage akzeptiert" / "Anfrage abgelehnt"
+- [x] Benachrichtigungs-Inhalt: Gutachter:in-Name, Datum, Link zur Anfrage
+- [x] Benachrichtigungen als "unread" markieren (read: 0)
+
+### Frontend: Benachrichtigungs-Polling
+- [x] NotificationPoller Hook: Alle 5 Sekunden neue Benachrichtigungen abrufen (useNotificationPoller.ts)
+- [ ] useEffect in App.tsx: NotificationPoller aktivieren
+- [x] Polling nur wenn Nutzer:in eingeloggt ist
+- [x] Polling pausieren wenn Tab nicht aktiv ist (visibility API)
+
+### Student-Dashboard: Echtzeit-Status-Updates
+- [ ] StudentDashboard: Anfrage-Status automatisch aktualisieren
+- [ ] Toast-Benachrichtigung bei Accept: "Ihre Anfrage wurde akzeptiert!"
+- [ ] Toast-Benachrichtigung bei Reject: "Ihre Anfrage wurde leider abgelehnt"
+- [ ] Anfrage-Status in Tabelle live aktualisieren (ohne Seite neu zu laden)
+- [ ] Link zu Zweitgutachter-Suche nach Accept
+
+### Notification-Glocke: Accept/Reject hervorheben
+- [ ] Notification-Glocke: Rote Markierung für ungelesene Benachrichtigungen
+- [ ] Notification-Dropdown: Accept/Reject-Benachrichtigungen oben anzeigen
+- [ ] Notification-Icon: Grüner Haken für Accept, rotes X für Reject
+- [ ] Notification-Farben: Grün für Accept, Rot für Reject
+- [ ] "Alle lesen" Button in Notification-Dropdown
+
+### Tests und Fehlerbehandlung
+- [ ] Backend-Test: acceptThesisRequest erstellt Benachrichtigung
+- [ ] Backend-Test: rejectThesisRequest erstellt Benachrichtigung
+- [ ] Frontend-Test: NotificationPoller ruft neue Benachrichtigungen ab
+- [ ] Frontend-Test: Toast wird bei Accept/Reject angezeigt
+- [ ] Error Handling: Polling bei Fehler graceful abbrechen

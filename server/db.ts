@@ -1581,6 +1581,14 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
   
+  // Get thesis request details
+  const thesisResult = await (db as any).query.thesisRequests.findFirst({
+    where: eq(thesisRequests.id, thesisRequestId),
+  });
+  
+  if (!thesisResult) throw new Error("Anfrage nicht gefunden");
+  
+  // Update thesis status
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_ACCEPTED",
@@ -1588,6 +1596,24 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
       updatedAt: new Date(),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
+  
+  // Create notification for student
+  const examinerProfile = await (db as any).query.examinerProfiles.findFirst({
+    where: eq(examinerProfiles.userId, examinerId),
+  });
+  
+  const notificationTitle = "Anfrage akzeptiert";
+  const notificationContent = `Ihre Anfrage wurde von ${examinerProfile?.title || "einer Gutachter:in"} akzeptiert. Sie können nun einen Zweitgutachter wählen.`;
+  
+  await db.insert(notifications).values({
+    userId: thesisResult.studentId,
+    title: notificationTitle,
+    message: notificationContent,
+    type: "status_change",
+    thesisRequestId: thesisRequestId,
+    read: 0,
+    createdAt: new Date(),
+  });
 }
 
 /**
@@ -1597,6 +1623,14 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
   
+  // Get thesis request details
+  const thesisResult = await (db as any).query.thesisRequests.findFirst({
+    where: eq(thesisRequests.id, thesisRequestId),
+  });
+  
+  if (!thesisResult) throw new Error("Anfrage nicht gefunden");
+  
+  // Update thesis status
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_REJECTED",
@@ -1604,6 +1638,22 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
       updatedAt: new Date(),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
+  
+  // Create notification for student
+  const notificationTitle = "Anfrage abgelehnt";
+  const notificationContent = rejectionReason 
+    ? `Ihre Anfrage wurde leider abgelehnt. Grund: ${rejectionReason}`
+    : "Ihre Anfrage wurde leider abgelehnt. Sie können eine neue Anfrage einreichen.";
+  
+  await db.insert(notifications).values({
+    userId: thesisResult.studentId,
+    title: notificationTitle,
+    message: notificationContent,
+    type: "status_change",
+    thesisRequestId: thesisRequestId,
+    read: 0,
+    createdAt: new Date(),
+  });
 }
 
 /**
