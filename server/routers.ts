@@ -1601,32 +1601,3 @@ export const appRouter = router({
 
 });
 export type AppRouter = typeof appRouter;
-
-    // Phase 32: Betreuungs-Übersicht pro Semester
-    getSupervisionsBySemester: protectedProcedure
-      .input(z.object({ semester: z.string() }))
-      .query(async ({ ctx, input }) => {
-        const { getExaminerSupervisionsBySemester } = await import("./db");
-        if (!ctx.user.examinerProfile?.id) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Gutachter:innen haben Zugriff" });
-        }
-        return getExaminerSupervisionsBySemester(ctx.user.examinerProfile.id, input.semester);
-      }),
-
-    getAllSemesters: protectedProcedure.query(async ({ ctx }) => {
-      const { getExaminerSemesters } = await import("./db");
-      if (!ctx.user.examinerProfile?.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Nur Gutachter:innen haben Zugriff" });
-      }
-      return getExaminerSemesters(ctx.user.examinerProfile.id);
-    }),
-
-    getSupervisionStats: protectedProcedure
-      .input(z.object({ semester: z.string() }))
-      .query(async ({ ctx, input }) => {
-        const { getExaminerSupervisionStats } = await import("./db");
-        if (!ctx.user.examinerProfile?.id) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Gutachter:innen haben Zugriff" });
-        }
-        return getExaminerSupervisionStats(ctx.user.examinerProfile.id, input.semester);
-      }),
