@@ -1667,3 +1667,169 @@ export async function sendExaminerConfirmationEmail(
   });
 }
 
+// Phase 28: Examiner-Dashboard für Anfrage-Verwaltung
+
+export async function getExaminerPendingRequests(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      studentId: thesisRequests.studentId,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "PENDING_FIRST_EXAMINER")
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+export async function getExaminerAcceptedRequests(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      studentId: thesisRequests.studentId,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "FIRST_EXAMINER_ACCEPTED")
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+export async function getExaminerRejectedRequests(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      studentId: thesisRequests.studentId,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      status: thesisRequests.status,
+      rejectionReason: thesisRequests.rejectionReason,
+      createdAt: thesisRequests.createdAt,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "FIRST_EXAMINER_REJECTED")
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+export async function getExaminerSecondExaminerRequests(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      studentId: thesisRequests.studentId,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(
+      and(
+        eq(thesisRequests.secondExaminerId, examinerId),
+        eq(thesisRequests.status, "PENDING_SECOND_EXAMINER")
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+export async function getExaminerRequestStats(examinerId: number) {
+  const db = await getDb();
+  if (!db) return { pendingAsFirstExaminer: 0, acceptedAsFirstExaminer: 0, rejectedAsFirstExaminer: 0, pendingAsSecondExaminer: 0 };
+  
+  const pending = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "PENDING_FIRST_EXAMINER")
+      )
+    );
+
+  const accepted = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "FIRST_EXAMINER_ACCEPTED")
+      )
+    );
+
+  const rejected = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        eq(thesisRequests.status, "FIRST_EXAMINER_REJECTED")
+      )
+    );
+
+  const secondExaminer = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.secondExaminerId, examinerId),
+        eq(thesisRequests.status, "PENDING_SECOND_EXAMINER")
+      )
+    );
+
+  return {
+    pendingAsFirstExaminer: pending[0]?.count || 0,
+    acceptedAsFirstExaminer: accepted[0]?.count || 0,
+    rejectedAsFirstExaminer: rejected[0]?.count || 0,
+    pendingAsSecondExaminer: secondExaminer[0]?.count || 0,
+  };
+}

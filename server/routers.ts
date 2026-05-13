@@ -720,6 +720,32 @@ export const appRouter = router({
       }),
   }),
 
+    // Phase 28: Examiner-Dashboard für Anfrage-Verwaltung
+    getPendingRequests: examinerProcedure.query(async ({ ctx }) => {
+      const { getExaminerPendingRequests } = await import("./db");
+      return getExaminerPendingRequests(ctx.user.id);
+    }),
+
+    getAcceptedRequests: examinerProcedure.query(async ({ ctx }) => {
+      const { getExaminerAcceptedRequests } = await import("./db");
+      return getExaminerAcceptedRequests(ctx.user.id);
+    }),
+
+    getRejectedRequests: examinerProcedure.query(async ({ ctx }) => {
+      const { getExaminerRejectedRequests } = await import("./db");
+      return getExaminerRejectedRequests(ctx.user.id);
+    }),
+
+    getSecondExaminerRequests: examinerProcedure.query(async ({ ctx }) => {
+      const { getExaminerSecondExaminerRequests } = await import("./db");
+      return getExaminerSecondExaminerRequests(ctx.user.id);
+    }),
+
+    getRequestStats: examinerProcedure.query(async ({ ctx }) => {
+      const { getExaminerRequestStats } = await import("./db");
+      return getExaminerRequestStats(ctx.user.id);
+    }),
+
   // --- Audit Log ------------------------------------------------------------
 
   auditLog: router({
