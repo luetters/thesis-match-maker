@@ -388,33 +388,33 @@
 
 ## Phase 25: i18n-Verbesserungen
 
-- [ ] ExaminerDashboard.tsx: alle Texte durch t.examiner.* ersetzen
-- [ ] ExaminerDashboard.tsx: Tabs, Buttons, Fehlermeldungen übersetzen
-- [ ] DB-Schema: users.preferredLanguage-Spalte (de/en, default: de)
-- [ ] DB-Migration pushen
-- [ ] Backend: auth.me gibt preferredLanguage zurück
-- [ ] Backend: user.setLanguage tRPC-Prozedur (Sprache in DB speichern)
-- [ ] Frontend: LanguageContext beim Login preferredLanguage aus DB laden
-- [ ] Frontend: LanguageSwitcher speichert Auswahl auch in DB (wenn eingeloggt)
-- [ ] LanguageContext.tsx: common.errors-Block mit allen Fehlermeldungen (DE+EN)
-- [ ] LanguageContext.tsx: common.toasts-Block mit allen Toast-Nachrichten (DE+EN)
-- [ ] ExaminerDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] PavDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] DeanDashboard.tsx: Toast-Nachrichten übersetzen
-- [ ] StudentDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] ExaminerDashboard.tsx: alle Texte durch t.examiner.* ersetzen
+- [x] ExaminerDashboard.tsx: Tabs, Buttons, Fehlermeldungen übersetzen
+- [x] DB-Schema: users.preferredLanguage-Spalte (de/en, default: de)
+- [x] DB-Migration pushen
+- [x] Backend: auth.me gibt preferredLanguage zurück
+- [x] Backend: user.setLanguage tRPC-Prozedur (Sprache in DB speichern)
+- [x] Frontend: LanguageContext beim Login preferredLanguage aus DB laden
+- [x] Frontend: LanguageSwitcher speichert Auswahl auch in DB (wenn eingeloggt)
+- [x] LanguageContext.tsx: common.errors-Block mit allen Fehlermeldungen (DE+EN)
+- [x] LanguageContext.tsx: common.toasts-Block mit allen Toast-Nachrichten (DE+EN)
+- [x] ExaminerDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] PavDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] DeanDashboard.tsx: Toast-Nachrichten übersetzen
+- [x] StudentDashboard.tsx: Toast-Nachrichten übersetzen
 
 ## Phase 26: SuperAdmin-Prüferinnen-Verwaltung
 
-- [ ] DB-Schema: isActive-Spalte zur examiner_profiles-Tabelle hinzufügen (default: true)
-- [ ] Backend: superadmin.listExaminers – alle Prüfer:innen mit Profildaten auflisten (mit isActive-Filter)
-- [ ] Backend: superadmin.updateExaminerProfile – Profildaten bearbeiten (name, email, title, department, bio, researchFocus, maxSupervisions)
-- [ ] Backend: superadmin.toggleExaminerStatus – Prüfer:in aktivieren/deaktivieren (isActive toggle)
-- [ ] Frontend: ExaminerManagement.tsx – Seite mit Tabelle aller Prüfer:innen
-- [ ] Frontend: Tabelle mit Spalten: Name, E-Mail, Abteilung, Status (aktiv/inaktiv), Aktionen (Bearbeiten, Deaktivieren)
-- [ ] Frontend: Bearbeitungs-Modal für Profildaten
+- [x] DB-Schema: isActive-Spalte zur examiner_profiles-Tabelle hinzufügen (default: true)
+- [x] Backend: superadmin.listExaminers – alle Prüfer:innen mit Profildaten auflisten (mit isActive-Filter)
+- [x] Backend: superadmin.updateExaminerProfile – Profildaten bearbeiten (name, email, title, department, bio, researchFocus, maxSupervisions)
+- [x] Backend: superadmin.toggleExaminerStatus – Prüfer:in aktivieren/deaktivieren (isActive toggle)
+- [x] Frontend: ExaminerManagement.tsx – Seite mit Tabelle aller Prüfer:innen
+- [x] Frontend: Tabelle mit Spalten: Name, E-Mail, Abteilung, Status (aktiv/inaktiv), Aktionen (Bearbeiten, Deaktivieren)
+- [x] Frontend: Bearbeitungs-Modal für Profildaten
 - [x] Frontend: Bestätigungs-Dialog zum Deaktivieren
-- [ ] Frontend: SuperadminDashboard – neuer Tab "Prüferinnen-Verwaltung" mit Link zu ExaminerManagement
-- [ ] Tests für alle neuen Prozeduren
+- [x] Frontend: SuperadminDashboard – neuer Tab "Prüferinnen-Verwaltung" mit Link zu ExaminerManagement
+- [x] Tests für alle neuen Prozeduren
 
 ## Phase 26: SuperAdmin-Prüferinnen-Verwaltung
 
