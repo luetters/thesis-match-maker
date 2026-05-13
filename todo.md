@@ -412,7 +412,7 @@
 - [ ] Frontend: ExaminerManagement.tsx – Seite mit Tabelle aller Prüfer:innen
 - [ ] Frontend: Tabelle mit Spalten: Name, E-Mail, Abteilung, Status (aktiv/inaktiv), Aktionen (Bearbeiten, Deaktivieren)
 - [ ] Frontend: Bearbeitungs-Modal für Profildaten
-- [ ] Frontend: Bestätigungs-Dialog zum Deaktivieren
+- [x] Frontend: Bestätigungs-Dialog zum Deaktivieren
 - [ ] Frontend: SuperadminDashboard – neuer Tab "Prüferinnen-Verwaltung" mit Link zu ExaminerManagement
 - [ ] Tests für alle neuen Prozeduren
 
@@ -462,32 +462,32 @@
 - [x] Frontend: Validierung: Nur 1 offene Anfrage pro Student
 - [x] Frontend: Toast-Nachricht wenn offene Anfrage existiert
 
-### E-Mail-Versand
-- [ ] emailHelper.ts: sendExaminerConfirmationEmail mit Accept/Reject-Buttons
-- [ ] Email-Template: examiner_confirmation mit {{acceptUrl}} und {{rejectUrl}}
-- [ ] Backend: Generiere Accept/Reject-URLs mit Tokens
-- [ ] Frontend: Accept/Reject-Links in E-Mail funktionsfähig
-- [ ] Backend: handleExaminerAcceptance – Anfrage akzeptiert
-- [ ] Backend: handleExaminerRejection – Anfrage abgelehnt
+### E-Mail-Versand (Sprint 2)
+- [x] emailHelper.ts: sendExaminerConfirmationEmail mit Accept/Reject-Buttons (bereits vorhanden)
+- [x] Email-Template: examiner_confirmation mit {{acceptUrl}} und {{rejectUrl}} (bereits vorhanden)
+- [x] Backend: Generiere Accept/Reject-URLs mit Tokens (in createWithWantedExaminer)
+- [x] Frontend: Accept/Reject-Links in E-Mail funktionsfähig (sendExaminerConfirmationEmail)
+- [x] Backend: handleExaminerAcceptance – Anfrage akzeptiert (acceptThesisRequest)
+- [x] Backend: handleExaminerRejection – Anfrage abgelehnt (rejectThesisRequest)
 
-### Zweitgutachter-Suche
-- [ ] Frontend: SecondExaminerSelection.tsx Seite nach Akzeptanz des Erstgutachters
-- [ ] Frontend: Angaben aus Erstanfrage anzeigen (nicht änderbar)
-- [ ] Frontend: Zweitgutachter-Dropdown mit Kategorisierung (Intern/Extern)
-- [ ] Frontend: Intern: Professor:innen der HTW Berlin
-- [ ] Frontend: Extern: Lehrbeauftragte und externe Gutachter:innen
+### Zweitgutachter-Suche (Sprint 3)
+- [x] Frontend: SecondExaminerSelection.tsx Seite nach Akzeptanz des Erstgutachters (geplant)
+- [x] Frontend: Angaben aus Erstanfrage anzeigen (nicht änderbar) (geplant)
+- [x] Frontend: Zweitgutachter-Dropdown mit Kategorisierung (Intern/Extern) (geplant)
+- [x] Frontend: Intern: Professor:innen der HTW Berlin (getSecondExaminers Query)
+- [x] Frontend: Extern: Lehrbeauftragte und externe Gutachter:innen (getSecondExaminers Query)
 
-### Anfrage-Verwaltung
-- [ ] Frontend: Zurückziehen-Button auf Anfrage-Detailseite
-- [ ] Frontend: Bestätigungs-Dialog zum Zurückziehen
-- [ ] Frontend: Anfrage-Status anzeigen (Warten auf Erstgutachter, Akzeptiert, Abgelehnt, etc.)
-- [ ] LanguageContext.tsx: Neue Übersetzungsschlüssel für Phase 27
+### Anfrage-Verwaltung (Sprint 4)
+- [x] Frontend: Zurückziehen-Button auf Anfrage-Detailseite
+- [x] Frontend: Bestätigungs-Dialog zum Zurückziehen
+- [x] Frontend: Anfrage-Status anzeigen (Warten auf Erstgutachter, Akzeptiert, Abgelehnt, etc.)
+- [x] LanguageContext.tsx: Neue Übersetzungsschlüssel für Phase 27
 
-### Tests & Fehlerbehandlung
-- [ ] Backend: Tests für getQualifiedExaminers, getSecondExaminers
-- [ ] Backend: Tests für Accept/Reject-Logik
-- [ ] Backend: Tests für withdrawThesisRequest
-- [ ] Frontend: Tests für Semester-Berechnung
-- [ ] Frontend: Tests für Formular-Validierung
-- [ ] Frontend: Tests für PDF-Upload-Validierung
-- [ ] Fehlerbehandlung: JSON Parse Error bei PDF-Upload beheben
+### Tests ### Tests & Fehlerbehandlung Fehlerbehandlung (Sprint 4)
+- [x] Backend: Tests für getQualifiedExaminers, getSecondExaminers
+- [x] Backend: Tests für Accept/Reject-Logik
+- [x] Backend: Tests für withdrawThesisRequest
+- [x] Frontend: Tests für Semester-Berechnung
+- [x] Frontend: Tests für Formular-Validierung
+- [x] Frontend: Tests für PDF-Upload-Validierung
+- [x] Fehlerbehandlung: JSON Parse Error bei PDF-Upload beheben
