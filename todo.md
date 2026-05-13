@@ -598,13 +598,13 @@
 - [x] Statistik-Karten pro Semester (Anzahl Betreuungen, Abschlussarten)
 - [x] Export-Button (CSV/PDF)
 
-### Integration in ExaminerDashboard
-- [ ] Neuer Tab "Betreuungen" in ExaminerDashboard
-- [ ] Link zu ExaminerSupervisionsOverview
-- [ ] Schnelle Statistiken im Dashboard anzeigen
+### Integration in ExaminerDashboard (Sprint 2)
+- [x] Neuer Tab "Betreuungen" in ExaminerDashboard
+- [x] Link zu ExaminerSupervisionsOverview
+- [x] Schnelle Statistiken im Dashboard anzeigen
 
-### Tests
-- [ ] Backend-Test: getExaminerSupervisionsBySemester
-- [ ] Backend-Test: Filterung nach Semester
-- [ ] Frontend-Test: Semester-Tabs funktionieren
-- [ ] Frontend-Test: Tabelle wird korrekt gefüllt
+### Tests (Sprint 2)
+- [x] Backend-Test: getExaminerSupervisionsBySemester
+- [x] Backend-Test: Filterung nach Semester
+- [x] Frontend-Test: Semester-Tabs funktionieren
+- [x] Frontend-Test: Tabelle wird korrekt gefüllt
