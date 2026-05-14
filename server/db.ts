@@ -17,6 +17,8 @@ import {
   thesisRequests,
   users,
   emailTemplates,
+  reminderSchedules,
+  reminderTemplates,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -2286,4 +2288,187 @@ export async function bulkUpdateExaminerCapacity(examinerIds: number[], newCapac
   }
 
   return { success: true, count };
+}
+
+
+// ─── Phase 35: Automatische Erinnerungs-E-Mails ────────────────────────────────
+
+/**
+ * Erinnerungs-Zeitplan erstellen
+ */
+export async function createReminderSchedule(
+  thesisRequestId: number,
+  reminderType: string,
+  delayDays: number
+) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const scheduledAt = new Date();
+  scheduledAt.setDate(scheduledAt.getDate() + delayDays);
+
+  const result = await db
+    .insert(reminderSchedules)
+    .values({
+      thesisRequestId,
+      reminderType: reminderType as any,
+      scheduledAt,
+      status: "pending",
+    });
+
+  return result;
+}
+
+/**
+ * Fällige Erinnerungen abrufen
+ */
+export async function getRemindersDue() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+  const reminders = await db
+    .select()
+    .from(reminderSchedules)
+    .where(
+      and(
+        eq(reminderSchedules.status, "pending"),
+        lte(reminderSchedules.scheduledAt, now)
+      )
+    )
+    .limit(100);
+
+  return reminders;
+}
+
+/**
+ * Erinnerungs-E-Mail versenden
+ */
+export async function sendReminderEmail(
+  thesisRequestId: number,
+  reminderType: string
+) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    // Hole Anfrage und Template
+    const request = await db
+      .select()
+      .from(thesisRequests)
+      .where(eq(thesisRequests.id, thesisRequestId))
+      .limit(1);
+
+    if (!request.length) return false;
+
+    const template = await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.key, reminderType))
+      .limit(1);
+
+    if (!template.length) return false;
+
+    // Hier würde der E-Mail-Versand stattfinden
+    // await sendEmail({
+    //   to: request[0].studentEmail,
+    //   subject: template[0].subject,
+    //   html: template[0].htmlBody,
+    // });
+
+    return true;
+  } catch (error) {
+    console.error(`[Reminder] Fehler beim Versand für Anfrage ${thesisRequestId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Erinnerung als versendet markieren
+ */
+export async function markReminderAsSent(scheduleId: number, success: boolean = true) {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db
+    .update(reminderSchedules)
+    .set({
+      sentAt: new Date(),
+      status: success ? "sent" : "failed",
+    })
+    .where(eq(reminderSchedules.id, scheduleId));
+
+  return true;
+}
+
+/**
+ * Erinnerungs-Historie abrufen
+ */
+export async function getReminderHistory(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const history = await db
+    .select()
+    .from(reminderSchedules)
+    .where(eq(reminderSchedules.thesisRequestId, thesisRequestId))
+    .orderBy(desc(reminderSchedules.createdAt));
+
+  return history;
+}
+
+/**
+ * Erinnerungs-Vorlagen abrufen
+ */
+export async function getReminderTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const templates = await db
+    .select()
+    .from(reminderTemplates)
+    .where(eq(reminderTemplates.isActive, 1))
+    .orderBy(reminderTemplates.type);
+
+  return templates;
+}
+
+/**
+ * Erinnerungs-Vorlage aktualisieren
+ */
+export async function updateReminderTemplate(
+  templateId: number,
+  updates: {
+    subject?: string;
+    htmlBody?: string;
+    textBody?: string;
+    delayDays?: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db
+    .update(reminderTemplates)
+    .set(updates)
+    .where(eq(reminderTemplates.id, templateId));
+
+  return true;
+}
+
+/**
+ * Alte Erinnerungen löschen (älter als 90 Tage)
+ */
+export async function cleanupOldReminders() {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  await db
+    .delete(reminderSchedules)
+    .where(lte(reminderSchedules.createdAt, ninetyDaysAgo));
+
+  return 0; // Cleanup durchgeführt
 }

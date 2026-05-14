@@ -256,3 +256,43 @@ export const examinerActionTokens = mysqlTable("examiner_action_tokens", {
 });
 export type ExaminerActionToken = typeof examinerActionTokens.$inferSelect;
 export type InsertExaminerActionToken = typeof examinerActionTokens.$inferInsert;
+
+
+// ─── Phase 35: Erinnerungs-Verwaltung ─────────────────────────────────────────
+
+export const reminderSchedules = mysqlTable("reminder_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisRequestId: int("thesis_request_id").notNull(),
+  reminderType: mysqlEnum("reminder_type", [
+    "PENDING_REMINDER_3DAYS",
+    "PENDING_REMINDER_7DAYS",
+    "PENDING_REMINDER_14DAYS",
+    "STUDENT_DEADLINE_REMINDER",
+    "EXAMINER_CAPACITY_WARNING",
+  ]).notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  sentAt: timestamp("sent_at"),
+  status: mysqlEnum("status", ["pending", "sent", "failed"]).default("pending").notNull(),
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReminderSchedule = typeof reminderSchedules.$inferSelect;
+export type InsertReminderSchedule = typeof reminderSchedules.$inferInsert;
+
+export const reminderTemplates = mysqlTable("reminder_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  type: varchar("type", { length: 64 }).notNull().unique(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  htmlBody: text("html_body").notNull(),
+  textBody: text("text_body").notNull(),
+  delayDays: int("delay_days").default(0).notNull(),
+  isActive: int("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  updatedByUserId: int("updated_by_user_id"),
+});
+
+export type ReminderTemplate = typeof reminderTemplates.$inferSelect;
+export type InsertReminderTemplate = typeof reminderTemplates.$inferInsert;

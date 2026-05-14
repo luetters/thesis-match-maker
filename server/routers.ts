@@ -91,6 +91,14 @@ import {
   bulkSendReminders,
   validateBulkOperation,
   bulkUpdateExaminerCapacity,
+  createReminderSchedule,
+  getRemindersDue,
+  sendReminderEmail,
+  markReminderAsSent,
+  getReminderHistory,
+  getReminderTemplates,
+  updateReminderTemplate,
+  cleanupOldReminders,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1696,6 +1704,50 @@ export const appRouter = router({
   }),
 
   // ─── Phase 34: Bulk-Aktionen für Prüfer:innen ──────────────────────────────
+  // ─── Phase 35: Automatische Erinnerungs-E-Mails ──────────────────────────────
+  reminders: router({
+    // Erinnerungs-Vorlagen abrufen
+    getTemplates: adminProcedure
+      .query(async () => {
+        const templates = await getReminderTemplates();
+        return templates;
+      }),
+
+    // Erinnerungs-Vorlage aktualisieren
+    updateTemplate: adminProcedure
+      .input(z.object({
+        templateId: z.number().int().positive(),
+        subject: z.string().optional(),
+        htmlBody: z.string().optional(),
+        textBody: z.string().optional(),
+        delayDays: z.number().int().min(0).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const success = await updateReminderTemplate(input.templateId, {
+          subject: input.subject,
+          htmlBody: input.htmlBody,
+          textBody: input.textBody,
+          delayDays: input.delayDays,
+        });
+        return { success };
+      }),
+
+    // Erinnerungs-Historie abrufen
+    getHistory: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const history = await getReminderHistory(input.thesisRequestId);
+        return history;
+      }),
+
+    // Fällige Erinnerungen abrufen (für Heartbeat-Job)
+    getDue: adminProcedure
+      .query(async () => {
+        const reminders = await getRemindersDue();
+        return reminders;
+      }),
+  }),
+
   bulkActions: router({
     // Mehrfach-Accept
     acceptRequests: examinerProcedure

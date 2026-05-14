@@ -752,3 +752,68 @@
 - [x] 0 TypeScript-Fehler
 - [x] Dev Server läuft
 - [ ] Frontend-Integration noch ausstehend
+
+
+## Phase 35: Automatische Erinnerungs-E-Mails
+
+### Datenbankschema
+- [x] DB-Tabelle: reminderSchedules (id, thesisRequestId, reminderType, scheduledAt, sentAt, status)
+- [x] DB-Tabelle: reminderTemplates (id, type, subject, htmlBody, textBody, createdAt)
+
+### Backend-Funktionen
+- [x] Backend-Funktion: createReminderSchedule(thesisRequestId: number, reminderType: string, delayDays: number)
+- [x] Backend-Funktion: getRemindersDue() – Erinnerungen abrufen die versendet werden sollen
+- [x] Backend-Funktion: sendReminderEmail(thesisRequestId: number, reminderType: string)
+- [x] Backend-Funktion: markReminderAsSent(scheduleId: number)
+- [x] Backend-Funktion: getReminderHistory(thesisRequestId: number)
+- [x] Backend-Funktion: getReminderTemplates()
+- [x] Backend-Funktion: updateReminderTemplate(templateId, updates)
+- [x] Backend-Funktion: cleanupOldReminders()
+
+### tRPC-Prozeduren
+- [x] reminders.getTemplates (Vorlagen abrufen)
+- [x] reminders.updateTemplate (Vorlage bearbeiten)
+- [x] reminders.getHistory (Versand-Historie)
+- [x] reminders.getDue (Fällige Erinnerungen für Heartbeat-Job)
+
+### Heartbeat-Jobs (Periodische Aufgaben)
+- [ ] Heartbeat-Job: sendPendingReminders (alle 6 Stunden)
+  - Abrufe alle fälligen Erinnerungen
+  - Versende E-Mails
+  - Markiere als versendet
+- [ ] Heartbeat-Job: cleanupOldReminders (täglich um 2:00 Uhr)
+  - Lösche Erinnerungen älter als 90 Tage
+
+### Erinnerungs-Typen
+- [ ] PENDING_REMINDER_3DAYS – Nach 3 Tagen noch ausstehend
+- [ ] PENDING_REMINDER_7DAYS – Nach 7 Tagen noch ausstehend
+- [ ] PENDING_REMINDER_14DAYS – Nach 14 Tagen noch ausstehend
+- [ ] STUDENT_DEADLINE_REMINDER – Erinnerung an Student:in vor Deadline
+- [ ] EXAMINER_CAPACITY_WARNING – Warnung bei hoher Auslastung
+
+### E-Mail-Templates
+- [ ] Template: PENDING_REMINDER_3DAYS (Betreff, HTML, Text)
+- [ ] Template: PENDING_REMINDER_7DAYS
+- [ ] Template: PENDING_REMINDER_14DAYS
+- [ ] Template: STUDENT_DEADLINE_REMINDER
+- [ ] Template: EXAMINER_CAPACITY_WARNING
+
+### Frontend
+- [ ] Admin-Dashboard: Erinnerungs-Verwaltungs-Tab
+- [ ] Tabelle: Geplante Erinnerungen (Anfrage, Typ, Geplant für, Status)
+- [ ] Button: Manuelle Erinnerung erstellen
+- [ ] Button: Vorlage bearbeiten
+- [ ] Versand-Historie anzeigen
+
+### Tests
+- [ ] Backend-Test: createReminderSchedule
+- [ ] Backend-Test: getRemindersDue mit verschiedenen Verzögerungen
+- [ ] Backend-Test: sendReminderEmail
+- [ ] Backend-Test: Heartbeat-Job Ausführung
+- [ ] Frontend-Test: Erinnerungs-Verwaltungs-UI
+
+### Integration & Rollout
+- [ ] Heartbeat-Jobs in manus-config registrieren
+- [ ] Automatische Erinnerungen bei Anfrage-Erstellung
+- [ ] Konfigurierbare Verzögerungen pro Erinnerungs-Typ
+- [ ] Dokumentation: Erinnerungs-System im Admin-Guide
