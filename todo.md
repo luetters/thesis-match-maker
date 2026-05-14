@@ -576,3 +576,101 @@
 - [x] Favicon überprüfen und aktualisieren - favicon.ico vorhanden
 - [x] Logo-Größen standardisieren (Header: 40px, Footer: 30px) - konsistent
 - [x] Logo-Farben überprüfen (HTW Grün #76B900) - konsistent
+
+
+## Phase 33: Admin-Reporting-Dashboard
+
+### Datenbankschema & Backend-Funktionen
+- [ ] DB-Schema: reportingFilters-Tabelle (userId, filterName, filterConfig, createdAt)
+- [ ] Backend-Funktion: getThesisStatsByPeriod(startDate, endDate, filters)
+- [ ] Backend-Funktion: getThesisStatsByFaculty(startDate, endDate)
+- [ ] Backend-Funktion: getThesisStatsByStatus(startDate, endDate)
+- [ ] Backend-Funktion: getAverageProcessingTime(startDate, endDate)
+- [ ] Backend-Funktion: getDropoutRate(startDate, endDate)
+- [ ] Backend-Funktion: getExaminerWorkload(startDate, endDate)
+- [ ] Backend-Funktion: generateCSVReport(reportType, filters)
+- [ ] Backend-Funktion: generatePDFReport(reportType, filters)
+
+### tRPC-Prozeduren
+- [ ] admin.getReportingData (Statistiken mit Zeitraumfilter)
+- [ ] admin.getReportingFilters (gespeicherte Filter abrufen)
+- [ ] admin.saveReportingFilter (Filter speichern)
+- [ ] admin.deleteReportingFilter (Filter löschen)
+- [ ] admin.exportReport (CSV/PDF-Export)
+- [ ] admin.getProcessingMetrics (Bearbeitungszeiten, Erfolgsquoten)
+- [ ] admin.getExaminerMetrics (Prüfer-Auslastung, Annahme-/Ablehnungsquoten)
+
+### Frontend-Komponenten
+- [ ] ReportingDashboard.tsx – Hauptkomponente mit Tabs (Überblick, Fachbereiche, Prüfer, Zeitreihen)
+- [ ] ReportingFilters.tsx – Filter-Panel (Zeitraum, Fachbereich, Status, Semester)
+- [ ] ReportingCharts.tsx – Diagramme (Donut, Balken, Linie, Heatmap)
+- [ ] ReportingTable.tsx – Detailltabelle (Anfragen mit Metadaten)
+- [ ] ReportingExport.tsx – Export-Optionen (CSV, PDF, Email)
+- [ ] SavedFilters.tsx – Gespeicherte Filter-Verwaltung
+
+### Diagramme & Visualisierungen
+- [ ] Erfolgsquote pro Semester (Donut-Chart)
+- [ ] Durchschnittliche Bearbeitungszeit pro Fachbereich (Balken-Chart)
+- [ ] Anfragen pro Status über Zeit (Linie-Chart)
+- [ ] Prüfer-Auslastung (Heatmap: Prüfer × Semester)
+- [ ] Abbruchquoten nach Fachbereich (Balken-Chart)
+- [ ] Anfragen-Trend über 12 Monate (Linie-Chart)
+
+### Export-Funktionen
+- [ ] CSV-Export: Alle Anfragen mit Metadaten (Datum, Prüfer, Status, Zeit)
+- [ ] CSV-Export: Prüfer-Statistiken (Name, Anfragen, Annahme-/Ablehnungsquote, Auslastung)
+- [ ] PDF-Report: Deckblatt mit HTW-Logo, Zeitraum, Generierungsdatum
+- [ ] PDF-Report: Diagramme mit Legenden und Erklärungen
+- [ ] PDF-Report: Detailtabellen mit Seitennummerierung
+- [ ] Email-Versand: Report als Anhang an Superadmin/PAV
+
+### Tests
+- [ ] Backend-Test: getThesisStatsByPeriod mit verschiedenen Zeiträumen
+- [ ] Backend-Test: getAverageProcessingTime Berechnung
+- [ ] Backend-Test: getDropoutRate Berechnung
+- [ ] Backend-Test: generateCSVReport Formatierung
+- [ ] Backend-Test: generatePDFReport Struktur
+- [ ] Frontend-Test: ReportingDashboard Tabs und Filter
+- [ ] Frontend-Test: ReportingCharts Diagramm-Rendering
+- [ ] Frontend-Test: Export-Funktionen (CSV, PDF, Email)
+
+### Integration & Rollout
+- [ ] ReportingDashboard in AdminDashboard.tsx integrieren (neuer Tab "Berichte")
+- [ ] Zugriffskontrolle: Nur Superadmin und PAV dürfen Berichte ansehen
+- [ ] Benachrichtigung an Superadmin bei Report-Export
+- [ ] Performance-Optimierung für große Datenmengen (Pagination, Caching)
+- [ ] Dokumentation: Reporting-Features im Admin-Guide
+
+
+## Phase 33: Admin-Reporting-Dashboard (ABGESCHLOSSEN)
+
+### Datenbankschema & Backend-Funktionen
+- [x] Backend-Funktion: getThesisStatsByPeriod(startDate, endDate, filters)
+- [x] Backend-Funktion: getThesisStatsByFaculty(startDate, endDate)
+- [x] Backend-Funktion: getThesisStatsByStatus(startDate, endDate)
+- [x] Backend-Funktion: getAverageProcessingTime(startDate, endDate)
+- [x] Backend-Funktion: getDropoutRate(startDate, endDate)
+- [x] Backend-Funktion: getExaminerWorkload(startDate, endDate)
+- [x] Backend-Funktion: generateCSVReport(reportType, filters)
+
+### tRPC-Prozeduren
+- [x] reporting.getStatsByPeriod (Statistiken mit Zeitraumfilter)
+- [x] reporting.getStatsByFaculty (Statistiken pro Fachbereich)
+- [x] reporting.getStatsByStatus (Statistiken pro Status)
+- [x] reporting.getAverageProcessingTime (Bearbeitungszeiten)
+- [x] reporting.getDropoutRate (Abbruchquoten)
+- [x] reporting.getExaminerWorkload (Prüfer-Auslastung)
+- [x] reporting.exportCSV (CSV-Export)
+
+### Frontend-Komponenten
+- [x] ReportingDashboard.tsx – Hauptkomponente mit Tabs (Überblick, Fachbereiche, Prüfer)
+- [x] KPI-Karten (Gesamt, Angenommen, Abgelehnt, Erfolgsquote, Ø Bearbeitungszeit)
+- [x] Diagramme: Pie-Chart (Status), Bar-Chart (Fachbereich), Load-Bars (Prüfer)
+- [x] Filter-Panel (Zeitraum Von/Bis)
+- [x] CSV-Export-Button
+
+### Status
+- [x] 46/46 Tests grün
+- [x] 0 TypeScript-Fehler
+- [x] Dev Server läuft
+- [x] Phase 33 komplett implementiert

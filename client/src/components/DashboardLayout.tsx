@@ -74,6 +74,7 @@ export default function DashboardLayout({
             }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
+            style={{ backgroundColor: "#76B900", color: "white" }}
           >
             Sign in
           </Button>

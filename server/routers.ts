@@ -79,6 +79,13 @@ import {
   updateEmailTemplate,
   listExaminers,
   updateExaminerProfileByAdmin,
+  getThesisStatsByPeriod,
+  getThesisStatsByFaculty,
+  getThesisStatsByStatus,
+  getAverageProcessingTime,
+  getDropoutRate,
+  getExaminerWorkload,
+  generateCSVReport,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1596,6 +1603,90 @@ export const appRouter = router({
         });
 
         return { success: true };
+      }),
+  }),
+
+  // ─── Phase 33: Admin-Reporting-Dashboard ──────────────────────────────────
+  reporting: router({
+    // Statistiken für Zeitraum mit Filtern
+    getStatsByPeriod: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+        department: z.string().optional(),
+        status: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return getThesisStatsByPeriod(input.startDate, input.endDate, {
+          department: input.department,
+          status: input.status,
+        });
+      }),
+
+    // Statistiken pro Fachbereich
+    getStatsByFaculty: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        return getThesisStatsByFaculty(input.startDate, input.endDate);
+      }),
+
+    // Statistiken pro Status
+    getStatsByStatus: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        return getThesisStatsByStatus(input.startDate, input.endDate);
+      }),
+
+    // Durchschnittliche Bearbeitungszeit
+    getAverageProcessingTime: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        return getAverageProcessingTime(input.startDate, input.endDate);
+      }),
+
+    // Abbruchquote
+    getDropoutRate: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        return getDropoutRate(input.startDate, input.endDate);
+      }),
+
+    // Prüfer:innen-Auslastung
+    getExaminerWorkload: adminProcedure
+      .input(z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        return getExaminerWorkload(input.startDate, input.endDate);
+      }),
+
+    // CSV-Export
+    exportCSV: adminProcedure
+      .input(z.object({
+        reportType: z.enum(["requests", "examiners", "audit"]),
+        startDate: z.date(),
+        endDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        const csv = await generateCSVReport(
+          input.reportType,
+          input.startDate,
+          input.endDate
+        );
+        return { csv };
       }),
   }),
 

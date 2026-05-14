@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -1882,4 +1882,297 @@ export async function getExaminerRequestStats(examinerId: number) {
     rejectedAsFirstExaminer: rejected[0]?.count || 0,
     pendingAsSecondExaminer: secondExaminer[0]?.count || 0,
   };
+}
+
+
+// ─── Phase 33: Reporting-Dashboard ────────────────────────────────────────────
+
+/**
+ * Abrufen von Thesis-Statistiken für einen Zeitraum mit optionalen Filtern
+ */
+export async function getThesisStatsByPeriod(
+  startDate: Date,
+  endDate: Date,
+  filters?: {
+    department?: string;
+    status?: string;
+    degreeType?: "bachelor" | "master";
+  }
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [
+    gte(thesisRequests.createdAt, startDate),
+    lte(thesisRequests.createdAt, endDate)
+  ];
+
+  if (filters?.department) {
+    conditions.push(eq(thesisRequests.department, filters.department));
+  }
+  if (filters?.status) {
+    conditions.push(eq(thesisRequests.status, filters.status as any));
+  }
+  if (filters?.degreeType) {
+    conditions.push(eq(thesisRequests.degreeType, filters.degreeType));
+  }
+
+  const requests = await db
+    .select()
+    .from(thesisRequests)
+    .where(and(...conditions));
+
+  return requests;
+}
+
+/**
+ * Abrufen von Statistiken pro Fachbereich
+ */
+export async function getThesisStatsByFaculty(
+  startDate: Date,
+  endDate: Date
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const requests = await db
+    .select({
+      department: thesisRequests.department,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+    })
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate)
+      )
+    );
+
+  const byDepartment: Record<string, { total: number; byStatus: Record<string, number> }> = {};
+
+  for (const r of requests) {
+    const dept = r.department || "Unbekannt";
+    if (!byDepartment[dept]) {
+      byDepartment[dept] = { total: 0, byStatus: {} };
+    }
+    byDepartment[dept].total++;
+    byDepartment[dept].byStatus[r.status] = (byDepartment[dept].byStatus[r.status] ?? 0) + 1;
+  }
+
+  return Object.entries(byDepartment).map(([department, data]) => ({
+    department,
+    ...data,
+  }));
+}
+
+/**
+ * Abrufen von Statistiken pro Status
+ */
+export async function getThesisStatsByStatus(
+  startDate: Date,
+  endDate: Date
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const requests = await db
+    .select({
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      updatedAt: thesisRequests.updatedAt,
+    })
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate)
+      )
+    );
+
+  const byStatus: Record<string, number> = {};
+  for (const r of requests) {
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+  }
+
+  return Object.entries(byStatus).map(([status, count]) => ({ status, count }));
+}
+
+/**
+ * Berechnung der durchschnittlichen Bearbeitungszeit
+ */
+export async function getAverageProcessingTime(
+  startDate: Date,
+  endDate: Date
+) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const resolved = await db
+    .select({
+      createdAt: thesisRequests.createdAt,
+      updatedAt: thesisRequests.updatedAt,
+    })
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate),
+        inArray(thesisRequests.status, ["ACCEPTED", "REJECTED", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_REJECTED"])
+      )
+    );
+
+  if (resolved.length === 0) return 0;
+
+  const totalDays = resolved.reduce((sum, r) => {
+    const diff = new Date(r.updatedAt).getTime() - new Date(r.createdAt).getTime();
+    return sum + diff / (1000 * 60 * 60 * 24);
+  }, 0);
+
+  return Math.round(totalDays / resolved.length);
+}
+
+/**
+ * Berechnung der Abbruchquote
+ */
+export async function getDropoutRate(
+  startDate: Date,
+  endDate: Date
+) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const total = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate)
+      )
+    );
+
+  const rejected = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate),
+        inArray(thesisRequests.status, ["FIRST_EXAMINER_REJECTED", "REJECTED"])
+      )
+    );
+
+  const totalCount = total[0]?.count || 0;
+  const rejectedCount = rejected[0]?.count || 0;
+
+  return totalCount > 0 ? Math.round((rejectedCount / totalCount) * 100) : 0;
+}
+
+/**
+ * Abrufen der Prüfer:innen-Auslastung
+ */
+export async function getExaminerWorkload(
+  startDate: Date,
+  endDate: Date
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const examiners = await db
+    .select({
+      examinerId: thesisRequests.examinerId,
+      examinerName: users.name,
+      maxSupervisions: examinerProfiles.maxSupervisions,
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.examinerId, users.id))
+    .leftJoin(examinerProfiles, eq(examinerProfiles.userId, users.id))
+    .where(
+      and(
+        gte(thesisRequests.createdAt, startDate),
+        lte(thesisRequests.createdAt, endDate)
+      )
+    );
+
+  const workloadMap: Record<number, { name: string; current: number; max: number }> = {};
+
+  for (const e of examiners) {
+    if (e.examinerId) {
+      if (!workloadMap[e.examinerId]) {
+        workloadMap[e.examinerId] = {
+          name: e.examinerName || "Unbekannt",
+          current: 0,
+          max: e.maxSupervisions || 5,
+        };
+      }
+      workloadMap[e.examinerId].current++;
+    }
+  }
+
+  return Object.values(workloadMap)
+    .sort((a, b) => b.current - a.current)
+    .slice(0, 20);
+}
+
+/**
+ * CSV-Export für Berichte
+ */
+export async function generateCSVReport(
+  reportType: "requests" | "examiners" | "audit",
+  startDate: Date,
+  endDate: Date,
+  filters?: Record<string, string>
+) {
+  const db = await getDb();
+  if (!db) return "";
+
+  if (reportType === "requests") {
+    const requests = await db
+      .select({
+        id: thesisRequests.id,
+        title: thesisRequests.title,
+        studentName: users.name,
+        department: thesisRequests.department,
+        status: thesisRequests.status,
+        createdAt: thesisRequests.createdAt,
+        updatedAt: thesisRequests.updatedAt,
+      })
+      .from(thesisRequests)
+      .innerJoin(users, eq(thesisRequests.studentId, users.id))
+      .where(
+        and(
+          gte(thesisRequests.createdAt, startDate),
+          lte(thesisRequests.createdAt, endDate)
+        )
+      );
+
+    const header = ["ID", "Titel", "Student:in", "Fachbereich", "Status", "Erstellt", "Aktualisiert"].join(";");
+    const rows = requests.map((r) =>
+      [
+        r.id,
+        `"${r.title}"`,
+        r.studentName,
+        r.department,
+        r.status,
+        new Date(r.createdAt).toLocaleDateString("de-DE"),
+        new Date(r.updatedAt).toLocaleDateString("de-DE"),
+      ].join(";")
+    );
+
+    return [header, ...rows].join("\n");
+  }
+
+  if (reportType === "examiners") {
+    const workload = await getExaminerWorkload(startDate, endDate);
+    const header = ["Name", "Aktuelle Betreuungen", "Maximale Kapazität", "Auslastung %"].join(";");
+    const rows = workload.map((e) => {
+      const utilization = e.max > 0 ? Math.round((e.current / e.max) * 100) : 0;
+      return [e.name, e.current, e.max, utilization].join(";");
+    });
+
+    return [header, ...rows].join("\n");
+  }
+
+  return "";
 }
