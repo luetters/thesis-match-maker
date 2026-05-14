@@ -841,10 +841,10 @@
 - [x] search.deleteFilter (Filter löschen)
 
 ### Frontend-Komponenten
-- [ ] GlobalSearch.tsx – Globale Suchleiste (Header)
-- [ ] AdvancedFilters.tsx – Erweiterte Filter-Panel
+- [x] GlobalSearch.tsx – Globale Suchleiste (Header)
+- [x] AdvancedFilters.tsx – Erweiterte Filter-Panel
 - [ ] FilterPresets.tsx – Gespeicherte Filter-Presets
-- [ ] SearchResults.tsx – Suchergebnisse mit Pagination
+- [x] SearchResults.tsx – Suchergebnisse mit Pagination
 
 ### Suchfunktionalität
 - [ ] Volltextsuche in Anfrage-Beschreibungen
