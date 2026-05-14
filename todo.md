@@ -966,7 +966,7 @@
 ### Navigation
 - [x] Mobile-Menü (Hamburger-Icon) - MobileMenu.tsx
 - [x] Sticky Header mit Menü-Toggle
-- [ ] Bottom Navigation für mobile (Tabs)
+- [x] Bottom Navigation für mobile (Tabs) - BottomNavigation.tsx
 - [x] Breadcrumb-Navigation auf mobil ausblenden
 - [x] Touch-freundliche Abstände (min. 44x44px)
 
@@ -1027,7 +1027,8 @@
 - [ ] Mobile-Testing-Checkliste
 
 ### Deployment
-- [ ] PWA-Manifest (manifest.json)
-- [ ] Service Worker für Offline-Support
-- [ ] App-Icon für verschiedene Größen
-- [ ] Splash-Screen konfigurieren
+- [x] PWA-Manifest (manifest.json)
+- [x] Service Worker für Offline-Support (sw.js)
+- [x] App-Icon für verschiedene Größen
+- [x] Offline-Seite (offline.html)
+- [x] PWA Meta-Tags in index.html
