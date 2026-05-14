@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { AdvancedFilters } from "@/components/AdvancedFilters";
 
 export function ExaminerRequestDashboard() {
   const { user } = useAuth();
@@ -24,6 +26,8 @@ export function ExaminerRequestDashboard() {
   const [activeTab, setActiveTab] = useState("pending");
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Queries für alle Anfrage-Kategorien
   const { data: pendingRequests = [] } = (trpc.examiner as any).getPendingRequests?.useQuery?.() || { data: [] };

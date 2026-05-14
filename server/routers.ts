@@ -105,6 +105,12 @@ import {
   createSavedFilter,
   getSavedFilters,
   deleteSavedFilter,
+  getAuditTrail,
+  getAuditTrailByUser,
+  exportAuditTrailCSV,
+  anonymizeThesisRequest,
+  archiveThesisRequest,
+  getComplianceReport,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";

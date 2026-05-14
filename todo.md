@@ -864,12 +864,12 @@
 - [ ] Preset: "Überfällige Anfragen"
 
 ### Frontend-Integration
-- [ ] GlobalSearch in App.tsx Header integrieren
-- [ ] Suchleiste mit Auto-Suggest (Anfragen, Prüfer, Studierende)
-- [ ] Erweiterte Filter in Admin/Examiner Dashboard
+- [x] GlobalSearch in ExaminerRequestDashboard integrieren
+- [x] Suchleiste mit Auto-Suggest (Anfragen, Prüfer, Studierende)
+- [x] Erweiterte Filter in Examiner Dashboard
 - [ ] Filter-Presets in Sidebar/Menü
 - [ ] Suchergebnisse mit Highlighting
-- [ ] Pagination für große Ergebnismengen
+- [x] Pagination für große Ergebnismengen
 
 ### Performance & Optimierung
 - [ ] Suchindex für Volltextsuche
@@ -890,3 +890,64 @@
 - [ ] Filter-Presets für verschiedene Rollen
 - [ ] Dokumentation: Suchfunktion im Benutzer-Guide
 - [ ] Performance-Monitoring für Suchanfragen
+
+
+## Phase 37: Audit-Trail & Compliance
+
+### Datenbankschema
+- [x] DB-Tabelle: auditLog (bereits vorhanden - id, thesisRequestId, actorId, action, fromStatus, toStatus, reason, metadata, createdAt)
+
+### Backend-Funktionen
+- [x] Backend-Funktion: getAuditTrail(thesisRequestId: number)
+- [x] Backend-Funktion: getAuditTrailByUser(userId: number, dateFrom?: Date, dateTo?: Date)
+- [x] Backend-Funktion: exportAuditTrailCSV(filters?: object)
+- [x] Backend-Funktion: anonymizeThesisRequest(thesisRequestId: number)
+- [x] Backend-Funktion: archiveThesisRequest(thesisRequestId: number)
+- [x] Backend-Funktion: getComplianceReport(dateFrom: Date, dateTo: Date)
+
+### tRPC-Prozeduren
+- [ ] audit.getTrail (Audit-Trail für Anfrage abrufen)
+- [ ] audit.getUserTrail (Audit-Trail für Benutzer:in abrufen)
+- [ ] audit.exportCSV (Audit-Trail als CSV exportieren)
+- [ ] audit.anonymize (Anfrage anonymisieren)
+- [ ] audit.archive (Anfrage archivieren)
+- [ ] audit.getComplianceReport (Compliance-Bericht generieren)
+
+### Frontend-Komponenten
+- [ ] AuditTrailViewer.tsx – Audit-Trail Anzeige (Tabelle mit Zeitstempel, Benutzer, Aktion)
+- [ ] ComplianceReportGenerator.tsx – Compliance-Bericht Generator
+- [ ] DataExportPanel.tsx – Datenexport-Panel (CSV, DSGVO-Anfragen)
+
+### Audit-Trail-Features
+- [ ] Detaillierte Änderungshistorie mit Benutzer:in-Tracking
+- [ ] Zeitstempel für alle Aktionen (UTC)
+- [ ] Grund-Tracking für Ablehnungen
+- [ ] Status-Übergänge dokumentieren
+- [ ] Benutzer:innen-Informationen speichern (Name, E-Mail, Rolle)
+
+### Compliance & DSGVO
+- [ ] Datenexport für betroffene Personen (Anfrage + Audit-Trail)
+- [ ] Anonymisierungsfunktion für abgelehnte Anfragen
+- [ ] Archivierung nach Abschluss (Daten nach 7 Jahren löschen)
+- [ ] Datenschutzerklärung im Admin-Panel
+- [ ] DSGVO-Anfrage-Formular
+
+### Admin-Dashboard
+- [ ] Audit-Trail-Tab im Admin-Dashboard
+- [ ] Filter nach Benutzer:in, Aktion, Zeitraum
+- [ ] Export-Button für Audit-Trail
+- [ ] Compliance-Bericht-Generator
+- [ ] Archivierungs-Status anzeigen
+
+### Tests
+- [ ] Backend-Test: getAuditTrail
+- [ ] Backend-Test: anonymizeThesisRequest
+- [ ] Backend-Test: exportAuditTrailCSV
+- [ ] Backend-Test: getComplianceReport
+- [ ] Frontend-Test: AuditTrailViewer Komponente
+
+### Integration & Rollout
+- [ ] Audit-Logging bei jeder Änderung aktivieren
+- [ ] Automatische Archivierung nach Abschluss
+- [ ] Dokumentation: Compliance-Guide
+- [ ] Datenschutzerklärung aktualisieren

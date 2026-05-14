@@ -2666,3 +2666,216 @@ export async function deleteSavedFilter(filterId: number, userId: number) {
 
   return true;
 }
+
+
+// ─── Phase 37: Audit-Trail & Compliance ────────────────────────────────────────
+
+/**
+ * Audit-Trail für eine Anfrage abrufen
+ */
+export async function getAuditTrail(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const trail = await db
+    .select()
+    .from(auditLog)
+    .where(eq(auditLog.thesisRequestId, thesisRequestId))
+    .orderBy(desc(auditLog.createdAt));
+
+  return trail;
+}
+
+/**
+ * Audit-Trail für einen Benutzer abrufen
+ */
+export async function getAuditTrailByUser(
+  userId: number,
+  dateFrom?: Date,
+  dateTo?: Date
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [eq(auditLog.actorId, userId)];
+
+  if (dateFrom) {
+    conditions.push(gte(auditLog.createdAt, dateFrom));
+  }
+  if (dateTo) {
+    conditions.push(lte(auditLog.createdAt, dateTo));
+  }
+
+  const trail = await db
+    .select()
+    .from(auditLog)
+    .where(and(...conditions))
+    .orderBy(desc(auditLog.createdAt));
+
+  return trail;
+}
+
+/**
+ * Audit-Trail als CSV exportieren
+ */
+export async function exportAuditTrailCSV(filters?: {
+  dateFrom?: Date;
+  dateTo?: Date;
+  userId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return "";
+
+  const conditions: any[] = [];
+
+  if (filters?.dateFrom) {
+    conditions.push(gte(auditLog.createdAt, filters.dateFrom));
+  }
+  if (filters?.dateTo) {
+    conditions.push(lte(auditLog.createdAt, filters.dateTo));
+  }
+  if (filters?.userId) {
+    conditions.push(eq(auditLog.actorId, filters.userId));
+  }
+
+  const trail = await db
+    .select()
+    .from(auditLog)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(auditLog.createdAt));
+
+  // CSV Header
+  const headers = [
+    "ID",
+    "Anfrage-ID",
+    "Benutzer:in-ID",
+    "Rolle",
+    "Aktion",
+    "Von Status",
+    "Zu Status",
+    "Grund",
+    "Zeitstempel",
+  ];
+
+  // CSV Rows
+  const rows = trail.map((entry) => [
+    entry.id,
+    entry.thesisRequestId,
+    entry.actorId || "",
+    entry.actorRole || "",
+    entry.action,
+    entry.fromStatus || "",
+    entry.toStatus || "",
+    entry.reason || "",
+    entry.createdAt?.toISOString() || "",
+  ]);
+
+  // CSV String
+  const csv = [
+    headers.join(","),
+    ...rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ),
+  ].join("\n");
+
+  return csv;
+}
+
+/**
+ * Anfrage anonymisieren (für abgelehnte Anfragen)
+ */
+export async function anonymizeThesisRequest(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db
+      .update(thesisRequests)
+      .set({
+        title: "[Anonymisiert]",
+        description: "[Anonymisiert]",
+      })
+      .where(eq(thesisRequests.id, thesisRequestId));
+
+    return true;
+  } catch (error) {
+    console.error(`[Compliance] Fehler beim Anonymisieren von Anfrage ${thesisRequestId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Anfrage archivieren
+ */
+export async function archiveThesisRequest(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db
+      .update(thesisRequests)
+      .set({
+        status: "ARCHIVED" as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(thesisRequests.id, thesisRequestId));
+
+    return true;
+  } catch (error) {
+    console.error(`[Compliance] Fehler beim Archivieren von Anfrage ${thesisRequestId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Compliance-Bericht generieren
+ */
+export async function getComplianceReport(dateFrom: Date, dateTo: Date) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const requests = await db
+    .select()
+    .from(thesisRequests)
+    .where(
+      and(
+        gte(thesisRequests.createdAt, dateFrom),
+        lte(thesisRequests.createdAt, dateTo)
+      )
+    );
+
+  const totalRequests = requests.length;
+  const completedRequests = requests.filter(
+    (r) => r.status === "COMPLETED"
+  ).length;
+  const rejectedRequests = requests.filter(
+    (r) => r.status === "REJECTED"
+  ).length;
+  const pendingRequests = requests.filter(
+    (r) => r.status?.includes("PENDING")
+  ).length;
+
+  // Durchschnittliche Bearbeitungszeit berechnen
+  const completedWithTime = requests
+    .filter((r) => r.updatedAt && r.createdAt && r.status === "COMPLETED")
+    .map((r) => {
+      const time = (r.updatedAt!.getTime() - r.createdAt!.getTime()) / (1000 * 60 * 60 * 24);
+      return time;
+    });
+
+  const avgProcessingTime =
+    completedWithTime.length > 0
+      ? completedWithTime.reduce((a, b) => a + b, 0) / completedWithTime.length
+      : 0;
+
+  return {
+    dateFrom: dateFrom.toISOString(),
+    dateTo: dateTo.toISOString(),
+    totalRequests,
+    completedRequests,
+    rejectedRequests,
+    pendingRequests,
+    completionRate: totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0,
+    avgProcessingTimeDays: Math.round(avgProcessingTime * 100) / 100,
+  };
+}
