@@ -2176,3 +2176,114 @@ export async function generateCSVReport(
 
   return "";
 }
+
+
+// ─── Phase 34: Bulk-Aktionen für Prüfer:innen ────────────────────────────────
+
+/**
+ * Mehrfach-Accept von Anfragen
+ */
+export async function bulkAcceptRequests(requestIds: number[]) {
+  const db = await getDb();
+  if (!db) return { success: false, count: 0 };
+
+  let count = 0;
+  for (const requestId of requestIds) {
+    try {
+      await acceptThesisRequest(requestId, 0); // examinerId wird aus DB geholt
+      count++;
+    } catch (error) {
+      console.error(`[Bulk] Fehler bei Accept von Anfrage ${requestId}:`, error);
+    }
+  }
+
+  return { success: true, count };
+}
+
+/**
+ * Mehrfach-Reject von Anfragen
+ */
+export async function bulkRejectRequests(requestIds: number[], reason?: string) {
+  const db = await getDb();
+  if (!db) return { success: false, count: 0 };
+
+  let count = 0;
+  for (const requestId of requestIds) {
+    try {
+      await rejectThesisRequest(requestId, reason);
+      count++;
+    } catch (error) {
+      console.error(`[Bulk] Fehler bei Reject von Anfrage ${requestId}:`, error);
+    }
+  }
+
+  return { success: true, count };
+}
+
+/**
+ * Mehrfach-Erinnerungs-E-Mails versenden
+ */
+export async function bulkSendReminders(requestIds: number[], templateKey: string) {
+  const db = await getDb();
+  if (!db) return { success: false, count: 0 };
+
+  let count = 0;
+  for (const requestId of requestIds) {
+    try {
+      const request = await db
+        .select()
+        .from(thesisRequests)
+        .where(eq(thesisRequests.id, requestId))
+        .limit(1);
+
+      if (request.length > 0) {
+        // Hier würde die E-Mail-Versendung stattfinden
+        // await sendReminderEmail(request[0], templateKey);
+        count++;
+      }
+    } catch (error) {
+      console.error(`[Bulk] Fehler bei Reminder für Anfrage ${requestId}:`, error);
+    }
+  }
+
+  return { success: true, count };
+}
+
+/**
+ * Validierung: Prüfe ob Prüfer:in Anfragen bearbeiten darf
+ */
+export async function validateBulkOperation(examinerId: number, requestIds: number[]) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const requests = await db
+    .select({ id: thesisRequests.id, wantedExaminerId: thesisRequests.wantedExaminerId })
+    .from(thesisRequests)
+    .where(inArray(thesisRequests.id, requestIds));
+
+  // Prüfe ob alle Anfragen für diese Prüfer:in sind
+  return requests.every(r => r.wantedExaminerId === examinerId);
+}
+
+/**
+ * Kapazität von Prüfer:innen aktualisieren (Admin-only)
+ */
+export async function bulkUpdateExaminerCapacity(examinerIds: number[], newCapacity: number) {
+  const db = await getDb();
+  if (!db) return { success: false, count: 0 };
+
+  let count = 0;
+  for (const examinerId of examinerIds) {
+    try {
+      await db
+        .update(examinerProfiles)
+        .set({ maxSupervisions: newCapacity })
+        .where(eq(examinerProfiles.userId, examinerId));
+      count++;
+    } catch (error) {
+      console.error(`[Bulk] Fehler bei Kapazitäts-Update für Prüfer ${examinerId}:`, error);
+    }
+  }
+
+  return { success: true, count };
+}

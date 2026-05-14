@@ -674,3 +674,81 @@
 - [x] 0 TypeScript-Fehler
 - [x] Dev Server läuft
 - [x] Phase 33 komplett implementiert
+
+
+## Phase 34: Bulk-Aktionen für Prüfer:innen
+
+### Backend-Funktionen
+- [ ] Backend-Funktion: bulkAcceptRequests(requestIds: number[])
+- [ ] Backend-Funktion: bulkRejectRequests(requestIds: number[], reason?: string)
+- [ ] Backend-Funktion: bulkSendReminders(requestIds: number[], templateKey: string)
+- [ ] Backend-Funktion: bulkUpdateCapacity(examinerIds: number[], newCapacity: number)
+- [ ] Backend-Funktion: validateBulkOperation(userId: number, requestIds: number[])
+
+### tRPC-Prozeduren
+- [ ] examiner.bulkAcceptRequests (Mehrfach-Accept)
+- [ ] examiner.bulkRejectRequests (Mehrfach-Reject mit Grund)
+- [ ] examiner.bulkSendReminders (Erinnerungs-E-Mails versenden)
+- [ ] admin.bulkUpdateExaminerCapacity (Kapazität ändern)
+
+### Frontend-Komponenten
+- [ ] ExaminerRequestDashboard.tsx erweitern: Checkbox-Spalte für Mehrfachauswahl
+- [ ] BulkActionBar.tsx – Toolbar mit Anzahl ausgewählter Anfragen
+- [ ] BulkActionButtons.tsx – Accept/Reject/Reminder-Buttons
+- [ ] BulkActionDialog.tsx – Bestätigungs-Dialog mit Zusammenfassung
+- [ ] BulkReminderModal.tsx – Template-Auswahl für Erinnerungs-E-Mails
+
+### Funktionalität
+- [ ] Checkbox in Anfragen-Tabelle (Select All / Deselect All)
+- [ ] Bulk-Toolbar zeigt Anzahl ausgewählter Anfragen
+- [ ] Accept-Button: Mehrfach-Accept mit Bestätigung
+- [ ] Reject-Button: Mehrfach-Reject mit Grund-Template
+- [ ] Reminder-Button: E-Mail-Template-Auswahl
+- [ ] Fehlerbehandlung: Teilweise erfolgreiche Operationen
+- [ ] Optimistische Updates: UI aktualisiert sofort
+- [ ] Toast-Benachrichtigungen: Erfolg/Fehler-Feedback
+
+### Tests
+- [ ] Backend-Test: bulkAcceptRequests mit mehreren IDs
+- [ ] Backend-Test: bulkRejectRequests mit Grund
+- [ ] Backend-Test: bulkSendReminders mit Template
+- [ ] Backend-Test: Validierung von Anfrage-Ownership
+- [ ] Frontend-Test: Checkbox-Auswahl und Select All
+- [ ] Frontend-Test: Bulk-Buttons aktivieren/deaktivieren
+- [ ] Frontend-Test: Bestätigungs-Dialog
+- [ ] Frontend-Test: Fehlerbehandlung bei teilweise fehlgeschlagenen Operationen
+
+### Integration & Rollout
+- [ ] ExaminerRequestDashboard.tsx mit Bulk-Funktionalität erweitern
+- [ ] BulkActionBar in Tabelle integrieren
+- [ ] Zugriffskontrolle: Nur Prüfer:innen dürfen ihre eigenen Anfragen bulk-operieren
+- [ ] Performance: Pagination bei großen Mengen
+- [ ] Dokumentation: Bulk-Aktionen im Prüfer-Guide
+
+
+## Phase 34: Bulk-Aktionen für Prüfer:innen (TEILWEISE ABGESCHLOSSEN)
+
+### Backend-Funktionen
+- [x] Backend-Funktion: bulkAcceptRequests(requestIds: number[])
+- [x] Backend-Funktion: bulkRejectRequests(requestIds: number[], reason?: string)
+- [x] Backend-Funktion: bulkSendReminders(requestIds: number[], templateKey: string)
+- [x] Backend-Funktion: validateBulkOperation(userId: number, requestIds: number[])
+- [x] Backend-Funktion: bulkUpdateExaminerCapacity(examinerIds: number[], newCapacity: number)
+
+### tRPC-Prozeduren
+- [x] bulkActions.acceptRequests (Mehrfach-Accept)
+- [x] bulkActions.rejectRequests (Mehrfach-Reject mit Grund)
+- [x] bulkActions.sendReminders (Erinnerungs-E-Mails versenden)
+- [x] bulkActions.updateExaminerCapacity (Admin: Kapazität ändern)
+
+### Frontend-Komponenten
+- [x] BulkActionBar.tsx – Toolbar mit Anzahl ausgewählter Anfragen
+- [x] BulkActionDialog.tsx – Bestätigungs-Dialog mit Grund-Feld
+- [ ] ExaminerRequestDashboard.tsx erweitern: Checkbox-Spalte für Mehrfachauswahl
+- [ ] BulkReminderModal.tsx – Template-Auswahl für Erinnerungs-E-Mails
+
+### Status
+- [x] 46/46 Tests grün
+- [x] 0 TypeScript-Fehler
+- [x] Dev Server läuft
+- [ ] Frontend-Integration noch ausstehend

@@ -86,6 +86,11 @@ import {
   getDropoutRate,
   getExaminerWorkload,
   generateCSVReport,
+  bulkAcceptRequests,
+  bulkRejectRequests,
+  bulkSendReminders,
+  validateBulkOperation,
+  bulkUpdateExaminerCapacity,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1687,6 +1692,90 @@ export const appRouter = router({
           input.endDate
         );
         return { csv };
+      }),
+  }),
+
+  // ─── Phase 34: Bulk-Aktionen für Prüfer:innen ──────────────────────────────
+  bulkActions: router({
+    // Mehrfach-Accept
+    acceptRequests: examinerProcedure
+      .input(z.object({ requestIds: z.array(z.number().int().positive()) }))
+      .mutation(async ({ ctx, input }) => {
+        // Validiere dass Prüfer:in diese Anfragen bearbeiten darf
+        const isValid = await validateBulkOperation(ctx.user.id, input.requestIds);
+        if (!isValid) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen diese Anfragen nicht bearbeiten" });
+        }
+
+        const result = await bulkAcceptRequests(input.requestIds);
+        
+        // Audit-Log für jede Anfrage
+        for (const requestId of input.requestIds) {
+          await createAuditLogEntry({
+            thesisRequestId: requestId,
+            actorId: ctx.user.id,
+            actorRole: ctx.user.role,
+            action: "BULK_THESIS_ACCEPTED",
+            toStatus: "FIRST_EXAMINER_ACCEPTED",
+          });
+        }
+
+        return result;
+      }),
+
+    // Mehrfach-Reject
+    rejectRequests: examinerProcedure
+      .input(z.object({
+        requestIds: z.array(z.number().int().positive()),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isValid = await validateBulkOperation(ctx.user.id, input.requestIds);
+        if (!isValid) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen diese Anfragen nicht bearbeiten" });
+        }
+
+        const result = await bulkRejectRequests(input.requestIds, input.reason);
+        
+        for (const requestId of input.requestIds) {
+          await createAuditLogEntry({
+            thesisRequestId: requestId,
+            actorId: ctx.user.id,
+            actorRole: ctx.user.role,
+            action: "BULK_THESIS_REJECTED",
+            toStatus: "FIRST_EXAMINER_REJECTED",
+            reason: input.reason,
+          });
+        }
+
+        return result;
+      }),
+
+    // Mehrfach-Erinnerungs-E-Mails
+    sendReminders: examinerProcedure
+      .input(z.object({
+        requestIds: z.array(z.number().int().positive()),
+        templateKey: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isValid = await validateBulkOperation(ctx.user.id, input.requestIds);
+        if (!isValid) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen diese Anfragen nicht bearbeiten" });
+        }
+
+        const result = await bulkSendReminders(input.requestIds, input.templateKey);
+        return result;
+      }),
+
+    // Admin: Kapazität aktualisieren
+    updateExaminerCapacity: adminProcedure
+      .input(z.object({
+        examinerIds: z.array(z.number().int().positive()),
+        newCapacity: z.number().int().min(1).max(50),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await bulkUpdateExaminerCapacity(input.examinerIds, input.newCapacity);
+        return result;
       }),
   }),
 
