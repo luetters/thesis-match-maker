@@ -99,6 +99,12 @@ import {
   getReminderTemplates,
   updateReminderTemplate,
   cleanupOldReminders,
+  searchThesisRequests,
+  searchExaminers,
+  searchStudents,
+  createSavedFilter,
+  getSavedFilters,
+  deleteSavedFilter,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1705,6 +1711,84 @@ export const appRouter = router({
 
   // ─── Phase 34: Bulk-Aktionen für Prüfer:innen ──────────────────────────────
   // ─── Phase 35: Automatische Erinnerungs-E-Mails ──────────────────────────────
+  // ─── Phase 36: Erweiterte Filterung und Suche ──────────────────────────────
+  search: router({
+    // Thesis-Anfragen durchsuchen
+    searchThesis: protectedProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        filters: z.object({
+          status: z.array(z.string()).optional(),
+          semester: z.array(z.string()).optional(),
+          department: z.array(z.string()).optional(),
+          language: z.array(z.string()).optional(),
+          dateFrom: z.date().optional(),
+          dateTo: z.date().optional(),
+        }).optional(),
+      }))
+      .query(async ({ input }) => {
+        const results = await searchThesisRequests(input.query || "", input.filters);
+        return results;
+      }),
+
+    // Prüfer:innen durchsuchen
+    searchExaminers: protectedProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        filters: z.object({
+          language: z.array(z.string()).optional(),
+          department: z.array(z.string()).optional(),
+        }).optional(),
+      }))
+      .query(async ({ input }) => {
+        const results = await searchExaminers(input.query || "", input.filters);
+        return results;
+      }),
+
+    // Studierende durchsuchen
+    searchStudents: adminProcedure
+      .input(z.object({
+        query: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const results = await searchStudents(input.query || "");
+        return results;
+      }),
+
+    // Gespeicherte Filter erstellen
+    createFilter: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        filterConfig: z.object({
+          status: z.array(z.string()).optional(),
+          semester: z.array(z.string()).optional(),
+          department: z.array(z.string()).optional(),
+          language: z.array(z.string()).optional(),
+          dateFrom: z.date().optional(),
+          dateTo: z.date().optional(),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await createSavedFilter(ctx.user.id, input.name, input.filterConfig);
+        return { success: !!result };
+      }),
+
+    // Gespeicherte Filter abrufen
+    getFilters: protectedProcedure
+      .query(async ({ ctx }) => {
+        const filters = await getSavedFilters(ctx.user.id);
+        return filters;
+      }),
+
+    // Gespeicherten Filter löschen
+    deleteFilter: protectedProcedure
+      .input(z.object({ filterId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const success = await deleteSavedFilter(input.filterId, ctx.user.id);
+        return { success };
+      }),
+  }),
+
   reminders: router({
     // Erinnerungs-Vorlagen abrufen
     getTemplates: adminProcedure

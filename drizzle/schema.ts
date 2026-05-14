@@ -296,3 +296,27 @@ export const reminderTemplates = mysqlTable("reminder_templates", {
 
 export type ReminderTemplate = typeof reminderTemplates.$inferSelect;
 export type InsertReminderTemplate = typeof reminderTemplates.$inferInsert;
+
+
+// ─── Phase 36: Erweiterte Filterung und Suche ─────────────────────────────────
+
+export const savedFilters = mysqlTable("saved_filters", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  filterConfig: json("filter_config").$type<{
+    status?: string[];
+    semester?: string[];
+    department?: string[];
+    language?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    examinerName?: string;
+    studentName?: string;
+  }>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SavedFilter = typeof savedFilters.$inferSelect;
+export type InsertSavedFilter = typeof savedFilters.$inferInsert;

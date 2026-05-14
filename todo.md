@@ -817,3 +817,76 @@
 - [ ] Automatische Erinnerungen bei Anfrage-Erstellung
 - [ ] Konfigurierbare Verzögerungen pro Erinnerungs-Typ
 - [ ] Dokumentation: Erinnerungs-System im Admin-Guide
+
+
+## Phase 36: Erweiterte Filterung und Suche (TEILWEISE ABGESCHLOSSEN)
+
+### Datenbankschema
+- [x] DB-Tabelle: savedFilters (id, userId, name, filterConfig, createdAt)
+
+### Backend-Funktionen
+- [x] Backend-Funktion: searchThesisRequests(query: string, filters: SearchFilters)
+- [x] Backend-Funktion: searchExaminers(query: string, filters: SearchFilters)
+- [x] Backend-Funktion: searchStudents(query: string, filters: SearchFilters)
+- [x] Backend-Funktion: createSavedFilter(userId: number, name: string, filterConfig: object)
+- [x] Backend-Funktion: getSavedFilters(userId: number)
+- [x] Backend-Funktion: deleteSavedFilter(filterId: number)
+
+### tRPC-Prozeduren
+- [x] search.searchThesis (Anfragen suchen)
+- [x] search.searchExaminers (Prüfer:innen suchen)
+- [x] search.searchStudents (Studierende suchen)
+- [x] search.createFilter (Filter speichern)
+- [x] search.getFilters (Gespeicherte Filter abrufen)
+- [x] search.deleteFilter (Filter löschen)
+
+### Frontend-Komponenten
+- [ ] GlobalSearch.tsx – Globale Suchleiste (Header)
+- [ ] AdvancedFilters.tsx – Erweiterte Filter-Panel
+- [ ] FilterPresets.tsx – Gespeicherte Filter-Presets
+- [ ] SearchResults.tsx – Suchergebnisse mit Pagination
+
+### Suchfunktionalität
+- [ ] Volltextsuche in Anfrage-Beschreibungen
+- [ ] Filter nach Status (PENDING, ACCEPTED, REJECTED, etc.)
+- [ ] Filter nach Semester (WS2025/26, SoSe2026, etc.)
+- [ ] Filter nach Fachbereich/Studiengang
+- [ ] Filter nach Sprache (Deutsch, Englisch)
+- [ ] Filter nach Zeitraum (Von/Bis)
+- [ ] Filter nach Prüfer:in (Name, E-Mail)
+- [ ] Filter nach Student:in (Name, E-Mail)
+
+### Filter-Presets
+- [ ] Preset: "Meine ausstehenden Anfragen"
+- [ ] Preset: "Akzeptierte Anfragen"
+- [ ] Preset: "Abgelehnte Anfragen"
+- [ ] Preset: "Diese Woche erstellt"
+- [ ] Preset: "Überfällige Anfragen"
+
+### Frontend-Integration
+- [ ] GlobalSearch in App.tsx Header integrieren
+- [ ] Suchleiste mit Auto-Suggest (Anfragen, Prüfer, Studierende)
+- [ ] Erweiterte Filter in Admin/Examiner Dashboard
+- [ ] Filter-Presets in Sidebar/Menü
+- [ ] Suchergebnisse mit Highlighting
+- [ ] Pagination für große Ergebnismengen
+
+### Performance & Optimierung
+- [ ] Suchindex für Volltextsuche
+- [ ] Caching für häufige Suchanfragen
+- [ ] Debouncing für Auto-Suggest
+- [ ] Lazy Loading für Suchergebnisse
+
+### Tests
+- [ ] Backend-Test: searchThesisRequests mit verschiedenen Filtern
+- [ ] Backend-Test: searchExaminers mit Namenssuche
+- [ ] Backend-Test: createSavedFilter und getSavedFilters
+- [ ] Frontend-Test: GlobalSearch Komponente
+- [ ] Frontend-Test: Filter-Anwendung und -Speicherung
+- [ ] Frontend-Test: Suchergebnisse Pagination
+
+### Integration & Rollout
+- [ ] Suchfunktion in allen Dashboards verfügbar
+- [ ] Filter-Presets für verschiedene Rollen
+- [ ] Dokumentation: Suchfunktion im Benutzer-Guide
+- [ ] Performance-Monitoring für Suchanfragen

@@ -19,6 +19,7 @@ import {
   emailTemplates,
   reminderSchedules,
   reminderTemplates,
+  savedFilters,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -2471,4 +2472,197 @@ export async function cleanupOldReminders() {
     .where(lte(reminderSchedules.createdAt, ninetyDaysAgo));
 
   return 0; // Cleanup durchgeführt
+}
+
+
+// ─── Phase 36: Erweiterte Filterung und Suche ──────────────────────────────────
+
+export interface SearchFilters {
+  status?: string[];
+  semester?: string[];
+  department?: string[];
+  language?: string[];
+  dateFrom?: Date;
+  dateTo?: Date;
+  examinerName?: string;
+  studentName?: string;
+}
+
+/**
+ * Thesis-Anfragen durchsuchen
+ */
+export async function searchThesisRequests(query: string, filters?: SearchFilters) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+
+  // Volltextsuche
+  if (query) {
+    conditions.push(
+      or(
+        sql`${thesisRequests.title} LIKE ${`%${query}%`}`,
+        sql`${thesisRequests.description} LIKE ${`%${query}%`}`
+      )
+    );
+  }
+
+  // Filter anwenden
+  if (filters?.status && filters.status.length > 0) {
+    conditions.push(inArray(thesisRequests.status, filters.status as any));
+  }
+  if (filters?.department && filters.department.length > 0) {
+    conditions.push(inArray(thesisRequests.department, filters.department));
+  }
+  if (filters?.language && filters.language.length > 0) {
+    conditions.push(inArray(thesisRequests.language, filters.language));
+  }
+  if (filters?.dateFrom) {
+    conditions.push(gte(thesisRequests.createdAt, filters.dateFrom));
+  }
+  if (filters?.dateTo) {
+    conditions.push(lte(thesisRequests.createdAt, filters.dateTo));
+  }
+
+  const results = await db
+    .select()
+    .from(thesisRequests)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .limit(100);
+
+  return results;
+}
+
+/**
+ * Prüfer:innen durchsuchen
+ */
+export async function searchExaminers(query: string, filters?: SearchFilters) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+
+  // Volltextsuche
+  if (query) {
+    conditions.push(
+      or(
+        sql`${users.name} LIKE ${`%${query}%`}`,
+        sql`${users.email} LIKE ${`%${query}%`}`
+      )
+    );
+  }
+
+  // Filter nach Sprache
+  if (filters?.language && filters.language.length > 0) {
+    conditions.push(inArray(examinerProfiles.languages, filters.language as any));
+  }
+
+  // Filter nach Fachbereich
+  if (filters?.department && filters.department.length > 0) {
+    conditions.push(inArray(examinerProfiles.department, filters.department));
+  }
+
+  const results = await db
+    .select()
+    .from(users)
+    .innerJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
+    .where(
+      and(
+        eq(users.role, "examiner"),
+        conditions.length > 0 ? and(...conditions) : undefined
+      )
+    )
+    .limit(100);
+
+  return results;
+}
+
+/**
+ * Studierende durchsuchen
+ */
+export async function searchStudents(query: string, filters?: SearchFilters) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+
+  // Volltextsuche
+  if (query) {
+    conditions.push(
+      or(
+        sql`${users.name} LIKE ${`%${query}%`}`,
+        sql`${users.email} LIKE ${`%${query}%`}`
+      )
+    );
+  }
+
+  const results = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.role, "student"),
+        conditions.length > 0 ? and(...conditions) : undefined
+      )
+    )
+    .limit(100);
+
+  return results;
+}
+
+/**
+ * Gespeicherten Filter erstellen
+ */
+export async function createSavedFilter(
+  userId: number,
+  name: string,
+  filterConfig: SearchFilters
+) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .insert(savedFilters)
+    .values({
+      userId,
+      name,
+      filterConfig: filterConfig as any,
+    });
+
+  return result;
+}
+
+/**
+ * Gespeicherte Filter abrufen
+ */
+export async function getSavedFilters(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const filters = await db
+    .select()
+    .from(savedFilters)
+    .where(eq(savedFilters.userId, userId))
+    .orderBy(desc(savedFilters.createdAt));
+
+  return filters;
+}
+
+/**
+ * Gespeicherten Filter löschen
+ */
+export async function deleteSavedFilter(filterId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db
+    .delete(savedFilters)
+    .where(
+      and(
+        eq(savedFilters.id, filterId),
+        eq(savedFilters.userId, userId)
+      )
+    );
+
+  return true;
 }

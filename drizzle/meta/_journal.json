@@ -169,6 +169,13 @@
       "when": 1778763295724,
       "tag": "0023_futuristic_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1778763531422,
+      "tag": "0024_dry_gunslinger",
+      "breakpoints": true
     }
   ]
 }
