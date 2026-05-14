@@ -246,3 +246,227 @@
 ::-webkit-scrollbar-track { background: #f5f5f5; }
 ::-webkit-scrollbar-thumb { background: #AFAFAF; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #76B900; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Phase 38: Mobile-Optimierung
+   ───────────────────────────────────────────────────────────────────────────
+   Responsive Design mit Mobile-First Ansatz
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile-First: Basis-Styles für Mobilgeräte (320px+) */
+@layer base {
+  /* Viewport Meta-Tag Styles */
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Fluid Typography */
+  body {
+    font-size: clamp(14px, 2vw, 16px);
+    line-height: 1.6;
+  }
+
+  h1 {
+    font-size: clamp(24px, 6vw, 48px);
+  }
+
+  h2 {
+    font-size: clamp(20px, 5vw, 36px);
+  }
+
+  h3 {
+    font-size: clamp(18px, 4vw, 28px);
+  }
+
+  /* Touch-freundliche Buttons */
+  button,
+  a[role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Touch-freundliche Links */
+  a {
+    padding: 0.25rem;
+    margin: -0.25rem;
+  }
+
+  /* Responsive Padding */
+  .container {
+    padding: 1rem;
+  }
+
+  /* Responsive Tables */
+  table {
+    font-size: clamp(12px, 2vw, 14px);
+  }
+
+  /* Mobile-optimierte Inputs */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Verhindert Auto-Zoom auf iOS */
+    min-height: 44px;
+  }
+}
+
+/* Tablet (768px+) */
+@media (min-width: 768px) {
+  .container {
+    padding: 1.5rem;
+  }
+
+  /* Tablet-optimierte Layouts */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  .container {
+    padding: 2rem;
+  }
+
+  /* Desktop-optimierte Layouts */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+/* Mobile-spezifische Utilities */
+@layer utilities {
+  /* Hamburger Menu */
+  .mobile-menu-toggle {
+    @apply md:hidden;
+  }
+
+  /* Mobile Navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden;
+  }
+
+  /* Responsive Spacing */
+  .space-mobile {
+    @apply space-y-2 md:space-y-4;
+  }
+
+  /* Responsive Grid */
+  .grid-mobile {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  /* Responsive Flex */
+  .flex-mobile {
+    @apply flex flex-col md:flex-row;
+  }
+
+  /* Touch Target */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Responsive Text */
+  .text-responsive {
+    @apply text-base md:text-lg lg:text-xl;
+  }
+
+  /* Responsive Padding */
+  .p-mobile {
+    @apply p-2 md:p-4 lg:p-6;
+  }
+
+  /* Responsive Margin */
+  .m-mobile {
+    @apply m-2 md:m-4 lg:m-6;
+  }
+
+  /* Responsive Width */
+  .w-mobile {
+    @apply w-full md:w-auto;
+  }
+
+  /* Responsive Height */
+  .h-mobile {
+    @apply h-auto md:h-screen;
+  }
+
+  /* Hide on Mobile */
+  .hide-mobile {
+    @apply hidden md:block;
+  }
+
+  /* Show on Mobile */
+  .show-mobile {
+    @apply md:hidden;
+  }
+
+  /* Responsive Display */
+  .flex-mobile-col {
+    @apply flex flex-col md:flex-row;
+  }
+
+  /* Responsive Gap */
+  .gap-mobile {
+    @apply gap-2 md:gap-4 lg:gap-6;
+  }
+
+  /* Responsive Border */
+  .border-mobile {
+    @apply border-0 md:border;
+  }
+
+  /* Responsive Shadow */
+  .shadow-mobile {
+    @apply shadow-none md:shadow-lg;
+  }
+
+  /* Responsive Rounded */
+  .rounded-mobile {
+    @apply rounded-lg md:rounded-xl;
+  }
+
+  /* Responsive Font Size */
+  .text-mobile {
+    @apply text-sm md:text-base lg:text-lg;
+  }
+
+  /* Responsive Line Height */
+  .leading-mobile {
+    @apply leading-tight md:leading-normal;
+  }
+
+  /* Responsive Letter Spacing */
+  .tracking-mobile {
+    @apply tracking-normal md:tracking-wide;
+  }
+}
+
+/* Landscape Orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  button {
+    min-height: 40px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  body {
+    font-size: 12pt;
+    color: black;
+  }
+}

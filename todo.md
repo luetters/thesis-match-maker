@@ -951,3 +951,83 @@
 - [ ] Automatische Archivierung nach Abschluss
 - [ ] Dokumentation: Compliance-Guide
 - [ ] Datenschutzerklärung aktualisieren
+
+
+## Phase 38: Mobile-Optimierung
+
+### Responsive Design
+- [ ] Mobile-First Ansatz für alle Komponenten
+- [ ] Breakpoints: xs (320px), sm (640px), md (768px), lg (1024px), xl (1280px)
+- [ ] Tablet-Optimierung (768px - 1024px)
+- [ ] Desktop-Optimierung (1024px+)
+- [ ] Fluid Typography (responsive Schriftgrößen)
+- [ ] Flexible Layouts mit Flexbox/Grid
+
+### Navigation
+- [x] Mobile-Menü (Hamburger-Icon) - MobileMenu.tsx
+- [x] Sticky Header mit Menü-Toggle
+- [ ] Bottom Navigation für mobile (Tabs)
+- [x] Breadcrumb-Navigation auf mobil ausblenden
+- [x] Touch-freundliche Abstände (min. 44x44px)
+
+### Komponenten-Anpassungen
+- [x] Tables → Karten-Layout auf mobil (ResponsiveTable.tsx)
+- [x] Modals → Fullscreen auf mobil
+- [x] Sidebars → Drawer/Offcanvas auf mobil (ResponsiveDrawer.tsx)
+- [x] Forms → Single-Column Layout auf mobil
+- [x] Buttons → Größer auf mobil (min. 44px)
+
+### Touch-Optimierung
+- [ ] Touch-freundliche Button-Größen
+- [ ] Hover-States zu Active-States auf Touch
+- [ ] Swipe-Gesten für Navigation (optional)
+- [ ] Long-Press für Kontextmenü
+- [ ] Scroll-Verhalten optimieren
+
+### Performance auf Mobil
+- [ ] Lazy Loading für Bilder
+- [ ] CSS-Minification
+- [ ] JavaScript-Code-Splitting
+- [ ] Viewport Meta-Tag konfigurieren
+- [ ] Font-Loading optimieren
+
+### Accessibility
+- [ ] Touch-Target Größe (min. 44x44px)
+- [ ] Keyboard-Navigation auf Mobil
+- [ ] Screen-Reader Unterstützung
+- [ ] Color Contrast prüfen
+- [ ] Focus-Indikatoren sichtbar
+
+### Spezifische Mobile-Features
+- [ ] Mobile-Menü (ExaminerDashboard, AdminDashboard)
+- [ ] Collapsible Sections für Dashboard-Karten
+- [ ] Drawer für Filter-Panel
+- [ ] Bottom Sheet für Aktionen
+- [ ] Mobile-optimierte Tabellen (Scroll-Tabellen)
+
+### Testing
+- [ ] Mobile-Test auf iPhone (375px)
+- [ ] Mobile-Test auf Android (360px)
+- [ ] Tablet-Test (768px)
+- [ ] Desktop-Test (1024px+)
+- [ ] Responsive Design Test Tools (Chrome DevTools)
+- [ ] Touch-Gesten testen
+- [ ] Performance-Test (Lighthouse)
+
+### Browser-Kompatibilität
+- [ ] iOS Safari 12+
+- [ ] Android Chrome 90+
+- [ ] Samsung Internet 14+
+- [ ] Firefox Mobile 88+
+
+### Dokumentation
+- [ ] Mobile-Design-Guide
+- [ ] Responsive Breakpoints dokumentieren
+- [ ] Touch-Richtlinien dokumentieren
+- [ ] Mobile-Testing-Checkliste
+
+### Deployment
+- [ ] PWA-Manifest (manifest.json)
+- [ ] Service Worker für Offline-Support
+- [ ] App-Icon für verschiedene Größen
+- [ ] Splash-Screen konfigurieren
