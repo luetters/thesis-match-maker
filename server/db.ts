@@ -3021,3 +3021,236 @@ export async function getRoleSwitchHistory(superadminId: number) {
     return [];
   }
 }
+
+
+// ─── Phase 40: Superadmin-Dashboard ────────────────────────────────────────
+
+/**
+ * Hole alle aktiven Nutzer mit Statistiken
+ */
+export async function getAllActiveUsers(limit: number = 50, offset: number = 0) {
+  const db = await getDb();
+  if (!db) return { users: [], total: 0 };
+
+  try {
+    const allUsers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const totalResult = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(users);
+
+    return {
+      users: allUsers,
+      total: (totalResult[0]?.count as number) || 0,
+    };
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Abrufen aller Nutzer:", error);
+    return { users: [], total: 0 };
+  }
+}
+
+/**
+ * Hole Nutzer-Statistiken nach Rolle
+ */
+export async function getUserStatistics() {
+  const db = await getDb();
+  if (!db) return {};
+
+  try {
+    const stats = await db
+      .select({
+        role: users.role,
+        count: sql`COUNT(*) as count`,
+      })
+      .from(users)
+      .groupBy(users.role);
+
+    const result: Record<string, number> = {
+      total: 0,
+      student: 0,
+      examiner: 0,
+      pav: 0,
+      admin: 0,
+      dean: 0,
+      vice_dean: 0,
+      superadmin: 0,
+    };
+
+    for (const stat of stats) {
+      const role = stat.role || "unknown";
+      const count = (stat.count as number) || 0;
+      result.total += count;
+      if (role in result) {
+        result[role] = count;
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Abrufen der Statistiken:", error);
+    return {};
+  }
+}
+
+/**
+ * Suche Nutzer nach Query und Filtern
+ */
+export async function searchUsers(
+  query: string,
+  filters?: { role?: string; limit?: number; offset?: number }
+) {
+  const db = await getDb();
+  if (!db) return { users: [], total: 0 };
+
+  try {
+    const limit = filters?.limit || 50;
+    const offset = filters?.offset || 0;
+    const role = filters?.role;
+
+    let whereConditions = [];
+
+    // Suchquery
+    if (query && query.trim()) {
+      whereConditions.push(
+        or(
+          sql`${users.email} LIKE ${`%${query}%`}`,
+          sql`${users.name} LIKE ${`%${query}%`}`
+        )
+      );
+    }
+
+    // Rolle-Filter
+    if (role) {
+      whereConditions.push(eq(users.role, role as any));
+    }
+
+    const searchResults = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        role: users.role,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Zähle Gesamtergebnisse
+    const countResult = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(users)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+
+    return {
+      users: searchResults,
+      total: (countResult[0]?.count as number) || 0,
+    };
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Suchen von Nutzern:", error);
+    return { users: [], total: 0 };
+  }
+}
+
+/**
+ * Hole detaillierte Nutzer-Informationen
+ */
+export async function getUserDetails(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (user.length === 0) return null;
+
+    // Hole zusätzliche Informationen basierend auf Rolle
+    const userData = user[0];
+    let additionalInfo = {};
+
+    // Zusätzliche Nutzer-Informationen können hier hinzugefügt werden
+    // z.B. Prüfer-Daten, PAV-Daten, etc.
+
+    return {
+      ...userData,
+      ...additionalInfo,
+    };
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Abrufen von Nutzer-Details:", error);
+    return null;
+  }
+}
+
+/**
+ * Hole Aktivitätslog für Nutzer
+ */
+export async function getUserActivityLog(userId: number, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const activityLog = await db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.actorId, userId))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(limit);
+
+    return activityLog;
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Abrufen des Aktivitätslogs:", error);
+    return [];
+  }
+}
+
+/**
+ * Aktualisiere Nutzer-Status
+ */
+export async function updateUserStatus(
+  userId: number,
+  isActive: boolean,
+  updatedBy: number
+) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    // Hinweis: isActive wird nicht direkt in der users-Tabelle gespeichert
+    // Dies ist ein Placeholder für zukünftige Implementierung
+    
+    // Erstelle Audit-Log-Eintrag
+    await db.insert(auditLog).values({
+      thesisRequestId: null as any,
+      actorId: updatedBy,
+      actorRole: "admin",
+      action: "USER_STATUS_CHANGED",
+      fromStatus: "active",
+      toStatus: isActive ? "active" : "inactive",
+      reason: `User status changed to ${isActive ? "active" : "inactive"}`,
+      metadata: { userId, isActive } as any,
+      createdAt: new Date(),
+    });
+
+    return true;
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Aktualisieren des Nutzer-Status:", error);
+    return false;
+  }
+}

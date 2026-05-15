@@ -116,6 +116,12 @@ import {
   switchUserRole,
   logRoleSwitchAction,
   getRoleSwitchHistory,
+  getAllActiveUsers,
+  getUserStatistics,
+  searchUsers,
+  getUserDetails,
+  getUserActivityLog,
+  updateUserStatus,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1198,6 +1204,65 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können die Historie anzeigen" });
         }
         return await getRoleSwitchHistory(ctx.user.id);
+      }),
+
+    getAllUsers: protectedProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).optional() }))
+      .query(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können alle Nutzer anzeigen" });
+        }
+        return await getAllActiveUsers(input.limit || 50, input.offset || 0);
+      }),
+
+    getUserStatistics: protectedProcedure
+      .query(async ({ ctx }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können Statistiken anzeigen" });
+        }
+        return await getUserStatistics();
+      }),
+
+    searchUsers: protectedProcedure
+      .input(z.object({ query: z.string(), role: z.string().optional(), limit: z.number().int().optional(), offset: z.number().int().optional() }))
+      .query(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können Nutzer suchen" });
+        }
+        return await searchUsers(input.query, { role: input.role, limit: input.limit, offset: input.offset });
+      }),
+
+    getUserDetails: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können Nutzer-Details anzeigen" });
+        }
+        return await getUserDetails(input.userId);
+      }),
+
+    getUserActivityLog: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive(), limit: z.number().int().optional() }))
+      .query(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können Aktivitaetslogs anzeigen" });
+        }
+        return await getUserActivityLog(input.userId, input.limit || 20);
+      }),
+
+    updateUserStatus: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive(), isActive: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins koennen Nutzer-Status aendern" });
+        }
+        return await updateUserStatus(input.userId, input.isActive, ctx.user.id);
       }),
   }),
   // --- System: SMTP-Verbindungstest ---
