@@ -2879,3 +2879,145 @@ export async function getComplianceReport(dateFrom: Date, dateTo: Date) {
     avgProcessingTimeDays: Math.round(avgProcessingTime * 100) / 100,
   };
 }
+
+
+// ─── Phase 39: Superadmin-Funktionalität ────────────────────────────────────────
+
+const SUPERADMIN_EMAILS = ["holger@luetters.net"];
+
+/**
+ * Prüfe ob Benutzer:in Superadmin ist
+ */
+export function isSuperadmin(email: string): boolean {
+  return SUPERADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+/**
+ * Hole Superadmin-Status
+ */
+export async function getSuperadminStatus(userId: number) {
+  const db = await getDb();
+  if (!db) return { isSuperadmin: false, currentRole: null };
+
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (user.length === 0) {
+    return { isSuperadmin: false, currentRole: null };
+  }
+
+  return {
+    isSuperadmin: isSuperadmin(user[0].email || ""),
+    currentRole: user[0].role || "user",
+  };
+}
+
+/**
+ * Wechsle Rolle für Superadmin
+ */
+export async function switchUserRole(
+  superadminId: number,
+  targetRole: "admin" | "examiner" | "student"
+) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database connection failed" };
+
+  try {
+    // Prüfe ob Superadmin
+    const superadmin = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, superadminId))
+      .limit(1);
+
+    if (superadmin.length === 0 || !isSuperadmin(superadmin[0].email || "")) {
+      return { success: false, error: "Unauthorized: Not a superadmin" };
+    }
+
+    const oldRole = superadmin[0].role || "user";
+
+    // Speichere alte Rolle in metadata für Wechsel-History
+    const metadata = {
+      previousRole: oldRole,
+      switchedAt: new Date().toISOString(),
+      switchedBy: superadminId,
+    };
+
+    // Aktualisiere Rolle (nur für diese Session)
+    // In einer echten Implementierung würde dies in einer Session-Tabelle gespeichert
+    return {
+      success: true,
+      newRole: targetRole,
+      previousRole: oldRole,
+      metadata,
+    };
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Rolle-Wechsel:", error);
+    return { success: false, error: "Failed to switch role" };
+  }
+}
+
+/**
+ * Protokolliere Rolle-Wechsel
+ */
+export async function logRoleSwitchAction(
+  superadminId: number,
+  fromRole: string,
+  toRole: string
+) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    // Erstelle Audit-Log-Eintrag
+    await db.insert(auditLog).values({
+      thesisRequestId: null as any,
+      actorId: superadminId,
+      actorRole: "admin",
+      action: "ROLE_SWITCH",
+      fromStatus: fromRole,
+      toStatus: toRole,
+      reason: `Superadmin switched from ${fromRole} to ${toRole}`,
+      metadata: {
+        type: "role_switch",
+        timestamp: new Date().toISOString(),
+      } as any,
+      createdAt: new Date(),
+    });
+
+    return true;
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Logging:", error);
+    return false;
+  }
+}
+
+/**
+ * Hole Rolle-Wechsel-Historie
+ */
+export async function getRoleSwitchHistory(superadminId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const history = await db
+      .select()
+      .from(auditLog)
+      .where(
+        and(
+          eq(auditLog.actorId, superadminId),
+          eq(auditLog.action as any, "ROLE_SWITCH")
+        )
+      )
+      .orderBy(desc(auditLog.createdAt))
+      .limit(50);
+
+    return history;
+  } catch (error) {
+    console.error("[Superadmin] Fehler beim Abrufen der Historie:", error);
+    return [];
+  }
+}

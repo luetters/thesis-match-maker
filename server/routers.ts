@@ -111,6 +111,11 @@ import {
   anonymizeThesisRequest,
   archiveThesisRequest,
   getComplianceReport,
+  isSuperadmin,
+  getSuperadminStatus,
+  switchUserRole,
+  logRoleSwitchAction,
+  getRoleSwitchHistory,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1164,6 +1169,36 @@ export const appRouter = router({
         return { success: true };
       }),
     // toggleExaminerStatus wurde entfernt (isActive-Spalte nicht in DB vorhanden)
+
+    // --- Phase 39: Superadmin-Rolle-Wechsel ---
+    getSuperadminStatus: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await getSuperadminStatus(ctx.user.id);
+      }),
+
+    switchRole: protectedProcedure
+      .input(z.object({ targetRole: z.enum(["admin", "examiner", "student"]) }))
+      .mutation(async ({ ctx, input }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können die Rolle wechseln" });
+        }
+
+        const result = await switchUserRole(ctx.user.id, input.targetRole);
+        if (result.success) {
+          await logRoleSwitchAction(ctx.user.id, result.previousRole || "user", input.targetRole);
+        }
+        return result;
+      }),
+
+    getRoleSwitchHistory: protectedProcedure
+      .query(async ({ ctx }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können die Historie anzeigen" });
+        }
+        return await getRoleSwitchHistory(ctx.user.id);
+      }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({
@@ -1920,6 +1955,8 @@ export const appRouter = router({
         return result;
       }),
   }),
+
+
 
 });
 export type AppRouter = typeof appRouter;
