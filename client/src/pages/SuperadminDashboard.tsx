@@ -226,6 +226,254 @@ function AuditLogTab() {
   );
 }
 
+// ─── Phase 40: Nutzer-Details Modal ────────────────────────────────────────────────────────
+
+function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () => void }) {
+  const { data: user, isLoading } = trpc.superadmin.getUserDetails.useQuery(
+    { userId: userId || 0 },
+    { enabled: !!userId }
+  );
+
+  if (!userId) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 max-w-md w-full mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Nutzer-Details</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            ✕
+          </button>
+        </div>
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">Lädt...</div>
+        ) : user ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Email</label>
+              <p className="text-gray-900">{user.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Name</label>
+              <p className="text-gray-900">{user.name || "-"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Rolle</label>
+              <p>
+                <RoleBadge role={user.role} />
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Registriert am</label>
+              <p className="text-gray-900">{new Date(user.createdAt).toLocaleDateString("de-DE")}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">Nutzer nicht gefunden</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Phase 40: Nutzer-Verwaltungs-Dashboard ─────────────────────────────────────
+
+function UserDashboardTab() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  const pageSize = 20;
+
+  // Abrufe Statistiken
+  const { data: stats, isLoading: statsLoading } = trpc.superadmin.getUserStatistics.useQuery();
+
+  // Suche Nutzer
+  const { data: searchResults, isLoading: searchLoading } = trpc.superadmin.searchUsers.useQuery(
+    {
+      query: searchQuery,
+      role: roleFilter || undefined,
+      limit: pageSize,
+      offset: currentPage * pageSize,
+    },
+    { enabled: searchQuery.length > 0 || roleFilter.length > 0 }
+  );
+
+  // Abrufe alle Nutzer wenn keine Suche aktiv
+  const { data: allUsers, isLoading: usersLoading } = trpc.superadmin.getAllUsers.useQuery(
+    {
+      limit: pageSize,
+      offset: currentPage * pageSize,
+    },
+    { enabled: searchQuery.length === 0 && roleFilter.length === 0 }
+  );
+
+  const users = searchResults || allUsers;
+  const isLoading = searchLoading || usersLoading;
+
+  // Berechne Statistik-Karten
+  const statCards = useMemo(() => {
+    if (!stats) return [];
+    return [
+      {
+        label: "Gesamt Nutzer",
+        value: stats.total || 0,
+        icon: "👥",
+        color: "bg-blue-50",
+      },
+      {
+        label: "Studierende",
+        value: stats.student || 0,
+        icon: "📚",
+        color: "bg-amber-50",
+      },
+      {
+        label: "Prüfer:innen",
+        value: stats.examiner || 0,
+        icon: "🎓",
+        color: "bg-green-50",
+      },
+      {
+        label: "Admins",
+        value: stats.admin || 0,
+        icon: "🛡️",
+        color: "bg-red-50",
+      },
+    ];
+  }, [stats]);
+
+  const handleViewDetails = (userId: number) => {
+    setSelectedUser(userId);
+    setShowDetailsModal(true);
+  };
+
+  const totalPages = users?.total ? Math.ceil(users.total / pageSize) : 1;
+
+  return (
+    <div className="space-y-6">
+      {/* Statistik-Karten */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {statCards.map((card) => (
+          <div key={card.label} className={`${card.color} rounded-2xl border border-gray-100 shadow-sm p-5`}>
+            <div className="text-2xl mb-2">{card.icon}</div>
+            <div className="text-2xl font-bold text-gray-900">{card.value}</div>
+            <div className="text-xs text-gray-500 mt-1">{card.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Suchbereich */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Nutzer verwalten</h3>
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          <input
+            type="text"
+            placeholder="Email oder Name suchen…"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setCurrentPage(0);
+            }}
+            className="px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+          >
+            <option value="">Alle Rollen</option>
+            <option value="student">Studierende</option>
+            <option value="examiner">Prüfer:innen</option>
+            <option value="pav">PAV</option>
+            <option value="admin">Admin</option>
+            <option value="dean">Dekan</option>
+            <option value="superadmin">Superadmin</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Nutzer-Tabelle */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Alle Nutzer ({users?.total || 0})</h3>
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">Lädt...</div>
+        ) : users?.users && users.users.length > 0 ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Rolle</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Registriert</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.users.map((u: any) => (
+                    <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900">{u.email}</td>
+                      <td className="px-4 py-3 text-gray-600">{u.name || "-"}</td>
+                      <td className="px-4 py-3">
+                        <RoleBadge role={u.role} />
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString("de-DE")}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleViewDetails(u.id)}
+                          className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50 transition-colors"
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-600">
+                Seite {currentPage + 1} von {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 0}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                >
+                  Zurück
+                </button>
+                <button
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                >
+                  Weiter
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-8 text-gray-500">Keine Nutzer gefunden</div>
+        )}
+      </div>
+
+      {/* Details Modal */}
+      {showDetailsModal && <UserDetailsModal userId={selectedUser} onClose={() => setShowDetailsModal(false)} />}
+    </div>
+  );
+}
+
 // ─── Systemstatistiken ────────────────────────────────────────────────────────
 
 function SystemStatsTab() {
@@ -486,6 +734,7 @@ export default function SuperadminDashboard() {
   const TABS = [
     { id: "stats", label: t.superadmin.tabs.overview, icon: "📊" },
     { id: "users", label: t.superadmin.tabs.users, icon: "👥" },
+    { id: "user_dashboard", label: "Nutzer-Verwaltung", icon: "👤" },
     { id: "examiners", label: t.superadmin.examinerManagement, icon: "🎓", action: () => setLocation("/superadmin/examiners") },
     { id: "pav", label: "PAV", icon: "🏫" },
     { id: "audit", label: "Audit-Log", icon: "📋" },
@@ -536,6 +785,7 @@ export default function SuperadminDashboard() {
       {/* Tab-Inhalt */}
       {activeTab === "stats" && <SystemStatsTab />}
       {activeTab === "users" && <UserManagementTab />}
+      {activeTab === "user_dashboard" && <UserDashboardTab />}
       {activeTab === "pav" && <PavManagementTab />}
       {activeTab === "audit" && <AuditLogTab />}
       {activeTab === "config" && <SystemConfigTab />}
