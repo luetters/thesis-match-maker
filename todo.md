@@ -206,3 +206,12 @@
 - [ ] Breadcrumb Navigation hinzufügen (optional)
 - [x] Menü-Icons aktualisieren (LayoutDashboard, Users)
 - [ ] Mobile-Menü Funktionalität testen (optional)
+
+
+## Phase 43: Design-Anpassungen für Menü
+
+- [ ] Menü-Hintergrund in dunklem Grün (#2d5016 oder ähnlich)
+- [ ] Abmeldebutton in Grün-Farbschema anpassen
+- [ ] Hover-Effekte für Menü-Items
+- [ ] Sidebar-Header Styling anpassen
+- [ ] Text-Kontrast überprüfen
