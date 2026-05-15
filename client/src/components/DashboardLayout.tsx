@@ -28,8 +28,12 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Startseite", path: "/", roles: ["student", "examiner", "admin", "pav", "dean", "vice_dean", "superadmin"] },
+  { icon: Users, label: "Pruefer:innen", path: "/examiners", roles: ["student", "admin", "pav", "dean", "superadmin"] },
+  { icon: LayoutDashboard, label: "Meine Anfragen", path: "/student", roles: ["student"] },
+  { icon: LayoutDashboard, label: "Anfragen", path: "/examiner", roles: ["examiner"] },
+  { icon: LayoutDashboard, label: "Verwaltung", path: "/admin", roles: ["admin", "pav", "dean", "vice_dean"] },
+  { icon: Users, label: "Nutzer", path: "/superadmin", roles: ["superadmin"] },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -113,7 +117,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const filteredMenuItems = menuItems.filter(item => !item.roles || item.roles.includes(user?.role || ""));
+  const activeMenuItem = filteredMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -181,7 +186,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {filteredMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
