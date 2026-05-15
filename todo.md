@@ -185,3 +185,14 @@
 - [ ] Superadmin-Dashboard Anleitung
 - [ ] Nutzer-Management Guide
 - [ ] API-Dokumentation
+
+
+## Phase 41: Rollen-Bearbeitung im UserDetailsModal ✅ KOMPLETT
+
+- [x] Backend: setUserRole(userId, newRole) Funktion (bereits vorhanden)
+- [x] tRPC: superadmin.setUserRole Mutation (bereits vorhanden)
+- [x] Frontend: Rollen-Dropdown im UserDetailsModal
+- [x] Frontend: Bestätigungsdialog vor Rollen-Änderung
+- [x] Frontend: Erfolgs-/Fehler-Benachrichtigungen (onSuccess/onError)
+- [x] Audit-Logging für Rollen-Änderungen (Backend implementiert)
+- [x] Modal-Refresh nach erfolgreicher Änderung (refetch)

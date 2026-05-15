@@ -229,10 +229,43 @@ function AuditLogTab() {
 // ─── Phase 40: Nutzer-Details Modal ────────────────────────────────────────────────────────
 
 function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () => void }) {
-  const { data: user, isLoading } = trpc.superadmin.getUserDetails.useQuery(
+  const { data: user, isLoading, refetch } = trpc.superadmin.getUserDetails.useQuery(
     { userId: userId || 0 },
     { enabled: !!userId }
   );
+  const [isEditingRole, setIsEditingRole] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const setRoleMutation = trpc.superadmin.setUserRole.useMutation({
+    onSuccess: () => {
+      setIsEditingRole(false);
+      setShowConfirm(false);
+      setStatusMessage({ type: 'success', text: 'Rolle erfolgreich geaendert' });
+      setTimeout(() => setStatusMessage(null), 3000);
+      refetch();
+    },
+    onError: (error) => {
+      console.error("Fehler beim Aendern der Rolle:", error);
+      setStatusMessage({ type: 'error', text: 'Fehler beim Aendern der Rolle' });
+      setTimeout(() => setStatusMessage(null), 3000);
+    },
+  });
+
+  const handleRoleChange = (newRole: string) => {
+    setSelectedRole(newRole);
+    setShowConfirm(true);
+  };
+
+  const confirmRoleChange = async () => {
+    if (userId && selectedRole) {
+      await setRoleMutation.mutateAsync({
+        userId,
+        role: selectedRole as any,
+      });
+    }
+  };
 
   if (!userId) return null;
 
@@ -259,14 +292,78 @@ function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () =>
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-600">Rolle</label>
-              <p>
-                <RoleBadge role={user.role} />
-              </p>
+              {isEditingRole ? (
+                <select
+                  value={selectedRole || user.role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                >
+                  <option value="student">Studierende:r</option>
+                  <option value="examiner">Pruefer:in</option>
+                  <option value="pav">PAV</option>
+                  <option value="admin">Admin</option>
+                  <option value="dean">Dekan:in</option>
+                  <option value="vice_dean">Vizedekan:in</option>
+                  <option value="superadmin">Superadmin</option>
+                </select>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <RoleBadge role={user.role} />
+                  <button
+                    onClick={() => {
+                      setIsEditingRole(true);
+                      setSelectedRole(user.role);
+                    }}
+                    className="px-3 py-1 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    Aendern
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-600">Registriert am</label>
               <p className="text-gray-900">{new Date(user.createdAt).toLocaleDateString("de-DE")}</p>
             </div>
+
+            {statusMessage && (
+              <div className={`mt-4 p-4 rounded-lg border ${
+                statusMessage.type === 'success'
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <p className={`text-sm ${
+                  statusMessage.type === 'success'
+                    ? 'text-green-900'
+                    : 'text-red-900'
+                }`}>
+                  {statusMessage.text}
+                </p>
+              </div>
+            )}
+
+            {showConfirm && (
+              <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-sm text-amber-900 mb-3">
+                  Moechten Sie die Rolle wirklich von <strong>{user.role}</strong> zu <strong>{selectedRole}</strong> aendern?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowConfirm(false)}
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={confirmRoleChange}
+                    disabled={setRoleMutation.isPending}
+                    className="flex-1 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                  >
+                    {setRoleMutation.isPending ? "Speichert..." : "Bestaetigen"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">Nutzer nicht gefunden</div>
