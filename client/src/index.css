@@ -67,18 +67,18 @@
   /* ── HTW Sekundärfarbe Orange #FF5F00 ── */
   --htw-orange:               oklch(65.5% 0.218 38.5);    /* #FF5F00 */
 
-  /* ── Sidebar (HTW Dunkelgrün) ── */
-  --sidebar:                  oklch(17% 0.055 145);        /* #0e2a06 */
-  --sidebar-foreground:       oklch(92% 0 0);
+  /* ── Sidebar (Neutral) ── */
+  --sidebar:                  oklch(100% 0 0);             /* Weiß */
+  --sidebar-foreground:       oklch(18% 0 0);              /* Dunkelgrau */
   --sidebar-primary:          oklch(68.5% 0.215 128.5);   /* #76B900 */
   --sidebar-primary-foreground: oklch(100% 0 0);
-  --sidebar-accent:           oklch(22% 0.055 145);
-  --sidebar-accent-foreground: oklch(92% 0 0);
-  --sidebar-border:           oklch(25% 0.055 145);
+  --sidebar-accent:           oklch(96% 0 0);              /* Hellgrau */
+  --sidebar-accent-foreground: oklch(18% 0 0);
+  --sidebar-border:           oklch(88% 0 0);              /* Grau */
   --sidebar-ring:             oklch(68.5% 0.215 128.5);
 
   /* ── Hintergrund & Oberflächen ── */
-  --background:               oklch(100% 0 0);             /* Weiß */
+  --background:               oklch(100% 0 0);             /* Weiß (auch für Sidebar) */
   --foreground:               oklch(18% 0 0);              /* #2D2D2D */
   --card:                     oklch(100% 0 0);
   --card-foreground:          oklch(18% 0 0);

@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, ChevronRight } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -112,6 +113,26 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const switchRoleMutation = trpc.superadmin.switchRole.useMutation();
+  const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  
+  const rolesCycle = ["student", "examiner", "admin"];
+  
+  const handleRoleSwitch = () => {
+    if (user?.role === "superadmin") {
+      const nextIndex = (currentRoleIndex + 1) % rolesCycle.length;
+      const nextRole = rolesCycle[nextIndex];
+      switchRoleMutation.mutate(
+        { targetRole: nextRole as "student" | "examiner" | "admin" },
+        {
+          onSuccess: () => {
+            setCurrentRoleIndex(nextIndex);
+            window.location.reload();
+          },
+        }
+      );
+    }
+  };
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -210,7 +231,12 @@ function DashboardLayoutContent({
           <SidebarFooter className="p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <button 
+                  onClick={user?.role === "superadmin" ? handleRoleSwitch : undefined}
+                  className={`flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    user?.role === "superadmin" ? "cursor-pointer" : ""
+                  }`}
+                >
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
                       {user?.name?.charAt(0).toUpperCase()}
@@ -221,9 +247,12 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
+                      {user?.role === "superadmin" ? rolesCycle[currentRoleIndex] : user?.email || "-"}
                     </p>
                   </div>
+                  {user?.role === "superadmin" && (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden" />
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
