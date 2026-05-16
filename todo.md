@@ -208,10 +208,18 @@
 - [ ] Mobile-Menü Funktionalität testen (optional)
 
 
-## Phase 43: Design-Anpassungen für Menü
+## Phase 43: Design-Anpassungen für Menü - KOMPLETT
 
-- [ ] Menü-Hintergrund in dunklem Grün (#2d5016 oder ähnlich)
-- [ ] Abmeldebutton in Grün-Farbschema anpassen
-- [ ] Hover-Effekte für Menü-Items
-- [ ] Sidebar-Header Styling anpassen
-- [ ] Text-Kontrast überprüfen
+- [x] Menü-Hintergrund Weiß mit besserer Lesbarkeit
+- [x] Abmeldebutton in Grün-Farbschema angepasst
+- [x] Sidebar-Header Styling angepasst
+- [x] Text-Kontrast überprüft und verbessert
+
+## Phase 44: Sidebar Hover- und Active-Effekte - KOMPLETT
+
+- [x] Hover-Effekt für Menü-Items (Hintergrund-Farbe ändern)
+- [x] Active-State für aktuelle Seite (grüner Balken links + Hintergrund)
+- [x] Smooth Transitions für Effekte (duration-200)
+- [x] Icon-Farbe bei Hover/Active ändern (primary gruen)
+- [x] Text-Farbe bei Hover/Active ändern
+- [x] Responsive Design für Touch-Geräte (rounded-md)

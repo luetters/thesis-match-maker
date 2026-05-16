@@ -206,7 +206,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
+            <SidebarMenu className="px-2 py-1 space-y-1">
               {filteredMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
@@ -215,12 +215,18 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className={`h-10 transition-all duration-200 font-normal relative overflow-hidden rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                        isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-sm" : ""
+                      } ${
+                        isActive ? "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary" : ""
+                      }`}
                     >
                       <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        className={`h-4 w-4 transition-colors duration-200 ${
+                          isActive ? "text-primary" : ""
+                        }`}
                       />
-                      <span>{item.label}</span>
+                      <span className="transition-colors duration-200">{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
