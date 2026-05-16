@@ -107,11 +107,12 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 
   .container {
@@ -142,7 +143,7 @@
   }
 
   button[variant="outline"] {
-    @apply bg-transparent;
+    background-color: transparent;
   }
 }
 
@@ -152,7 +153,7 @@
   }
 
   .prose-headings {
-    @apply font-semibold;
+    font-weight: 600;
   }
 }
 
@@ -172,21 +173,29 @@
 /* ── Smooth Transitions ── */
 @layer utilities {
   .transition-smooth {
-    @apply transition-all duration-300 ease-in-out;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
   }
 
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    outline: none;
+  }
+  
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }
 
 /* ── Print Styles ── */
 @media print {
   body {
-    @apply bg-white text-black;
+    background-color: white;
+    color: black;
   }
 
   .no-print {
-    @apply hidden;
+    display: none;
   }
 }
