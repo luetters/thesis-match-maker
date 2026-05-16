@@ -343,7 +343,7 @@ client/src/
 }
 
 /* Tailwind-Utilities */
-.container { @apply mx-auto px-4 max-w-7xl; }
+.container { @apply mx-auto px-4 max-w-screen-xl; }
 .btn-primary { @apply bg-primary text-white hover:bg-primary-dark; }
 .status-pending { @apply bg-yellow-100 text-yellow-900; }
 .status-accepted { @apply bg-green-100 text-green-900; }
