@@ -1,4 +1,3 @@
-@import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -67,18 +66,18 @@
   /* ── HTW Sekundärfarbe Orange #FF5F00 ── */
   --htw-orange:               oklch(65.5% 0.218 38.5);    /* #FF5F00 */
 
-  /* ── Sidebar (Neutral) ── */
-  --sidebar:                  oklch(100% 0 0);             /* Weiß */
-  --sidebar-foreground:       oklch(18% 0 0);              /* Dunkelgrau */
+  /* ── Sidebar (Neutral - Weiß mit guter Lesbarkeit) ── */
+  --sidebar:                  oklch(99% 0 0);              /* Fast Weiß */
+  --sidebar-foreground:       oklch(20% 0 0);              /* Sehr Dunkelgrau */
   --sidebar-primary:          oklch(68.5% 0.215 128.5);   /* #76B900 */
   --sidebar-primary-foreground: oklch(100% 0 0);
-  --sidebar-accent:           oklch(96% 0 0);              /* Hellgrau */
-  --sidebar-accent-foreground: oklch(18% 0 0);
-  --sidebar-border:           oklch(88% 0 0);              /* Grau */
+  --sidebar-accent:           oklch(94% 0 0);              /* Hellgrau für Hover */
+  --sidebar-accent-foreground: oklch(20% 0 0);
+  --sidebar-border:           oklch(85% 0 0);              /* Grau */
   --sidebar-ring:             oklch(68.5% 0.215 128.5);
 
   /* ── Hintergrund & Oberflächen ── */
-  --background:               oklch(100% 0 0);             /* Weiß (auch für Sidebar) */
+  --background:               oklch(100% 0 0);             /* Weiß */
   --foreground:               oklch(18% 0 0);              /* #2D2D2D */
   --card:                     oklch(100% 0 0);
   --card-foreground:          oklch(18% 0 0);
@@ -98,375 +97,77 @@
   --destructive:              oklch(55% 0.22 25);
   --destructive-foreground:   oklch(100% 0 0);
 
-  /* ── Charts (HTW Farbpalette) ── */
+  /* ── Chart Colors ── */
   --chart-1:                  oklch(68.5% 0.215 128.5);   /* HTW Grün */
   --chart-2:                  oklch(52.8% 0.178 237.5);   /* HTW Blau */
   --chart-3:                  oklch(65.5% 0.218 38.5);    /* HTW Orange */
   --chart-4:                  oklch(72% 0 0);              /* HTW Grau */
-  --chart-5:                  oklch(45% 0.15 128.5);      /* Dunkelgrün */
-
-  --radius: 0.5rem;
+  --chart-5:                  oklch(55% 0.22 25);          /* Rot */
 }
 
-/* ── Dark Mode (HTW Dunkelgrün-Basis) ── */
-.dark {
-  --primary:                  oklch(68.5% 0.215 128.5);
-  --primary-foreground:       oklch(100% 0 0);
-  --accent:                   oklch(52.8% 0.178 237.5);
-  --accent-foreground:        oklch(100% 0 0);
-  --background:               oklch(12% 0.04 145);
-  --foreground:               oklch(94% 0 0);
-  --card:                     oklch(16% 0.04 145);
-  --card-foreground:          oklch(94% 0 0);
-  --popover:                  oklch(16% 0.04 145);
-  --popover-foreground:       oklch(94% 0 0);
-  --secondary:                oklch(20% 0.04 145);
-  --secondary-foreground:     oklch(88% 0 0);
-  --muted:                    oklch(22% 0.04 145);
-  --muted-foreground:         oklch(62% 0 0);
-  --border:                   oklch(26% 0.04 145);
-  --input:                    oklch(26% 0.04 145);
-  --ring:                     oklch(68.5% 0.215 128.5);
-  --destructive:              oklch(62% 0.22 25);
-  --destructive-foreground:   oklch(100% 0 0);
-  --sidebar:                  oklch(14% 0.05 145);
-  --sidebar-foreground:       oklch(92% 0 0);
-  --sidebar-border:           oklch(22% 0.05 145);
-  --chart-1:                  oklch(68.5% 0.215 128.5);
-  --chart-2:                  oklch(60% 0.178 237.5);
-  --chart-3:                  oklch(68% 0.218 38.5);
-  --chart-4:                  oklch(65% 0 0);
-  --chart-5:                  oklch(52% 0.15 128.5);
-}
-
-/* ── Base Reset ── */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [type="button"]:not(:disabled),
-  [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
-  a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
-    @apply cursor-pointer;
+
+  .container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .flex {
+    @apply min-w-0 min-h-0;
+  }
+
+  button[variant="outline"] {
+    @apply bg-transparent;
   }
 }
 
 @layer components {
-  .container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
+  .text-balance {
+    text-wrap: balance;
   }
-  .flex {
-    min-height: 0;
-    min-width: 0;
-  }
-  @media (min-width: 640px) {
-    .container { padding-left: 1.5rem; padding-right: 1.5rem; }
-  }
-  @media (min-width: 1024px) {
-    .container { padding-left: 2rem; padding-right: 2rem; max-width: 1280px; }
+
+  .prose-headings {
+    @apply font-semibold;
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HTW Hero Section – Hintergrundbild mit Dunkelgrün-Overlay
-   ═══════════════════════════════════════════════════════════════════════════ */
-.hero-gradient {
-  background-color: #ffffff;
-  position: relative;
-  overflow: hidden;
-}
-.hero-gradient::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('/manus-storage/htw-banner_493070b6.jpg');
-  background-size: cover;
-  background-position: center top;
-  opacity: 0.08;
-  pointer-events: none;
-  z-index: 0;
-}
-.hero-gradient > * {
-  position: relative;
-  z-index: 1;
+/* ── Responsive Typography ── */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   HTW Status Badges
-   ═══════════════════════════════════════════════════════════════════════════ */
-.badge-pending {
-  display: inline-flex; align-items: center;
-  padding: 2px 10px; border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 600;
-  background-color: #FFF8E1; color: #E65100;
-  border: 1px solid #FFE0B2;
-}
-.badge-accepted {
-  display: inline-flex; align-items: center;
-  padding: 2px 10px; border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 600;
-  background-color: #F1F8E9; color: #33691E;
-  border: 1px solid #C5E1A5;
-}
-.badge-rejected {
-  display: inline-flex; align-items: center;
-  padding: 2px 10px; border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 600;
-  background-color: #FBE9E7; color: #BF360C;
-  border: 1px solid #FFCCBC;
-}
-.badge-matched {
-  display: inline-flex; align-items: center;
-  padding: 2px 10px; border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 600;
-  background-color: #E3F2FD; color: #0D47A1;
-  border: 1px solid #BBDEFB;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   HTW Scrollbar
-   ═══════════════════════════════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f5f5f5; }
-::-webkit-scrollbar-thumb { background: #AFAFAF; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #76B900; }
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Phase 38: Mobile-Optimierung
-   ───────────────────────────────────────────────────────────────────────────
-   Responsive Design mit Mobile-First Ansatz
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Mobile-First: Basis-Styles für Mobilgeräte (320px+) */
-@layer base {
-  /* Viewport Meta-Tag Styles */
+@media (min-width: 1024px) {
   html {
     font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Fluid Typography */
-  body {
-    font-size: clamp(14px, 2vw, 16px);
-    line-height: 1.6;
-  }
-
-  h1 {
-    font-size: clamp(24px, 6vw, 48px);
-  }
-
-  h2 {
-    font-size: clamp(20px, 5vw, 36px);
-  }
-
-  h3 {
-    font-size: clamp(18px, 4vw, 28px);
-  }
-
-  /* Touch-freundliche Buttons */
-  button,
-  a[role="button"],
-  input[type="button"],
-  input[type="submit"] {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 0.75rem 1rem;
-  }
-
-  /* Touch-freundliche Links */
-  a {
-    padding: 0.25rem;
-    margin: -0.25rem;
-  }
-
-  /* Responsive Padding */
-  .container {
-    padding: 1rem;
-  }
-
-  /* Responsive Tables */
-  table {
-    font-size: clamp(12px, 2vw, 14px);
-  }
-
-  /* Mobile-optimierte Inputs */
-  input,
-  textarea,
-  select {
-    font-size: 16px; /* Verhindert Auto-Zoom auf iOS */
-    min-height: 44px;
   }
 }
 
-/* Tablet (768px+) */
-@media (min-width: 768px) {
-  .container {
-    padding: 1.5rem;
-  }
-
-  /* Tablet-optimierte Layouts */
-  .grid-auto-fit {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  }
-}
-
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-  .container {
-    padding: 2rem;
-  }
-
-  /* Desktop-optimierte Layouts */
-  .grid-auto-fit {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
-}
-
-/* Mobile-spezifische Utilities */
+/* ── Smooth Transitions ── */
 @layer utilities {
-  /* Hamburger Menu */
-  .mobile-menu-toggle {
-    @apply md:hidden;
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
   }
 
-  /* Mobile Navigation */
-  .mobile-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden;
-  }
-
-  /* Responsive Spacing */
-  .space-mobile {
-    @apply space-y-2 md:space-y-4;
-  }
-
-  /* Responsive Grid */
-  .grid-mobile {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
-  }
-
-  /* Responsive Flex */
-  .flex-mobile {
-    @apply flex flex-col md:flex-row;
-  }
-
-  /* Touch Target */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* Responsive Text */
-  .text-responsive {
-    @apply text-base md:text-lg lg:text-xl;
-  }
-
-  /* Responsive Padding */
-  .p-mobile {
-    @apply p-2 md:p-4 lg:p-6;
-  }
-
-  /* Responsive Margin */
-  .m-mobile {
-    @apply m-2 md:m-4 lg:m-6;
-  }
-
-  /* Responsive Width */
-  .w-mobile {
-    @apply w-full md:w-auto;
-  }
-
-  /* Responsive Height */
-  .h-mobile {
-    @apply h-auto md:h-screen;
-  }
-
-  /* Hide on Mobile */
-  .hide-mobile {
-    @apply hidden md:block;
-  }
-
-  /* Show on Mobile */
-  .show-mobile {
-    @apply md:hidden;
-  }
-
-  /* Responsive Display */
-  .flex-mobile-col {
-    @apply flex flex-col md:flex-row;
-  }
-
-  /* Responsive Gap */
-  .gap-mobile {
-    @apply gap-2 md:gap-4 lg:gap-6;
-  }
-
-  /* Responsive Border */
-  .border-mobile {
-    @apply border-0 md:border;
-  }
-
-  /* Responsive Shadow */
-  .shadow-mobile {
-    @apply shadow-none md:shadow-lg;
-  }
-
-  /* Responsive Rounded */
-  .rounded-mobile {
-    @apply rounded-lg md:rounded-xl;
-  }
-
-  /* Responsive Font Size */
-  .text-mobile {
-    @apply text-sm md:text-base lg:text-lg;
-  }
-
-  /* Responsive Line Height */
-  .leading-mobile {
-    @apply leading-tight md:leading-normal;
-  }
-
-  /* Responsive Letter Spacing */
-  .tracking-mobile {
-    @apply tracking-normal md:tracking-wide;
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
 
-/* Landscape Orientation */
-@media (max-height: 500px) and (orientation: landscape) {
-  .container {
-    padding: 0.5rem;
-  }
-
-  button {
-    min-height: 40px;
-  }
-}
-
-/* Print Styles */
+/* ── Print Styles ── */
 @media print {
-  .no-print {
-    display: none;
+  body {
+    @apply bg-white text-black;
   }
 
-  body {
-    font-size: 12pt;
-    color: black;
+  .no-print {
+    @apply hidden;
   }
 }
