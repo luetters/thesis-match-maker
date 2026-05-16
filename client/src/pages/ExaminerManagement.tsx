@@ -80,7 +80,7 @@ export default function ExaminerManagement() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-screen-xl mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="container py-4 flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -96,7 +96,7 @@ export default function ExaminerManagement() {
       </div>
 
       {/* Content */}
-      <div className="max-w-screen-xl mx-auto px-4 py-8">
+      <div className="container py-8">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -418,7 +418,7 @@ export function ThesisDashboardLayout({
       {/* Main content */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white border-b border-gray-200 h-16 flex items-center px-4 lg:px-6 gap-4">
+        <header className="sticky top-0 z-20 bg-white border-b border-gray-200 h-16 flex items-center px-4 px-6 gap-4">
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
