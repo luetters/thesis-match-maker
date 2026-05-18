@@ -223,3 +223,17 @@
 - [x] Icon-Farbe bei Hover/Active ändern (primary gruen)
 - [x] Text-Farbe bei Hover/Active ändern
 - [x] Responsive Design für Touch-Geräte (rounded-md)
+
+
+## Phase 45: Manus-OAuth entfernen – Eigenes Login-System ✅ KOMPLETT
+
+- [x] DB-Schema: passwordHash bereits vorhanden
+- [x] Backend: auth.loginWithPassword bereits implementiert
+- [x] tRPC: auth.login, auth.logout, auth.me, auth.changePassword, auth.requestPasswordReset, auth.resetPassword
+- [x] Frontend: Login.tsx mit E-Mail/Passwort Formular (neu geschrieben)
+- [x] Frontend: useAuth Hook angepasst (Logout → /login)
+- [x] Frontend: getLoginUrl() → /login Route
+- [x] DashboardLayout: „Anmeldung erforderlich“ auf Deutsch
+- [x] main.tsx: Redirect bei UNAUTHORIZED → /login
+- [x] Build: Erfolgreich (0 Fehler)
+- [x] Tests: 46/46 grün

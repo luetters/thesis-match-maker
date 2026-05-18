@@ -313,7 +313,7 @@ export default function Home() {
     if (isAuthenticated) {
       navigate(path);
     } else {
-      setShowLogin(true);
+      navigate("/login");
     }
   };
 
@@ -372,7 +372,7 @@ export default function Home() {
               </button>
             ) : (
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => navigate("/login")}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#006937" }}
               >

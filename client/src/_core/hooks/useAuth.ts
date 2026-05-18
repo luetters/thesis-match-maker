@@ -9,7 +9,7 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl(typeof window !== "undefined" ? window.location.pathname : undefined) } =
     options ?? {};
   const utils = trpc.useUtils();
 
@@ -38,6 +38,7 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+      window.location.href = "/login";
     }
   }, [logoutMutation, utils]);
 
