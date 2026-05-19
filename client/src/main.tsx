@@ -11,13 +11,23 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// Öffentliche Routen, die ohne Login zugänglich sind
+const PUBLIC_PATHS = ["/", "/login", "/auth/verify", "/examiners", "/maintenance"];
+const isPublicPath = (path: string) =>
+  PUBLIC_PATHS.includes(path) ||
+  path.startsWith("/examiner/profile/") ||
+  path.startsWith("/examiner/respond") ||
+  path.startsWith("/pav/respond");
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
+
+  // Auf öffentlichen Seiten NICHT weiterleiten – nur auf geschützten Seiten
+  if (isPublicPath(window.location.pathname)) return;
 
   window.location.href = getLoginUrl(window.location.pathname);
 };
