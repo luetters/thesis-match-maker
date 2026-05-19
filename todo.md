@@ -251,3 +251,20 @@
 - [ ] Mobile Dashboard-Seiten: Tabellen und Formulare mobilfreundlich
 - [ ] Mobile Prüfer:innen-Verzeichnis: Karten-Layout für kleine Bildschirme
 - [ ] Mobile Login-Seite: Korrekte Darstellung auf kleinen Bildschirmen
+
+
+## Phase 47: Rollen-Bestätigungsworkflow
+
+- [ ] DB: roleStatus-Feld (pending | approved | rejected) zur users-Tabelle hinzufügen
+- [ ] DB: requestedRole-Feld zur users-Tabelle hinzufügen (gewünschte Rolle vor Bestätigung)
+- [ ] DB: roleConfirmedBy und roleConfirmedAt Felder hinzufügen
+- [ ] Backend: selectRole-Prozedur (Nutzer wählt Rolle nach Magic-Link-Login)
+- [ ] Backend: getPendingUsers-Prozedur (für Verwaltung und Superadmin)
+- [ ] Backend: approveUserRole-Prozedur (Superadmin: alle Rollen; Verwaltung: nur student)
+- [ ] Backend: rejectUserRole-Prozedur
+- [ ] Frontend: RoleSelection-Seite nach erstem Magic-Link-Login
+- [ ] Frontend: PendingApproval-Seite (Warteseite nach Rollenauswahl)
+- [ ] Frontend: Bestätigungs-Tab im Admin-Dashboard (Verwaltung)
+- [ ] Frontend: Bestätigungs-Tab im Superadmin-Dashboard
+- [ ] Routing: Magic-Link-Nutzer ohne bestätigte Rolle auf RoleSelection umleiten
+- [ ] E-Mail-Benachrichtigung bei Bestätigung/Ablehnung (optional)

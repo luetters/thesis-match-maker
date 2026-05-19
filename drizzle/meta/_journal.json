@@ -176,6 +176,13 @@
       "when": 1778763531422,
       "tag": "0024_dry_gunslinger",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1779183001071,
+      "tag": "0025_unknown_riptide",
+      "breakpoints": true
     }
   ]
 }

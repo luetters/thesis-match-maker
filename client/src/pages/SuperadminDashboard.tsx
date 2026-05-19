@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
+import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
@@ -938,6 +939,7 @@ export default function SuperadminDashboard() {
   const [activeTab, setActiveTab] = useState("stats");
 
   const TABS = [
+    { id: "role_approvals", label: "Rollenanfragen", icon: "✅" },
     { id: "stats", label: t.superadmin.tabs.overview, icon: "📊" },
     { id: "users", label: t.superadmin.tabs.users, icon: "👥" },
     { id: "user_dashboard", label: "Nutzer-Verwaltung", icon: "👤" },
@@ -989,6 +991,7 @@ export default function SuperadminDashboard() {
       </div>
 
       {/* Tab-Inhalt */}
+      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={true} />}
       {activeTab === "stats" && <SystemStatsTab />}
       {activeTab === "users" && <UserManagementTab />}
       {activeTab === "user_dashboard" && <UserDashboardTab />}

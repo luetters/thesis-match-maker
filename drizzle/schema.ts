@@ -22,6 +22,10 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }),
   preferredLanguage: mysqlEnum("preferredLanguage", ["de", "en"]).default("de").notNull(),
+  roleStatus: mysqlEnum("roleStatus", ["approved", "pending", "rejected"]).default("approved").notNull(),
+  requestedRole: mysqlEnum("requestedRole", ["user", "admin", "student", "examiner", "superadmin", "pav", "dean", "vice_dean"]),
+  roleConfirmedBy: int("roleConfirmedBy"),
+  roleConfirmedAt: timestamp("roleConfirmedAt"),
 });
 
 export type User = typeof users.$inferSelect;

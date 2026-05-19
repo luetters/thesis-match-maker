@@ -122,6 +122,11 @@ import {
   getUserDetails,
   getUserActivityLog,
   updateUserStatus,
+  selectUserRole,
+  getPendingRoleUsers,
+  approveUserRole,
+  rejectUserRole,
+  getUserRoleStatus,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -2021,7 +2026,60 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── Rollen-Bestätigungsworkflow ─────────────────────────────────────────────────────
+  roleApproval: router({
+    // Nutzer wählt Rolle nach Magic-Link-Login
+    selectRole: protectedProcedure
+      .input(z.object({
+        requestedRole: z.enum(["student", "examiner", "admin"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const ok = await selectUserRole(ctx.user.id, input.requestedRole);
+        if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Rolle konnte nicht gespeichert werden." });
+        return { success: true };
+      }),
 
+    // Eigenen Rollen-Status abrufen
+    myStatus: protectedProcedure.query(async ({ ctx }) => {
+      const status = await getUserRoleStatus(ctx.user.id);
+      return status;
+    }),
 
+    // Alle ausstehenden Rollenanfragen abrufen (Admin + Superadmin)
+    getPending: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+      }
+      return getPendingRoleUsers();
+    }),
+
+    // Rollenanfrage bestätigen
+    approve: protectedProcedure
+      .input(z.object({ userId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        const result = await approveUserRole(input.userId, ctx.user.id, ctx.user.role);
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Bestätigen." });
+        return { success: true };
+      }),
+
+    // Rollenanfrage ablehnen
+    reject: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        const result = await rejectUserRole(input.userId, ctx.user.id, ctx.user.role, input.reason);
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Ablehnen." });
+        return { success: true };
+      }),
+  }),
 });
+
 export type AppRouter = typeof appRouter;

@@ -73,15 +73,37 @@ export function registerMagicLinkRoutes(app: Express) {
       });
 
       // Zur rollenspezifischen Seite weiterleiten
-      // Nutzer ohne spezifische Rolle ("user") -> Onboarding-Rollenwahl
-      const roleRedirects: Record<string, string> = {
-        student: "/student",
-        examiner: "/examiner",
-        admin: "/admin",
-        user: "/onboarding",
-      };
-      const redirect = roleRedirects[result.user.role] ?? "/onboarding";
-      res.redirect(redirect);
+      // Neuer Workflow: Nutzer mit ausstehender Rollenbestätigung → /select-role oder /role-pending
+      const roleStatus = (result.user as any).roleStatus as string | null | undefined;
+      const userRole = result.user.role;
+
+      // Superadmin und bestätigte Nutzer direkt weiterleiten
+      if (userRole === "superadmin" || roleStatus === "approved") {
+        const roleRedirects: Record<string, string> = {
+          student: "/student",
+          examiner: "/examiner",
+          admin: "/admin",
+          superadmin: "/superadmin",
+          user: "/onboarding",
+        };
+        res.redirect(roleRedirects[userRole] ?? "/onboarding");
+        return;
+      }
+
+      // Ausstehende Rollenanfrage → Warte-Seite
+      if (roleStatus === "pending") {
+        res.redirect("/role-pending");
+        return;
+      }
+
+      // Abgelehnte Rollenanfrage → erneut auswählen
+      if (roleStatus === "rejected") {
+        res.redirect("/select-role?reason=rejected");
+        return;
+      }
+
+      // Kein roleStatus gesetzt → Rollenauswahl
+      res.redirect("/select-role");
     } catch (err) {
       console.error("[MagicLink] Verify-Fehler:", err);
       res.redirect("/?error=server_error");

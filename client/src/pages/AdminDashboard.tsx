@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ const IconCalendar = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" st
 function useNavItems() {
   const { t } = useLanguage();
   return [
+    { href: "/admin/role-approvals", label: "Rollenanfragen", icon: Icons.users },
     { href: "/admin", label: t.admin.overview, icon: Icons.home },
     { href: "/admin/requests", label: t.admin.requests, icon: Icons.list },
     { href: "/admin/audit", label: t.admin.audit, icon: Icons.log },
@@ -980,12 +982,13 @@ export default function AdminDashboard() {
     return null;
   }
   
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals">("overview");
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
-      if (item.href === "/admin") setActiveTab("overview");
+      if (item.href === "/admin/role-approvals") setActiveTab("role_approvals");
+      else if (item.href === "/admin") setActiveTab("overview");
       else if (item.href === "/admin/requests") setActiveTab("requests");
       else if (item.href === "/admin/audit") setActiveTab("audit");
       else if (item.href === "/admin/users") setActiveTab("users");
@@ -994,6 +997,7 @@ export default function AdminDashboard() {
     },
   }));
   const titles: Record<string, string> = {
+    role_approvals: "Rollenanfragen",
     overview: "Verwaltungs-Dashboard",
     requests: "Alle Anfragen",
     audit: "Audit-Log",
@@ -1003,6 +1007,7 @@ export default function AdminDashboard() {
   };
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
+      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={false} />}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests />}
       {activeTab === "audit" && <AuditLogView />}

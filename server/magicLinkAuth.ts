@@ -94,7 +94,7 @@ export async function sendMagicLink(
 
 export async function verifyMagicLink(token: string): Promise<{
   sessionToken: string;
-  user: { id: number; email: string; name: string | null; role: string };
+  user: { id: number; email: string; name: string | null; role: string; roleStatus: string | null };
 } | null> {
   const db = await getDb();
   if (!db) return null;
@@ -185,6 +185,7 @@ export async function verifyMagicLink(token: string): Promise<{
       email: user.email ?? link.email,
       name: user.name,
       role: user.role,
+      roleStatus: (user as any).roleStatus ?? null,
     },
   };
 }

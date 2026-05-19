@@ -25,6 +25,8 @@ import ExaminerOnboarding from "./pages/ExaminerOnboarding";
 import DeanStats from "./pages/DeanStats";
 import ExaminerManagement from "./pages/ExaminerManagement";
 import { useNotificationPoller } from "./hooks/useNotificationPoller";
+import SelectRole from "./pages/SelectRole";
+import RolePending from "./pages/RolePending";
 
 function Router() {
   return (
@@ -38,6 +40,10 @@ function Router() {
 
       {/* Onboarding: Rollenwahl nach erstem Login */}
       <Route path="/onboarding" component={Onboarding} />
+
+      {/* Rollenauswahl nach Magic-Link-Login */}
+      <Route path="/select-role" component={SelectRole} />
+      <Route path="/role-pending" component={RolePending} />
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />

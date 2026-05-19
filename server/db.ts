@@ -3254,3 +3254,120 @@ export async function updateUserStatus(
     return false;
   }
 }
+
+// ─── Rollen-Bestätigungsworkflow ─────────────────────────────────────────────
+
+/** Nutzer wählt eine Rolle nach Magic-Link-Login (setzt roleStatus auf 'pending') */
+export async function selectUserRole(userId: number, requestedRole: string) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db.execute(
+      `UPDATE users SET requestedRole = '${requestedRole}', roleStatus = 'pending', role = 'user' WHERE id = ${userId}`
+    );
+    return true;
+  } catch (error) {
+    console.error("[RoleApproval] Fehler beim Setzen der gewünschten Rolle:", error);
+    return false;
+  }
+}
+
+/** Gibt alle Nutzer mit roleStatus = 'pending' zurück */
+export async function getPendingRoleUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db.execute(
+      `SELECT id, name, email, role, requestedRole, roleStatus, createdAt, loginMethod FROM users WHERE roleStatus = 'pending' ORDER BY createdAt DESC`
+    );
+    return (rows[0] as unknown as any[]).map((r: any) => ({
+      id: r.id as number,
+      name: r.name as string | null,
+      email: r.email as string | null,
+      role: r.role as string,
+      requestedRole: r.requestedRole as string | null,
+      roleStatus: r.roleStatus as string,
+      createdAt: r.createdAt as Date,
+      loginMethod: r.loginMethod as string | null,
+    }));
+  } catch (error) {
+    console.error("[RoleApproval] Fehler beim Abrufen ausstehender Nutzer:", error);
+    return [];
+  }
+}
+
+/** Bestätigt die Rolle eines Nutzers */
+export async function approveUserRole(userId: number, confirmedBy: number, confirmedByRole: string) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  try {
+    const rows = await db.execute(`SELECT id, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
+    const user = (rows[0] as unknown as any[])[0];
+    if (!user) return { success: false, error: "Nutzer nicht gefunden" };
+    if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
+    const requestedRole = user.requestedRole as string;
+    if (confirmedByRole === "admin" && requestedRole !== "student") {
+      return { success: false, error: "Verwaltung darf nur Studierende bestätigen" };
+    }
+    await db.execute(
+      `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`
+    );
+    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\'");
+    await db.execute(
+      `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_APPROVED', '${requestedRole}', '${metaJson}', NOW())`
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("[RoleApproval] Fehler beim Bestätigen der Rolle:", error);
+    return { success: false, error: "Interner Fehler" };
+  }
+}
+
+/** Lehnt die Rollenanfrage eines Nutzers ab */
+export async function rejectUserRole(userId: number, confirmedBy: number, confirmedByRole: string, reason?: string) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  try {
+    const rows = await db.execute(`SELECT id, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
+    const user = (rows[0] as unknown as any[])[0];
+    if (!user) return { success: false, error: "Nutzer nicht gefunden" };
+    if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
+    const requestedRole = user.requestedRole as string;
+    if (confirmedByRole === "admin" && requestedRole !== "student") {
+      return { success: false, error: "Verwaltung darf nur Studierende ablehnen" };
+    }
+    await db.execute(
+      `UPDATE users SET roleStatus = 'rejected', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW() WHERE id = ${userId}`
+    );
+    const safeReason = reason ? reason.replace(/'/g, "\'") : "NULL";
+    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\'");
+    const reasonSql = reason ? `'${safeReason}'` : "NULL";
+    await db.execute(
+      `INSERT INTO audit_log (actorId, actorRole, action, toStatus, reason, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_REJECTED', 'rejected', ${reasonSql}, '${metaJson}', NOW())`
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("[RoleApproval] Fehler beim Ablehnen der Rolle:", error);
+    return { success: false, error: "Interner Fehler" };
+  }
+}
+
+/** Gibt den roleStatus eines Nutzers zurück */
+export async function getUserRoleStatus(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db.execute(`SELECT id, role, roleStatus, requestedRole FROM users WHERE id = ${userId}`);
+    const user = (rows[0] as unknown as any[])[0];
+    if (!user) return null;
+    return {
+      id: user.id as number,
+      role: user.role as string,
+      roleStatus: user.roleStatus as "approved" | "pending" | "rejected",
+      requestedRole: user.requestedRole as string | null,
+    };
+  } catch (error) {
+    console.error("[RoleApproval] Fehler beim Abrufen des Rollen-Status:", error);
+    return null;
+  }
+}
