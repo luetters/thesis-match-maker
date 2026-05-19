@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `users`\n  ADD COLUMN IF NOT EXISTS `matrikel_nr` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `thesis_type` enum('bachelor','master') NULL,\n  ADD COLUMN IF NOT EXISTS `enrollment_semester` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `academic_title` varchar(64) NULL,\n  ADD COLUMN IF NOT EXISTS `office_room` varchar(64) NULL,\n  ADD COLUMN IF NOT EXISTS `staff_id` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `responsibility_area` varchar(255) NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute ALTER TABLE `users`\n  ADD COLUMN IF NOT EXISTS `matrikel_nr` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `thesis_type` enum('bachelor','master') NULL,\n  ADD COLUMN IF NOT EXISTS `enrollment_semester` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `academic_title` varchar(64) NULL,\n  ADD COLUMN IF NOT EXISTS `office_room` varchar(64) NULL,\n  ADD COLUMN IF NOT EXISTS `staff_id` varchar(32) NULL,\n  ADD COLUMN IF NOT EXISTS `responsibility_area` varchar(255) NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1068
+}

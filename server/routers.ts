@@ -209,6 +209,20 @@ const profileRouterDef = router({
       bio: z.string().max(1000).optional(),
       phone: z.string().max(64).optional(),
       department: z.string().max(255).optional(),
+      // Studierende
+      matrikelNr: z.string().max(32).optional(),
+      thesisType: z.enum(['bachelor', 'master']).optional(),
+      enrollmentSemester: z.string().max(32).optional(),
+      targetSemester: z.string().max(20).optional(),
+      // Prüfer:innen
+      academicTitle: z.string().max(64).optional(),
+      officeRoom: z.string().max(64).optional(),
+      officeHours: z.string().max(500).optional(),
+      researchTags: z.string().max(500).optional(),
+      // Verwaltung
+      staffId: z.string().max(32).optional(),
+      responsibilityArea: z.string().max(255).optional(),
+      officeLocation: z.string().max(255).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const ok = await updateProfile(ctx.user.id, input);

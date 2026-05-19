@@ -1,0 +1,8 @@
+{
+  "query": "SHOW COLUMNS FROM reminder_schedules; SHOW COLUMNS FROM reminder_templates; SHOW COLUMNS FROM saved_filters;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SHOW COLUMNS FROM reminder_schedules; SHOW COLUMNS FROM reminder_templates; SHOW COLUMNS FROM saved_filters;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 's6sj5g57xxsbdi3ueaefs9.reminder_schedules' doesn't exist"
+  ]
+}

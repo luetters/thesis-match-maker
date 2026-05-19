@@ -3436,7 +3436,7 @@ export async function getProfile(userId: number) {
   if (!db) return null;
   try {
     const rows = await db.execute(
-      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
+      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
     );
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return null;
@@ -3451,6 +3451,17 @@ export async function getProfile(userId: number) {
       bio: user.bio as string | null,
       phone: user.phone as string | null,
       department: user.department as string | null,
+      matrikelNr: user.matrikelNr as string | null,
+      thesisType: user.thesisType as 'bachelor' | 'master' | null,
+      enrollmentSemester: user.enrollmentSemester as string | null,
+      academicTitle: user.academicTitle as string | null,
+      officeRoom: user.officeRoom as string | null,
+      targetSemester: user.targetSemester as string | null,
+      officeHours: user.officeHours as string | null,
+      researchTags: user.researchTags as string | null,
+      staffId: user.staffId as string | null,
+      responsibilityArea: user.responsibilityArea as string | null,
+      officeLocation: user.officeLocation as string | null,
       createdAt: user.createdAt as Date,
       lastSignedIn: user.lastSignedIn as Date,
     };
@@ -3463,15 +3474,32 @@ export async function getProfile(userId: number) {
 /** Aktualisiert Name, Bio, Telefon, Fachbereich eines Nutzers */
 export async function updateProfile(
   userId: number,
-  data: { name?: string; bio?: string; phone?: string; department?: string }
+  data: {
+    name?: string; bio?: string; phone?: string; department?: string;
+    matrikelNr?: string; thesisType?: 'bachelor' | 'master'; enrollmentSemester?: string; targetSemester?: string;
+    academicTitle?: string; officeRoom?: string; officeHours?: string; researchTags?: string;
+    staffId?: string; responsibilityArea?: string; officeLocation?: string;
+  }
 ) {
   const db = await getDb();
   if (!db) return false;
   try {
     const sets: string[] = [];
-    if (data.name !== undefined) sets.push(`name = '${data.name.replace(/'/g, "''")}'`);    if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
+    if (data.name !== undefined) sets.push(`name = '${data.name.replace(/'/g, "''")}'`);
+    if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
     if (data.phone !== undefined) sets.push(`phone = '${data.phone.replace(/'/g, "''")}'`);
     if (data.department !== undefined) sets.push(`department = '${data.department.replace(/'/g, "''")}'`);
+    if (data.matrikelNr !== undefined) sets.push(`matrikel_nr = '${data.matrikelNr.replace(/'/g, "''")}'`);
+    if (data.thesisType !== undefined) sets.push(`thesis_type = '${data.thesisType}'`);
+    if (data.enrollmentSemester !== undefined) sets.push(`enrollment_semester = '${data.enrollmentSemester.replace(/'/g, "''")}'`);
+    if (data.academicTitle !== undefined) sets.push(`academic_title = '${data.academicTitle.replace(/'/g, "''")}'`);
+    if (data.officeRoom !== undefined) sets.push(`office_room = '${data.officeRoom.replace(/'/g, "''")}'`);
+    if (data.staffId !== undefined) sets.push(`staff_id = '${data.staffId.replace(/'/g, "''")}'`);
+    if (data.responsibilityArea !== undefined) sets.push(`responsibility_area = '${data.responsibilityArea.replace(/'/g, "''")}'`);
+    if (data.targetSemester !== undefined) sets.push(`target_semester = '${data.targetSemester.replace(/'/g, "''")}'`);
+    if (data.officeHours !== undefined) sets.push(`office_hours = '${data.officeHours.replace(/'/g, "''")}'`);
+    if (data.researchTags !== undefined) sets.push(`research_tags = '${data.researchTags.replace(/'/g, "''")}'`);
+    if (data.officeLocation !== undefined) sets.push(`office_location = '${data.officeLocation.replace(/'/g, "''")}'`);
     if (sets.length === 0) return true;
     await db.execute(`UPDATE users SET ${sets.join(", ")} WHERE id = ${userId}`);
     return true;

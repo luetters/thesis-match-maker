@@ -345,3 +345,17 @@
 - [x] Navigation: Profillink in ThesisDashboardLayout (Sidebar + Header-Dropdown)
 - [x] Route /profile in App.tsx registrieren
 - [x] Build und Tests grün (55/55)
+
+## Phase 54: Rollenspezifische Profilfelder ✅ KOMPLETT
+
+- [x] DB-Schema: Studierende – matrikelNr, thesisType, enrollmentSemester
+- [x] DB-Schema: Prüfer:innen – academicTitle, officeRoom
+- [x] DB-Schema: Verwaltung – staffId, responsibilityArea
+- [x] DB-Migration: ALTER TABLE users für neue Felder
+- [x] Backend: profile.get um rollenspezifische Felder erweitern
+- [x] Backend: profile.update um rollenspezifische Felder erweitern (mit Zod-Validierung)
+- [x] Frontend: Profile.tsx – Abschnitt "Studierende" (Matrikelnummer, Abschlussart, Immatrikulationssemester)
+- [x] Frontend: Profile.tsx – Abschnitt "Prüfer:in" (Akademischer Titel, Büro/Raum)
+- [x] Frontend: Profile.tsx – Abschnitt "Verwaltung" (Personalnummer, Zuständigkeitsbereich)
+- [x] Build grün (0 Fehler)
+- [x] Tests grün (55/55)

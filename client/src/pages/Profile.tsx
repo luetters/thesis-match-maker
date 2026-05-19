@@ -38,6 +38,38 @@ function getInitials(name: string | null | undefined, email: string | null | und
   return "??";
 }
 
+// ─── Feld-Komponenten ─────────────────────────────────────────────────────────
+function FieldView({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <p className="text-sm text-gray-800">
+        {value ?? <span className="text-gray-400 italic">Nicht angegeben</span>}
+      </p>
+    </div>
+  );
+}
+
+function FieldInput({
+  label, value, onChange, placeholder, type = "text",
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
+      />
+    </div>
+  );
+}
+
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
   const { user } = useAuth();
@@ -46,7 +78,16 @@ export default function Profile() {
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery();
 
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ name: "", bio: "", phone: "", department: "" });
+  const [form, setForm] = useState({
+    // Allgemein
+    name: "", bio: "", phone: "", department: "",
+    // Studierende
+    matrikelNr: "", thesisType: "" as "" | "bachelor" | "master", enrollmentSemester: "", targetSemester: "",
+    // Prüfer:innen
+    academicTitle: "", officeRoom: "", officeHours: "", researchTags: "",
+    // Verwaltung
+    staffId: "", responsibilityArea: "", officeLocation: "",
+  });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -79,6 +120,17 @@ export default function Profile() {
       bio: profile.bio ?? "",
       phone: profile.phone ?? "",
       department: profile.department ?? "",
+      matrikelNr: profile.matrikelNr ?? "",
+      thesisType: (profile.thesisType as "" | "bachelor" | "master") ?? "",
+      enrollmentSemester: profile.enrollmentSemester ?? "",
+      targetSemester: (profile as any).targetSemester ?? "",
+      academicTitle: profile.academicTitle ?? "",
+      officeRoom: profile.officeRoom ?? "",
+      officeHours: (profile as any).officeHours ?? "",
+      researchTags: (profile as any).researchTags ?? "",
+      staffId: profile.staffId ?? "",
+      responsibilityArea: profile.responsibilityArea ?? "",
+      officeLocation: (profile as any).officeLocation ?? "",
     });
     setEditMode(true);
   };
@@ -89,21 +141,26 @@ export default function Profile() {
       bio: form.bio || undefined,
       phone: form.phone || undefined,
       department: form.department || undefined,
+      matrikelNr: form.matrikelNr || undefined,
+      thesisType: (form.thesisType as "bachelor" | "master") || undefined,
+      enrollmentSemester: form.enrollmentSemester || undefined,
+      targetSemester: form.targetSemester || undefined,
+      academicTitle: form.academicTitle || undefined,
+      officeRoom: form.officeRoom || undefined,
+      officeHours: form.officeHours || undefined,
+      researchTags: form.researchTags || undefined,
+      staffId: form.staffId || undefined,
+      responsibilityArea: form.responsibilityArea || undefined,
+      officeLocation: form.officeLocation || undefined,
     });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Datei zu groß – bitte max. 5 MB.");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Datei zu groß – bitte max. 5 MB."); return; }
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) {
-      toast.error("Ungültiges Format – erlaubt sind JPEG, PNG, WebP und GIF.");
-      return;
-    }
+    if (!allowed.includes(file.type)) { toast.error("Ungültiges Format – erlaubt sind JPEG, PNG, WebP und GIF."); return; }
     setUploadingAvatar(true);
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -149,11 +206,14 @@ export default function Profile() {
   const avatarSrc = avatarPreview ?? profile.avatarUrl;
   const initials = getInitials(profile.name, profile.email);
 
-  // Zurück-Link je nach Rolle
   const backLink = profile.role === "student" ? "/student"
     : profile.role === "examiner" ? "/examiner"
     : profile.role === "admin" || profile.role === "superadmin" ? "/admin"
     : "/";
+
+  const isStudent  = profile.role === "student";
+  const isExaminer = profile.role === "examiner";
+  const isAdmin    = profile.role === "admin" || profile.role === "pav" || profile.role === "dean" || profile.role === "vice_dean";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -213,11 +273,8 @@ export default function Profile() {
 
         {/* ── Profilkarte ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Farbiger Banner */}
           <div className="h-24 w-full" style={{ background: `linear-gradient(135deg, ${roleConf.color}22, ${roleConf.color}44)` }} />
-
           <div className="px-6 pb-6">
-            {/* Avatar */}
             <div className="flex items-end gap-4 -mt-12 mb-4">
               <div className="relative">
                 <div
@@ -238,7 +295,6 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                {/* Upload-Button */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -266,8 +322,6 @@ export default function Profile() {
                 <p className="text-sm text-gray-500 truncate">{profile.email}</p>
               </div>
             </div>
-
-            {/* Rollen-Badges */}
             <div className="flex flex-wrap gap-2">
               <span
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border"
@@ -297,23 +351,13 @@ export default function Profile() {
             </svg>
             Persönliche Daten
           </h2>
-
           <div className="space-y-4">
             {/* Name */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Vollständiger Name</label>
-              {editMode ? (
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Vor- und Nachname"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
-                />
-              ) : (
-                <p className="text-sm text-gray-800">{profile.name ?? <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
-              )}
-            </div>
+            {editMode ? (
+              <FieldInput label="Vollständiger Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="Vor- und Nachname" />
+            ) : (
+              <FieldView label="Vollständiger Name" value={profile.name} />
+            )}
 
             {/* E-Mail (nicht editierbar) */}
             <div>
@@ -325,60 +369,216 @@ export default function Profile() {
             </div>
 
             {/* Telefon */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Telefonnummer</label>
-              {editMode ? (
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  placeholder="+49 30 12345678"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
-                />
-              ) : (
-                <p className="text-sm text-gray-800">{profile.phone ?? <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
-              )}
-            </div>
+            {editMode ? (
+              <FieldInput label="Telefonnummer" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder="+49 30 12345678" type="tel" />
+            ) : (
+              <FieldView label="Telefonnummer" value={profile.phone} />
+            )}
 
             {/* Fachbereich */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Fachbereich / Institut</label>
-              {editMode ? (
-                <input
-                  type="text"
-                  value={form.department}
-                  onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                  placeholder="z.B. Fachbereich 3 – Wirtschaft"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
-                />
-              ) : (
-                <p className="text-sm text-gray-800">{profile.department ?? <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
-              )}
-            </div>
+            {editMode ? (
+              <FieldInput label="Fachbereich / Institut" value={form.department} onChange={(v) => setForm((f) => ({ ...f, department: v }))} placeholder="z.B. Fachbereich 3 – Wirtschaft" />
+            ) : (
+              <FieldView label="Fachbereich / Institut" value={profile.department} />
+            )}
 
             {/* Bio */}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Über mich</label>
               {editMode ? (
-                <textarea
-                  value={form.bio}
-                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                  placeholder="Kurze Beschreibung Ihrer Person, Interessen oder Schwerpunkte…"
-                  rows={4}
-                  maxLength={1000}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none"
-                />
+                <>
+                  <textarea
+                    value={form.bio}
+                    onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                    placeholder="Kurze Beschreibung Ihrer Person, Interessen oder Schwerpunkte…"
+                    rows={4}
+                    maxLength={1000}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{form.bio.length}/1000 Zeichen</p>
+                </>
               ) : (
                 <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
                   {profile.bio ?? <span className="text-gray-400 italic">Keine Beschreibung angegeben</span>}
                 </p>
               )}
-              {editMode && (
-                <p className="text-xs text-gray-400 mt-1 text-right">{form.bio.length}/1000 Zeichen</p>
-              )}
             </div>
           </div>
         </div>
+
+        {/* ── Rollenspezifische Daten: Studierende ── */}
+        {isStudent && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#16a34a" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 6.075-4.925 11-11 11S-1 19.075-1 13c0-.832.086-1.644.25-2.43L12 14z" />
+              </svg>
+              <span style={{ color: "#16a34a" }}>Studierenden-Informationen</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Matrikelnummer */}
+              {editMode ? (
+                <FieldInput label="Matrikelnummer" value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder="z.B. 567890" />
+              ) : (
+                <FieldView label="Matrikelnummer" value={profile.matrikelNr} />
+              )}
+
+              {/* Abschlussart */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Angestrebter Abschluss</label>
+                {editMode ? (
+                  <select
+                    value={form.thesisType}
+                    onChange={(e) => setForm((f) => ({ ...f, thesisType: e.target.value as "" | "bachelor" | "master" }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white"
+                  >
+                    <option value="">Bitte wählen…</option>
+                    <option value="bachelor">Bachelor</option>
+                    <option value="master">Master</option>
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-800">
+                    {profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="text-gray-400 italic">Nicht angegeben</span>}
+                  </p>
+                )}
+              </div>
+
+              {/* Immatrikulationssemester */}
+              {editMode ? (
+                <FieldInput label="Immatrikulationssemester" value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} placeholder="z.B. WiSe 2022/23" />
+              ) : (
+                <FieldView label="Immatrikulationssemester" value={profile.enrollmentSemester} />
+              )}
+
+              {/* Zielsemester */}
+              {editMode ? (
+                <FieldInput label="Zielsemester (Abschluss)" value={form.targetSemester} onChange={(v) => setForm((f) => ({ ...f, targetSemester: v }))} placeholder="z.B. SoSe 2025" />
+              ) : (
+                <FieldView label="Zielsemester (Abschluss)" value={(profile as any).targetSemester} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Rollenspezifische Daten: Prüfer:innen ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span style={{ color: "#2563eb" }}>Prüfer:innen-Informationen</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Akademischer Titel */}
+              {editMode ? (
+                <FieldInput label="Akademischer Titel" value={form.academicTitle} onChange={(v) => setForm((f) => ({ ...f, academicTitle: v }))} placeholder="z.B. Prof. Dr." />
+              ) : (
+                <FieldView label="Akademischer Titel" value={profile.academicTitle} />
+              )}
+
+              {/* Büro / Raum */}
+              {editMode ? (
+                <FieldInput label="Büro / Raum" value={form.officeRoom} onChange={(v) => setForm((f) => ({ ...f, officeRoom: v }))} placeholder="z.B. Gebäude C, Raum 307" />
+              ) : (
+                <FieldView label="Büro / Raum" value={profile.officeRoom} />
+              )}
+            </div>
+
+            {/* Sprechzeiten */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Sprechzeiten</label>
+              {editMode ? (
+                <>
+                  <textarea
+                    value={form.officeHours}
+                    onChange={(e) => setForm((f) => ({ ...f, officeHours: e.target.value }))}
+                    placeholder="z.B. Dienstag 10–12 Uhr, Donnerstag 14–16 Uhr (nach Vereinbarung)"
+                    rows={3}
+                    maxLength={500}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{form.officeHours.length}/500 Zeichen</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                  {(profile as any).officeHours ?? <span className="text-gray-400 italic">Nicht angegeben</span>}
+                </p>
+              )}
+            </div>
+
+            {/* Forschungsgebiete / Tags */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Forschungsgebiete / Schwerpunkte</label>
+              {editMode ? (
+                <>
+                  <textarea
+                    value={form.researchTags}
+                    onChange={(e) => setForm((f) => ({ ...f, researchTags: e.target.value }))}
+                    placeholder="z.B. Machine Learning, Softwareentwicklung, Wirtschaftsinformatik (kommagetrennt)"
+                    rows={2}
+                    maxLength={500}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{form.researchTags.length}/500 Zeichen</p>
+                </>
+              ) : (
+                (profile as any).researchTags ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {((profile as any).researchTags as string).split(",").map((tag: string) => tag.trim()).filter(Boolean).map((tag: string, i: number) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{tag}</span>
+                    ))}
+                  </div>
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>
+              )}
+            </div>
+
+            {/* Hinweis auf erweitertes Prüfer-Profil */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2">
+              <svg className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-blue-700">
+                Weitere Angaben wie Sprechzeiten, Forschungsschwerpunkte und Betreuungskapazitäten können Sie im Bereich <strong>Mein Profil</strong> innerhalb des Prüfer-Dashboards pflegen.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Rollenspezifische Daten: Verwaltung ── */}
+        {isAdmin && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span style={{ color: "#7c3aed" }}>Verwaltungs-Informationen</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Personalnummer */}
+              {editMode ? (
+                <FieldInput label="Personalnummer" value={form.staffId} onChange={(v) => setForm((f) => ({ ...f, staffId: v }))} placeholder="z.B. P-12345" />
+              ) : (
+                <FieldView label="Personalnummer" value={profile.staffId} />
+              )}
+
+              {/* Zuständigkeitsbereich */}
+              {editMode ? (
+                <FieldInput label="Zuständigkeitsbereich" value={form.responsibilityArea} onChange={(v) => setForm((f) => ({ ...f, responsibilityArea: v }))} placeholder="z.B. Prüfungsamt FB 3" />
+              ) : (
+                <FieldView label="Zuständigkeitsbereich" value={profile.responsibilityArea} />
+              )}
+
+              {/* Bürostandort */}
+              {editMode ? (
+                <FieldInput label="Bürostandort" value={form.officeLocation} onChange={(v) => setForm((f) => ({ ...f, officeLocation: v }))} placeholder="z.B. Gebäude A, Raum 101" />
+              ) : (
+                <FieldView label="Bürostandort" value={(profile as any).officeLocation} />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

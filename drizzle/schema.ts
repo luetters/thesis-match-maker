@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, json, timestamp, foreignKey, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, tinyint, varchar, text, json, timestamp, foreignKey, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const auditLog = mysqlTable("audit_log", {
@@ -95,7 +95,7 @@ export const magicLinks = mysqlTable("magic_links", {
 	email: varchar({ length: 320 }).notNull(),
 	token: varchar({ length: 128 }).notNull(),
 	role: mysqlEnum(['student','examiner','admin','user']).default('student').notNull(),
-	used: tinyint().default(0).notNull(),
+	used: int().default(0).notNull(),
 	expiresAt: timestamp({ mode: 'string' }).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 },
@@ -216,7 +216,72 @@ export const users = mysqlTable("users", {
 	bio: text(),
 	phone: varchar({ length: 64 }),
 	department: varchar({ length: 255 }),
+	// Studierende
+	matrikelNr: varchar("matrikel_nr", { length: 32 }),
+	thesisType: mysqlEnum("thesis_type", ['bachelor','master']),
+	enrollmentSemester: varchar("enrollment_semester", { length: 32 }),
+	// Prüfer:innen (Kurzfelder; Details in examinerProfiles)
+	academicTitle: varchar("academic_title", { length: 64 }),
+	officeRoom: varchar("office_room", { length: 64 }),
+  // Studierende – erweitert
+  targetSemester: varchar("target_semester", { length: 20 }),
+  // Prüfer:innen – erweitert (Details in examinerProfiles)
+  officeHours: text("office_hours"),
+  researchTags: text("research_tags"),
+  // Verwaltung
+  staffId: varchar("staff_id", { length: 32 }),
+  responsibilityArea: varchar("responsibility_area", { length: 255 }),
+  officeLocation: varchar("office_location", { length: 255 }),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),
 ]);
+
+// ─── Fehlende Tabellen (wurden in db.ts referenziert, aber nicht definiert) ───
+
+export const reminderSchedules = mysqlTable("reminder_schedules", {
+  id: int().autoincrement().notNull(),
+  thesisRequestId: int("thesis_request_id").notNull(),
+  reminderType: varchar("reminder_type", { length: 64 }).notNull(),
+  scheduledAt: timestamp("scheduled_at", { mode: "date" }).notNull(),
+  status: mysqlEnum(["pending", "sent", "failed"]).default("pending").notNull(),
+  sentAt: timestamp("sent_at", { mode: "date" }),
+  createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+});
+
+export const reminderTemplates = mysqlTable("reminder_templates", {
+  id: int().autoincrement().notNull(),
+  type: varchar({ length: 64 }).notNull(),
+  subject: varchar({ length: 512 }).notNull(),
+  htmlBody: text("html_body"),
+  textBody: text("text_body"),
+  delayDays: int("delay_days").default(0).notNull(),
+  isActive: int("is_active").default(1).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow(),
+});
+
+export const savedFilters = mysqlTable("saved_filters", {
+  id: int().autoincrement().notNull(),
+  userId: int("user_id").notNull(),
+  name: varchar({ length: 255 }).notNull(),
+  filterConfig: text("filter_config").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+});
+
+// ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────
+import { InferInsertModel } from "drizzle-orm";
+
+export type InsertUser = InferInsertModel<typeof users>;
+export type InsertAuditLogEntry = InferInsertModel<typeof auditLog>;
+export type InsertExaminerProfile = InferInsertModel<typeof examinerProfiles>;
+export type InsertNotification = InferInsertModel<typeof notifications>;
+export type InsertPavExaminerProposal = InferInsertModel<typeof pavExaminerProposals>;
+export type InsertThesisRequest = InferInsertModel<typeof thesisRequests>;
+
+export type InsertColloquium = InferInsertModel<typeof colloquiums>;
+export type InsertPasswordResetToken = InferInsertModel<typeof passwordResetTokens>;
+export type InsertSystemSetting = InferInsertModel<typeof systemSettings>;
+
+// User-Typ (wird in server/_core/context.ts und sdk.ts verwendet)
+import { InferSelectModel } from "drizzle-orm";
+export type User = InferSelectModel<typeof users>;
