@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, `key`, label, subject FROM email_templates ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, `key`, label, subject FROM email_templates ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "key": "thesis_submitted",
+      "label": "Antrag eingereicht (Bestätigung an Studierende:n)",
+      "subject": "Ihr Antrag auf Betreuung wurde eingereicht – HTW Berlin"
+    },
+    {
+      "id": "2",
+      "key": "examiner_proposal",
+      "label": "Betreuungsanfrage an Prüfer:in",
+      "subject": "Betreuungsanfrage: {{thesisTitle}} – HTW Berlin"
+    },
+    {
+      "id": "3",
+      "key": "thesis_accepted",
+      "label": "Antrag angenommen (Benachrichtigung an Studierende:n)",
+      "subject": "Ihre Abschlussarbeit wurde angenommen – HTW Berlin"
+    },
+    {
+      "id": "4",
+      "key": "thesis_rejected",
+      "label": "Antrag abgelehnt (Benachrichtigung an Studierende:n)",
+      "subject": "Ihre Betreuungsanfrage wurde abgelehnt – HTW Berlin"
+    },
+    {
+      "id": "5",
+      "key": "colloquium_invitation",
+      "label": "Kolloquium-Einladung",
+      "subject": "Einladung zum Kolloquium: {{thesisTitle}} – HTW Berlin"
+    },
+    {
+      "id": "6",
+      "key": "status_change",
+      "label": "Statusänderung (allgemein)",
+      "subject": "Statusänderung Ihrer Abschlussarbeit – HTW Berlin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tkey\tlabel\tsubject\n1\tthesis_submitted\tAntrag eingereicht (Bestätigung an Studierende:n)\tIhr Antrag auf Betreuung wurde eingereicht – HTW Berlin\n2\texaminer_proposal\tBetreuungsanfrage an Prüfer:in\tBetreuungsanfrage: {{thesisTitle}} – HTW Berlin\n3\tthesis_accepted\tAntrag angenommen (Benachrichtigung an Studierende:n)\tIhre Abschlussarbeit wurde angenommen – HTW Berlin\n4\tthesis_rejected\tAntrag abgelehnt (Benachrichtigung an Studierende:n)\tIhre Betreuungsanfrage wurde abgelehnt – HTW Berlin\n5\tcolloquium_invitation\tKolloquium-Einladung\tEinladung zum Kolloquium: {{thesisTitle}} – HTW Berlin\n6\tstatus_change\tStatusänderung (allgemein)\tStatusänderung Ihrer Abschlussarbeit – HTW Berlin\n",
+  "stderr": "",
+  "execution_time_ms": 308
+}

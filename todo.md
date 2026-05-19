@@ -277,3 +277,13 @@
 - [ ] approveUserRole in db.ts um E-Mail-Versand erweitern
 - [ ] rejectUserRole in db.ts um E-Mail-Versand erweitern
 - [ ] Build und Tests grün
+
+## Phase 49: E-Mail-Vorlagen-Editor für Superadmin
+
+- [ ] Datenbanktabelle role_email_templates anlegen (type, subject, htmlBody, updatedAt, updatedBy)
+- [ ] Standardvorlagen beim ersten Aufruf in DB eintragen
+- [ ] tRPC-Prozeduren: getRoleEmailTemplates, updateRoleEmailTemplate
+- [ ] approveUserRole und rejectUserRole auf DB-Vorlagen umstellen
+- [ ] EmailTemplateEditor-Komponente mit Live-Vorschau erstellen
+- [ ] Tab "E-Mail-Vorlagen" im Superadmin-Dashboard einbinden
+- [ ] Build und Tests grün
