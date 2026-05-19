@@ -234,7 +234,7 @@ function NavItem({
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
         active
           ? "text-white"
-          : "text-white/60 hover:text-white hover:bg-white/10"
+          : "text-gray-600 hover:text-gray-900 hover:bg-green-50"
       }`}
       style={active ? { backgroundColor: "#76B900" } : undefined}
       aria-current={active ? "page" : undefined}
@@ -286,23 +286,23 @@ function Sidebar({
         className={`fixed top-0 left-0 h-full w-64 z-40 flex flex-col transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
-        style={{ backgroundColor: "#0e2a06" }}
+        style={{ backgroundColor: "#ffffff", borderRight: "1px solid #e5e7eb" }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10">
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
           <img
             src="/manus-storage/thesis-logo-512_d468512d.png"
             alt="Thesis Match Maker Logo"
             className="w-8 h-8 object-contain flex-shrink-0"
           />
           <div>
-            <div className="text-sm font-bold text-white leading-tight">Thesis Match</div>
-            <div className="text-xs text-white/40 leading-tight">HTW Berlin · FB 3</div>
+            <div className="text-sm font-bold text-gray-900 leading-tight">Thesis Match</div>
+            <div className="text-xs text-gray-400 leading-tight">HTW Berlin · FB 3</div>
           </div>
         </div>
 
         {/* Role badge */}
-        <div className="px-4 py-3 border-b border-white/10">
+        <div className="px-4 py-3 border-b border-gray-100">
           <span
             className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-white"
             style={{ backgroundColor: "#76B900" }}
@@ -329,7 +329,7 @@ function Sidebar({
         </nav>
 
         {/* User + Logout */}
-        <div className="px-4 py-4 border-t border-white/10">
+        <div className="px-4 py-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -338,13 +338,13 @@ function Sidebar({
               {userName.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-white truncate">{userName}</div>
-              <div className="text-xs text-white/40">{roleLabel[role] ?? role}</div>
+              <div className="text-sm font-medium text-gray-900 truncate">{userName}</div>
+              <div className="text-xs text-gray-400">{roleLabel[role] ?? role}</div>
             </div>
           </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -390,10 +390,10 @@ export function ThesisDashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0e2a06" }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-white/60 text-sm">Lade...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin" />
+          <p className="text-gray-400 text-sm">Lade...</p>
         </div>
       </div>
     );

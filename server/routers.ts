@@ -1300,7 +1300,7 @@ export const appRouter = router({
       const mysql2 = await import('mysql2/promise');
       const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
       const [rows] = await conn.execute(
-        'SELECT p.* FROM programmes p INNER JOIN users u ON u.programme_id = p.id WHERE u.id = ?',
+        'SELECT p.id, p.name, p.abbreviation, p.level, p.pictogram_url AS pictogramUrl, p.sort_order AS sortOrder FROM programmes p INNER JOIN users u ON u.programme_id = p.id WHERE u.id = ?',
         [ctx.user.id]
       ) as any;
       await conn.end();
