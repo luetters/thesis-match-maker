@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, email, name, role, is_active, is_superadmin, login_method FROM users WHERE email LIKE '%luetters%' OR email LIKE '%holger%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, email, name, role, is_active, is_superadmin, login_method FROM users WHERE email LIKE '%luetters%' OR email LIKE '%holger%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'is_active' in 'field list'"
+  ]
+}

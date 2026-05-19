@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, email, name, role, loginMethod FROM users WHERE email LIKE '%luetters%' OR email LIKE '%holger%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, email, name, role, loginMethod FROM users WHERE email LIKE '%luetters%' OR email LIKE '%holger%';",
+  "rows": [
+    {
+      "id": "1",
+      "email": "holger@luetters.net",
+      "name": "Holger Lütters",
+      "role": "admin",
+      "loginMethod": "email"
+    },
+    {
+      "id": "270001",
+      "email": "luetters@gmail.com",
+      "name": "Holger Lütters",
+      "role": "student",
+      "loginMethod": "google"
+    },
+    {
+      "id": "690079",
+      "email": "holger@luetters.net",
+      "name": "Prof. Dr. Holger Lütters",
+      "role": "superadmin",
+      "loginMethod": "password"
+    },
+    {
+      "id": "870004",
+      "email": "holger@luetters.net",
+      "name": "holger",
+      "role": "student",
+      "loginMethod": "magic_link"
+    },
+    {
+      "id": "1440001",
+      "email": "luetters@htw-berlin.de",
+      "name": "luetters",
+      "role": "student",
+      "loginMethod": "magic_link"
+    },
+    {
+      "id": "1560126",
+      "email": "holger.schulte@htw-berlin.de",
+      "name": "Holger Schulte",
+      "role": "examiner",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560203",
+      "email": "holger.langer@htw-berlin.de",
+      "name": "Holger Langer",
+      "role": "examiner",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560330",
+      "email": "holger.schroeder@htw-berlin.de",
+      "name": "Holger Schröder",
+      "role": "examiner",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560347",
+      "email": "holger.winter@freenet.de",
+      "name": "Holger Winter",
+      "role": "examiner",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1920001",
+      "email": "holger.luetters@htw-berlin.de",
+      "name": "holger.luetters",
+      "role": "student",
+      "loginMethod": "magic_link"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\trole\tloginMethod\n1\tholger@luetters.net\tHolger Lütters\tadmin\temail\n270001\tluetters@gmail.com\tHolger Lütters\tstudent\tgoogle\n690079\tholger@luetters.net\tProf. Dr. Holger Lütters\tsuperadmin\tpassword\n870004\tholger@luetters.net\tholger\tstudent\tmagic_link\n1440001\tluetters@htw-berlin.de\tluetters\tstudent\tmagic_link\n1560126\tholger.schulte@htw-berlin.de\tHolger Schulte\texaminer\tNULL\n1560203\tholger.langer@htw-berlin.de\tHolger Langer\texaminer\tNULL\n1560330\tholger.schroeder@htw-berlin.de\tHolger Schröder\texaminer\tNULL\n1560347\tholger.winter@freenet.de\tHolger Winter\texaminer\tNULL\n1920001\tholger.luetters@htw-berlin.de\tholger.luetters\tstudent\tmagic_link\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}

@@ -237,3 +237,17 @@
 - [x] main.tsx: Redirect bei UNAUTHORIZED → /login
 - [x] Build: Erfolgreich (0 Fehler)
 - [x] Tests: 46/46 grün
+
+
+## Phase 46: Mobile Optimierung
+
+- [ ] Mobile Navigation: Hamburger-Menü für kleine Bildschirme in Home.tsx
+- [ ] Mobile Navigation: Slide-in Drawer für alle Nav-Links
+- [ ] Mobile Hero-Sektion: Einspaltig, korrekte Schriftgrößen
+- [ ] Mobile Rollen-Karten: Einspaltig statt dreispaltig
+- [ ] Mobile Prozess-Schritte: Vertikale Timeline statt horizontales Grid
+- [ ] Mobile Footer: Kompaktere Darstellung
+- [ ] Mobile ThesisDashboardLayout: Sidebar als Drawer/Sheet
+- [ ] Mobile Dashboard-Seiten: Tabellen und Formulare mobilfreundlich
+- [ ] Mobile Prüfer:innen-Verzeichnis: Karten-Layout für kleine Bildschirme
+- [ ] Mobile Login-Seite: Korrekte Darstellung auf kleinen Bildschirmen

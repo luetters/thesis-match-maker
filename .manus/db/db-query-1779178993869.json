@@ -1,0 +1,162 @@
+{
+  "query": "DESCRIBE thesis_requests;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute DESCRIBE thesis_requests;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "studentId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "examinerId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "secondExaminerId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(512)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "description",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "department",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "abstract",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "targetSemester",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "language",
+      "Type": "varchar(8)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "de",
+      "Extra": ""
+    },
+    {
+      "Field": "degreeType",
+      "Type": "enum('bachelor','master')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "bachelor",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('PENDING','ACCEPTED','REJECTED','MATCHED')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "PENDING",
+      "Extra": ""
+    },
+    {
+      "Field": "deadline",
+      "Type": "datetime",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "rejectionReason",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "exposeUrl",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "exposeKey",
+      "Type": "varchar(512)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "hasOwnTopic",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nstudentId\tint\tNO\t\tNULL\t\nexaminerId\tint\tYES\t\tNULL\t\nsecondExaminerId\tint\tYES\t\tNULL\t\ntitle\tvarchar(512)\tNO\t\tNULL\t\ndescription\ttext\tNO\t\tNULL\t\ndepartment\tvarchar(255)\tNO\t\tNULL\t\nabstract\ttext\tYES\t\tNULL\t\ntargetSemester\tvarchar(32)\tYES\t\tNULL\t\nlanguage\tvarchar(8)\tYES\t\tde\t\ndegreeType\tenum('bachelor','master')\tYES\t\tbachelor\t\nstatus\tenum('PENDING','ACCEPTED','REJECTED','MATCHED')\tNO\t\tPENDING\t\ndeadline\tdatetime\tYES\t\tNULL\t\nrejectionReason\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\nexposeUrl\ttext\tYES\t\tNULL\t\nexposeKey\tvarchar(512)\tYES\t\tNULL\t\nhasOwnTopic\tint\tNO\t\t1\t\n",
+  "stderr": "",
+  "execution_time_ms": 257
+}

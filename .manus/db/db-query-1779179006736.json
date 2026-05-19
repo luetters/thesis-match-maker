@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, email, name, role, loginMethod FROM users WHERE email = 'holger@luetters.net';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, email, name, role, loginMethod FROM users WHERE email = 'holger@luetters.net';",
+  "rows": [
+    {
+      "id": "690079",
+      "email": "holger@luetters.net",
+      "name": "Prof. Dr. Holger Lütters",
+      "role": "superadmin",
+      "loginMethod": "password"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\trole\tloginMethod\n690079\tholger@luetters.net\tProf. Dr. Holger Lütters\tsuperadmin\tpassword\n",
+  "stderr": "",
+  "execution_time_ms": 268
+}
