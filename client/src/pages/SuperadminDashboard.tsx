@@ -7,6 +7,7 @@ import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -578,7 +579,6 @@ function UserDashboardTab() {
 }
 
 // ─── Systemstatistiken ────────────────────────────────────────────────────────
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const ROLE_PIE_COLORS = ["#76B900", "#0082D1", "#FF5F00", "#AFAFAF", "#7C3AED", "#DB2777"];
 const STATUS_BAR_COLORS: Record<string, string> = {
