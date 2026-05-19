@@ -69,6 +69,7 @@ export default function Login() {
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | null>(null);
 
   // Registrierungs-State
   const [regName, setRegName] = useState("");
@@ -85,6 +86,7 @@ export default function Login() {
 
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
+      setLoginStatus(null);
       const role = data.role;
       let target = returnTo;
       if (target === "/" || target === "") {
@@ -97,7 +99,16 @@ export default function Login() {
       setLocation(target);
     },
     onError: (error) => {
-      toast.error(error.message ?? "Anmeldung fehlgeschlagen");
+      // Spezifische Statusmeldungen persistent anzeigen statt nur Toast
+      const msg = error.message ?? "";
+      if (msg.includes("noch nicht freigeschaltet") || msg.includes("pending")) {
+        setLoginStatus("pending");
+      } else if (msg.includes("abgelehnt") || msg.includes("rejected")) {
+        setLoginStatus("rejected");
+      } else {
+        setLoginStatus(null);
+        toast.error(msg || "Anmeldung fehlgeschlagen");
+      }
     },
   });
 
@@ -121,6 +132,7 @@ export default function Login() {
   function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword) return;
+    setLoginStatus(null);
     loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
   }
 
@@ -156,6 +168,7 @@ export default function Login() {
     setRegPasswordConfirm("");
     setResetSent(false);
     setRegistered(false);
+    setLoginStatus(null);
   }
 
   return (
@@ -427,6 +440,67 @@ export default function Login() {
                       </button>
                     </div>
                   </div>
+                  {/* Persistente Statusmeldung: Konto ausstehend */}
+                  {loginStatus === "pending" && (
+                    <div
+                      className="p-4 rounded-xl text-sm leading-relaxed"
+                      style={{
+                        background: "rgba(251,191,36,0.08)",
+                        border: "1px solid rgba(251,191,36,0.35)",
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
+                          style={{ background: "rgba(251,191,36,0.15)" }}
+                        >
+                          <svg className="w-4 h-4" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1" style={{ color: "#f59e0b" }}>Konto noch nicht freigeschaltet</p>
+                          <p style={{ color: "rgba(251,191,36,0.75)" }}>
+                            Ihre Registrierung wurde eingereicht und wird derzeit von der Verwaltung der HTW Berlin geprüft.
+                            Sie erhalten eine Benachrichtigung, sobald Ihr Zugang aktiviert wurde.
+                          </p>
+                          <p className="mt-2 text-xs" style={{ color: "rgba(251,191,36,0.5)" }}>
+                            Bei Fragen wenden Sie sich bitte an die Studiengangs­verwaltung.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Persistente Statusmeldung: Konto abgelehnt */}
+                  {loginStatus === "rejected" && (
+                    <div
+                      className="p-4 rounded-xl text-sm leading-relaxed"
+                      style={{
+                        background: "rgba(239,68,68,0.08)",
+                        border: "1px solid rgba(239,68,68,0.35)",
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
+                          style={{ background: "rgba(239,68,68,0.15)" }}
+                        >
+                          <svg className="w-4 h-4" style={{ color: "#ef4444" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>Registrierungsantrag abgelehnt</p>
+                          <p style={{ color: "rgba(239,68,68,0.75)" }}>
+                            Ihr Registrierungsantrag wurde von der Verwaltung der HTW Berlin abgelehnt.
+                            Bitte wenden Sie sich direkt an die Studiengangs­verwaltung für weitere Informationen.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {resetSent && (
                     <div
                       className="p-3 rounded-lg text-sm"
