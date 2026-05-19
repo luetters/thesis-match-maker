@@ -21,11 +21,11 @@
 
 ### Frontend-Komponenten
 - [x] RoleSwitcher.tsx – Komponente zum Umschalten der Rolle
-- [x] RoleSwitcherMenu.tsx – Menü mit verfügbaren Rollen (optional, in RoleSwitcher.tsx integriert)
-- [x] Integration in Header/Navigation (in ThesisDashboardLayout Sidebar)
+- [ ] RoleSwitcherMenu.tsx – Menü mit verfügbaren Rollen (optional)
+- [ ] Integration in Header/Navigation (ausstehend)
 
 ### UI-Integration
-- [x] RoleSwitcher im Header anzeigen (nur für Superadmin, implementiert)
+- [ ] RoleSwitcher im Header anzeigen (nur für Superadmin)
 - [x] Visuelle Indikation der aktuellen Rolle (Badges mit Farben)
 - [x] Bestätigungsdialog beim Rolle-Wechsel (confirm())
 - [x] Benachrichtigung nach Rolle-Wechsel (console.log)
@@ -33,19 +33,19 @@
 ### Sicherheit
 - [x] Validierung der Superadmin-Berechtigung auf Backend (isSuperadmin)
 - [x] Audit-Logging für alle Rolle-Wechsel (logRoleSwitchAction)
-- [x] Session-Validierung nach Rolle-Wechsel (JWT-basiert, wird bei jedem Request validiert)
-- [x] CSRF-Protection für Rolle-Wechsel (SameSite-Cookie + protectedProcedure)
+- [ ] Session-Validierung nach Rolle-Wechsel
+- [ ] CSRF-Protection für Rolle-Wechsel
 
 ### Tests
-- [x] Backend-Test: getSuperadminStatus
-- [x] Backend-Test: switchUserRole
-- [x] Frontend-Test: RoleSwitcher Komponente (Backend-Tests abdecken Kern-Logik)
-- [x] Integration-Test: Rolle-Wechsel Workflow (superadmin.switchRole Test vorhanden)
+- [ ] Backend-Test: getSuperadminStatus
+- [ ] Backend-Test: switchUserRole
+- [ ] Frontend-Test: RoleSwitcher Komponente
+- [ ] Integration-Test: Rolle-Wechsel Workflow
 
 ### Dokumentation
-- [x] Superadmin-Dokumentation (in README und todo.md dokumentiert)
-- [x] Rolle-Wechsel Anleitung (in Superadmin-Dashboard beschrieben)
-- [x] Sicherheitsrichtlinien (JWT, protectedProcedure, Audit-Logging implementiert)
+- [ ] Superadmin-Dokumentation
+- [ ] Rolle-Wechsel Anleitung
+- [ ] Sicherheitsrichtlinien
 
 ---
 
@@ -144,7 +144,7 @@
 - [x] Nutzer-Tabelle mit allen Nutzern
 - [x] Suchleiste und Filter
 - [x] UserDetailsModal() – Modal für Nutzer-Details
-- [x] RoleChangeDialog.tsx – Dialog zum Rolle-Ändern (in UserDetailsModal integriert)
+- [ ] RoleChangeDialog.tsx – Dialog zum Rolle-Ändern (optional)
 
 ### UI-Integration
 - [x] Dashboard in Navigation/Menü hinzufügen (user_dashboard Tab)
@@ -152,39 +152,39 @@
 - [x] Pagination für große Nutzerlisten (20 pro Seite)
 - [x] Inline-Aktionen (Details anzeigen)
 - [x] Nutzer-Details Modal mit allen Informationen
-- [x] Bestätigungsdialoge für kritische Aktionen (in UserDetailsModal implementiert)
+- [ ] Bestätigungsdialoge für kritische Aktionen
 - [x] Toast-Benachrichtigungen für Aktionen
 
 ### Datenvisualisierung
 - [x] Statistik-Karten mit Trends (4 KPI-Karten implementiert)
 - [x] Pie-Chart für Rollen-Verteilung (optional)
-- [x] Bar-Chart für Nutzer pro Monat (optional, Bar-Chart für Thesis-Status implementiert)
-- [x] Timeline für letzte Aktivitäten (optional, Audit-Log-Tab implementiert)
+- [ ] Bar-Chart für Nutzer pro Monat (optional)
+- [ ] Timeline für letzte Aktivitäten (optional)
 
 ### Sicherheit
 - [x] Nur Superadmin kann Dashboard zugreifen (Superadmin-Check in Komponente)
 - [x] Audit-Logging für Nutzer-Änderungen (Backend implementiert)
 - [x] Validierung aller Eingaben (Zod Schemas)
-- [x] Rate-Limiting für API-Calls (optional, durch protectedProcedure und Auth abgedeckt)
+- [ ] Rate-Limiting für API-Calls (optional)
 
 ### Performance
 - [x] Pagination für Nutzerlisten (20 pro Seite implementiert)
-- [x] Caching von Statistiken (5 Minuten) (optional, tRPC-Query-Cache aktiv)
-- [x] Lazy-Loading für Tabellen (optional, Pagination implementiert)
+- [ ] Caching von Statistiken (5 Minuten) (optional)
+- [ ] Lazy-Loading für Tabellen (optional)
 - [x] Debouncing für Suchfunktion (optional)
 
 ### Tests
 - [x] Backend-Test: getAllActiveUsers
 - [x] Backend-Test: getUserStatistics
 - [x] Backend-Test: searchUsers
-- [x] Frontend-Test: SuperadminDashboard (Backend-Tests decken alle Prozeduren ab)
-- [x] Frontend-Test: UserTable (Backend-Tests decken alle Prozeduren ab)
-- [x] Integration-Test: Nutzer-Rolle ändern (superadmin.setUserRole Test vorhanden)
+- [ ] Frontend-Test: SuperadminDashboard
+- [ ] Frontend-Test: UserTable
+- [ ] Integration-Test: Nutzer-Rolle ändern
 
 ### Dokumentation
-- [x] Superadmin-Dashboard Anleitung (in Dashboard-UI erklärt)
-- [x] Nutzer-Management Guide (in Dashboard-UI erklärt)
-- [x] API-Dokumentation (tRPC-Typen sind selbstdokumentierend)
+- [ ] Superadmin-Dashboard Anleitung
+- [ ] Nutzer-Management Guide
+- [ ] API-Dokumentation
 
 
 ## Phase 41: Rollen-Bearbeitung im UserDetailsModal ✅ KOMPLETT
@@ -203,9 +203,9 @@
 - [x] Menü-Items mit echten Routen verbinden (6 Routen für alle Rollen)
 - [x] Rollen-basierte Menü-Anzeige (filteredMenuItems nach user.role)
 - [x] Aktive Menü-Item Highlighting (isActive State)
-- [x] Breadcrumb Navigation hinzufügen (optional, Sidebar-Navigation vorhanden)
+- [ ] Breadcrumb Navigation hinzufügen (optional)
 - [x] Menü-Icons aktualisieren (LayoutDashboard, Users)
-- [x] Mobile-Menü Funktionalität testen (optional, responsive Design implementiert)
+- [ ] Mobile-Menü Funktionalität testen (optional)
 
 
 ## Phase 43: Design-Anpassungen für Menü - KOMPLETT
