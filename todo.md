@@ -153,11 +153,11 @@
 - [x] Inline-Aktionen (Details anzeigen)
 - [x] Nutzer-Details Modal mit allen Informationen
 - [ ] Bestätigungsdialoge für kritische Aktionen
-- [ ] Toast-Benachrichtigungen für Aktionen
+- [x] Toast-Benachrichtigungen für Aktionen
 
 ### Datenvisualisierung
 - [x] Statistik-Karten mit Trends (4 KPI-Karten implementiert)
-- [ ] Pie-Chart für Rollen-Verteilung (optional)
+- [x] Pie-Chart für Rollen-Verteilung (optional)
 - [ ] Bar-Chart für Nutzer pro Monat (optional)
 - [ ] Timeline für letzte Aktivitäten (optional)
 
@@ -171,12 +171,12 @@
 - [x] Pagination für Nutzerlisten (20 pro Seite implementiert)
 - [ ] Caching von Statistiken (5 Minuten) (optional)
 - [ ] Lazy-Loading für Tabellen (optional)
-- [ ] Debouncing für Suchfunktion (optional)
+- [x] Debouncing für Suchfunktion (optional)
 
 ### Tests
-- [ ] Backend-Test: getAllActiveUsers
-- [ ] Backend-Test: getUserStatistics
-- [ ] Backend-Test: searchUsers
+- [x] Backend-Test: getAllActiveUsers
+- [x] Backend-Test: getUserStatistics
+- [x] Backend-Test: searchUsers
 - [ ] Frontend-Test: SuperadminDashboard
 - [ ] Frontend-Test: UserTable
 - [ ] Integration-Test: Nutzer-Rolle ändern

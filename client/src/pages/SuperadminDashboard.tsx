@@ -5,8 +5,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
+import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
+// ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
   superadmin: "Superadmin",
@@ -242,12 +243,14 @@ function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () =>
     onSuccess: () => {
       setIsEditingRole(false);
       setShowConfirm(false);
-      setStatusMessage({ type: 'success', text: 'Rolle erfolgreich geaendert' });
+      toast.success("Rolle erfolgreich geändert.");
+      setStatusMessage({ type: 'success', text: 'Rolle erfolgreich geändert' });
       setTimeout(() => setStatusMessage(null), 3000);
       refetch();
     },
     onError: (error) => {
       console.error("Fehler beim Aendern der Rolle:", error);
+      toast.error("Fehler beim Ändern der Rolle: " + error.message);
       setStatusMessage({ type: 'error', text: 'Fehler beim Aendern der Rolle' });
       setTimeout(() => setStatusMessage(null), 3000);
     },
@@ -381,30 +384,28 @@ function UserDashboardTab() {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-
   const pageSize = 20;
-
+  // Debounced Suche (300ms Verzögerung)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   // Abrufe Statistiken
   const { data: stats, isLoading: statsLoading } = trpc.superadmin.getUserStatistics.useQuery();
-
   // Suche Nutzer
   const { data: searchResults, isLoading: searchLoading } = trpc.superadmin.searchUsers.useQuery(
     {
-      query: searchQuery,
+      query: debouncedSearchQuery,
       role: roleFilter || undefined,
       limit: pageSize,
       offset: currentPage * pageSize,
     },
-    { enabled: searchQuery.length > 0 || roleFilter.length > 0 }
+    { enabled: debouncedSearchQuery.length > 0 || roleFilter.length > 0 }
   );
-
   // Abrufe alle Nutzer wenn keine Suche aktiv
   const { data: allUsers, isLoading: usersLoading } = trpc.superadmin.getAllUsers.useQuery(
     {
       limit: pageSize,
       offset: currentPage * pageSize,
     },
-    { enabled: searchQuery.length === 0 && roleFilter.length === 0 }
+    { enabled: debouncedSearchQuery.length === 0 && roleFilter.length === 0 }
   );
 
   const users = searchResults || allUsers;
@@ -444,6 +445,11 @@ function UserDashboardTab() {
   const handleViewDetails = (userId: number) => {
     setSelectedUser(userId);
     setShowDetailsModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowDetailsModal(false);
+    setSelectedUser(null);
   };
 
   const totalPages = users?.total ? Math.ceil(users.total / pageSize) : 1;
@@ -566,12 +572,29 @@ function UserDashboardTab() {
       </div>
 
       {/* Details Modal */}
-      {showDetailsModal && <UserDetailsModal userId={selectedUser} onClose={() => setShowDetailsModal(false)} />}
+      {showDetailsModal && <UserDetailsModal userId={selectedUser} onClose={handleCloseModal} />}
     </div>
   );
 }
 
 // ─── Systemstatistiken ────────────────────────────────────────────────────────
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+
+const ROLE_PIE_COLORS = ["#76B900", "#0082D1", "#FF5F00", "#AFAFAF", "#7C3AED", "#DB2777"];
+const STATUS_BAR_COLORS: Record<string, string> = {
+  PENDING: "#AFAFAF",
+  ACCEPTED: "#76B900",
+  REJECTED: "#FF5F00",
+  COMPLETED: "#0082D1",
+  CANCELLED: "#DB2777",
+};
+const STATUS_LABELS_MAP: Record<string, string> = {
+  PENDING: "Ausstehend",
+  ACCEPTED: "Angenommen",
+  REJECTED: "Abgelehnt",
+  COMPLETED: "Abgeschlossen",
+  CANCELLED: "Storniert",
+};
 
 function SystemStatsTab() {
   const { data: users } = trpc.admin.users.useQuery();
@@ -585,20 +608,37 @@ function SystemStatsTab() {
     }, {});
   }, [users]);
 
+  // Daten für Pie-Chart (Rollen-Verteilung)
+  const rolePieData = useMemo(() => {
+    return Object.entries(ROLE_LABELS)
+      .map(([role, label]) => ({ name: label, value: roleCount[role] ?? 0 }))
+      .filter((d) => d.value > 0);
+  }, [roleCount]);
+
+  // Daten für Bar-Chart (Thesis-Status)
+  const statusBarData = useMemo(() => {
+    if (!stats?.byStatus) return [];
+    return (stats.byStatus as any[]).map((s) => ({
+      name: STATUS_LABELS_MAP[s.name] ?? s.name,
+      Anzahl: s.value ?? s.count ?? 0,
+      fill: STATUS_BAR_COLORS[s.name] ?? "#AFAFAF",
+    }));
+  }, [stats]);
+
   const statCards = [
-    { label: "Nutzer:innen gesamt", value: users?.length ?? 0, icon: "👥" },
-    { label: "Superadmins", value: roleCount["superadmin"] ?? 0, icon: "🔑" },
-    { label: "Admins / Verwaltung", value: roleCount["admin"] ?? 0, icon: "🛡️" },
-    { label: "Prüfer:innen", value: roleCount["examiner"] ?? 0, icon: "🎓" },
-    { label: "Studierende", value: roleCount["student"] ?? 0, icon: "📚" },
-    { label: "Abschlussarbeiten gesamt", value: (stats?.byStatus?.reduce((a: number, s: any) => a + (s.value ?? s.count ?? 0), 0) ?? 0), icon: "📄" },
-    { label: "Ausstehende Anfragen", value: (stats?.byStatus as any[])?.find((s) => s.name === "PENDING")?.value ?? 0, icon: "⏳" },
-    { label: "Angenommene Anfragen", value: (stats?.byStatus as any[])?.find((s) => s.name === "ACCEPTED")?.value ?? 0, icon: "✅" },
+    { label: "Nutzer:innen gesamt", value: users?.length ?? 0, icon: "\u{1F465}" },
+    { label: "Superadmins", value: roleCount["superadmin"] ?? 0, icon: "\u{1F511}" },
+    { label: "Admins / Verwaltung", value: roleCount["admin"] ?? 0, icon: "\u{1F6E1}\uFE0F" },
+    { label: "Prüfer:innen", value: roleCount["examiner"] ?? 0, icon: "\u{1F393}" },
+    { label: "Studierende", value: roleCount["student"] ?? 0, icon: "\u{1F4DA}" },
+    { label: "Abschlussarbeiten gesamt", value: (stats?.byStatus?.reduce((a: number, s: any) => a + (s.value ?? s.count ?? 0), 0) ?? 0), icon: "\u{1F4C4}" },
+    { label: "Ausstehende Anfragen", value: (stats?.byStatus as any[])?.find((s) => s.name === "PENDING")?.value ?? 0, icon: "\u23F3" },
+    { label: "Angenommene Anfragen", value: (stats?.byStatus as any[])?.find((s) => s.name === "ACCEPTED")?.value ?? 0, icon: "\u2705" },
   ];
 
   return (
-    <div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statCards.map((c) => (
           <div key={c.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="text-2xl mb-2">{c.icon}</div>
@@ -607,6 +647,64 @@ function SystemStatsTab() {
           </div>
         ))}
       </div>
+
+      {/* Charts-Reihe */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pie-Chart: Rollen-Verteilung */}
+        {rolePieData.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Rollen-Verteilung</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={rolePieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {rolePieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={ROLE_PIE_COLORS[index % ROLE_PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => [`${value} Nutzer:innen`, "Anzahl"]} />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Legende */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {rolePieData.map((d, index) => (
+                <div key={d.name} className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: ROLE_PIE_COLORS[index % ROLE_PIE_COLORS.length] }} />
+                  {d.name} ({d.value})
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bar-Chart: Abschlussarbeiten nach Status */}
+        {statusBarData.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Abschlussarbeiten nach Status</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={statusBarData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="Anzahl" radius={[4, 4, 0, 0]}>
+                  {statusBarData.map((entry, index) => (
+                    <Cell key={`bar-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
       {stats?.byDepartment && stats.byDepartment.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Fachbereich</h3>
@@ -675,9 +773,14 @@ function SystemConfigTab() {
 
   const handleSave = async () => {
     if (!form) return;
-    await updateSettings.mutateAsync(form);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    try {
+      await updateSettings.mutateAsync(form);
+      setSaved(true);
+      toast.success("Einstellungen erfolgreich gespeichert.");
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      toast.error("Fehler beim Speichern: " + (err?.message ?? "Unbekannter Fehler"));
+    }
   };
 
   if (isLoading || !form) {
@@ -751,8 +854,14 @@ function SystemConfigTab() {
 function PavManagementTab() {
   const { data: pavUsers, refetch } = trpc.superadmin.getPavUsers.useQuery();
   const { data: allProgrammes } = trpc.programmes.list.useQuery();
-  const assignProg = trpc.superadmin.assignPavProgramme.useMutation({ onSuccess: () => refetch() });
-  const removeProg = trpc.superadmin.removePavProgramme.useMutation({ onSuccess: () => refetch() });
+  const assignProg = trpc.superadmin.assignPavProgramme.useMutation({
+    onSuccess: () => { refetch(); toast.success("Studiengang erfolgreich zugewiesen."); },
+    onError: (err) => toast.error("Fehler beim Zuweisen: " + err.message),
+  });
+  const removeProg = trpc.superadmin.removePavProgramme.useMutation({
+    onSuccess: () => { refetch(); toast.success("Studiengang erfolgreich entfernt."); },
+    onError: (err) => toast.error("Fehler beim Entfernen: " + err.message),
+  });
 
   if (!pavUsers || pavUsers.length === 0) {
     return (
