@@ -320,3 +320,13 @@
 - [x] https:// erzwingen wenn Host nicht localhost ist (Cloud Run-Fix) in magicLinkRoutes.ts
 - [x] Build grün (0 Fehler)
 - [x] Tests grün (55/55)
+
+## Phase 52: Rollenauswahl direkt beim Anmelde-Flow ✅ KOMPLETT
+
+- [x] Login/Home: Drei-Karten-UI zur Rollenauswahl vor E-Mail-Eingabe (Studierende:r, Prüfer:in, Verwaltungsmitarbeiter:in)
+- [x] Ausgewählte Rolle wird mit dem Magic-Link-Request mitgesendet (role-Parameter)
+- [x] SelectRole-Seite: Nur noch als Fallback für Nutzer ohne Rolle (z.B. nach OAuth)
+- [x] Backend: role-Parameter in /api/auth/magic-link korrekt verarbeiten (bereits vorhanden)
+- [x] Nach Verify: Weiterleitung je nach Rolle (student → /student, examiner → /examiner, admin → /admin)
+- [x] Verwaltungsmitarbeiter:in-Rolle auf "admin" mappen
+- [x] Build und Tests grün (55/55)
