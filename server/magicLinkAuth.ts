@@ -36,8 +36,7 @@ export async function sendMagicLink(
   const token = generateToken();
   const expiresAt = new Date(Date.now() + LINK_EXPIRY_MINUTES * 60 * 1000);
 
-  await db.insert(magicLinks).values({ email, token, role, expiresAt });
-
+   await db.insert(magicLinks).values({ email, token, role, expiresAt });
   const link = `${origin}/auth/verify?token=${token}`;
 
   const html = `

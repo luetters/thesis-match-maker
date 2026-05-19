@@ -63,7 +63,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch("/api/auth/magic-link", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Origin": window.location.origin },
         body: JSON.stringify({ email }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Fehler"); }

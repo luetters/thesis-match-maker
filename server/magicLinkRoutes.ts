@@ -28,10 +28,17 @@ export function registerMagicLinkRoutes(app: Express) {
     const validRoles = ["student", "examiner", "admin", "user"];
     const safeRole = validRoles.includes(role) ? role : "student";
 
-    // Origin aus Header lesen (Frontend sendet window.location.origin)
-    const origin =
+    // Origin aus Header lesen (Frontend sendet X-Origin: window.location.origin)
+    // Cloud Run terminiert TLS vor dem Container und sendet kein x-forwarded-proto,
+    // daher wird https erzwungen wenn der Host nicht localhost ist.
+    const rawOrigin =
       (req.headers["x-origin"] as string) ||
       `${req.protocol}://${req.headers.host}`;
+    const host = req.headers.host ?? "";
+    const isLocalhost = host.startsWith("localhost") || host.startsWith("127.");
+    const origin = isLocalhost
+      ? rawOrigin
+      : rawOrigin.replace(/^http:\/\//, "https://");
 
     try {
       const result = await sendMagicLink(

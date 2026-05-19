@@ -312,3 +312,11 @@
 - [x] Verwaltungs-Dashboard: Neueste Anfragen-Liste
 - [x] Verwaltungs-Dashboard: Aktivitäts-Timeline mit Audit-Log
 - [ ] Studiengang unveränderlich nach erster Auswahl (nur bei erster Nutzung) — Backend-Prüfung noch ausstehend
+
+## Phase 51: Magic-Link-Fix (https://)
+
+- [x] trust proxy in server/_core/index.ts gesetzt
+- [x] X-Origin-Header in Home.tsx und Login.tsx hinzugefügt
+- [x] https:// erzwingen wenn Host nicht localhost ist (Cloud Run-Fix) in magicLinkRoutes.ts
+- [x] Build grün (0 Fehler)
+- [x] Tests grün (55/55)
