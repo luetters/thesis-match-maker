@@ -3301,7 +3301,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rows = await db.execute(`SELECT id, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
+    const rows = await db.execute(`SELECT id, email, name, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
@@ -3312,10 +3312,31 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     await db.execute(
       `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`
     );
-    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\'");
+    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\\'");
     await db.execute(
       `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_APPROVED', '${requestedRole}', '${metaJson}', NOW())`
     );
+    // E-Mail-Benachrichtigung an den Nutzer senden
+    if (user.email) {
+      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in", admin: "Verwaltung" };
+      const roleLabel = roleLabels[requestedRole] ?? requestedRole;
+      const dashboardLinks: Record<string, string> = { student: "/student", examiner: "/examiner", admin: "/admin" };
+      const dashboardLink = dashboardLinks[requestedRole] ?? "/";
+      const { sendEmail } = await import("./emailHelper");
+      await sendEmail({
+        to: user.email as string,
+        subject: "Ihre Rolle wurde bestätigt \u2013 HTW Berlin Thesis Match Maker",
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+<div style="background:#006937;padding:24px;text-align:center"><h1 style="color:white;margin:0;font-size:22px">HTW Berlin \u2013 Thesis Match Maker</h1></div>
+<div style="padding:32px;background:#ffffff;border:1px solid #d6d6d6">
+<h2 style="color:#1a1a1a">Ihre Rolle wurde best\u00e4tigt</h2>
+<p style="color:#474747;line-height:1.6">Sehr geehrte:r ${user.name ?? "Nutzende:r"},<br><br>Ihre Rollenanfrage als <strong>${roleLabel}</strong> wurde erfolgreich best\u00e4tigt. Sie k\u00f6nnen sich jetzt anmelden und alle Funktionen nutzen.</p>
+<div style="text-align:center;margin:32px 0"><a href="${dashboardLink}" style="background:#006937;color:white;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;display:inline-block">Zum Dashboard</a></div>
+<hr style="border:none;border-top:1px solid #d6d6d6;margin:24px 0"/>
+<p style="color:#999;font-size:12px;text-align:center">HTW Berlin \u2013 Hochschule f\u00fcr Technik und Wirtschaft Berlin</p>
+</div></div>`,
+      }).catch((err: unknown) => console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err));
+    }
     return { success: true };
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Bestätigen der Rolle:", error);
@@ -3328,7 +3349,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rows = await db.execute(`SELECT id, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
+    const rows = await db.execute(`SELECT id, email, name, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
@@ -3339,12 +3360,34 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     await db.execute(
       `UPDATE users SET roleStatus = 'rejected', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW() WHERE id = ${userId}`
     );
-    const safeReason = reason ? reason.replace(/'/g, "\'") : "NULL";
-    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\'");
+    const safeReason = reason ? reason.replace(/'/g, "\\'") : "NULL";
+    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\\'");
     const reasonSql = reason ? `'${safeReason}'` : "NULL";
     await db.execute(
       `INSERT INTO audit_log (actorId, actorRole, action, toStatus, reason, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_REJECTED', 'rejected', ${reasonSql}, '${metaJson}', NOW())`
     );
+    // E-Mail-Benachrichtigung an den Nutzer senden
+    if (user.email) {
+      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in", admin: "Verwaltung" };
+      const roleLabel = roleLabels[requestedRole] ?? requestedRole;
+      const reasonText = reason ? `<p style="color:#474747;line-height:1.6"><strong>Begr\u00fcndung:</strong> ${reason}</p>` : "";
+      const { sendEmail } = await import("./emailHelper");
+      await sendEmail({
+        to: user.email as string,
+        subject: "Ihre Rollenanfrage wurde abgelehnt \u2013 HTW Berlin Thesis Match Maker",
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+<div style="background:#006937;padding:24px;text-align:center"><h1 style="color:white;margin:0;font-size:22px">HTW Berlin \u2013 Thesis Match Maker</h1></div>
+<div style="padding:32px;background:#ffffff;border:1px solid #d6d6d6">
+<h2 style="color:#1a1a1a">Ihre Rollenanfrage wurde abgelehnt</h2>
+<p style="color:#474747;line-height:1.6">Sehr geehrte:r ${user.name ?? "Nutzende:r"},<br><br>Ihre Rollenanfrage als <strong>${roleLabel}</strong> wurde leider abgelehnt.</p>
+${reasonText}
+<p style="color:#474747;line-height:1.6">Sie k\u00f6nnen eine neue Rollenanfrage stellen, indem Sie sich erneut anmelden.</p>
+<div style="text-align:center;margin:32px 0"><a href="/select-role" style="background:#006937;color:white;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;display:inline-block">Neue Rollenanfrage stellen</a></div>
+<hr style="border:none;border-top:1px solid #d6d6d6;margin:24px 0"/>
+<p style="color:#999;font-size:12px;text-align:center">HTW Berlin \u2013 Hochschule f\u00fcr Technik und Wirtschaft Berlin</p>
+</div></div>`,
+      }).catch((err: unknown) => console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err));
+    }
     return { success: true };
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Ablehnen der Rolle:", error);

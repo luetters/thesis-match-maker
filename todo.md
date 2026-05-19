@@ -268,3 +268,12 @@
 - [ ] Frontend: Bestätigungs-Tab im Superadmin-Dashboard
 - [ ] Routing: Magic-Link-Nutzer ohne bestätigte Rolle auf RoleSelection umleiten
 - [ ] E-Mail-Benachrichtigung bei Bestätigung/Ablehnung (optional)
+
+
+## Phase 48: E-Mail-Benachrichtigungen bei Rollenbestätigung/-ablehnung
+
+- [ ] E-Mail-Vorlage für Rollenbestätigung erstellen
+- [ ] E-Mail-Vorlage für Rollenablehnung erstellen
+- [ ] approveUserRole in db.ts um E-Mail-Versand erweitern
+- [ ] rejectUserRole in db.ts um E-Mail-Versand erweitern
+- [ ] Build und Tests grün
