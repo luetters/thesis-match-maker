@@ -3427,3 +3427,71 @@ export async function getUserRoleStatus(userId: number) {
     return null;
   }
 }
+
+// --- Profile ------------------------------------------------------------------
+
+/** Gibt das vollständige Profil eines Nutzers zurück */
+export async function getProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db.execute(
+      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
+    );
+    const user = (rows[0] as unknown as any[])[0];
+    if (!user) return null;
+    return {
+      id: user.id as number,
+      name: user.name as string | null,
+      email: user.email as string | null,
+      role: user.role as string,
+      roleStatus: user.roleStatus as string,
+      avatarUrl: user.avatarUrl as string | null,
+      avatarKey: user.avatarKey as string | null,
+      bio: user.bio as string | null,
+      phone: user.phone as string | null,
+      department: user.department as string | null,
+      createdAt: user.createdAt as Date,
+      lastSignedIn: user.lastSignedIn as Date,
+    };
+  } catch (error) {
+    console.error("[Profile] Fehler beim Abrufen:", error);
+    return null;
+  }
+}
+
+/** Aktualisiert Name, Bio, Telefon, Fachbereich eines Nutzers */
+export async function updateProfile(
+  userId: number,
+  data: { name?: string; bio?: string; phone?: string; department?: string }
+) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const sets: string[] = [];
+    if (data.name !== undefined) sets.push(`name = '${data.name.replace(/'/g, "''")}'`);    if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
+    if (data.phone !== undefined) sets.push(`phone = '${data.phone.replace(/'/g, "''")}'`);
+    if (data.department !== undefined) sets.push(`department = '${data.department.replace(/'/g, "''")}'`);
+    if (sets.length === 0) return true;
+    await db.execute(`UPDATE users SET ${sets.join(", ")} WHERE id = ${userId}`);
+    return true;
+  } catch (error) {
+    console.error("[Profile] Fehler beim Aktualisieren:", error);
+    return false;
+  }
+}
+
+/** Speichert Avatar-URL und -Key für einen Nutzer */
+export async function updateProfileAvatar(userId: number, avatarUrl: string, avatarKey: string) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db.execute(
+      `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE id = ${userId}`
+    );
+    return true;
+  } catch (error) {
+    console.error("[Profile] Fehler beim Avatar-Update:", error);
+    return false;
+  }
+}

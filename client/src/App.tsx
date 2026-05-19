@@ -27,6 +27,7 @@ import ExaminerManagement from "./pages/ExaminerManagement";
 import { useNotificationPoller } from "./hooks/useNotificationPoller";
 import SelectRole from "./pages/SelectRole";
 import RolePending from "./pages/RolePending";
+import Profile from "./pages/Profile";
 
 function Router() {
   return (
@@ -44,6 +45,9 @@ function Router() {
       {/* Rollenauswahl nach Magic-Link-Login */}
       <Route path="/select-role" component={SelectRole} />
       <Route path="/role-pending" component={RolePending} />
+
+      {/* Persönliche Profilseite (alle Rollen) */}
+      <Route path="/profile" component={Profile} />
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />

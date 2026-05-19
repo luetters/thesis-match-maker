@@ -127,6 +127,9 @@ import {
   approveUserRole,
   rejectUserRole,
   getUserRoleStatus,
+  getProfile,
+  updateProfile,
+  updateProfileAvatar,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -142,6 +145,7 @@ import {
   deleteColloquium,
 } from "./db";
 import { createIcsEvent } from "./icsHelper";
+import { storagePut } from "./storage";
 import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -192,10 +196,50 @@ const deanProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// ─── Profile Router ──────────────────────────────────────────────────────────
+const profileRouterDef = router({
+  get: protectedProcedure.query(async ({ ctx }) => {
+    const profile = await getProfile(ctx.user.id);
+    if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Profil nicht gefunden." });
+    return profile;
+  }),
+  update: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(128).optional(),
+      bio: z.string().max(1000).optional(),
+      phone: z.string().max(64).optional(),
+      department: z.string().max(255).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const ok = await updateProfile(ctx.user.id, input);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Profil konnte nicht aktualisiert werden." });
+      return { success: true };
+    }),
+  uploadAvatar: protectedProcedure
+    .input(z.object({
+      base64: z.string(),
+      mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+      fileName: z.string().max(128),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.base64, "base64");
+      if (buffer.byteLength > 5 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Datei zu groß (max. 5 MB)." });
+      }
+      const ext = input.mimeType.split("/")[1];
+      const key = `avatars/user-${ctx.user.id}.${ext}`;
+      const { url } = await storagePut(key, buffer, input.mimeType);
+      const ok = await updateProfileAvatar(ctx.user.id, url, key);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Avatar konnte nicht gespeichert werden." });
+      return { avatarUrl: url };
+    }),
+});
+
 // --- App Router ---------------------------------------------------------------
 
 export const appRouter = router({
   system: systemRouter,
+  profile: profileRouterDef,
 
   // Öffentliche Systemstatus-Prozedur (kein Auth erforderlich)
   maintenanceStatus: publicProcedure.query(async () => {

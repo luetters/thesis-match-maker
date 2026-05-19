@@ -330,3 +330,18 @@
 - [x] Nach Verify: Weiterleitung je nach Rolle (student → /student, examiner → /examiner, admin → /admin)
 - [x] Verwaltungsmitarbeiter:in-Rolle auf "admin" mappen
 - [x] Build und Tests grün (55/55)
+
+## Phase 53: Profilseite
+
+- [x] DB-Schema: avatarUrl, bio, phone, department Felder zur users-Tabelle hinzufügen
+- [x] DB-Migration: pnpm db:push
+- [x] Backend: profile.get Prozedur (eigenes Profil abrufen)
+- [x] Backend: profile.update Prozedur (Name, Bio, Telefon, Fachbereich aktualisieren)
+- [x] Backend: profile.uploadAvatar Prozedur (Foto hochladen via S3/storagePut)
+- [x] Frontend: Profile.tsx Seite erstellen (Profilfoto, Name, E-Mail, Rolle, Bio, Telefon, Fachbereich)
+- [x] Frontend: Profilfoto-Upload mit Vorschau und Kamera-Button
+- [x] Frontend: Rollen-Badge (farblich je nach Rolle)
+- [x] Frontend: Formular mit Inline-Bearbeitung (Edit-Modus)
+- [x] Navigation: Profillink in ThesisDashboardLayout (Sidebar + Header-Dropdown)
+- [x] Route /profile in App.tsx registrieren
+- [x] Build und Tests grün (55/55)
