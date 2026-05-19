@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 const PLACEHOLDER_COLORS: Record<string, string> = {
   "{{studentName}}": "bg-blue-100 text-blue-700",
@@ -243,26 +244,19 @@ export function EmailTemplatesTab() {
 
               {previewMode === "html" ? (
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    HTML-Inhalt{" "}
-                    <span className="text-gray-400 font-normal">(HTML-Tags erlaubt)</span>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    HTML-Inhalt
+                    <span className="ml-1 text-gray-400 font-normal text-xs">(WYSIWYG-Editor – kein HTML-Wissen erforderlich)</span>
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={editForm.htmlBody}
-                    onChange={(e) =>
-                      setEditForm((f) => f ? { ...f, htmlBody: e.target.value } : f)
+                    onChange={(html) =>
+                      setEditForm((f) => f ? { ...f, htmlBody: html } : f)
                     }
-                    rows={10}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 resize-y"
                   />
-                  {/* Vorschau */}
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500 mb-1">Vorschau:</p>
-                    <div
-                      className="border border-gray-100 rounded-lg p-4 bg-gray-50 text-sm prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: editForm.htmlBody }}
-                    />
-                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Platzhalter wie <code className="bg-gray-100 px-1 rounded">{'{{userName}}'}</code> können direkt in den Text eingefügt werden und werden beim Versand automatisch ersetzt.
+                  </p>
                 </div>
               ) : (
                 <div>
