@@ -1,5 +1,5 @@
 // Service Worker für Thesis Match Maker PWA
-const CACHE_NAME = "thesis-match-maker-v1";
+const CACHE_NAME = "thesis-match-maker-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
