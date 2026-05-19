@@ -15,6 +15,10 @@ import {
   BookOpen,
   Settings,
   ChevronRight,
+  UserPlus,
+  LogIn,
+  CheckCircle2,
+  User,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -56,17 +60,25 @@ const ROLE_OPTIONS: {
 ];
 
 export default function Login() {
-  const [step, setStep] = useState<"role" | "email">("role");
+  // Schritte: "role" → "action" → "login" oder "register"
+  const [step, setStep] = useState<"role" | "action" | "login" | "register">("role");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginMode, setLoginMode] = useState<"magic" | "password">("magic");
-  const [magicSent, setMagicSent] = useState(false);
-  const [magicLoading, setMagicLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [, setLocation] = useLocation();
 
+  // Login-State
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPw, setShowLoginPw] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  // Registrierungs-State
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+  const [showRegPw, setShowRegPw] = useState(false);
+  const [registered, setRegistered] = useState(false);
+
+  const [, setLocation] = useLocation();
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get("returnTo") ?? "/";
   const urlError = params.get("error");
@@ -89,6 +101,15 @@ export default function Login() {
     },
   });
 
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: () => {
+      setRegistered(true);
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Registrierung fehlgeschlagen");
+    },
+  });
+
   const requestReset = trpc.auth.requestPasswordReset.useMutation({
     onSuccess: () => {
       setResetSent(true);
@@ -97,41 +118,45 @@ export default function Login() {
     onError: (e) => toast.error(e.message),
   });
 
-  async function handlePasswordSubmit(e: React.FormEvent) {
+  function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password) return;
-    loginMutation.mutate({ email: email.trim(), password });
+    if (!loginEmail.trim() || !loginPassword) return;
+    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
   }
 
-  async function handleMagicLinkSend(e: React.FormEvent) {
+  function handleRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.includes("@")) {
-      toast.error("Bitte eine gültige E-Mail-Adresse eingeben.");
+    if (!regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
+    if (regPassword !== regPasswordConfirm) {
+      toast.error("Die Passwörter stimmen nicht überein.");
       return;
     }
-    setMagicLoading(true);
-    try {
-      const res = await fetch("/api/auth/magic-link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Origin": window.location.origin,
-        },
-        body: JSON.stringify({ email: email.trim(), role: selectedRole ?? "student" }),
-      });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error ?? "Fehler beim Senden");
-      }
-      setMagicSent(true);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Unbekannter Fehler");
-    } finally {
-      setMagicLoading(false);
+    if (regPassword.length < 8) {
+      toast.error("Das Passwort muss mindestens 8 Zeichen lang sein.");
+      return;
     }
+    registerMutation.mutate({
+      name: regName.trim(),
+      email: regEmail.trim(),
+      password: regPassword,
+      role: selectedRole ?? "student",
+    });
   }
 
   const selectedRoleOption = ROLE_OPTIONS.find((r) => r.id === selectedRole);
+
+  function resetToRole() {
+    setStep("role");
+    setSelectedRole(null);
+    setLoginEmail("");
+    setLoginPassword("");
+    setRegName("");
+    setRegEmail("");
+    setRegPassword("");
+    setRegPasswordConfirm("");
+    setResetSent(false);
+    setRegistered(false);
+  }
 
   return (
     <div
@@ -139,7 +164,6 @@ export default function Login() {
       style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)" }}
     >
       <div className="absolute top-0 left-0 right-0 h-1" style={{ background: "#76b900" }} />
-
       <Link
         href="/"
         className="absolute top-6 left-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm"
@@ -173,7 +197,7 @@ export default function Login() {
         {step === "role" && (
           <div>
             <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-white mb-1">Wie möchten Sie sich anmelden?</h2>
+              <h2 className="text-xl font-semibold text-white mb-1">Willkommen</h2>
               <p className="text-white/50 text-sm">Bitte wählen Sie Ihre Rolle an der HTW Berlin.</p>
             </div>
             <div className="space-y-3">
@@ -183,7 +207,7 @@ export default function Login() {
                   type="button"
                   onClick={() => {
                     setSelectedRole(option.id);
-                    setStep("email");
+                    setStep("action");
                   }}
                   className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
                   style={{
@@ -221,39 +245,119 @@ export default function Login() {
           </div>
         )}
 
-        {/* ── SCHRITT 2: E-Mail & Anmeldung ── */}
-        {step === "email" && (
-          <>
+        {/* ── SCHRITT 2: Anmelden oder Registrieren ── */}
+        {step === "action" && selectedRoleOption && (
+          <div>
             <button
               type="button"
-              onClick={() => {
-                setStep("role");
-                setMagicSent(false);
-                setResetSent(false);
-                setEmail("");
-                setPassword("");
-              }}
+              onClick={resetToRole}
               className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
               Rolle ändern
             </button>
 
-            {selectedRoleOption && (
-              <div
-                className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+            {/* Rollen-Badge */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
+              style={{
+                background: selectedRoleOption.bgColor,
+                border: `1px solid ${selectedRoleOption.accentColor}40`,
+              }}
+            >
+              <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
+              <div>
+                <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
+                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+              </div>
+            </div>
+
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-white mb-1">Was möchten Sie tun?</h2>
+              <p className="text-white/50 text-sm">Melden Sie sich an oder erstellen Sie ein neues Konto.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setStep("login")}
+                className="rounded-xl border p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:scale-[1.02]"
                 style={{
-                  background: selectedRoleOption.bgColor,
-                  border: `1px solid ${selectedRoleOption.accentColor}40`,
+                  background: "rgba(255,255,255,0.04)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(118,185,0,0.08)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#76b900";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)";
                 }}
               >
-                <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
-                <div>
-                  <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                  <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(118,185,0,0.12)", color: "#76b900" }}>
+                  <LogIn className="w-6 h-6" />
                 </div>
+                <div className="text-center">
+                  <div className="font-semibold text-white text-sm">Anmelden</div>
+                  <div className="text-white/40 text-xs mt-0.5">Ich habe bereits ein Konto</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep("register")}
+                className="rounded-xl border p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:scale-[1.02]"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(59,130,246,0.08)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#3b82f6";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6" }}>
+                  <UserPlus className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-white text-sm">Registrieren</div>
+                  <div className="text-white/40 text-xs mt-0.5">Neues Konto erstellen</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SCHRITT 3a: Anmelden ── */}
+        {step === "login" && selectedRoleOption && (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep("action")}
+              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Zurück
+            </button>
+
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+              style={{
+                background: selectedRoleOption.bgColor,
+                border: `1px solid ${selectedRoleOption.accentColor}40`,
+              }}
+            >
+              <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
+              <div>
+                <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
+                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
               </div>
-            )}
+            </div>
 
             <Card
               className="border-0 shadow-2xl"
@@ -262,111 +366,179 @@ export default function Login() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-white text-xl">Anmelden</CardTitle>
                 <CardDescription className="text-white/50">
-                  Melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse an
+                  Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Tab-Umschalter */}
-                <div className="flex rounded-xl p-1 mb-5" style={{ background: "rgba(255,255,255,0.08)" }}>
-                  <button
-                    type="button"
-                    onClick={() => { setLoginMode("magic"); setResetSent(false); }}
-                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                      loginMode === "magic" ? "bg-white text-gray-900 shadow" : "text-white/50 hover:text-white/80"
-                    }`}
-                  >
-                    Magic Link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setLoginMode("password"); setMagicSent(false); }}
-                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                      loginMode === "password" ? "bg-white text-gray-900 shadow" : "text-white/50 hover:text-white/80"
-                    }`}
-                  >
-                    Passwort
-                  </button>
-                </div>
-
-                {/* Magic Link */}
-                {loginMode === "magic" && (
-                  <>
-                    {magicSent ? (
-                      <div className="text-center py-6">
-                        <div
-                          className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-                          style={{ backgroundColor: "rgba(118,185,0,0.15)" }}
-                        >
-                          <Mail className="w-7 h-7" style={{ color: "#76b900" }} />
-                        </div>
-                        <h3 className="text-white font-semibold mb-2">E-Mail gesendet!</h3>
-                        <p className="text-white/50 text-sm mb-4">
-                          Wir haben einen Anmeldelink an{" "}
-                          <strong className="text-white/70">{email}</strong> gesendet. Bitte prüfen Sie Ihr Postfach.
-                        </p>
+                <form onSubmit={handleLoginSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-white/70 text-sm">E-Mail-Adresse</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <Input
+                        type="email"
+                        placeholder="vorname.nachname@htw-berlin.de"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white/70 text-sm">Passwort</Label>
+                      {!resetSent && (
                         <button
                           type="button"
-                          onClick={() => setMagicSent(false)}
-                          className="text-sm text-white/40 hover:text-white/70 transition-colors"
+                          onClick={() => {
+                            if (!loginEmail.includes("@")) {
+                              toast.error("Bitte zuerst Ihre E-Mail-Adresse eingeben.");
+                              return;
+                            }
+                            requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
+                          }}
+                          disabled={requestReset.isPending}
+                          className="text-xs text-white/40 hover:text-white/70 transition-colors"
                         >
-                          Anderen Link anfordern
+                          {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
                         </button>
-                      </div>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <Input
+                        type={showLoginPw ? "text" : "password"}
+                        placeholder="Ihr Passwort"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                        autoComplete="current-password"
+                        className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPw(!showLoginPw)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {resetSent && (
+                    <div
+                      className="p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(118,185,0,0.1)", border: "1px solid rgba(118,185,0,0.3)", color: "#76b900" }}
+                    >
+                      Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={loginMutation.isPending || !loginEmail.trim() || !loginPassword}
+                    className="w-full font-semibold h-11"
+                    style={{ background: "#76b900", color: "white" }}
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Anmeldung läuft …
+                      </>
                     ) : (
-                      <form onSubmit={handleMagicLinkSend} className="space-y-5">
-                        <div className="space-y-2">
-                          <Label className="text-white/70 text-sm">E-Mail-Adresse</Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                            <Input
-                              type="email"
-                              placeholder="vorname.nachname@htw-berlin.de"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
-                              autoComplete="email"
-                              autoFocus
-                              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
-                            />
-                          </div>
-                        </div>
-                        <Button
-                          type="submit"
-                          disabled={magicLoading || !email.trim()}
-                          className="w-full font-semibold h-11"
-                          style={{ background: "#76b900", color: "white" }}
-                        >
-                          {magicLoading ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Wird gesendet …
-                            </>
-                          ) : (
-                            <>
-                              <Mail className="w-4 h-4 mr-2" />
-                              Anmeldelink senden
-                            </>
-                          )}
-                        </Button>
-                        <div
-                          className="flex items-start gap-2 p-3 rounded-lg"
-                          style={{ background: "rgba(118,185,0,0.08)", border: "1px solid rgba(118,185,0,0.2)" }}
-                        >
-                          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#76b900" }} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <p className="text-xs text-white/50">
-                            Kein Passwort erforderlich. Der Link ist 24 Stunden gültig und kann nur einmal verwendet werden.
-                          </p>
-                        </div>
-                      </form>
+                      "Anmelden"
                     )}
-                  </>
-                )}
+                  </Button>
+                  <p className="text-white/30 text-xs text-center leading-relaxed">
+                    Durch die Anmeldung stimmen Sie der Verarbeitung Ihrer Daten gemäß der Datenschutzerklärung der HTW Berlin zu.
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
-                {/* Passwort */}
-                {loginMode === "password" && (
-                  <form onSubmit={handlePasswordSubmit} className="space-y-5">
+        {/* ── SCHRITT 3b: Registrieren ── */}
+        {step === "register" && selectedRoleOption && (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep("action")}
+              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Zurück
+            </button>
+
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+              style={{
+                background: selectedRoleOption.bgColor,
+                border: `1px solid ${selectedRoleOption.accentColor}40`,
+              }}
+            >
+              <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
+              <div>
+                <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
+                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+              </div>
+            </div>
+
+            {registered ? (
+              <Card
+                className="border-0 shadow-2xl"
+                style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
+              >
+                <CardContent className="pt-8 pb-8 text-center">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                    style={{ backgroundColor: "rgba(118,185,0,0.15)" }}
+                  >
+                    <CheckCircle2 className="w-8 h-8" style={{ color: "#76b900" }} />
+                  </div>
+                  <h3 className="text-white font-semibold text-lg mb-2">Registrierung eingereicht</h3>
+                  <p className="text-white/50 text-sm leading-relaxed mb-6">
+                    Ihr Konto wurde angelegt und wartet auf die Freischaltung durch die Verwaltung der HTW Berlin.
+                    Sie erhalten eine Benachrichtigung, sobald Ihr Zugang aktiviert wurde.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep("login")}
+                    className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    Zur Anmeldung
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card
+                className="border-0 shadow-2xl"
+                style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
+              >
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-white text-xl">Konto erstellen</CardTitle>
+                  <CardDescription className="text-white/50">
+                    Ihr Konto wird nach der Registrierung von der Verwaltung freigeschaltet.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-white/70 text-sm">Vollständiger Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <Input
+                          type="text"
+                          placeholder="Vorname Nachname"
+                          value={regName}
+                          onChange={(e) => setRegName(e.target.value)}
+                          required
+                          autoComplete="name"
+                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">E-Mail-Adresse</Label>
                       <div className="relative">
@@ -374,8 +546,8 @@ export default function Login() {
                         <Input
                           type="email"
                           placeholder="vorname.nachname@htw-berlin.de"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          value={regEmail}
+                          onChange={(e) => setRegEmail(e.target.value)}
                           required
                           autoComplete="email"
                           className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
@@ -383,82 +555,78 @@ export default function Login() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-white/70 text-sm">Passwort</Label>
-                        {!resetSent && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!email.includes("@")) {
-                                toast.error("Bitte zuerst Ihre E-Mail-Adresse eingeben.");
-                                return;
-                              }
-                              requestReset.mutate({ email: email.trim(), origin: window.location.origin });
-                            }}
-                            disabled={requestReset.isPending}
-                            className="text-xs text-white/40 hover:text-white/70 transition-colors"
-                          >
-                            {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
-                          </button>
-                        )}
-                      </div>
+                      <Label className="text-white/70 text-sm">Passwort</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Ihr Passwort"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          type={showRegPw ? "text" : "password"}
+                          placeholder="Mindestens 8 Zeichen"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
                           required
-                          autoComplete="current-password"
+                          autoComplete="new-password"
                           className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
                         />
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
+                          onClick={() => setShowRegPw(!showRegPw)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                           tabIndex={-1}
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showRegPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
-                    {resetSent && (
-                      <div
-                        className="p-3 rounded-lg text-sm"
-                        style={{ background: "rgba(118,185,0,0.1)", border: "1px solid rgba(118,185,0,0.3)", color: "#76b900" }}
-                      >
-                        Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
+                    <div className="space-y-2">
+                      <Label className="text-white/70 text-sm">Passwort bestätigen</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <Input
+                          type={showRegPw ? "text" : "password"}
+                          placeholder="Passwort wiederholen"
+                          value={regPasswordConfirm}
+                          onChange={(e) => setRegPasswordConfirm(e.target.value)}
+                          required
+                          autoComplete="new-password"
+                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                        />
                       </div>
-                    )}
+                    </div>
+                    <div
+                      className="p-3 rounded-lg text-xs leading-relaxed"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
+                    >
+                      Nach der Registrierung wird Ihr Konto von der Verwaltung der HTW Berlin geprüft und freigeschaltet.
+                      Sie können sich erst nach der Freischaltung anmelden.
+                    </div>
                     <Button
                       type="submit"
-                      disabled={loginMutation.isPending || !email.trim() || !password}
+                      disabled={registerMutation.isPending || !regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm}
                       className="w-full font-semibold h-11"
-                      style={{ background: "#76b900", color: "white" }}
+                      style={{ background: "#3b82f6", color: "white" }}
                     >
-                      {loginMutation.isPending ? (
+                      {registerMutation.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Anmeldung läuft …
+                          Registrierung läuft …
                         </>
                       ) : (
-                        "Anmelden"
+                        "Konto erstellen"
                       )}
                     </Button>
                     <p className="text-white/30 text-xs text-center leading-relaxed">
-                      Durch die Anmeldung stimmen Sie der Verarbeitung Ihrer Daten gemäß der Datenschutzerklärung der HTW Berlin zu.
+                      Mit der Registrierung stimmen Sie der Verarbeitung Ihrer Daten gemäß der Datenschutzerklärung der HTW Berlin zu.
                     </p>
                   </form>
-                )}
-              </CardContent>
-            </Card>
-
-            <p className="text-center text-white/25 text-xs mt-6">
-              HTW Berlin – Hochschule für Technik und Wirtschaft Berlin
-            </p>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
+
+        <p className="text-center text-white/25 text-xs mt-6">
+          HTW Berlin – Hochschule für Technik und Wirtschaft Berlin
+        </p>
       </div>
     </div>
   );

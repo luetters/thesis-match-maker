@@ -359,3 +359,19 @@
 - [x] Frontend: Profile.tsx – Abschnitt "Verwaltung" (Personalnummer, Zuständigkeitsbereich)
 - [x] Build grün (0 Fehler)
 - [x] Tests grün (55/55)
+
+## Phase 55: Registrierung mit E-Mail/Passwort und zentraler Freischaltung
+
+- [ ] Registrierungsseite /register: Schritt 1 Rollenauswahl (Studierende:r / Prüfer:in / Verwaltungsmitarbeiter:in)
+- [ ] Registrierungsseite /register: Schritt 2 Name + E-Mail + Passwort (min. 8 Zeichen) + Passwort-Bestätigung
+- [ ] Backend: auth.register Prozedur (publicProcedure) – Konto anlegen mit roleStatus="pending", isActive=false
+- [ ] Backend: Passwort mit bcrypt hashen (12 Runden)
+- [ ] Backend: Doppelte E-Mail-Adressen abfangen (Fehler zurückgeben)
+- [ ] Magic-Link-Mechanismus aus Login.tsx und Home.tsx entfernen
+- [ ] Login-Seite: Nur E-Mail/Passwort-Login, Link zu /register
+- [ ] Home.tsx: Anmelden-Button → /login, Registrieren-Button → /register
+- [ ] Admin-Dashboard: Tab "Neue Registrierungen" mit Liste wartender Konten (roleStatus="pending")
+- [ ] Admin: Freischalten-Button (setzt roleStatus="approved", isActive=true)
+- [ ] Admin: Ablehnen-Button mit Begründung (setzt roleStatus="rejected")
+- [ ] Wartende Nutzer:innen sehen nach Login eine Warteseite (PendingApproval)
+- [ ] Build und Tests grün

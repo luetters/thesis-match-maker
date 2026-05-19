@@ -342,6 +342,46 @@ export const appRouter = router({
         await markPasswordResetTokenUsed(input.token);
         return { success: true };
       }),
+    register: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein."),
+          email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
+          password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
+          role: z.enum(["student", "examiner", "admin"]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const existing = await getUserByEmail(input.email);
+        if (existing) {
+          throw new TRPCError({ code: "CONFLICT", message: "Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an." });
+        }
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        const openId = `pw_${input.email.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+        const { getDb } = await import("./db");
+        const drizzleDb = await getDb();
+        if (!drizzleDb) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbankfehler." });
+        const { users } = await import("../drizzle/schema");
+        await drizzleDb.insert(users).values({
+          openId,
+          email: input.email.toLowerCase(),
+          name: input.name,
+          role: "user" as any,
+          requestedRole: input.role as any,
+          roleStatus: "pending" as any,
+          loginMethod: "password",
+          passwordHash,
+          lastSignedIn: new Date(),
+        } as any).onDuplicateKeyUpdate({
+          set: { name: input.name } as any,
+        });
+        await createAuditLogEntry({
+          action: "USER_REGISTERED",
+          actorId: 0,
+          metadata: { email: input.email, requestedRole: input.role },
+        });
+        return { success: true };
+      }),
     loginWithPassword: publicProcedure
       .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
@@ -352,6 +392,20 @@ export const appRouter = router({
         const valid = await bcrypt.compare(input.password, user.passwordHash);
         if (!valid) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        // Freischaltungs-Prüfung
+        const roleStatus = (user as any).roleStatus ?? "approved";
+        if (roleStatus === "pending") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch die Verwaltung der HTW Berlin.",
+          });
+        }
+        if (roleStatus === "rejected") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Ihr Registrierungsantrag wurde abgelehnt. Bitte wenden Sie sich an die Verwaltung der HTW Berlin.",
+          });
         }
         // HTW-E-Mail-Validierung:
         // Studierende müssen immer @htw-berlin.de verwenden.

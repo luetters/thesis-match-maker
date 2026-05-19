@@ -27,7 +27,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Login Modal (Magic Link) ────────────────────────────────────────────────
+// ─── Login Modal ────────────────────────────────────────────────────────────
 type LoginRole = "student" | "examiner" | "admin";
 const LOGIN_ROLES: { id: LoginRole; label: string; description: string; accentColor: string; bgColor: string; borderColor: string }[] = [
   { id: "student", label: "Studierende:r", description: "Ich möchte eine Abschlussarbeit anmelden und Prüfer:innen finden.", accentColor: "#76b900", bgColor: "#f0f9e8", borderColor: "#76b900" },
@@ -40,9 +40,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   const [selectedRole, setSelectedRole] = useState<LoginRole | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginMode, setLoginMode] = useState<"magic" | "password">("magic");
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [, navigate] = useLocation();
@@ -65,23 +62,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     if (!password) { setError("Bitte ein Passwort eingeben."); return; }
     setError("");
     loginWithPassword.mutate({ email, password });
-  };
-  const handleSend = async () => {
-    if (!email.includes("@")) { setError("Bitte eine gültige E-Mail-Adresse eingeben."); return; }
-    setLoading(true); setError("");
-    try {
-      const res = await fetch("/api/auth/magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Origin": window.location.origin },
-        body: JSON.stringify({ email, role: selectedRole ?? "student" }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Fehler"); }
-      setSent(true);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Unbekannter Fehler");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const selectedRoleOption = LOGIN_ROLES.find((r) => r.id === selectedRole);
@@ -139,26 +119,12 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* ── SCHRITT 2: E-Mail-Eingabe ── */}
-        {step === "email" && sent ? (
-          <div className="text-center py-4">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#F1F8E9" }}>
-              <svg className="w-7 h-7" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">E-Mail gesendet!</h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Wir haben einen Anmeldelink an <strong>{email}</strong> gesendet. Bitte prüfen Sie Ihr Postfach.
-            </p>
-            <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">Schließen</button>
-          </div>
-        ) : step === "email" ? (
+        {/* ── SCHRITT 2: Anmelden ── */}
+        {step === "email" && (
           <>
-            {/* Zurück-Button + Rollen-Badge */}
             <button
               type="button"
-              onClick={() => { setStep("role"); setSent(false); setError(""); setEmail(""); setPassword(""); }}
+              onClick={() => { setStep("role"); setError(""); setEmail(""); setPassword(""); setResetSent(false); }}
               className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-4"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,88 +144,50 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Anmelden</h2>
-            {/* Tab-Umschalter */}
-            <div className="flex rounded-xl bg-gray-100 p-1 mb-5">
-              <button
-                onClick={() => { setLoginMode("magic"); setError(""); }}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${loginMode === "magic" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                Magic Link
-              </button>
-              <button
-                onClick={() => { setLoginMode("password"); setError(""); }}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${loginMode === "password" ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-              >
-                Passwort
-              </button>
-            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">E-Mail-Adresse</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (loginMode === "password" ? handlePasswordLogin() : handleSend())}
+                onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
                 placeholder="vorname.nachname@htw-berlin.de"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
                 autoFocus
               />
             </div>
-            {loginMode === "password" && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Passwort</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
-                  placeholder="Ihr Passwort"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
-                />
-              </div>
-            )}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Passwort</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
+                placeholder="Ihr Passwort"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
+              />
+            </div>
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
-            {loginMode === "password" && resetSent && (
+            {resetSent && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm text-green-700 mb-2">
                 Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
               </div>
             )}
-            {loginMode === "password" ? (
-              <button
-                onClick={handlePasswordLogin}
-                disabled={loginWithPassword.isPending || !email || !password}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-                style={{ backgroundColor: "#76B900" }}
-              >
-                {loginWithPassword.isPending ? (
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : null}
-                {loginWithPassword.isPending ? "Anmelden..." : "Anmelden"}
-              </button>
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={loading || !email}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-                style={{ backgroundColor: "#76B900" }}
-              >
-                {loading ? (
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                )}
-                {loading ? "Wird gesendet..." : "Anmeldelink senden"}
-              </button>
-            )}
-            {loginMode === "password" && !resetSent && (
+            <button
+              onClick={handlePasswordLogin}
+              disabled={loginWithPassword.isPending || !email || !password}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+              style={{ backgroundColor: "#76B900" }}
+            >
+              {loginWithPassword.isPending ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : null}
+              {loginWithPassword.isPending ? "Anmelden..." : "Anmelden"}
+            </button>
+            {!resetSent && (
               <button
                 type="button"
                 onClick={() => {
@@ -273,24 +201,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
               </button>
             )}
-            {loginMode === "magic" && (
-              <div className="mt-4 flex items-start gap-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <p className="text-xs text-gray-600">
-                  Kein Passwort erforderlich. Der Link ist 24 Stunden gültig und kann nur einmal verwendet werden.
-                </p>
-              </div>
-            )}
+            <div className="mt-4 border-t border-gray-100 pt-4 text-center">
+              <p className="text-xs text-gray-500">
+                Noch kein Konto?{" "}
+                <a href="/login" className="font-medium hover:underline" style={{ color: "#76B900" }}>Jetzt registrieren</a>
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              className="mt-3 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
               Abbrechen
             </button>
           </>
-        ) : null}
+        )}
       </div>
     </div>
   );
