@@ -287,3 +287,28 @@
 - [ ] EmailTemplateEditor-Komponente mit Live-Vorschau erstellen
 - [ ] Tab "E-Mail-Vorlagen" im Superadmin-Dashboard einbinden
 - [ ] Build und Tests grün
+
+## Phase 50: Studierenden-Umstrukturierung & Verwaltungs-Dashboard
+
+- [ ] Studierenden-Dashboard entfernen (kein Dashboard für Studierende)
+- [ ] Studiengang-Onboarding: Bachelor/Master-Auswahl zuerst, dann Studiengangsliste mit Logos
+- [ ] Studiengang unveränderlich nach erster Auswahl (nur bei erster Nutzung)
+- [ ] Studierenden-Startseite: direkt zur Anfragen-Übersicht oder Prüfer:innen-Suche
+- [ ] Verwaltungs-Dashboard: echte KPIs (offene Anfragen, bestätigte Rollen, aktive Studierende)
+- [ ] Verwaltungs-Dashboard: Statistiken und Übersichten mit Diagrammen
+- [ ] Verwaltungs-Dashboard: Letzte Aktivitäten und ausstehende Aufgaben
+
+
+## Phase 50: Studierenden-Umstrukturierung & Verwaltungs-Dashboard ✅ KOMPLETT
+
+- [x] Studierenden-Dashboard entfernen (kein Dashboard für Studierende) — Overview-Tab entfernt, Anfragen ist Standard-Tab
+- [x] Studiengang-Onboarding: Bachelor/Master-Auswahl zuerst, dann Studiengangsliste mit Logos
+- [x] Studierenden-Startseite: direkt zur Anfragen-Übersicht oder Prüfer:innen-Suche
+- [x] Verwaltungs-Dashboard: echte KPIs (offene Anfragen, bestätigte Rollen, aktive Studierende)
+- [x] Verwaltungs-Dashboard: Fortschrittsbalken für Bearbeitungsstand aller Anfragen
+- [x] Verwaltungs-Dashboard: Statusverteilung als Balkendiagramm (Recharts)
+- [x] Verwaltungs-Dashboard: Trendlinie Anfragen pro Monat (Recharts LineChart)
+- [x] Verwaltungs-Dashboard: Offene Rollenanfragen mit Amber-Highlight
+- [x] Verwaltungs-Dashboard: Neueste Anfragen-Liste
+- [x] Verwaltungs-Dashboard: Aktivitäts-Timeline mit Audit-Log
+- [ ] Studiengang unveränderlich nach erster Auswahl (nur bei erster Nutzung) — Backend-Prüfung noch ausstehend

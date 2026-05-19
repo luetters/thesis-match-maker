@@ -87,6 +87,9 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     onError: (err) => toast.error(err.message),
   });
 
+  const [selected, setSelected] = useState<number | null>(null);
+  const [degreeFilter, setDegreeFilter] = useState<"bachelor" | "master" | null>(null);
+
   if (!user) {
     return (
       <div className="flex flex-col items-center gap-4 py-12 px-6 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
@@ -107,10 +110,9 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     );
   }
 
-  const [selected, setSelected] = useState<number | null>(null);
-
   if (isLoading) return <div className="text-center py-8 text-gray-400">Lade Studiengänge…</div>;
 
+  // Bereits zugeordnet – nur anzeigen, nicht änderbar
   if (myProgramme) {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
@@ -130,42 +132,83 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     );
   }
 
-  const bachelor = (programmes ?? []).filter(p => p.level === "bachelor");
-  const master = (programmes ?? []).filter(p => p.level === "master");
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full bg-[#006937]/10 text-[#006937] text-xs font-bold">Bachelor</span>
-          Bachelorstudiengänge
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {bachelor.map(p => (
-            <ProgrammeCard
-              key={p.id}
-              programme={p}
-              selected={selected === p.id}
-              onClick={() => setSelected(p.id)}
-            />
-          ))}
+  // Schritt 1: Abschlussart wählen
+  if (!degreeFilter) {
+    const bachelorCount = (programmes ?? []).filter(p => p.level === "bachelor").length;
+    const masterCount = (programmes ?? []).filter(p => p.level === "master").length;
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Bitte wählen Sie zunächst Ihre Abschlussart, um die passenden Studiengänge anzuzeigen.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => setDegreeFilter("bachelor")}
+            className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 bg-white hover:border-[#006937] hover:bg-[#006937]/5 transition-all group"
+          >
+            <div className="w-14 h-14 rounded-full bg-[#006937]/10 flex items-center justify-center group-hover:bg-[#006937]/20 transition-colors">
+              <svg className="w-7 h-7 text-[#006937]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-base">Bachelor</div>
+              <div className="text-xs text-gray-500 mt-0.5">{bachelorCount} Studiengänge</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDegreeFilter("master")}
+            className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-600 hover:bg-blue-50 transition-all group"
+          >
+            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+              <svg className="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-base">Master</div>
+              <div className="text-xs text-gray-500 mt-0.5">{masterCount} Studiengänge</div>
+            </div>
+          </button>
         </div>
       </div>
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">Master</span>
-          Masterstudiengänge
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {master.map(p => (
-            <ProgrammeCard
-              key={p.id}
-              programme={p}
-              selected={selected === p.id}
-              onClick={() => setSelected(p.id)}
-            />
-          ))}
-        </div>
+    );
+  }
+
+  // Schritt 2: Studiengang aus gefilterter Liste wählen
+  const filtered = (programmes ?? []).filter(p => p.level === degreeFilter);
+  const degreeLabel = degreeFilter === "bachelor" ? "Bachelor" : "Master";
+  const degreeColor = degreeFilter === "bachelor" ? "text-[#006937]" : "text-blue-600";
+  const degreeBg = degreeFilter === "bachelor" ? "bg-[#006937]/10" : "bg-blue-50";
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => { setDegreeFilter(null); setSelected(null); }}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Zurück
+        </button>
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${degreeBg} ${degreeColor}`}>{degreeLabel}</span>
+        <span className="text-sm text-gray-600">{degreeLabel}studiengänge</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        {filtered.map(p => (
+          <ProgrammeCard
+            key={p.id}
+            programme={p}
+            selected={selected === p.id}
+            onClick={() => setSelected(p.id)}
+          />
+        ))}
       </div>
       <div className="flex justify-end pt-2">
         <button

@@ -775,31 +775,144 @@ function Overview() {
   const { data: requests } = trpc.thesis.all.useQuery();
   const { data: users } = trpc.admin.users.useQuery();
   const { data: logs } = trpc.auditLog.all.useQuery();
+  const { data: pendingRoles } = trpc.roleApproval.getPending.useQuery();
+  const { data: thesisStats } = trpc.admin.stats.useQuery();
 
-  const stats = {
-    total: requests?.length ?? 0,
-    pending: requests?.filter((r) => r.status === "PENDING").length ?? 0,
-    matched: requests?.filter((r) => r.status === "MATCHED").length ?? 0,
-    users: users?.length ?? 0,
-  };
+  // KPI-Berechnungen
+  const total = requests?.length ?? 0;
+  const pending = requests?.filter((r) => r.status === "PENDING").length ?? 0;
+  const matched = requests?.filter((r) => r.status === "MATCHED").length ?? 0;
+  const approved = requests?.filter((r) => r.status === "FIRST_EXAMINER_ACCEPTED" || r.status === "PENDING_SECOND_EXAMINER").length ?? 0;
+  const completed = requests?.filter((r) => r.status === "COMPLETED").length ?? 0;
+  const rejected = requests?.filter((r) => r.status === "REJECTED").length ?? 0;
+  const pendingRoleCount = (pendingRoles ?? []).filter(u => u.roleStatus === "pending").length;
+  const totalUsers = users?.length ?? 0;
+  const studentCount = users?.filter(u => u.user.role === "student").length ?? 0;
+  const examinerCount = users?.filter(u => u.user.role === "examiner").length ?? 0;
+
+  // Statusverteilung für Balkendiagramm
+  const statusData = [
+    { name: "Ausstehend", value: pending, color: "#f59e0b" },
+    { name: "Matched", value: matched, color: "#3b82f6" },
+    { name: "Genehmigt", value: approved, color: "#006937" },
+    { name: "Abgeschlossen", value: completed, color: "#8b5cf6" },
+    { name: "Abgelehnt", value: rejected, color: "#ef4444" },
+  ].filter(d => d.value > 0);
+
+  // Letzte 6 Monate für Trendlinie
+  const monthData = (thesisStats?.byMonth ?? []).slice(-6);
 
   return (
     <div className="space-y-6">
+      {/* Hauptkennzahlen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Anfragen gesamt", value: stats.total, color: "text-gray-900" },
-          { label: "Ausstehend", value: stats.pending, color: "text-amber-600" },
-          { label: "Matched", value: stats.matched, color: "text-blue-600" },
-          { label: "Nutzer:innen", value: stats.users, color: "text-gray-900" },
+          { label: "Anfragen gesamt", value: total, sub: `${pending} ausstehend`, color: "#006937", bg: "bg-[#006937]/5" },
+          { label: "Aktive Nutzer:innen", value: totalUsers, sub: `${studentCount} Stud. · ${examinerCount} Prüf.`, color: "#3b82f6", bg: "bg-blue-50" },
+          { label: "Rollenanfragen offen", value: pendingRoleCount, sub: "Warten auf Bestätigung", color: pendingRoleCount > 0 ? "#f59e0b" : "#6b7280", bg: pendingRoleCount > 0 ? "bg-amber-50" : "bg-gray-50" },
+          { label: "Abgeschlossen", value: completed, sub: `${approved} genehmigt`, color: "#8b5cf6", bg: "bg-purple-50" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
-            <div className="text-sm text-gray-500">{stat.label}</div>
+          <div key={stat.label} className={`${stat.bg} rounded-2xl p-5 border border-white shadow-sm`}>
+            <div className="text-3xl font-bold mb-1" style={{ color: stat.color }}>{stat.value}</div>
+            <div className="text-sm font-medium text-gray-700">{stat.label}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{stat.sub}</div>
           </div>
         ))}
       </div>
 
+      {/* Fortschrittsbalken: Bearbeitungsstand */}
+      {total > 0 && (
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h2 className="font-semibold text-gray-900 mb-4">Bearbeitungsstand aller Anfragen</h2>
+          <div className="space-y-3">
+            {[
+              { label: "Ausstehend", value: pending, color: "bg-amber-400" },
+              { label: "Matched", value: matched, color: "bg-blue-500" },
+              { label: "Genehmigt", value: approved, color: "bg-[#006937]" },
+              { label: "Abgeschlossen", value: completed, color: "bg-purple-500" },
+              { label: "Abgelehnt", value: rejected, color: "bg-red-400" },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-3">
+                <div className="w-28 text-xs text-gray-600 shrink-0">{item.label}</div>
+                <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${item.color}`}
+                    style={{ width: `${Math.round((item.value / total) * 100)}%` }}
+                  />
+                </div>
+                <div className="w-12 text-xs text-gray-500 text-right shrink-0">
+                  {item.value} ({Math.round((item.value / total) * 100)} %)
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
+        {/* Statusverteilung als Balkendiagramm */}
+        {statusData.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-4">Statusverteilung</h2>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={statusData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" name="Anfragen" radius={[4, 4, 0, 0]}>
+                  {statusData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Trendlinie: Anfragen pro Monat */}
+        {monthData.length > 1 && (
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-4">Anfragen pro Monat</h2>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={monthData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" name="Anfragen" stroke="#006937" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Offene Rollenanfragen */}
+        {pendingRoleCount > 0 && (
+          <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              Offene Rollenanfragen
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">{pendingRoleCount} Nutzer:in warten auf Bestätigung ihrer Rolle.</p>
+            <div className="space-y-2">
+              {(pendingRoles ?? []).filter(u => u.roleStatus === "pending").slice(0, 5).map(u => (
+                <div key={u.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-amber-100">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{u.name}</p>
+                    <p className="text-xs text-gray-500">{u.email}</p>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium capitalize">
+                    {u.requestedRole === "student" ? "Studierende:r" : u.requestedRole === "examiner" ? "Prüfer:in" : "Verwaltung"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Neueste Anfragen */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-4">Neueste Anfragen</h2>
           {!requests?.length ? (
@@ -819,23 +932,25 @@ function Overview() {
           )}
         </div>
 
+        {/* Aktivitäts-Timeline */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Letzte Audit-Einträge</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">Letzte Aktivitäten</h2>
           {!logs?.length ? (
-            <p className="text-sm text-gray-500">Noch keine Log-Einträge.</p>
+            <p className="text-sm text-gray-500">Noch keine Aktivitäten.</p>
           ) : (
-            <div className="space-y-3">
-              {logs.slice(0, 5).map((log) => (
-                <div key={log.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{log.action}</p>
-                    <p className="text-xs text-gray-500">Anfrage #{log.thesisRequestId}</p>
+            <div className="relative">
+              <div className="absolute left-3.5 top-0 bottom-0 w-px bg-gray-100" />
+              <div className="space-y-4">
+                {logs.slice(0, 6).map((log) => (
+                  <div key={log.id} className="flex gap-4 pl-8 relative">
+                    <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#006937]/20 border-2 border-[#006937] shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{log.action.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-gray-500">Anfrage #{log.thesisRequestId} · {new Date(log.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-                    {new Date(log.createdAt).toLocaleDateString("de-DE")}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

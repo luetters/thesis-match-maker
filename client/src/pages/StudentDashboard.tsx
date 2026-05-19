@@ -22,9 +22,8 @@ const Icons2 = {
 function useNavItems() {
   const { t } = useLanguage();
   return [
-    { href: "/student", label: t.student.title.replace("-Dashboard", "") || "Übersicht", icon: Icons.home },
+    { href: "/student", label: t.student.myRequests, icon: Icons.list },
     { href: "/student/new", label: t.student.newRequest, icon: Icons.plus },
-    { href: "/student/requests", label: t.student.myRequests, icon: Icons.list },
     { href: "/student/examiners", label: t.nav.examiners, icon: Icons.search },
     { href: "/student/colloquiums", label: t.student.colloquiums, icon: Icons2.calendar },
     { href: "/student/history", label: t.student.history, icon: Icons2.history },
@@ -814,12 +813,11 @@ function StatusHistory() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudentDashboard() {
   const [location] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "new" | "requests" | "examiners" | "colloquiums" | "history">(
+  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history">(
     location === "/student/new" ? "new" :
-    location === "/student/requests" ? "requests" :
     location === "/student/examiners" ? "examiners" :
     location === "/student/colloquiums" ? "colloquiums" :
-    location === "/student/history" ? "history" : "overview"
+    location === "/student/history" ? "history" : "requests"
   );
 
   const utils = trpc.useUtils();
@@ -828,9 +826,8 @@ export default function StudentDashboard() {
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
-      if (item.href === "/student") setActiveTab("overview");
+      if (item.href === "/student") setActiveTab("requests");
       else if (item.href === "/student/new") setActiveTab("new");
-      else if (item.href === "/student/requests") setActiveTab("requests");
       else if (item.href === "/student/examiners") setActiveTab("examiners");
       else if (item.href === "/student/colloquiums") setActiveTab("colloquiums");
       else if (item.href === "/student/history") setActiveTab("history");
@@ -838,9 +835,8 @@ export default function StudentDashboard() {
   }));
 
   const titles: Record<string, string> = {
-    overview: "Mein Dashboard",
-    new: "Neue Anfrage einreichen",
     requests: "Meine Anfragen",
+    new: "Neue Anfrage einreichen",
     examiners: "Prüfer:innen finden",
     colloquiums: "Mein Kolloquium",
     history: "Statushistorie",
@@ -848,7 +844,6 @@ export default function StudentDashboard() {
 
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
-      {activeTab === "overview" && <Overview />}
       {activeTab === "new" && (
         <div className="max-w-2xl">
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
