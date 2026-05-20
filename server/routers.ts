@@ -223,6 +223,11 @@ const profileRouterDef = router({
       staffId: z.string().max(32).optional(),
       responsibilityArea: z.string().max(255).optional(),
       officeLocation: z.string().max(255).optional(),
+      // Kontakt & Online-Präsenz
+      secondEmail: z.string().email().max(320).optional().or(z.literal('')),
+      website: z.string().max(512).optional(),
+      linkedIn: z.string().max(512).optional(),
+      researchGate: z.string().max(512).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const ok = await updateProfile(ctx.user.id, input);

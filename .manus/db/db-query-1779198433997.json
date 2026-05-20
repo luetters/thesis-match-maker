@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE users \n  ADD COLUMN IF NOT EXISTS second_email VARCHAR(320),\n  ADD COLUMN IF NOT EXISTS website VARCHAR(512),\n  ADD COLUMN IF NOT EXISTS linked_in VARCHAR(512),\n  ADD COLUMN IF NOT EXISTS research_gate VARCHAR(512);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nALTER TABLE users \n  ADD COLUMN IF NOT EXISTS second_email VARCHAR(320),\n  ADD COLUMN IF NOT EXISTS website VARCHAR(512),\n  ADD COLUMN IF NOT EXISTS linked_in VARCHAR(512),\n  ADD COLUMN IF NOT EXISTS research_gate VARCHAR(512);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 833
+}

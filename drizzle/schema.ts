@@ -232,6 +232,11 @@ export const users = mysqlTable("users", {
   staffId: varchar("staff_id", { length: 32 }),
   responsibilityArea: varchar("responsibility_area", { length: 255 }),
   officeLocation: varchar("office_location", { length: 255 }),
+  // Kontakt & Online-Präsenz
+  secondEmail: varchar("second_email", { length: 320 }),
+  website: varchar("website", { length: 512 }),
+  linkedIn: varchar("linked_in", { length: 512 }),
+  researchGate: varchar("research_gate", { length: 512 }),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

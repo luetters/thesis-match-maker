@@ -375,3 +375,27 @@
 - [ ] Admin: Ablehnen-Button mit Begründung (setzt roleStatus="rejected")
 - [ ] Wartende Nutzer:innen sehen nach Login eine Warteseite (PendingApproval)
 - [ ] Build und Tests grün
+
+## Phase 56: Profilseite-Verbesserungen
+
+- [ ] Foto-Upload-Bug beheben (Backend-Prozedur und Frontend-Upload-Logik debuggen)
+- [ ] Fachbereich als Dropdown (FB1 – FB5) statt Freitextfeld
+- [ ] DB-Schema: secondEmail, website, linkedIn, researchGate Felder hinzufügen
+- [ ] DB-Migration: ALTER TABLE users für neue Felder
+- [ ] Backend: profile.get und profile.update um neue Felder erweitern
+- [ ] Frontend: Neue Felder in Profilseite einbinden
+- [ ] Frontend: Forschungsschwerpunkte als interaktive Tag-Liste (Eingabe + Löschen)
+- [ ] Build und Tests grün
+
+
+## Phase 56: Profil-Verbesserungen ✅ KOMPLETT
+
+- [x] Profilfoto-Upload-Bug behoben (input.value zurücksetzen, Fehlerbehandlung verbessert, cursor-pointer hinzugefügt)
+- [x] Fachbereich als Dropdown (FB1–FB5 mit vollständigen Bezeichnungen)
+- [x] Zweite E-Mail-Adresse (secondEmail) – DB-Spalte + Backend + Frontend
+- [x] Website-URL – DB-Spalte + Backend + Frontend
+- [x] LinkedIn-Profil-URL – DB-Spalte + Backend + Frontend
+- [x] ResearchGate-Profil-URL – DB-Spalte + Backend + Frontend
+- [x] Forschungsschwerpunkte als interaktive Tag-Liste (Enter/Komma zum Hinzufügen, Backspace zum Löschen)
+- [x] Neuer Abschnitt "Online-Präsenz" in der Profilseite
+- [x] Fachbereich-Badge in der Profilkarte
