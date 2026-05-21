@@ -310,7 +310,24 @@ export default function Profile() {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Nicht änderbar</span>
               </div>
             </div>
-            {editMode ? <FieldInput label="Zweite E-Mail-Adresse" value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} placeholder="alternative@beispiel.de" type="email" /> : <FieldView label="Zweite E-Mail-Adresse" value={profile.secondEmail} />}
+            {editMode ? (
+              <FieldInput label="Zweite E-Mail-Adresse" value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} placeholder="alternative@beispiel.de" type="email" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Zweite E-Mail-Adresse</label>
+                {profile.secondEmail ? (
+                  <a href={`mailto:${profile.secondEmail}`}
+                    className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-[#76b900] transition-colors group">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#f3f4f6" }}>
+                      <svg className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </span>
+                    <span className="group-hover:underline">{profile.secondEmail}</span>
+                  </a>
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+              </div>
+            )}
             {editMode ? <FieldInput label="Telefonnummer" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder="+49 30 12345678" type="tel" /> : <FieldView label="Telefonnummer" value={profile.phone} />}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Fachbereich</label>
@@ -343,20 +360,64 @@ export default function Profile() {
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             Online-Präsenz
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {editMode ? <FieldInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" type="url" /> : (
-              <div><label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Website</label>
-                {profile.website ? <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-[#76b900] hover:underline break-all">{profile.website}</a> : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Website */}
+            {editMode ? (
+              <FieldInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Website</label>
+                {profile.website ? (
+                  <a href={profile.website} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#76b900] hover:bg-[#f6ffe0] transition-all group max-w-full">
+                    {/* Globe icon */}
+                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#f0fdf4" }}>
+                      <svg className="w-4 h-4" style={{ color: "#76b900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+                      </svg>
+                    </span>
+                    <span className="text-sm text-[#76b900] group-hover:underline truncate">{profile.website.replace(/^https?:\/\//, "")}</span>
+                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </a>
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
-            {editMode ? <FieldInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" type="url" /> : (
-              <div><label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">LinkedIn-Profil</label>
-                {profile.linkedIn ? <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer" className="text-sm text-[#0a66c2] hover:underline break-all">{profile.linkedIn}</a> : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+            {/* LinkedIn */}
+            {editMode ? (
+              <FieldInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">LinkedIn-Profil</label>
+                {profile.linkedIn ? (
+                  <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#0a66c2] hover:bg-[#eff6ff] transition-all group max-w-full">
+                    {/* LinkedIn Logo */}
+                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#0a66c2" }}>
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                      </svg>
+                    </span>
+                    <span className="text-sm text-[#0a66c2] group-hover:underline truncate">{profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || profile.linkedIn.replace(/^https?:\/\//, "")}</span>
+                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </a>
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
-            {editMode ? <FieldInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" type="url" /> : (
-              <div><label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">ResearchGate-Profil</label>
-                {profile.researchGate ? <a href={profile.researchGate} target="_blank" rel="noopener noreferrer" className="text-sm text-[#00d0af] hover:underline break-all">{profile.researchGate}</a> : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+            {/* ResearchGate */}
+            {editMode ? (
+              <FieldInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">ResearchGate-Profil</label>
+                {profile.researchGate ? (
+                  <a href={profile.researchGate} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#00d0af] hover:bg-[#ecfdf5] transition-all group max-w-full">
+                    {/* ResearchGate Logo (RG) */}
+                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs text-white" style={{ background: "#00d0af", letterSpacing: "-0.5px" }}>RG</span>
+                    <span className="text-sm text-[#00a896] group-hover:underline truncate">{profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || profile.researchGate.replace(/^https?:\/\//, "")}</span>
+                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </a>
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
           </div>
