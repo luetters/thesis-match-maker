@@ -399,3 +399,12 @@
 - [x] Forschungsschwerpunkte als interaktive Tag-Liste (Enter/Komma zum Hinzufügen, Backspace zum Löschen)
 - [x] Neuer Abschnitt "Online-Präsenz" in der Profilseite
 - [x] Fachbereich-Badge in der Profilkarte
+
+
+## Phase 56b: Profil-Verbesserungen – Icons und Links ✅ KOMPLETT
+
+- [x] Icons für Online-Präsenz-Links (Website, LinkedIn, ResearchGate, E-Mail)
+- [x] HTW Berlin Link zur Online-Präsenz hinzugefügt
+- [x] MISC-Link (Weitere Links) hinzugefügt
+- [x] Terminbuchungs-Link hinzugefügt
+- [ ] Profilfoto-Upload-Bug: avatarUrl wird nicht korrekt gespeichert/angezeigt (DB-Update prüfen)

@@ -142,8 +142,20 @@ export default function Profile() {
     onError: (e) => toast.error(e.message),
   });
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
-    onSuccess: (data) => { setAvatarPreview(data.avatarUrl); toast.success("Profilfoto hochgeladen"); refetch(); },
-    onError: (e) => { toast.error(e.message); setUploadingAvatar(false); },
+    onSuccess: (data) => {
+      console.log("[Avatar Upload] Success:", data);
+      setAvatarPreview(data.avatarUrl);
+      toast.success("Profilfoto hochgeladen");
+      // Invalidate profile query to force refresh from server
+      trpc.useUtils().profile.get.invalidate();
+      // Refetch after a short delay to ensure DB is updated
+      setTimeout(() => refetch(), 500);
+    },
+    onError: (e) => {
+      console.error("[Avatar Upload] Error:", e);
+      toast.error(e.message);
+      setUploadingAvatar(false);
+    },
     onSettled: () => setUploadingAvatar(false),
   });
 
@@ -420,6 +432,43 @@ export default function Profile() {
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
+            {/* HTW Berlin Seite */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">HTW Berlin Profil</label>
+              <a href="https://www.htw-berlin.de/" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#1a5490] hover:bg-[#f0f4f8] transition-all group max-w-full">
+                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs text-white" style={{ background: "#1a5490" }}>HTW</span>
+                <span className="text-sm text-[#1a5490] group-hover:underline truncate">HTW Berlin</span>
+                <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </a>
+            </div>
+            {/* MISC Link */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Weitere Links</label>
+              <button type="button" onClick={() => toast.info("Weitere Links können später hinzugefügt werden")}
+                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all group max-w-full text-gray-600">
+                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#f3f4f6" }}>
+                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6h-6" />
+                  </svg>
+                </span>
+                <span className="text-sm text-gray-600 group-hover:underline truncate">Weitere Links</span>
+              </button>
+            </div>
+            {/* Terminbuchung */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
+              <button type="button" onClick={() => toast.info("Terminbuchungs-Link wird später konfiguriert")}
+                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#7c3aed] hover:bg-[#faf5ff] transition-all group max-w-full">
+                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#faf5ff" }}>
+                  <svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <span className="text-sm text-[#7c3aed] group-hover:underline truncate">Termin buchen</span>
+                <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </button>
+            </div>
           </div>
         </div>
 
