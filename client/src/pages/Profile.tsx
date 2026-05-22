@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { BookingModal } from "@/components/BookingModal";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -136,6 +137,7 @@ export default function Profile() {
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   const updateMutation = trpc.profile.update.useMutation({
     onSuccess: () => { toast.success("Profil gespeichert"); setEditMode(false); refetch(); },
@@ -458,7 +460,7 @@ export default function Profile() {
             {/* Terminbuchung */}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
-              <button type="button" onClick={() => toast.info("Terminbuchungs-Link wird später konfiguriert")}
+              <button type="button" onClick={() => setBookingModalOpen(true)}
                 className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#7c3aed] hover:bg-[#faf5ff] transition-all group max-w-full">
                 <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#faf5ff" }}>
                   <svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -591,6 +593,14 @@ export default function Profile() {
           <p className="text-sm text-blue-700">Klicken Sie auf das Kamera-Symbol am Profilfoto, um ein neues Bild hochzuladen. Erlaubte Formate: JPEG, PNG, WebP, GIF (max. 5 MB).</p>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        open={bookingModalOpen}
+        onOpenChange={setBookingModalOpen}
+        examinerName={profile?.name || "Prüfer:in"}
+        examinerEmail={profile?.email || ""}
+      />
     </div>
   );
 }
