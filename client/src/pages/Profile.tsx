@@ -126,6 +126,7 @@ export default function Profile() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery();
+  const utils = trpc.useUtils();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({
     name: "", bio: "", phone: "", department: "",
@@ -149,7 +150,7 @@ export default function Profile() {
       setAvatarPreview(data.avatarUrl);
       toast.success("Profilfoto hochgeladen");
       // Invalidate profile query to force refresh from server
-      trpc.useUtils().profile.get.invalidate();
+      utils.profile.get.invalidate();
       // Refetch after a short delay to ensure DB is updated
       setTimeout(() => refetch(), 500);
     },

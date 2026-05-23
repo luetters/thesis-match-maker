@@ -85,7 +85,12 @@ export function BookingModal({ open, onOpenChange, examinerName, examinerEmail }
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Termin mit {examinerName} buchen</DialogTitle>
-          <DialogClose />
+          <DialogClose asChild>
+            <button className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6l-12 12M6 6l12 12"/></svg>
+              <span className="sr-only">Schließen</span>
+            </button>
+          </DialogClose>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
