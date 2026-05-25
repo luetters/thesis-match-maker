@@ -148,7 +148,14 @@ export default function Profile() {
     onSuccess: (data) => {
       console.log("[Avatar Upload] Success:", data);
       setAvatarPreview(data.avatarUrl);
-      toast.success("Profilfoto hochgeladen");
+      toast.success(
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>Profilfoto erfolgreich aktualisiert</span>
+        </div>
+      );
       // Invalidate profile query to force refresh from server
       utils.profile.get.invalidate();
       // Refetch after a short delay to ensure DB is updated
@@ -156,7 +163,7 @@ export default function Profile() {
     },
     onError: (e) => {
       console.error("[Avatar Upload] Error:", e);
-      toast.error(e.message);
+      toast.error(`Fehler beim Upload: ${e.message}`);
       setUploadingAvatar(false);
     },
     onSettled: () => setUploadingAvatar(false),
@@ -279,18 +286,23 @@ export default function Profile() {
                 <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden" style={{ background: avatarSrc ? "transparent" : roleConf.bg }}>
                   {avatarSrc ? <img src={avatarSrc} alt="Profilfoto" className="w-full h-full object-cover" /> : <span className="text-2xl font-bold" style={{ color: roleConf.color }}>{initials}</span>}
                   {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-2xl">
-                      <svg className="w-6 h-6 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center rounded-2xl gap-2">
+                      <svg className="w-8 h-8 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      <span className="text-xs text-white font-medium">Wird hochgeladen…</span>
                     </div>
                   )}
                 </div>
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-[#76b900] transition-colors disabled:opacity-50 cursor-pointer"
-                  title="Profilfoto hochladen">
-                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-[#76b900] hover:bg-[#76b900]/5 transition-all disabled:opacity-50 cursor-pointer group"
+                  title={uploadingAvatar ? "Wird hochgeladen…" : "Profilfoto hochladen"}>
+                  {uploadingAvatar ? (
+                    <svg className="w-5 h-5 animate-spin text-[#76b900]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileChange} />
               </div>
