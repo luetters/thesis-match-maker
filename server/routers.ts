@@ -130,6 +130,7 @@ import {
   getProfile,
   updateProfile,
   updateProfileAvatar,
+  clearProfileAvatar,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -234,6 +235,13 @@ const profileRouterDef = router({
       if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Profil konnte nicht aktualisiert werden." });
       return { success: true };
     }),
+  deleteAvatar: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const ok = await clearProfileAvatar(ctx.user.id);
+      if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Profilfoto konnte nicht gelöscht werden." });
+      return { success: true };
+    }),
+
   uploadAvatar: protectedProcedure
     .input(z.object({
       base64: z.string(),

@@ -144,6 +144,32 @@ export default function Profile() {
     onSuccess: () => { toast.success("Profil gespeichert"); setEditMode(false); refetch(); },
     onError: (e) => toast.error(e.message),
   });
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
+
+  const deleteAvatarMutation = trpc.profile.deleteAvatar.useMutation({
+    onSuccess: () => {
+      setAvatarPreview(null);
+      utils.profile.get.invalidate();
+      setTimeout(() => refetch(), 300);
+      toast.success(
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>Profilfoto wurde zurückgesetzt</span>
+        </div>
+      );
+    },
+    onError: (e) => toast.error(`Fehler: ${e.message}`),
+    onSettled: () => setDeletingAvatar(false),
+  });
+
+  const handleDeleteAvatar = () => {
+    if (!window.confirm("Profilfoto wirklich löschen und auf Standard-Avatar zurücksetzen?")) return;
+    setDeletingAvatar(true);
+    deleteAvatarMutation.mutate();
+  };
+
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
       console.log("[Avatar Upload] Success:", data);
@@ -305,6 +331,22 @@ export default function Profile() {
                   )}
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileChange} />
+                {avatarSrc && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteAvatar}
+                    disabled={deletingAvatar || uploadingAvatar}
+                    className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-red-400 hover:bg-red-50 transition-all disabled:opacity-50 cursor-pointer group"
+                    title="Profilfoto löschen">
+                    {deletingAvatar ? (
+                      <svg className="w-3.5 h-3.5 animate-spin text-red-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </button>
+                )}
               </div>
               <div className="flex-1 min-w-0 pb-1">
                 <h1 className="text-xl font-bold text-gray-900 truncate">{profile.name ?? profile.email ?? "Unbekannt"}</h1>

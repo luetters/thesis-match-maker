@@ -3532,3 +3532,17 @@ export async function updateProfileAvatar(userId: number, avatarUrl: string, ava
     return false;
   }
 }
+
+export async function clearProfileAvatar(userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db.execute(
+      `UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE id = ${userId}`
+    );
+    return true;
+  } catch (error) {
+    console.error("[Profile] Fehler beim Avatar-Löschen:", error);
+    return false;
+  }
+}
