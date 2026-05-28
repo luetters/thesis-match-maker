@@ -184,7 +184,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	targetSemester: varchar({ length: 32 }),
 	language: varchar({ length: 8 }).default('de'),
 	degreeType: mysqlEnum(['bachelor','master']).default('bachelor'),
-	status: mysqlEnum(['PENDING','ACCEPTED','REJECTED','MATCHED']).default('PENDING').notNull(),
+	status: mysqlEnum(['PENDING','ACCEPTED','REJECTED','MATCHED','PENDING_FIRST_EXAMINER','PENDING_SECOND_EXAMINER','FIRST_EXAMINER_ACCEPTED','FIRST_EXAMINER_REJECTED','FIRST_EXAMINER_ASSIGNED','SECOND_EXAMINER_ACCEPTED','SECOND_EXAMINER_ASSIGNED','SECOND_EXAMINER_SET','COMPLETED','WITHDRAWN','CANCELLED']).default('PENDING').notNull(),
 	deadline: datetime({ mode: 'string'}),
 	rejectionReason: text(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
