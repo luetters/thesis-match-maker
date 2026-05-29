@@ -1,0 +1,1 @@
+ALTER TABLE `thesis_requests` ADD `wantedExaminerId` int;

@@ -177,6 +177,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	studentId: int().notNull(),
 	examinerId: int(),
 	secondExaminerId: int(),
+	wantedExaminerId: int(),
 	title: varchar({ length: 512 }).notNull(),
 	description: text().notNull(),
 	department: varchar({ length: 255 }).notNull(),

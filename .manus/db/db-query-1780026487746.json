@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE thesis_requests ADD COLUMN wantedExaminerId INT NULL AFTER secondExaminerId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute ALTER TABLE thesis_requests ADD COLUMN wantedExaminerId INT NULL AFTER secondExaminerId;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 437
+}

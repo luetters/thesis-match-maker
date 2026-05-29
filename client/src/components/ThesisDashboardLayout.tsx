@@ -246,7 +246,7 @@ function NavItem({
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-type NavEntry = { href: string; label: string; icon: React.ReactNode };
+type NavEntry = { href: string; label: string; icon: React.ReactNode; onClick?: () => void };
 
 function Sidebar({
   navItems,
@@ -322,6 +322,7 @@ function Sidebar({
               active={location === item.href}
               onClick={() => {
                 navigate(item.href);
+                if (item.onClick) item.onClick();
                 onMobileClose();
               }}
             />
