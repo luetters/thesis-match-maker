@@ -144,43 +144,87 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Eigenes Thema Toggle */}
-      <div className="flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer select-none"
-        style={{ borderColor: hasOwnTopic ? "#006937" : "#e5e7eb", backgroundColor: hasOwnTopic ? "#f0fdf4" : "#f9fafb" }}
-        onClick={() => setHasOwnTopic(!hasOwnTopic)}
-      >
-        <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-          hasOwnTopic ? "border-[#006937] bg-[#006937]" : "border-gray-300 bg-white"
-        }`}>
-          {hasOwnTopic && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-        </div>
-        <div>
-          <p className="font-semibold text-sm" style={{ color: hasOwnTopic ? "#006937" : "#6b7280" }}>
-            {hasOwnTopic ? "Ich habe ein eigenes Thema" : "Ich habe kein eigenes Thema"}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {hasOwnTopic
-              ? "Sie geben ein konkretes Thema vor. Bitte füllen Sie Titel und Beschreibung aus."
-              : "Sie suchen eine:n Prüfer:in, der/die ein Thema vorschlägt. Titel und Beschreibung sind optional."}
-          </p>
+      {/* Themenauswahl – zwei Karten */}
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-3">Wie möchten Sie Ihr Thema erhalten? <span className="text-red-500">*</span></p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {/* Karte: Eigener Vorschlag */}
+          <button
+            type="button"
+            onClick={() => setHasOwnTopic(true)}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+              hasOwnTopic
+                ? "border-[#76B900] bg-[#f6ffe0]"
+                : "border-gray-200 bg-white hover:border-gray-300"
+            }`}
+          >
+            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+              hasOwnTopic ? "border-[#76B900] bg-[#76B900]" : "border-gray-300 bg-white"
+            }`}>
+              {hasOwnTopic && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <p className={`font-semibold text-sm ${hasOwnTopic ? "text-[#4a7a00]" : "text-gray-700"}`}>
+                Ich habe einen eigenen Vorschlag
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                Sie bringen ein konkretes Thema mit. Titel, Beschreibung und Exposé werden abgefragt.
+              </p>
+            </div>
+          </button>
+
+          {/* Karte: Thema zuteilen */}
+          <button
+            type="button"
+            onClick={() => setHasOwnTopic(false)}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+              !hasOwnTopic
+                ? "border-[#76B900] bg-[#f6ffe0]"
+                : "border-gray-200 bg-white hover:border-gray-300"
+            }`}
+          >
+            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+              !hasOwnTopic ? "border-[#76B900] bg-[#76B900]" : "border-gray-300 bg-white"
+            }`}>
+              {!hasOwnTopic && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <p className={`font-semibold text-sm ${!hasOwnTopic ? "text-[#4a7a00]" : "text-gray-700"}`}>
+                Ich möchte ein Thema zugeteilt bekommen
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                Die Prüfer:in schlägt ein passendes Thema vor. Nur Pflichtfelder werden abgefragt.
+              </p>
+            </div>
+          </button>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-5">
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Titel der Abschlussarbeit {hasOwnTopic && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="text"
-            required={hasOwnTopic}
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder={hasOwnTopic ? "z.B. Einsatz von LLMs in der Kundenbetreuung" : "(optional – wird vom Prüfer/der Prüferin vorgeschlagen)"}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-            style={{ "--tw-ring-color": "#76B900" } as React.CSSProperties}
-          />
-        </div>
+        {hasOwnTopic && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Titel der Abschlussarbeit <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder="z.B. Einsatz von LLMs in der Kundenbetreuung"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+              style={{ "--tw-ring-color": "#76B900" } as React.CSSProperties}
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -266,33 +310,38 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           </select>
         </div>
 
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Beschreibung <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            required
-            rows={4}
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Beschreibe dein Thema, die Problemstellung und den geplanten Ansatz..."
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
-          />
-        </div>
+        {hasOwnTopic && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Beschreibung <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              required
+              rows={4}
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="Beschreibe Ihr Thema, die Problemstellung und den geplanten Ansatz..."
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+            />
+          </div>
+        )}
 
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Abstract (optional)</label>
-          <textarea
-            rows={3}
-            value={form.abstract}
-            onChange={(e) => setForm((f) => ({ ...f, abstract: e.target.value }))}
-            placeholder="Kurze Zusammenfassung der geplanten Arbeit..."
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
-          />
-        </div>
+        {hasOwnTopic && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Abstract (optional)</label>
+            <textarea
+              rows={3}
+              value={form.abstract}
+              onChange={(e) => setForm((f) => ({ ...f, abstract: e.target.value }))}
+              placeholder="Kurze Zusammenfassung der geplanten Arbeit..."
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+            />
+          </div>
+        )}
         
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Exposé (PDF, optional, max. 10 MB)</label>
+        {hasOwnTopic && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Exposé (PDF, optional, max. 10 MB)</label>
           <div className="flex items-center gap-3">
             <input
               type="file"
@@ -330,7 +379,8 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               </button>
             )}
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
       <button
@@ -603,9 +653,9 @@ function ExaminerList() {
               {profile?.bio && (
                 <p className="text-xs text-gray-600 line-clamp-2 mb-3">{profile.bio}</p>
               )}
-              {profile?.tags && profile.tags.length > 0 && (
+              {profile?.tags && Array.isArray(profile.tags) && (profile.tags as string[]).length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {profile.tags.slice(0, 4).map((tag) => (
+                  {(profile.tags as string[]).slice(0, 4).map((tag: string) => (
                     <span
                       key={tag}
                       className="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -615,7 +665,7 @@ function ExaminerList() {
                     </span>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
