@@ -328,7 +328,18 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
         {hasOwnTopic && (
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Abstract (optional)</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+              Abstract (optional)
+              <span className="relative group cursor-default">
+                <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
+                  Ein Abstract fasst Ihre geplante Arbeit in 150–250 Wörtern zusammen: Problemstellung, Zielsetzung, Methodik und erwartete Ergebnisse. Er hilft Prüfer:innen, das Thema schnell einzuschätzen.
+                  <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />
+                </span>
+              </span>
+            </label>
             <textarea
               rows={3}
               value={form.abstract}
@@ -341,7 +352,18 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         
         {hasOwnTopic && (
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Exposé (PDF, optional, max. 10 MB)</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 10 MB)</span>
+              <span className="relative group cursor-default">
+                <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
+                  Das Exposé ist ein 5–10-seitiges Dokument, das Ihr Thema, den Forschungsstand, die Methodik, einen Zeitplan sowie ein vorläufiges Literaturverzeichnis enthält. Es ist keine Pflichtangabe, erhöht aber Ihre Chancen auf eine Zusage.
+                  <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />
+                </span>
+              </span>
+            </label>
           <div className="flex items-center gap-3">
             <input
               type="file"
