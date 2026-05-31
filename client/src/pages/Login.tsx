@@ -413,7 +413,7 @@ export default function Login() {
                             requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
                           }}
                           disabled={requestReset.isPending}
-                          className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                          className="text-xs text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 transition-colors font-medium"
                         >
                           {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
                         </button>

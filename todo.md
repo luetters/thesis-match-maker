@@ -424,3 +424,11 @@
 - [ ] Formularvalidierung mit visuellen Fehlermeldungen (Pflichtfelder, Formatprüfung)
 - [ ] Zwischenspeichern des Antragsformulars im localStorage für spätere Weiterbearbeitung
 - [ ] Wiederherstellungs-Banner wenn gespeicherter Entwurf gefunden wird
+
+## Phase 59: Passwort-Reset-Funktion
+- [ ] DB-Schema: password_reset_tokens Tabelle
+- [ ] Backend: requestPasswordReset Prozedur mit E-Mail-Versand
+- [ ] Backend: resetPassword Prozedur mit Token-Validierung
+- [ ] Frontend: "Passwort vergessen"-Link in Login.tsx
+- [ ] Frontend: ResetPassword.tsx Seite
+- [ ] Route /reset-password in App.tsx registrieren
