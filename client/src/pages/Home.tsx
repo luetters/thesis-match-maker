@@ -169,7 +169,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             </div>
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
             {resetSent && (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm text-green-700 mb-2">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5 text-sm text-primary mb-2">
                 Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
               </div>
             )}
@@ -196,7 +196,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                   requestReset.mutate({ email, origin: window.location.origin });
                 }}
                 disabled={requestReset.isPending}
-                className="w-full text-center text-xs text-gray-400 hover:text-[#006937] transition-colors mt-2"
+                className="w-full text-center text-xs text-gray-400 hover:text-[#76B900] transition-colors mt-2"
               >
                 {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
               </button>
@@ -359,7 +359,7 @@ export default function Home() {
                   else navigate("/student");
                 }}
                 className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "#006937" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 {t.nav.dashboard}
               </button>
@@ -367,7 +367,7 @@ export default function Home() {
               <button
                 onClick={() => navigate("/login")}
                 className="hidden md:flex px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: "#006937" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 {t.nav.login}
               </button>
@@ -421,7 +421,7 @@ export default function Home() {
                       else navigate("/student");
                     }}
                     className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                    style={{ backgroundColor: "#006937" }}
+                    style={{ backgroundColor: "#76B900" }}
                   >
                     {t.nav.dashboard}
                   </button>
@@ -429,7 +429,7 @@ export default function Home() {
                   <button
                     onClick={() => { setMobileMenuOpen(false); navigate("/login"); }}
                     className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                    style={{ backgroundColor: "#006937" }}
+                    style={{ backgroundColor: "#76B900" }}
                   >
                     {t.nav.login}
                   </button>
@@ -455,7 +455,7 @@ export default function Home() {
               <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight mb-4" style={{ color: "#0d1b2a" }}>
                 {t.landing.title}
               </h1>
-              <p className="text-xl font-medium mb-3 leading-snug max-w-lg" style={{ color: "#006937" }}>
+              <p className="text-xl font-medium mb-3 leading-snug max-w-lg" style={{ color: "#76B900" }}>
                 {t.landing.subtitle}
               </p>
               <p className="text-base text-gray-600 mb-8 leading-relaxed max-w-lg">
@@ -474,7 +474,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => handleRoleNavigate("/examiner")}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border-2 text-gray-700 hover:bg-gray-50 transition-all" style={{ borderColor: "#006937" }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border-2 text-gray-700 hover:bg-gray-50 transition-all" style={{ borderColor: "#76B900" }}
                 >
                   {t.landing.examinerArea}
                 </button>
@@ -488,7 +488,7 @@ export default function Home() {
                   { value: "7 + 12", label: "Bachelor / Master" },
                 ].map((stat) => (
                   <div key={stat.label}>
-                    <div className="text-3xl font-extrabold" style={{ color: "#006937" }}>{stat.value}</div>
+                    <div className="text-3xl font-extrabold" style={{ color: "#76B900" }}>{stat.value}</div>
                     <div className="text-sm text-gray-500">{stat.label}</div>
                   </div>
                 ))}
@@ -594,10 +594,10 @@ export default function Home() {
       <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#006937" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
               {t.landing.process.label}
             </p>
-            <h2 className="text-3xl font-bold" style={{ color: "#006937" }}>{t.landing.process.title}</h2>
+            <h2 className="text-3xl font-bold" style={{ color: "#76B900" }}>{t.landing.process.title}</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {t.landing.process.steps.map((step, i) => (
@@ -624,10 +624,10 @@ export default function Home() {
       <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#006937" }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
               {t.landing.tech.label}
             </p>
-            <h2 className="text-3xl font-bold" style={{ color: "#006937" }}>{t.landing.tech.title}</h2>
+            <h2 className="text-3xl font-bold" style={{ color: "#76B900" }}>{t.landing.tech.title}</h2>
             <p className="mt-3 max-w-xl mx-auto" style={{ color: "#555" }}>
               {t.landing.tech.desc}{" "}
               <code className="text-gray-800 bg-gray-200 px-1.5 py-0.5 rounded text-sm">
@@ -638,9 +638,9 @@ export default function Home() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {t.landing.tech.items.map((item) => (
-              <div key={item.title} className="rounded-2xl p-6 bg-white border-2" style={{ borderColor: "#006937" }}>
+              <div key={item.title} className="rounded-2xl p-6 bg-white border-2" style={{ borderColor: "#76B900" }}>
                 <div className="text-2xl mb-3">{item.icon}</div>
-                <h3 className="font-semibold mb-2" style={{ color: "#006937" }}>{item.title}</h3>
+                <h3 className="font-semibold mb-2" style={{ color: "#76B900" }}>{item.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: "#555" }}>{item.desc}</p>
               </div>
             ))}

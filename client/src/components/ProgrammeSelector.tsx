@@ -37,14 +37,14 @@ function ProgrammeCard({
       className={`
         relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center
         ${selected
-          ? "border-[#006937] bg-[#006937]/5 shadow-sm"
-          : "border-gray-200 bg-white hover:border-[#006937]/40 hover:bg-gray-50"
+          ? "border-[#76B900] bg-[#76B900]/5 shadow-sm"
+          : "border-gray-200 bg-white hover:border-[#76B900]/40 hover:bg-gray-50"
         }
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
     >
       {selected && (
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#006937] flex items-center justify-center">
+        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#76B900] flex items-center justify-center">
           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
@@ -63,7 +63,7 @@ function ProgrammeCard({
         </div>
       )}
       <div>
-        <div className="text-xs font-bold text-[#006937]">{programme.abbreviation}</div>
+        <div className="text-xs font-bold text-[#76B900]">{programme.abbreviation}</div>
         <div className="text-xs text-gray-600 leading-tight mt-0.5">{programme.name}</div>
       </div>
     </button>
@@ -117,11 +117,11 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
         <div className="text-sm text-gray-500 mb-1">Ihr zugeordneter Studiengang:</div>
-        <div className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#006937] bg-[#006937]/5">
+        <div className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#76B900] bg-[#76B900]/5">
           {myProgramme.pictogramUrl && (
             <img src={myProgramme.pictogramUrl} alt={myProgramme.name} className="w-20 h-20 object-contain" />
           )}
-          <div className="font-bold text-[#006937]">{myProgramme.abbreviation}</div>
+          <div className="font-bold text-[#76B900]">{myProgramme.abbreviation}</div>
           <div className="text-sm text-gray-700">{myProgramme.name}</div>
           <div className="text-xs text-gray-400 capitalize">{myProgramme.level === "bachelor" ? "Bachelor" : "Master"}</div>
         </div>
@@ -145,10 +145,10 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
           <button
             type="button"
             onClick={() => setDegreeFilter("bachelor")}
-            className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 bg-white hover:border-[#006937] hover:bg-[#006937]/5 transition-all group"
+            className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 bg-white hover:border-[#76B900] hover:bg-[#76B900]/5 transition-all group"
           >
-            <div className="w-14 h-14 rounded-full bg-[#006937]/10 flex items-center justify-center group-hover:bg-[#006937]/20 transition-colors">
-              <svg className="w-7 h-7 text-[#006937]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-14 h-14 rounded-full bg-[#76B900]/10 flex items-center justify-center group-hover:bg-[#76B900]/20 transition-colors">
+              <svg className="w-7 h-7 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
               </svg>
@@ -181,8 +181,8 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
   // Schritt 2: Studiengang aus gefilterter Liste wählen
   const filtered = (programmes ?? []).filter(p => p.level === degreeFilter);
   const degreeLabel = degreeFilter === "bachelor" ? "Bachelor" : "Master";
-  const degreeColor = degreeFilter === "bachelor" ? "text-[#006937]" : "text-blue-600";
-  const degreeBg = degreeFilter === "bachelor" ? "bg-[#006937]/10" : "bg-blue-50";
+  const degreeColor = degreeFilter === "bachelor" ? "text-[#76B900]" : "text-blue-600";
+  const degreeBg = degreeFilter === "bachelor" ? "bg-[#76B900]/10" : "bg-blue-50";
 
   return (
     <div className="space-y-5">
@@ -216,7 +216,7 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
           disabled={!selected || setMutation.isPending}
           onClick={() => selected && setMutation.mutate({ programmeId: selected })}
           className="px-6 py-2.5 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           {setMutation.isPending ? "Wird gespeichert…" : "Studiengang bestätigen"}
         </button>
@@ -265,7 +265,7 @@ export function ExaminerProgrammeSelector() {
       </p>
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full bg-[#006937]/10 text-[#006937] text-xs font-bold">Bachelor</span>
+          <span className="px-2 py-0.5 rounded-full bg-[#76B900]/10 text-[#76B900] text-xs font-bold">Bachelor</span>
           Bachelorstudiengänge
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -304,7 +304,7 @@ export function ExaminerProgrammeSelector() {
           disabled={setMutation.isPending}
           onClick={() => setMutation.mutate({ programmeIds: Array.from(effectiveSelected) })}
           className="px-6 py-2.5 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           {setMutation.isPending ? "Wird gespeichert…" : "Auswahl speichern"}
         </button>

@@ -25,7 +25,7 @@ export function BottomNavigation({ items }: BottomNavigationProps) {
               onClick={() => setLocation(item.href)}
               className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
                 isActive
-                  ? "text-[#76B900] bg-green-50"
+                  ? "text-[#76B900] bg-primary/5"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >

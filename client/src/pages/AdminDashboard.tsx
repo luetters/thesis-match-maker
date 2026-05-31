@@ -357,9 +357,9 @@ function AuditLogView() {
   const actionColors: Record<string, string> = {
     THESIS_CREATED: "bg-blue-100 text-blue-700",
     STATUS_CHANGED: "bg-amber-100 text-amber-700",
-    FIRST_EXAMINER_ASSIGNED: "bg-green-100 text-green-700",
-    SECOND_EXAMINER_ASSIGNED: "bg-green-100 text-green-700",
-    EXAMINER_ACCEPTED: "bg-green-100 text-green-700",
+    FIRST_EXAMINER_ASSIGNED: "bg-primary/10 text-primary",
+    SECOND_EXAMINER_ASSIGNED: "bg-primary/10 text-primary",
+    EXAMINER_ACCEPTED: "bg-primary/10 text-primary",
     EXAMINER_REJECTED: "bg-red-100 text-red-700",
   };
 
@@ -580,7 +580,7 @@ function RoleChangeConfirmDialog({
           <button onClick={onCancel} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             Abbrechen
           </button>
-          <button onClick={onConfirm} className="px-4 py-2 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-colors" style={{ backgroundColor: "#006937" }}>
+          <button onClick={onConfirm} className="px-4 py-2 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-colors" style={{ backgroundColor: "#76B900" }}>
             Rolle ändern
           </button>
         </div>
@@ -812,7 +812,7 @@ function Overview() {
   const statusData = [
     { name: "Ausstehend", value: pending, color: "#f59e0b" },
     { name: "Matched", value: matched, color: "#3b82f6" },
-    { name: "Genehmigt", value: approved, color: "#006937" },
+    { name: "Genehmigt", value: approved, color: "#76B900" },
     { name: "Abgeschlossen", value: completed, color: "#8b5cf6" },
     { name: "Abgelehnt", value: rejected, color: "#ef4444" },
   ].filter(d => d.value > 0);
@@ -825,7 +825,7 @@ function Overview() {
       {/* Hauptkennzahlen */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Anfragen gesamt", value: total, sub: `${pending} ausstehend`, color: "#006937", bg: "bg-[#006937]/5" },
+          { label: "Anfragen gesamt", value: total, sub: `${pending} ausstehend`, color: "#76B900", bg: "bg-[#76B900]/5" },
           { label: "Aktive Nutzer:innen", value: totalUsers, sub: `${studentCount} Stud. · ${examinerCount} Prüf.`, color: "#3b82f6", bg: "bg-blue-50" },
           { label: "Rollenanfragen offen", value: pendingRoleCount, sub: "Warten auf Bestätigung", color: pendingRoleCount > 0 ? "#f59e0b" : "#6b7280", bg: pendingRoleCount > 0 ? "bg-amber-50" : "bg-gray-50" },
           { label: "Abgeschlossen", value: completed, sub: `${approved} genehmigt`, color: "#8b5cf6", bg: "bg-purple-50" },
@@ -846,7 +846,7 @@ function Overview() {
             {[
               { label: "Ausstehend", value: pending, color: "bg-amber-400" },
               { label: "Matched", value: matched, color: "bg-blue-500" },
-              { label: "Genehmigt", value: approved, color: "bg-[#006937]" },
+              { label: "Genehmigt", value: approved, color: "bg-[#76B900]" },
               { label: "Abgeschlossen", value: completed, color: "bg-purple-500" },
               { label: "Abgelehnt", value: rejected, color: "bg-red-400" },
             ].map(item => (
@@ -898,7 +898,7 @@ function Overview() {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Line type="monotone" dataKey="count" name="Anfragen" stroke="#006937" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="count" name="Anfragen" stroke="#76B900" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -980,7 +980,7 @@ function Overview() {
               <div className="space-y-4">
                 {logs.slice(0, 6).map((log) => (
                   <div key={log.id} className="flex gap-4 pl-8 relative">
-                    <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#006937]/20 border-2 border-[#006937] shrink-0" />
+                    <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#76B900]/20 border-2 border-[#76B900] shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{log.action.replace(/_/g, " ")}</p>
                       <p className="text-xs text-gray-500">Anfrage #{log.thesisRequestId} · {new Date(log.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}</p>
@@ -1030,7 +1030,7 @@ function SettingsView() {
         </div>
         {result && (
           <div className={`mt-4 p-3.5 rounded-xl text-sm font-medium flex items-center gap-2 ${
-            result.success ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+            result.success ? "bg-primary/5 text-primary border border-primary/15" : "bg-red-50 text-red-700 border border-red-100"
           }`}>
             {result.success ? (
               <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>

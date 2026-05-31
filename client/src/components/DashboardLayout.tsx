@@ -79,7 +79,7 @@ export default function DashboardLayout({
             }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
-            style={{ backgroundColor: "#006937", color: "white" }}
+            style={{ backgroundColor: "#76B900", color: "white" }}
           >
             Zur Anmeldung
           </Button>

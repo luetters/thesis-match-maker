@@ -124,7 +124,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       {!pendingQuery.isLoading && visiblePending.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <CheckCircle className="w-12 h-12 text-green-400 mb-3" />
+            <CheckCircle className="w-12 h-12 text-primary/60 mb-3" />
             <p className="font-medium text-gray-700">Keine ausstehenden Rollenanfragen</p>
             <p className="text-sm text-gray-400 mt-1">Alle Anfragen wurden bearbeitet.</p>
           </CardContent>
@@ -175,7 +175,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     size="sm"
-                    className="bg-[#006937] hover:bg-[#005a2f] text-white gap-1"
+                    className="bg-[#76B900] hover:bg-[var(--primary)] text-white gap-1"
                     onClick={() => handleApprove(user.id)}
                     disabled={approveMutation.isPending}
                   >

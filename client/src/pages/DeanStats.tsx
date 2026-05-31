@@ -33,7 +33,7 @@ const STATUS_LABELS_DE: Record<string, string> = {
   REJECTED: "Abgelehnt",
 };
 const DEPT_COLORS = [
-  "#006937", "#76B900", "#3B82F6", "#8B5CF6", "#F59E0B",
+  "#76B900", "#76B900", "#3B82F6", "#8B5CF6", "#F59E0B",
   "#EF4444", "#10B981", "#EC4899", "#14B8A6", "#F97316",
 ];
 
@@ -76,7 +76,7 @@ export default function DeanStats() {
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function DeanStats() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Sie haben keinen Zugriff auf diesen Bereich.</p>
-          <Link href="/" className="text-[#006937] hover:underline text-sm">Zur Startseite</Link>
+          <Link href="/" className="text-[#76B900] hover:underline text-sm">Zur Startseite</Link>
         </div>
       </div>
     );
@@ -128,7 +128,7 @@ export default function DeanStats() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <KpiCard label="Anträge gesamt" value={stats?.kpis.total ?? 0} />
           <KpiCard label="Offen" value={stats?.kpis.open ?? 0} color="text-yellow-600" sub="Ausstehend + Zugeteilt" />
-          <KpiCard label="Angenommen" value={stats?.kpis.accepted ?? 0} color="text-green-600" />
+          <KpiCard label="Angenommen" value={stats?.kpis.accepted ?? 0} color="text-primary" />
           <KpiCard label="Abschlussquote" value={`${stats?.kpis.completionRate ?? 0} %`} color="text-blue-600" sub="Angenommen / Gesamt" />
           <KpiCard label="Ø Bearbeitungszeit" value={`${stats?.kpis.avgDays ?? 0} Tage`} sub="Eingang bis Entscheidung" />
         </div>
@@ -180,9 +180,9 @@ export default function DeanStats() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="#006937"
+                    stroke="#76B900"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: "#006937" }}
+                    dot={{ r: 3, fill: "#76B900" }}
                     activeDot={{ r: 5 }}
                   />
                 </LineChart>
@@ -235,7 +235,7 @@ export default function DeanStats() {
                   <LoadBar key={i} name={e.name} current={e.current} max={e.max} />
                 ))}
                 <p className="text-xs text-gray-400 mt-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />Kapazität frei
+                  <span className="inline-block w-2 h-2 rounded-full bg-primary mr-1" />Kapazität frei
                   <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mx-1 ml-3" />Auslastung ≥ 70 %
                   <span className="inline-block w-2 h-2 rounded-full bg-red-500 mx-1 ml-3" />Auslastung ≥ 90 %
                 </p>

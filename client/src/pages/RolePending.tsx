@@ -46,7 +46,7 @@ export default function RolePending() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#006937] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#76B900] flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -110,7 +110,7 @@ export default function RolePending() {
               </p>
               <div className="flex gap-3 justify-center">
                 <Button
-                  className="bg-[#006937] hover:bg-[#005a2f] text-white gap-2"
+                  className="bg-[#76B900] hover:bg-[var(--primary)] text-white gap-2"
                   onClick={handleRetry}
                 >
                   Neue Rollenanfrage stellen
@@ -124,8 +124,8 @@ export default function RolePending() {
 
           {status?.roleStatus === "approved" && (
             <>
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-6">
-                <CheckCircle className="w-10 h-10 text-[#006937]" />
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
+                <CheckCircle className="w-10 h-10 text-[#76B900]" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-3">Rolle bestätigt!</h1>
               <p className="text-gray-600 mb-4">Sie werden weitergeleitet …</p>
@@ -142,7 +142,7 @@ export default function RolePending() {
                 Bitte wählen Sie zunächst eine Rolle aus.
               </p>
               <Button
-                className="bg-[#006937] hover:bg-[#005a2f] text-white"
+                className="bg-[#76B900] hover:bg-[var(--primary)] text-white"
                 onClick={() => navigate("/select-role")}
               >
                 Rolle auswählen

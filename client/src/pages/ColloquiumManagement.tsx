@@ -72,7 +72,7 @@ function CreateColloquiumModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-[#006937]">Neues Kolloquium anlegen</DialogTitle>
+          <DialogTitle className="text-[#76B900]">Neues Kolloquium anlegen</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>

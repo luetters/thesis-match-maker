@@ -12,7 +12,7 @@ function formatDate(d: Date | string | null | undefined) {
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   PENDING:  { label: "Ausstehend", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  ACCEPTED: { label: "Angenommen", cls: "bg-green-50 text-green-700 border-green-200" },
+  ACCEPTED: { label: "Angenommen", cls: "bg-primary/5 text-primary border-primary/20" },
   REJECTED: { label: "Abgelehnt",  cls: "bg-red-50 text-red-700 border-red-200" },
   MATCHED:  { label: "Zugeteilt",  cls: "bg-blue-50 text-blue-700 border-blue-200" },
 };
@@ -48,7 +48,7 @@ function RequestDetailSheet({
 
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : !data ? (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -93,8 +93,8 @@ function RequestDetailSheet({
               <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Prüfer:innen</h4>
               <div className="space-y-2">
                 {data.firstExaminer ? (
-                  <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                    <p className="text-xs text-green-600 font-semibold mb-0.5">Erstprüfer:in</p>
+                  <div className="bg-primary/5 border border-primary/15 rounded-xl p-3">
+                    <p className="text-xs text-primary font-semibold mb-0.5">Erstprüfer:in</p>
                     <p className="font-medium text-gray-900">{data.firstExaminer.name ?? "–"}</p>
                     <p className="text-sm text-gray-500">{data.firstExaminer.email}</p>
                   </div>
@@ -135,7 +135,7 @@ function RequestDetailSheet({
                   )}
                   <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
                     (data.colloquium as any).status === "confirmed"
-                      ? "bg-green-50 text-green-700 border-green-200"
+                      ? "bg-primary/5 text-primary border-primary/20"
                       : "bg-yellow-50 text-yellow-700 border-yellow-200"
                   }`}>
                     {(data.colloquium as any).status === "confirmed" ? "Bestätigt" : "Ausstehend"}
@@ -157,7 +157,7 @@ function RequestDetailSheet({
                 <div className="space-y-2">
                   {(data.history as any[]).map((entry, i) => (
                     <div key={i} className="flex gap-3 items-start">
-                      <div className="w-2 h-2 rounded-full bg-[#006937] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-[#76B900] mt-1.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{entry.action}</p>
                         <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
@@ -241,7 +241,7 @@ export default function DeanDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -252,7 +252,7 @@ export default function DeanDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Sie haben keinen Zugriff auf diesen Bereich.</p>
-          <Link href="/" className="text-[#006937] hover:underline text-sm">Zur Startseite</Link>
+          <Link href="/" className="text-[#76B900] hover:underline text-sm">Zur Startseite</Link>
         </div>
       </div>
     );
@@ -282,7 +282,7 @@ export default function DeanDashboard() {
     { label: t.dean.total, value: stats.total, cls: "text-gray-900" },
     { label: t.dean.pending, value: stats.pending, cls: "text-yellow-600" },
     { label: t.dean.matched, value: stats.matched, cls: "text-blue-600" },
-    { label: t.dean.accepted, value: stats.accepted, cls: "text-green-600" },
+    { label: t.dean.accepted, value: stats.accepted, cls: "text-primary" },
     { label: t.dean.rejected, value: stats.rejected, cls: "text-red-600" },
   ];
 
@@ -315,7 +315,7 @@ export default function DeanDashboard() {
             <button
               onClick={handleCsvDownload}
               disabled={csvLoading || !requests?.length}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors disabled:opacity-50"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -324,7 +324,7 @@ export default function DeanDashboard() {
             </button>
             <Link
               href="/dean/stats"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#006937] bg-white text-sm text-[#006937] hover:bg-green-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#76B900] bg-white text-sm text-[#76B900] hover:bg-primary/5 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

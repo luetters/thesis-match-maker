@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<Role, string> = {
 const ROLE_COLORS: Record<Role, string> = {
   admin: "bg-red-100 text-red-800",
   examiner: "bg-blue-100 text-blue-800",
-  student: "bg-green-100 text-green-800",
+  student: "bg-primary/15 text-primary",
 };
 
 export function RoleSwitcher() {

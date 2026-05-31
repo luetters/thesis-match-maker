@@ -36,7 +36,7 @@ function ToolbarButton({
       title={title}
       className={`p-1.5 rounded text-sm font-medium transition-colors ${
         active
-          ? "bg-[#006937] text-white"
+          ? "bg-[#76B900] text-white"
           : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
       } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
@@ -58,7 +58,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       Underline,
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: { class: "text-[#006937] underline" },
+        HTMLAttributes: { class: "text-[#76B900] underline" },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
@@ -70,7 +70,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
     editorProps: {
       attributes: {
         class:
-          "min-h-[200px] p-3 text-sm focus:outline-none prose prose-sm max-w-none prose-headings:text-gray-900 prose-a:text-[#006937]",
+          "min-h-[200px] p-3 text-sm focus:outline-none prose prose-sm max-w-none prose-headings:text-gray-900 prose-a:text-[#76B900]",
       },
     },
   });

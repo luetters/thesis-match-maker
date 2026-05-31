@@ -18,7 +18,7 @@ function getInitials(name?: string | null): string {
 
 function TagBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/5 text-primary border border-primary/15">
       {label}
     </span>
   );
@@ -171,7 +171,7 @@ function EditProfileModal({
     });
   };
 
-  const inputClass = "w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition-all";
+  const inputClass = "w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
   const labelClass = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
 
   return (
@@ -276,7 +276,7 @@ export default function ExaminerProfile() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-gray-500">Profil wird geladen...</p>
         </div>
       </div>
@@ -340,7 +340,7 @@ export default function ExaminerProfile() {
         {/* Profil-Hero */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           {/* Banner */}
-          <div className="h-28 relative" style={{ backgroundColor: "#006937" }}>
+          <div className="h-28 relative" style={{ backgroundColor: "#76B900" }}>
             <div className="absolute inset-0 opacity-10">
               <svg viewBox="0 0 400 112" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -378,7 +378,7 @@ export default function ExaminerProfile() {
                   <h1 className="text-xl font-bold text-gray-900">
                     {profile?.title ? `${profile.title} ` : ""}{user.name ?? "Unbekannt"}
                   </h1>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/5 text-primary border border-primary/15">
                     Prüfer:in
                   </span>
                 </div>
@@ -406,16 +406,16 @@ export default function ExaminerProfile() {
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${
                   (profile as { isSecondExaminer?: number }).isSecondExaminer === 1
                     ? "bg-blue-50 border-blue-100"
-                    : "bg-green-50 border-green-100"
+                    : "bg-primary/5 border-primary/15"
                 }`}>
                   <svg className={`w-4 h-4 ${
-                    (profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "text-blue-400" : "text-green-500"
+                    (profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "text-blue-400" : "text-primary"
                   }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
                   </svg>
                   <span className={`text-xs font-semibold ${
-                    (profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "text-blue-700" : "text-green-700"
+                    (profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "text-blue-700" : "text-primary"
                   }`}>
                     {(profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "Zweitprüfer:in" : "Erstprüfer:in"}
                   </span>
@@ -456,9 +456,9 @@ export default function ExaminerProfile() {
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Kontakt</h3>
               <div className="space-y-2.5">
                 {user.email && (
-                  <a href={`mailto:${user.email}`} className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-green-600 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-green-50 transition-colors">
-                      <svg className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <a href={`mailto:${user.email}`} className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-primary transition-colors group">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
@@ -476,9 +476,9 @@ export default function ExaminerProfile() {
                   </div>
                 )}
                 {profile?.websiteUrl && (
-                  <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-green-600 transition-colors group">
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-green-50 transition-colors">
-                      <svg className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-primary transition-colors group">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </div>

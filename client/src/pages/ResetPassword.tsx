@@ -33,7 +33,7 @@ export default function ResetPassword() {
           </div>
           <h2 className="text-lg font-bold text-gray-900 mb-2">Ungültiger Link</h2>
           <p className="text-gray-500 text-sm">Dieser Passwort-Reset-Link ist ungültig oder abgelaufen.</p>
-          <button onClick={() => navigate("/")} className="mt-5 w-full py-2.5 bg-[#006937] text-white rounded-lg text-sm font-semibold hover:bg-[#005a2f] transition-colors">
+          <button onClick={() => navigate("/")} className="mt-5 w-full py-2.5 bg-[#76B900] text-white rounded-lg text-sm font-semibold hover:bg-[var(--primary)] transition-colors">
             Zur Startseite
           </button>
         </div>
@@ -45,14 +45,14 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-[#f5f7f5] flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <h2 className="text-lg font-bold text-gray-900 mb-2">Passwort geändert</h2>
           <p className="text-gray-500 text-sm mb-5">Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.</p>
-          <button onClick={() => navigate("/")} className="w-full py-2.5 bg-[#006937] text-white rounded-lg text-sm font-semibold hover:bg-[#005a2f] transition-colors">
+          <button onClick={() => navigate("/")} className="w-full py-2.5 bg-[#76B900] text-white rounded-lg text-sm font-semibold hover:bg-[var(--primary)] transition-colors">
             Zur Anmeldung
           </button>
         </div>
@@ -65,8 +65,8 @@ export default function ResetPassword() {
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-[#006937]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-[#006937]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="w-12 h-12 bg-[#76B900]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
           </div>
@@ -83,7 +83,7 @@ export default function ResetPassword() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]"
               placeholder="Mindestens 8 Zeichen"
             />
           </div>
@@ -94,7 +94,7 @@ export default function ResetPassword() {
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]"
               placeholder="Passwort wiederholen"
             />
             {confirm && password !== confirm && (
@@ -111,7 +111,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={resetMutation.isPending || password !== confirm || password.length < 8}
-            className="w-full py-2.5 bg-[#006937] text-white rounded-lg text-sm font-semibold hover:bg-[#005a2f] disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 bg-[#76B900] text-white rounded-lg text-sm font-semibold hover:bg-[var(--primary)] disabled:opacity-50 transition-colors"
           >
             {resetMutation.isPending ? "Wird gespeichert…" : "Passwort speichern"}
           </button>

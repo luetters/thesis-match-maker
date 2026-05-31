@@ -20,7 +20,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     label: "Studierende:r",
     description: "Ich möchte eine Abschlussarbeit anmelden und Prüfer:innen finden.",
     icon: <GraduationCap className="w-8 h-8" />,
-    color: "text-[#006937]",
+    color: "text-[#76B900]",
   },
   {
     id: "examiner",
@@ -64,7 +64,7 @@ export default function SelectRole() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#006937] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#76B900] flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -91,7 +91,7 @@ export default function SelectRole() {
                 key={role.id}
                 className={`cursor-pointer transition-all border-2 ${
                   selected === role.id
-                    ? "border-[#006937] bg-green-50 shadow-md"
+                    ? "border-[#76B900] bg-primary/5 shadow-md"
                     : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 onClick={() => setSelected(role.id)}
@@ -105,7 +105,7 @@ export default function SelectRole() {
                   <div
                     className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all ${
                       selected === role.id
-                        ? "border-[#006937] bg-[#006937]"
+                        ? "border-[#76B900] bg-[#76B900]"
                         : "border-gray-300"
                     }`}
                   >
@@ -126,7 +126,7 @@ export default function SelectRole() {
           </div>
 
           <Button
-            className="w-full bg-[#006937] hover:bg-[#005a2f] text-white py-3 text-base font-semibold"
+            className="w-full bg-[#76B900] hover:bg-[var(--primary)] text-white py-3 text-base font-semibold"
             disabled={!selected || selectRole.isPending}
             onClick={handleSubmit}
           >

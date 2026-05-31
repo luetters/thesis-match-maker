@@ -81,7 +81,7 @@ export function BulkActionDialog({
           <Button
             onClick={handleConfirm}
             disabled={isConfirming || isLoading}
-            className="bg-[#76B900] hover:bg-[#006937] text-white"
+            className="bg-[#76B900] hover:bg-[#76B900] text-white"
           >
             {isConfirming ? "Wird verarbeitet..." : actionLabel}
           </Button>

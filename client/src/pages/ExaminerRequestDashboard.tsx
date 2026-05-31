@@ -49,7 +49,7 @@ export function ExaminerRequestDashboard() {
         );
       case "FIRST_EXAMINER_ACCEPTED":
         return (
-          <Badge className="bg-green-100 text-green-800">
+          <Badge className="bg-primary/15 text-primary">
             <CheckCircle className="w-3 h-3 mr-1" />
             {t.status?.ACCEPTED || "Akzeptiert"}
           </Badge>

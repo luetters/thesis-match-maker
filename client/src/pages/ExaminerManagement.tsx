@@ -262,7 +262,7 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
 
         {result && (
           <div className="rounded-xl border p-4 space-y-2">
-            <div className="flex items-center gap-2 text-green-700">
+            <div className="flex items-center gap-2 text-primary">
               <CheckCircle2 className="w-5 h-5" />
               <span className="font-semibold">{result.created} Prüfer:in{result.created !== 1 ? "nen" : ""} angelegt</span>
             </div>
@@ -432,7 +432,7 @@ function CapacityPanel({ examiner, onClose }: { examiner: any; onClose: () => vo
                               autoFocus
                               className="w-14 text-center border rounded px-1 py-0.5 text-sm bg-background"
                             />
-                            <button onClick={() => commitEdit(sem, "first", row)} className="text-green-600 hover:text-green-700">
+                            <button onClick={() => commitEdit(sem, "first", row)} className="text-primary hover:text-primary">
                               <Check className="w-4 h-4" />
                             </button>
                             <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
@@ -471,7 +471,7 @@ function CapacityPanel({ examiner, onClose }: { examiner: any; onClose: () => vo
                               autoFocus
                               className="w-14 text-center border rounded px-1 py-0.5 text-sm bg-background"
                             />
-                            <button onClick={() => commitEdit(sem, "second", row)} className="text-green-600 hover:text-green-700">
+                            <button onClick={() => commitEdit(sem, "second", row)} className="text-primary hover:text-primary">
                               <Check className="w-4 h-4" />
                             </button>
                             <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">

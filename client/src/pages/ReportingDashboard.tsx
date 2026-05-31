@@ -116,7 +116,7 @@ export default function ReportingDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -127,7 +127,7 @@ export default function ReportingDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Sie haben keinen Zugriff auf diesen Bereich.</p>
-          <Link href="/" className="text-[#006937] hover:underline text-sm">Zur Startseite</Link>
+          <Link href="/" className="text-[#76B900] hover:underline text-sm">Zur Startseite</Link>
         </div>
       </div>
     );
@@ -190,7 +190,7 @@ export default function ReportingDashboard() {
             </div>
             <Button
               onClick={() => exportCSV.refetch()}
-              className="bg-[#76B900] hover:bg-[#006937] text-white flex items-center gap-2"
+              className="bg-[#76B900] hover:bg-[#76B900] text-white flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               CSV exportieren
@@ -201,7 +201,7 @@ export default function ReportingDashboard() {
         {/* KPI-Karten */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <KpiCard label="Gesamt-Anfragen" value={totalRequests} />
-          <KpiCard label="Angenommen" value={acceptedRequests} color="text-green-600" />
+          <KpiCard label="Angenommen" value={acceptedRequests} color="text-primary" />
           <KpiCard label="Abgelehnt" value={rejectedRequests} color="text-red-600" />
           <KpiCard label="Erfolgsquote" value={`${successRate}%`} color="text-blue-600" />
           <KpiCard label="Ø Bearbeitungszeit" value={`${avgProcessingTime || 0} Tage`} color="text-purple-600" />
@@ -219,7 +219,7 @@ export default function ReportingDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-[#76B900] text-[#006937]"
+                  ? "border-[#76B900] text-[#76B900]"
                   : "border-transparent text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -231,7 +231,7 @@ export default function ReportingDashboard() {
         {/* Tab Content */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <>
@@ -268,7 +268,7 @@ export default function ReportingDashboard() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Abbruchquote</h3>
                   <div className="flex items-center justify-center h-300">
                     <div className="text-center">
-                      <div className={`text-5xl font-bold ${dropoutRate && dropoutRate > 20 ? "text-red-600" : "text-green-600"}`}>
+                      <div className={`text-5xl font-bold ${dropoutRate && dropoutRate > 20 ? "text-red-600" : "text-primary"}`}>
                         {dropoutRate || 0}%
                       </div>
                       <p className="text-gray-600 mt-2">der Anfragen wurden abgelehnt</p>

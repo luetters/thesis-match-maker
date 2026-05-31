@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   superadmin: "bg-purple-100 text-purple-800 border border-purple-200",
   admin: "bg-blue-100 text-blue-800 border border-blue-200",
-  examiner: "bg-green-100 text-green-800 border border-green-200",
+  examiner: "bg-primary/15 text-primary border border-primary/20",
   student: "bg-amber-100 text-amber-800 border border-amber-200",
   user: "bg-gray-100 text-gray-700 border border-gray-200",
 };
@@ -55,7 +55,7 @@ function UserManagementTab() {
     });
   }, [users, search, filterRole]);
 
-  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" /></div>;
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /></div>;
 
   return (
     <div>
@@ -161,7 +161,7 @@ function AuditLogTab() {
     URL.revokeObjectURL(url);
   };
 
-  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" /></div>;
+  if (isLoading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /></div>;
 
   return (
     <div>
@@ -303,7 +303,7 @@ function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () =>
                 <select
                   value={selectedRole || user.role}
                   onChange={(e) => handleRoleChange(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                 >
                   <option value="student">Studierende:r</option>
                   <option value="examiner">Pruefer:in</option>
@@ -336,12 +336,12 @@ function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () =>
             {statusMessage && (
               <div className={`mt-4 p-4 rounded-lg border ${
                 statusMessage.type === 'success'
-                  ? 'bg-green-50 border-green-200'
+                  ? 'bg-primary/5 border-primary/20'
                   : 'bg-red-50 border-red-200'
               }`}>
                 <p className={`text-sm ${
                   statusMessage.type === 'success'
-                    ? 'text-green-900'
+                    ? 'text-primary-foreground'
                     : 'text-red-900'
                 }`}>
                   {statusMessage.text}
@@ -364,7 +364,7 @@ function UserDetailsModal({ userId, onClose }: { userId?: number; onClose: () =>
                   <button
                     onClick={confirmRoleChange}
                     disabled={setRoleMutation.isPending}
-                    className="flex-1 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                    className="flex-1 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
                   >
                     {setRoleMutation.isPending ? "Speichert..." : "Bestaetigen"}
                   </button>
@@ -435,7 +435,7 @@ function UserDashboardTab() {
         label: "Prüfer:innen",
         value: stats.examiner || 0,
         icon: "🎓",
-        color: "bg-green-50",
+        color: "bg-primary/5",
       },
       {
         label: "Admins",
@@ -483,7 +483,7 @@ function UserDashboardTab() {
               setSearchQuery(e.target.value);
               setCurrentPage(0);
             }}
-            className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <select
             value={roleFilter}
@@ -491,7 +491,7 @@ function UserDashboardTab() {
               setRoleFilter(e.target.value);
               setCurrentPage(0);
             }}
-            className="px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            className="px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
           >
             <option value="">Alle Rollen</option>
             <option value="student">Studierende</option>
@@ -788,7 +788,7 @@ function SystemConfigTab() {
   };
 
   if (isLoading || !form) {
-    return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin" /></div>;
+    return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /></div>;
   }
 
   return (
@@ -797,22 +797,22 @@ function SystemConfigTab() {
         <h3 className="font-semibold text-gray-900 text-base">Allgemeine Einstellungen</h3>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Systemname</label>
-          <input type="text" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.systemName} onChange={(e) => setForm((f) => f ? { ...f, systemName: e.target.value } : f)} />
+          <input type="text" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.systemName} onChange={(e) => setForm((f) => f ? { ...f, systemName: e.target.value } : f)} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Kontakt-E-Mail</label>
-          <input type="email" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.contactEmail} onChange={(e) => setForm((f) => f ? { ...f, contactEmail: e.target.value } : f)} />
+          <input type="email" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.contactEmail} onChange={(e) => setForm((f) => f ? { ...f, contactEmail: e.target.value } : f)} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Fusszeilen-Text</label>
-          <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" rows={3} value={form.footerText} onChange={(e) => setForm((f) => f ? { ...f, footerText: e.target.value } : f)} />
+          <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" rows={3} value={form.footerText} onChange={(e) => setForm((f) => f ? { ...f, footerText: e.target.value } : f)} />
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
         <h3 className="font-semibold text-gray-900 text-base">Betrieb</h3>
         <div className="flex items-start gap-4">
-          <button type="button" onClick={() => setForm((f) => f ? { ...f, maintenanceMode: f.maintenanceMode === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.maintenanceMode === "true" ? "bg-green-600" : "bg-gray-200")}>
+          <button type="button" onClick={() => setForm((f) => f ? { ...f, maintenanceMode: f.maintenanceMode === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.maintenanceMode === "true" ? "bg-primary" : "bg-gray-200")}>
             <span className={"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 " + (form.maintenanceMode === "true" ? "translate-x-5" : "translate-x-0")} />
           </button>
           <div>
@@ -821,7 +821,7 @@ function SystemConfigTab() {
           </div>
         </div>
         <div className="flex items-start gap-4">
-          <button type="button" onClick={() => setForm((f) => f ? { ...f, allowStudentRegistration: f.allowStudentRegistration === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.allowStudentRegistration === "true" ? "bg-green-600" : "bg-gray-200")}>
+          <button type="button" onClick={() => setForm((f) => f ? { ...f, allowStudentRegistration: f.allowStudentRegistration === "true" ? "false" : "true" } : f)} className={"relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none " + (form.allowStudentRegistration === "true" ? "bg-primary" : "bg-gray-200")}>
             <span className={"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 " + (form.allowStudentRegistration === "true" ? "translate-x-5" : "translate-x-0")} />
           </button>
           <div>
@@ -835,19 +835,19 @@ function SystemConfigTab() {
         <h3 className="font-semibold text-gray-900 text-base">Schwellenwerte</h3>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Standard-Betreuungskapazitaet (Pruefer:in)</label>
-          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.maxSupervisionDefault} onChange={(e) => setForm((f) => f ? { ...f, maxSupervisionDefault: e.target.value } : f)} />
+          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.maxSupervisionDefault} onChange={(e) => setForm((f) => f ? { ...f, maxSupervisionDefault: e.target.value } : f)} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Deadline-Warnung (Tage vorher)</label>
-          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" value={form.thesisDeadlineWarningDays} onChange={(e) => setForm((f) => f ? { ...f, thesisDeadlineWarningDays: e.target.value } : f)} />
+          <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.thesisDeadlineWarningDays} onChange={(e) => setForm((f) => f ? { ...f, thesisDeadlineWarningDays: e.target.value } : f)} />
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={updateSettings.isPending} className="px-6 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors">
+        <button onClick={handleSave} disabled={updateSettings.isPending} className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
           {updateSettings.isPending ? "Wird gespeichert..." : "Einstellungen speichern"}
         </button>
-        {saved && <span className="text-sm text-green-600 font-medium">Gespeichert</span>}
+        {saved && <span className="text-sm text-primary font-medium">Gespeichert</span>}
         {updateSettings.isError && <span className="text-sm text-red-600">{updateSettings.error?.message}</span>}
       </div>
     </div>
@@ -894,7 +894,7 @@ function PavManagementTab() {
                 <div
                   key={prog.id}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
-                    isAssigned ? "border-[#006937] bg-green-50" : "border-gray-200"
+                    isAssigned ? "border-[#76B900] bg-primary/5" : "border-gray-200"
                   }`}
                 >
                   <div>
@@ -911,7 +911,7 @@ function PavManagementTab() {
                     className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                       isAssigned
                         ? "bg-red-50 text-red-600 hover:bg-red-100"
-                        : "bg-[#006937] text-white hover:bg-[#005a2f]"
+                        : "bg-[#76B900] text-white hover:bg-[var(--primary)]"
                     } disabled:opacity-50`}
                   >
                     {isAssigned ? "Entfernen" : "Zuweisen"}

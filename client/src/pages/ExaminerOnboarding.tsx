@@ -32,7 +32,7 @@ function StepBar({ current, steps }: { current: Step; steps: { id: number; label
           <div className="flex flex-col items-center flex-1">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
-                ${current === s.id ? "bg-[#006937] text-white shadow-lg scale-110" : current > s.id ? "bg-[#76B900] text-white" : "bg-gray-200 text-gray-400"}`}
+                ${current === s.id ? "bg-[#76B900] text-white shadow-lg scale-110" : current > s.id ? "bg-[#76B900] text-white" : "bg-gray-200 text-gray-400"}`}
             >
               {current > s.id ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -40,7 +40,7 @@ function StepBar({ current, steps }: { current: Step; steps: { id: number; label
                 </svg>
               ) : s.id}
             </div>
-            <span className={`text-xs mt-1 font-medium hidden sm:block ${current === s.id ? "text-[#006937]" : current > s.id ? "text-[#76B900]" : "text-gray-400"}`}>
+            <span className={`text-xs mt-1 font-medium hidden sm:block ${current === s.id ? "text-[#76B900]" : current > s.id ? "text-[#76B900]" : "text-gray-400"}`}>
               {s.label}
             </span>
           </div>
@@ -58,7 +58,7 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-3">
-        <div className="w-20 h-20 mx-auto rounded-2xl bg-[#006937]/10 flex items-center justify-center">
+        <div className="w-20 h-20 mx-auto rounded-2xl bg-[#76B900]/10 flex items-center justify-center">
           <img src="/manus-storage/IconFemaleFemale_210f65cb.webp" alt="HTW Berlin" className="w-14 h-14 object-contain" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Willkommen beim Thesis Match Maker</h2>
@@ -86,7 +86,7 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
       <button
         onClick={onNext}
         className="w-full py-3 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90"
-        style={{ backgroundColor: "#006937" }}
+        style={{ backgroundColor: "#76B900" }}
       >
         Einrichtung starten →
       </button>
@@ -138,7 +138,7 @@ function Step2Profile({
             value={data.title}
             onChange={(e) => onChange({ title: e.target.value })}
             placeholder="z.B. Prof. Dr."
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
           />
         </div>
         <div>
@@ -148,7 +148,7 @@ function Step2Profile({
             value={data.department}
             onChange={(e) => onChange({ department: e.target.value })}
             placeholder="z.B. Fachbereich 3 – Wirtschaft"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
           />
         </div>
       </div>
@@ -159,7 +159,7 @@ function Step2Profile({
           onChange={(e) => onChange({ bio: e.target.value })}
           rows={3}
           placeholder="Kurze Beschreibung Ihrer Tätigkeit und Expertise…"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30 resize-none"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 resize-none"
         />
       </div>
       <div>
@@ -169,7 +169,7 @@ function Step2Profile({
           value={data.researchFocus}
           onChange={(e) => onChange({ researchFocus: e.target.value })}
           placeholder="z.B. Controlling, Unternehmensführung, Digitalisierung"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -180,7 +180,7 @@ function Step2Profile({
             value={data.officeHours}
             onChange={(e) => onChange({ officeHours: e.target.value })}
             placeholder="z.B. Di 14–16 Uhr, Raum C 123"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
           />
         </div>
         <div>
@@ -190,7 +190,7 @@ function Step2Profile({
             value={data.phone}
             onChange={(e) => onChange({ phone: e.target.value })}
             placeholder="z.B. +49 30 5019-XXXX"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
           />
         </div>
       </div>
@@ -203,7 +203,7 @@ function Step2Profile({
               type="button"
               onClick={() => toggleLang(lang)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all
-                ${data.languages.includes(lang) ? "border-[#006937] bg-[#006937]/10 text-[#006937]" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
+                ${data.languages.includes(lang) ? "border-[#76B900] bg-[#76B900]/10 text-[#76B900]" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
             >
               {lang}
             </button>
@@ -217,7 +217,7 @@ function Step2Profile({
         <button
           onClick={onNext}
           className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           Weiter →
         </button>
@@ -268,7 +268,7 @@ function Step3Photo({
       </div>
       <div className="flex flex-col items-center gap-4">
         <div
-          className="w-32 h-32 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-[#006937] transition-colors overflow-hidden bg-gray-50"
+          className="w-32 h-32 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-[#76B900] transition-colors overflow-hidden bg-gray-50"
           onClick={() => fileRef.current?.click()}
         >
           {preview ? (
@@ -289,7 +289,7 @@ function Step3Photo({
           className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
         />
-        {uploading && <p className="text-xs text-[#006937] animate-pulse">Wird hochgeladen…</p>}
+        {uploading && <p className="text-xs text-[#76B900] animate-pulse">Wird hochgeladen…</p>}
         {preview && (
           <button
             type="button"
@@ -308,7 +308,7 @@ function Step3Photo({
           onClick={onNext}
           disabled={uploading}
           className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           {uploading ? "Hochladen…" : "Weiter →"}
         </button>
@@ -344,7 +344,7 @@ function Step4Programmes({
         <h2 className="text-xl font-bold text-gray-900">Studiengänge</h2>
         <p className="text-sm text-gray-500 mt-1">
           Wählen Sie alle Studiengänge, in denen Sie Abschlussarbeiten betreuen möchten.
-          {selected.length > 0 && <span className="ml-2 text-[#006937] font-semibold">{selected.length} ausgewählt</span>}
+          {selected.length > 0 && <span className="ml-2 text-[#76B900] font-semibold">{selected.length} ausgewählt</span>}
         </p>
       </div>
       {isLoading ? (
@@ -361,10 +361,10 @@ function Step4Programmes({
                     type="button"
                     onClick={() => toggle(p.id)}
                     className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center
-                      ${selected.includes(p.id) ? "border-[#006937] bg-[#006937]/5" : "border-gray-200 hover:border-[#006937]/40"}`}
+                      ${selected.includes(p.id) ? "border-[#76B900] bg-[#76B900]/5" : "border-gray-200 hover:border-[#76B900]/40"}`}
                   >
                     {selected.includes(p.id) && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#006937] flex items-center justify-center">
+                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#76B900] flex items-center justify-center">
                         <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
@@ -377,7 +377,7 @@ function Step4Programmes({
                         {p.abbreviation}
                       </div>
                     )}
-                    <div className="text-xs font-bold text-[#006937]">{p.abbreviation}</div>
+                    <div className="text-xs font-bold text-[#76B900]">{p.abbreviation}</div>
                     <div className="text-xs text-gray-500 leading-tight">{p.name}</div>
                   </button>
                 ))}
@@ -393,7 +393,7 @@ function Step4Programmes({
         <button
           onClick={onNext}
           className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           Weiter →
         </button>
@@ -433,7 +433,7 @@ function Step5Capacity({
       {/* Kapazität */}
       <div>
         <label className="block text-xs font-semibold text-gray-600 mb-2">
-          Maximale Betreuungskapazität: <span className="text-[#006937] font-bold">{maxSupervisions}</span>
+          Maximale Betreuungskapazität: <span className="text-[#76B900] font-bold">{maxSupervisions}</span>
         </label>
         <input
           type="range"
@@ -441,7 +441,7 @@ function Step5Capacity({
           max={15}
           value={maxSupervisions}
           onChange={(e) => onChangeMax(Number(e.target.value))}
-          className="w-full accent-[#006937]"
+          className="w-full accent-[#76B900]"
         />
         <div className="flex justify-between text-xs text-gray-400 mt-1">
           <span>1</span><span>5</span><span>10</span><span>15</span>
@@ -460,7 +460,7 @@ function Step5Capacity({
               type="button"
               onClick={() => onChangeSecond(opt.value)}
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
-                ${isSecondExaminer === opt.value ? "border-[#006937] bg-[#006937]/5 text-[#006937]" : "border-gray-200 hover:border-gray-300 text-gray-600"}`}
+                ${isSecondExaminer === opt.value ? "border-[#76B900] bg-[#76B900]/5 text-[#76B900]" : "border-gray-200 hover:border-gray-300 text-gray-600"}`}
             >
               <span className="text-2xl">{opt.icon}</span>
               <span className="text-sm font-semibold">{opt.label}</span>
@@ -480,7 +480,7 @@ function Step5Capacity({
             value={alternativeEmail}
             onChange={(e) => onChangeAltEmail(e.target.value)}
             placeholder="z.B. vorname.nachname@extern.de"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#006937]/30"
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
           />
           <p className="text-xs text-gray-400 mt-1">E-Mail-Adresse für Benachrichtigungen (ersetzt die Anmelde-E-Mail).</p>
         </div>
@@ -493,7 +493,7 @@ function Step5Capacity({
           onClick={onFinish}
           disabled={isSecondExaminer === null || isPending}
           className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-40"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           {isPending ? "Wird gespeichert…" : "Profil abschließen ✓"}
         </button>
@@ -562,7 +562,7 @@ export default function ExaminerOnboarding() {
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <img src="/manus-storage/IconFemaleFemale_210f65cb.webp" alt="HTW Berlin" className="w-8 h-8 object-contain" />
-            <span className="text-sm font-bold text-[#006937]">HTW Berlin · Thesis Match Maker</span>
+            <span className="text-sm font-bold text-[#76B900]">HTW Berlin · Thesis Match Maker</span>
           </div>
           <p className="text-xs text-gray-400">Prüfer:innen-Profil einrichten</p>
         </div>

@@ -42,7 +42,7 @@ export function BulkActionBar({
         <Button
           onClick={onAccept}
           disabled={isLoading}
-          className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+          className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
         >
           <CheckCircle className="w-4 h-4" />
           Akzeptieren ({selectedCount})

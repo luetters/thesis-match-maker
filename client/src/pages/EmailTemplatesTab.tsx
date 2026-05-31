@@ -4,7 +4,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 
 const PLACEHOLDER_COLORS: Record<string, string> = {
   "{{studentName}}": "bg-blue-100 text-blue-700",
-  "{{examinerName}}": "bg-green-100 text-green-700",
+  "{{examinerName}}": "bg-primary/10 text-primary",
   "{{thesisTitle}}": "bg-purple-100 text-purple-700",
   "{{actionUrl}}": "bg-orange-100 text-orange-700",
   "{{rejectionReason}}": "bg-red-100 text-red-700",
@@ -67,7 +67,7 @@ export function EmailTemplatesTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
         <span className="ml-3 text-sm text-gray-500">Vorlagen werden geladen…</span>
       </div>
     );
@@ -135,7 +135,7 @@ export function EmailTemplatesTab() {
                 </div>
                 <button
                   onClick={() => startEdit(t)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#006937] text-white text-xs font-medium hover:bg-[#005a2f] transition-colors"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#76B900] text-white text-xs font-medium hover:bg-[var(--primary)] transition-colors"
                 >
                   Bearbeiten
                 </button>
@@ -158,7 +158,7 @@ export function EmailTemplatesTab() {
             </div>
             <div className="flex items-center gap-2">
               {saveStatus === "saved" && (
-                <span className="text-xs text-green-600 font-medium">✓ Gespeichert</span>
+                <span className="text-xs text-primary font-medium">✓ Gespeichert</span>
               )}
               {saveStatus === "error" && (
                 <span className="text-xs text-red-600 font-medium">✗ Fehler beim Speichern</span>
@@ -172,7 +172,7 @@ export function EmailTemplatesTab() {
               <button
                 onClick={saveEdit}
                 disabled={updateMutation.isPending}
-                className="px-3 py-1.5 rounded-lg bg-[#006937] text-white text-xs font-medium hover:bg-[#005a2f] transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-[#76B900] text-white text-xs font-medium hover:bg-[var(--primary)] transition-colors disabled:opacity-50"
               >
                 {updateMutation.isPending ? "Wird gespeichert…" : "Speichern"}
               </button>
@@ -211,7 +211,7 @@ export function EmailTemplatesTab() {
                 type="text"
                 value={editForm.subject}
                 onChange={(e) => setEditForm((f) => f ? { ...f, subject: e.target.value } : f)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -270,7 +270,7 @@ export function EmailTemplatesTab() {
                       setEditForm((f) => f ? { ...f, textBody: e.target.value } : f)
                     }
                     rows={10}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 resize-y"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                   />
                 </div>
               )}

@@ -71,7 +71,7 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 export function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
     PENDING: { label: "Ausstehend", className: "bg-amber-100 text-amber-800 border border-amber-200" },
-    ACCEPTED: { label: "Angenommen", className: "bg-green-100 text-green-800 border border-green-200" },
+    ACCEPTED: { label: "Angenommen", className: "bg-primary/15 text-primary border border-primary/20" },
     REJECTED: { label: "Abgelehnt", className: "bg-red-100 text-red-800 border border-red-200" },
     MATCHED: { label: "Matched", className: "bg-blue-100 text-blue-800 border border-blue-200" },
   };
@@ -177,7 +177,7 @@ function NotificationBell() {
                     if (!n.read) markRead.mutate({ id: n.id });
                   }}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors ${
-                    !n.read ? "bg-green-50/40" : ""
+                    !n.read ? "bg-primary/5/40" : ""
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
@@ -234,7 +234,7 @@ function NavItem({
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
         active
           ? "text-white"
-          : "text-gray-600 hover:text-gray-900 hover:bg-green-50"
+          : "text-gray-600 hover:text-gray-900 hover:bg-primary/5"
       }`}
       style={active ? { backgroundColor: "#76B900" } : undefined}
       aria-current={active ? "page" : undefined}
@@ -345,7 +345,7 @@ function Sidebar({
           </div>
           <a
             href="/profile"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:text-[#76B900] hover:bg-green-50 transition-all mb-1"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:text-[#76B900] hover:bg-primary/5 transition-all mb-1"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -402,7 +402,7 @@ export function ThesisDashboardLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gray-200 border-t-green-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
           <p className="text-gray-400 text-sm">Lade...</p>
         </div>
       </div>

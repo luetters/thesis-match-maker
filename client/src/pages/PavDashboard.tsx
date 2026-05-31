@@ -17,7 +17,7 @@ function formatDate(d: Date | string | null | undefined) {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     pending:  { label: "Ausstehend", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    accepted: { label: "Angenommen", cls: "bg-green-50 text-green-700 border-green-200" },
+    accepted: { label: "Angenommen", cls: "bg-primary/5 text-primary border-primary/20" },
     declined: { label: "Abgelehnt",  cls: "bg-red-50 text-red-700 border-red-200" },
   };
   const s = map[status] ?? { label: status, cls: "bg-gray-50 text-gray-600 border-gray-200" };
@@ -69,7 +69,7 @@ function ProposeDialog({
                   onClick={() => setExaminerRole(r)}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
                     examinerRole === r
-                      ? r === "first" ? "bg-green-600 text-white border-green-600" : "bg-blue-600 text-white border-blue-600"
+                      ? r === "first" ? "bg-primary text-white border-primary" : "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -84,7 +84,7 @@ function ProposeDialog({
             <select
               value={examinerId}
               onChange={(e) => setExaminerId(e.target.value === "" ? "" : Number(e.target.value))}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="">– Bitte auswählen –</option>
               {(examiners ?? [])
@@ -119,7 +119,7 @@ function ProposeDialog({
                 origin: window.location.origin,
               });
             }}
-            className="flex-1 py-2.5 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] disabled:opacity-50 transition-colors"
           >
             {propose.isPending ? "Wird gesendet…" : "Anfrage senden"}
           </button>
@@ -173,7 +173,7 @@ function DirectAssignDialog({
                   onClick={() => setExaminerRole(r)}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
                     examinerRole === r
-                      ? r === "first" ? "bg-green-600 text-white border-green-600" : "bg-blue-600 text-white border-blue-600"
+                      ? r === "first" ? "bg-primary text-white border-primary" : "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -188,7 +188,7 @@ function DirectAssignDialog({
             <select
               value={examinerId}
               onChange={(e) => setExaminerId(e.target.value === "" ? "" : Number(e.target.value))}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="">– Bitte auswählen –</option>
               {(examiners ?? [])
@@ -256,7 +256,7 @@ export default function PavDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -266,7 +266,7 @@ export default function PavDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Sie haben keinen Zugriff auf diesen Bereich.</p>
-          <Link href="/" className="text-[#006937] hover:underline text-sm">Zur Startseite</Link>
+          <Link href="/" className="text-[#76B900] hover:underline text-sm">Zur Startseite</Link>
         </div>
       </div>
     );
@@ -303,7 +303,7 @@ export default function PavDashboard() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? "border-[#006937] text-[#006937]"
+                  ? "border-[#76B900] text-[#76B900]"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -364,7 +364,7 @@ export default function PavDashboard() {
                     <div className="shrink-0 flex flex-col gap-2">
                       <button
                         onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
-                        className="px-4 py-2 rounded-xl bg-[#006937] text-white text-sm font-medium hover:bg-[#005a2f] transition-colors"
+                        className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
                       >
                         {t.pav.proposeExaminer}
                       </button>
@@ -431,7 +431,7 @@ export default function PavDashboard() {
                   <div
                     key={prog.id}
                     className={`flex items-center justify-between p-4 rounded-xl border ${
-                      isAssigned ? "border-[#006937] bg-green-50" : "border-gray-200 bg-white"
+                      isAssigned ? "border-[#76B900] bg-primary/5" : "border-gray-200 bg-white"
                     } shadow-sm`}
                   >
                     <div>
@@ -448,7 +448,7 @@ export default function PavDashboard() {
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                         isAssigned
                           ? "bg-red-50 text-red-600 hover:bg-red-100"
-                          : "bg-[#006937] text-white hover:bg-[#005a2f]"
+                          : "bg-[#76B900] text-white hover:bg-[var(--primary)]"
                       } disabled:opacity-50`}
                     >
                       {isAssigned ? t.pav.removeProgramme : t.pav.addProgramme}

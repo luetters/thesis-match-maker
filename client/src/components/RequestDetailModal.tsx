@@ -89,7 +89,7 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
       case "PENDING_FIRST_EXAMINER":
         return "bg-yellow-100 text-yellow-800";
       case "FIRST_EXAMINER_ACCEPTED":
-        return "bg-green-100 text-green-800";
+        return "bg-primary/15 text-primary";
       case "FIRST_EXAMINER_REJECTED":
         return "bg-red-100 text-red-800";
       default:
@@ -186,7 +186,7 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
                 <Button
                   onClick={handleAccept}
                   disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Akzeptieren

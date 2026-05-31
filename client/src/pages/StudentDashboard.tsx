@@ -579,10 +579,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 disabled={!!myProgramme}
                 className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold border-2 transition-all ${
                   form.degreeType === type
-                    ? "border-[#006937] bg-[#006937] text-white"
+                    ? "border-[#76B900] bg-[#76B900] text-white"
                     : myProgramme
                       ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
-                      : "border-gray-200 text-gray-600 hover:border-[#006937]/50 hover:bg-[#006937]/5"
+                      : "border-gray-200 text-gray-600 hover:border-[#76B900]/50 hover:bg-[#76B900]/5"
                 }`}
               >
                 {type === "bachelor" ? "🎓 Bachelor" : "🎖️ Master"}
@@ -620,7 +620,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                   type="text"
                   readOnly
                   value={myProgramme.name}
-                  className="w-full px-3.5 py-2.5 border border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium rounded-xl text-sm cursor-not-allowed"
+                  className="w-full px-3.5 py-2.5 border border-[#76B900]/30 bg-[#76B900]/5 text-[#76B900] font-medium rounded-xl text-sm cursor-not-allowed"
                   title="Studiengang ist Ihrem Profil fest zugeordnet"
                 />
                 <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
@@ -859,7 +859,7 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-700 transition-all disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-all disabled:opacity-50"
         >
           {uploading ? <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
           Exposé hochladen
@@ -1005,7 +1005,7 @@ function MyRequests() {
             <div className="flex flex-col items-end gap-1.5">
               <StatusBadge status={req.status} />
               {(req as any).programmeName && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#006937]/10 text-[#006937]">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#76B900]/10 text-[#76B900]">
                   {(req as any).programmeAbbreviation ?? (req as any).programmeName}
                 </span>
               )}
@@ -1182,7 +1182,7 @@ function Overview() {
         {[
           { label: "Gesamt", value: stats.total, color: "text-gray-900" },
           { label: "Ausstehend", value: stats.pending, color: "text-amber-600" },
-          { label: "Angenommen", value: stats.accepted, color: "text-green-600" },
+          { label: "Angenommen", value: stats.accepted, color: "text-primary" },
           { label: "Matched", value: stats.matched, color: "text-blue-600" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -1261,7 +1261,7 @@ function MyColloquiums() {
             </div>
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
               col.status === "SCHEDULED" ? "bg-blue-50 text-blue-700" :
-              col.status === "COMPLETED" ? "bg-green-50 text-green-700" :
+              col.status === "COMPLETED" ? "bg-primary/5 text-primary" :
               "bg-red-50 text-red-700"
             }`}>{col.status === "SCHEDULED" ? "Geplant" : col.status === "COMPLETED" ? "Abgeschlossen" : "Abgesagt"}</span>
           </div>

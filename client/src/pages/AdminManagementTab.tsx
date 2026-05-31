@@ -235,7 +235,7 @@ export function AdminManagementTab() {
               {filteredAdmins.map((u) => {
                 const isSelf = u.id === currentUser?.id;
                 return (
-                  <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${isSelf ? "bg-green-50/40" : ""}`}>
+                  <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${isSelf ? "bg-primary/5/40" : ""}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
@@ -243,7 +243,7 @@ export function AdminManagementTab() {
                         </div>
                         <span className="font-medium text-gray-900 truncate max-w-[140px]">
                           {u.name ?? "–"}
-                          {isSelf && <span className="ml-1 text-xs text-green-600">(Sie)</span>}
+                          {isSelf && <span className="ml-1 text-xs text-primary">(Sie)</span>}
                         </span>
                       </div>
                     </td>

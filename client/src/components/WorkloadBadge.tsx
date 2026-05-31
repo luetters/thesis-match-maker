@@ -28,8 +28,8 @@ const LEVEL_CONFIG: Record<
 > = {
   available: {
     label: "Verfügbar",
-    className: "bg-green-50 text-green-700 border border-green-200",
-    dot: "bg-green-500",
+    className: "bg-primary/10 text-primary border border-primary/20",
+    dot: "bg-primary",
   },
   partial: {
     label: "Teilweise belegt",

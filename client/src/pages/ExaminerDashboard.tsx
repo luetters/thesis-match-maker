@@ -490,7 +490,7 @@ function ProfileEdit() {
                 role="switch"
                 aria-checked={isSecondExaminer}
                 onClick={() => setIsSecondExaminer((v) => !v)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSecondExaminer ? "bg-green-600" : "bg-gray-200"}`}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSecondExaminer ? "bg-primary" : "bg-gray-200"}`}
               >
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSecondExaminer ? "translate-x-5" : "translate-x-0"}`}
@@ -644,7 +644,7 @@ function Overview() {
         {[
           { label: t.examiner.statsTotal ?? "Gesamt", value: stats.total, color: "text-gray-900" },
           { label: t.examiner.statsOpen ?? "Offen", value: stats.pending, color: "text-amber-600" },
-          { label: t.examiner.statsAccepted ?? "Angenommen", value: stats.accepted, color: "text-green-600" },
+          { label: t.examiner.statsAccepted ?? "Angenommen", value: stats.accepted, color: "text-primary" },
           { label: t.examiner.statsMatched ?? "Matched", value: stats.matched, color: "text-blue-600" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -704,7 +704,7 @@ function MyColloquiums() {
             </div>
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
               col.status === "SCHEDULED" ? "bg-blue-50 text-blue-700" :
-              col.status === "COMPLETED" ? "bg-green-50 text-green-700" :
+              col.status === "COMPLETED" ? "bg-primary/5 text-primary" :
               "bg-red-50 text-red-700"
             }`}>{col.status === "SCHEDULED" ? (t.examiner.colStatusScheduled ?? "Geplant") : col.status === "COMPLETED" ? (t.examiner.colStatusCompleted ?? "Abgeschlossen") : (t.examiner.colStatusCancelled ?? "Abgesagt")}</span>
           </div>
@@ -824,8 +824,8 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
         {/* Header */}
         <div className="px-8 pt-8 pb-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">Willkommen</span>
+            <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Willkommen</span>
           </div>
           <h2 className="text-xl font-bold text-gray-900">Profil einrichten</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -836,8 +836,8 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
         {/* Progress */}
         <div className="px-8 pb-2">
           <div className="flex gap-2">
-            <div className="h-1 flex-1 rounded-full bg-green-500" />
-            <div className={`h-1 flex-1 rounded-full transition-colors ${step === "email" ? "bg-green-500" : "bg-gray-200"}`} />
+            <div className="h-1 flex-1 rounded-full bg-primary" />
+            <div className={`h-1 flex-1 rounded-full transition-colors ${step === "email" ? "bg-primary" : "bg-gray-200"}`} />
           </div>
         </div>
 
@@ -851,7 +851,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
                 onClick={() => setIsSecondExaminer(false)}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                   isSecondExaminer === false
-                    ? "border-green-500 bg-green-50 text-green-700"
+                    ? "border-primary bg-primary/5 text-primary"
                     : "border-gray-200 hover:border-gray-300 text-gray-600"
                 }`}
               >
@@ -907,7 +907,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
               value={alternativeEmail}
               onChange={(e) => setAlternativeEmail(e.target.value)}
               placeholder="z.B. vorname.nachname@extern.de"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
             />
             <div className="flex gap-3">
               <button

@@ -56,7 +56,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
             ) : (
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold"
-                style={{ backgroundColor: "#006937" }}
+                style={{ backgroundColor: "#76B900" }}
               >
                 {(examiner.user?.name ?? "?")[0]?.toUpperCase()}
               </div>
@@ -165,7 +165,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
         <Link
           href={`/examiner/profile/${examiner.user.id}`}
           className="text-xs font-semibold transition-opacity hover:opacity-80"
-          style={{ color: "#006937" }}
+          style={{ color: "#76B900" }}
         >
           Profil ansehen →
         </Link>
@@ -182,7 +182,7 @@ function LoginGate() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 max-w-md w-full text-center">
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -195,7 +195,7 @@ function LoginGate() {
         <a
           href={loginUrl}
           className="inline-block w-full py-3 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "#006937" }}
+          style={{ backgroundColor: "#76B900" }}
         >
           Jetzt anmelden
         </a>
@@ -226,7 +226,7 @@ export default function ExaminerDirectory() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#006937] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -282,7 +282,7 @@ export default function ExaminerDirectory() {
                   t.style.display = "none";
                   const fb = document.createElement("div");
                   fb.className = "w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm";
-                  fb.style.backgroundColor = "#006937";
+                  fb.style.backgroundColor = "#76B900";
                   fb.textContent = "H";
                   t.parentNode?.insertBefore(fb, t);
                 }}
@@ -302,7 +302,7 @@ export default function ExaminerDirectory() {
       </div>
 
       {/* Hero Banner */}
-      <div className="text-white py-10 px-4" style={{ backgroundColor: "#006937" }}>
+      <div className="text-white py-10 px-4" style={{ backgroundColor: "#76B900" }}>
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold mb-1">Prüfer:innen-Verzeichnis</h2>
           <p className="text-white/80 text-sm">
@@ -330,7 +330,7 @@ export default function ExaminerDirectory() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Name, Fachbereich, Thema suchen..."
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200 transition-all"
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
@@ -339,7 +339,7 @@ export default function ExaminerDirectory() {
             <select
               value={filterProgramme}
               onChange={(e) => setFilterProgramme(e.target.value === "" ? "" : Number(e.target.value))}
-              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-200 bg-white"
+              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
             >
               <option value="">Alle Studiengänge</option>
               <optgroup label="Bachelor">
@@ -363,7 +363,7 @@ export default function ExaminerDirectory() {
                 onClick={() => setFilterRole(r)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   filterRole === r
-                    ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-green-600 text-white shadow"
+                    ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-primary text-white shadow"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
@@ -377,7 +377,7 @@ export default function ExaminerDirectory() {
             <div
               onClick={() => setFilterAvailable(!filterAvailable)}
               className={`w-10 h-5 rounded-full transition-colors relative ${
-                filterAvailable ? "bg-green-600" : "bg-gray-200"
+                filterAvailable ? "bg-primary" : "bg-gray-200"
               }`}
             >
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -419,7 +419,7 @@ export default function ExaminerDirectory() {
               <button
                 onClick={() => { setSearch(""); setFilterProgramme(""); setFilterAvailable(false); }}
                 className="mt-4 text-sm font-medium transition-opacity hover:opacity-80"
-                style={{ color: "#006937" }}
+                style={{ color: "#76B900" }}
               >
                 Filter zurücksetzen
               </button>
