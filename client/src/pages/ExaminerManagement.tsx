@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, ChevronLeft, Edit2, AlertCircle, Upload, Download, CheckCircle2, XCircle } from "lucide-react";
+import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { toast } from "sonner";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -416,7 +417,7 @@ export default function ExaminerManagement() {
                   <th className="text-left p-3 font-semibold">{t.common.email}</th>
                   <th className="text-left p-3 font-semibold">{t.superadmin.department}</th>
                   <th className="text-left p-3 font-semibold">Rolle</th>
-                  <th className="text-left p-3 font-semibold">{t.superadmin.maxSupervisions}</th>
+                  <th className="text-left p-3 font-semibold">Auslastung</th>
                   <th className="text-right p-3 font-semibold">{t.common.actions}</th>
                 </tr>
               </thead>
@@ -438,7 +439,14 @@ export default function ExaminerManagement() {
                         {examiner.role === "examiner" ? "1. Prüfer:in" : "2. Prüfer:in"}
                       </span>
                     </td>
-                    <td className="p-3">{examiner.maxSupervisions}</td>
+                    <td className="p-3">
+                      <WorkloadBadge
+                        active={examiner.activeSupervisions}
+                        max={examiner.maxSupervisions}
+                        showCount
+                        compact
+                      />
+                    </td>
                     <td className="p-3 text-right">
                       <Button size="sm" variant="outline" onClick={() => handleEdit(examiner)}>
                         <Edit2 className="w-4 h-4" />

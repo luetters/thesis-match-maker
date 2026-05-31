@@ -729,9 +729,18 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                     currentLetter = letter;
                     result.push(<option key={`sep-${letter}`} disabled value="">── {letter} ──</option>);
                   }
+                  const active = (examiner as any).activeSupervisions as number | undefined;
+                  const max = (examiner as any).maxSupervisions as number | undefined;
+                  const statusHint = max != null
+                    ? active != null && active >= max
+                      ? " \u2014 Ausgelastet"
+                      : active != null && active / max >= 0.8
+                        ? " \u2014 Fast ausgelastet"
+                        : ""
+                    : "";
                   result.push(
-                    <option key={examiner.id} value={examiner.id}>
-                      {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}
+                    <option key={examiner.id} value={examiner.id} disabled={max != null && active != null && active >= max}>
+                      {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}{statusHint}
                     </option>
                   );
                 });
@@ -919,9 +928,18 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
                   currentLetter = letter;
                   result.push(<option key={`sep2-${letter}`} disabled value="">── {letter} ──</option>);
                 }
+                const eActive = (e as any).activeSupervisions as number | undefined;
+                const eMax = (e as any).maxSupervisions as number | undefined;
+                const eHint = eMax != null
+                  ? eActive != null && eActive >= eMax
+                    ? " \u2014 Ausgelastet"
+                    : eActive != null && eMax > 0 && eActive / eMax >= 0.8
+                      ? " \u2014 Fast ausgelastet"
+                      : ""
+                  : "";
                 result.push(
-                  <option key={e.id} value={e.id}>
-                    {e.name}{e.title ? ` (${e.title})` : ""}
+                  <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
+                    {e.name}{e.title ? ` (${e.title})` : ""}{eHint}
                   </option>
                 );
               });

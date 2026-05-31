@@ -1,6 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
+import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -953,6 +954,12 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
         {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <WorkloadBadge
+          active={candidate.activeSupervisions}
+          max={candidate.maxSupervisions}
+          compact
+          className="mt-1"
+        />
       </div>
       <button
         onClick={() => onAdd(candidate.id)}
@@ -1015,6 +1022,12 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
         {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <WorkloadBadge
+          active={candidate.activeSupervisions}
+          max={candidate.maxSupervisions}
+          compact
+          className="mt-1"
+        />
       </div>
       <button
         onClick={() => onRemove(candidate.id)}

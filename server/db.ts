@@ -143,8 +143,28 @@ export async function getAllExaminers() {
     })
     .from(users)
     .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
-    .where(eq(users.role, "examiner"));
-  return result;
+    .where(inArray(users.role, ["examiner", "second_examiner"]));
+
+  // Aktive Betreuungen pro Prüfer:in zählen
+  const activeStatuses = [
+    "PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
+    "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+    "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET",
+    "MATCHED",
+  ] as const;
+  const activeRequests = await db
+    .select({ examinerId: thesisRequests.examinerId })
+    .from(thesisRequests)
+    .where(inArray(thesisRequests.status, activeStatuses as unknown as string[]));
+  const activeCountMap = new Map<number, number>();
+  for (const r of activeRequests) {
+    if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
+  }
+
+  return result.map((r) => ({
+    ...r,
+    activeSupervisions: activeCountMap.get(r.user.id) ?? 0,
+  }));
 }
 
 // --- Thesis Requests ----------------------------------------------------------
@@ -1376,11 +1396,12 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
   const db = await getDb();
   if (!db) return [];
   
-  let baseQuery = db.select({
+  const rows = await db.select({
     id: examinerProfiles.id,
     userId: examinerProfiles.userId,
     name: users.name,
     email: users.email,
+    role: users.role,
     title: examinerProfiles.title,
     department: examinerProfiles.department,
     bio: examinerProfiles.bio,
@@ -1389,8 +1410,27 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
     createdAt: examinerProfiles.createdAt,
   }).from(examinerProfiles)
     .leftJoin(users, eq(examinerProfiles.userId, users.id));
-  
-  return baseQuery;
+
+  // Aktive Betreuungen pro Prüfer:in zählen
+  const activeStatuses = [
+    "PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
+    "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+    "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET",
+    "MATCHED",
+  ] as const;
+  const activeRequests = await db
+    .select({ examinerId: thesisRequests.examinerId })
+    .from(thesisRequests)
+    .where(inArray(thesisRequests.status, activeStatuses as unknown as string[]));
+  const activeCountMap = new Map<number, number>();
+  for (const r of activeRequests) {
+    if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    activeSupervisions: activeCountMap.get(r.userId ?? 0) ?? 0,
+  }));
 }
 
 export async function updateExaminerProfileByAdmin(
@@ -3582,11 +3622,40 @@ export async function getFirstExaminers() {
     title: examinerProfiles.title,
     department: examinerProfiles.department,
     studyPrograms: examinerProfiles.studyPrograms,
+    maxSupervisions: examinerProfiles.maxSupervisions,
   })
     .from(users)
     .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
     .where(and(eq(users.role, "examiner"), eq(users.roleStatus, "approved")));
-  return result;
+
+  // Aktive Betreuungen pro Erstprüfer:in zählen
+  const activeStatuses = [
+    "PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
+    "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+    "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET",
+    "MATCHED",
+  ] as const;
+  const examinerIds = result.map((r) => r.id);
+  let activeCountMap = new Map<number, number>();
+  if (examinerIds.length > 0) {
+    const activeRows = await db
+      .select({ examinerId: thesisRequests.examinerId })
+      .from(thesisRequests)
+      .where(
+        and(
+          inArray(thesisRequests.examinerId, examinerIds),
+          inArray(thesisRequests.status, activeStatuses as unknown as string[])
+        )
+      );
+    for (const r of activeRows) {
+      if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
+    }
+  }
+
+  return result.map((r) => ({
+    ...r,
+    activeSupervisions: activeCountMap.get(r.id) ?? 0,
+  }));
 }
 
 /**

@@ -3,6 +3,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Link } from "wouter";
+import { WorkloadBadge } from "@/components/WorkloadBadge";
 
 // ─── Examiner Card ────────────────────────────────────────────────────────────
 type ExaminerListItem = {
@@ -36,9 +37,8 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
   const tags = Array.isArray(profile?.tags) ? profile.tags as string[] : [];
   const languages = Array.isArray(profile?.languages) ? profile.languages as string[] : [];
   const programmes = examiner.programmes ?? [];
-  const available = profile?.maxSupervisions ?? 0;
-  const isAvailable = available > 0;
   const isSecondExaminer = (profile as { isSecondExaminer?: number } | null | undefined)?.isSecondExaminer === 1;
+  const activeSupervisions = (examiner as any).activeSupervisions as number | undefined;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -74,11 +74,11 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  isAvailable ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                }`}>
-                  {isAvailable ? `${available} frei` : "Ausgebucht"}
-                </span>
+                <WorkloadBadge
+                  active={activeSupervisions}
+                  max={profile?.maxSupervisions}
+                  showCount
+                />
                 <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
                   isSecondExaminer
                     ? "bg-blue-50 text-blue-600 border border-blue-100"

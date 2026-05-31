@@ -609,3 +609,13 @@
 - [x] Erstgutachter:innen-Auswahl für Studierende: Sortierung nach Nachname (letztes Wort im Namen)
 - [x] Buchstabentrenner (── A ──) als deaktivierte option-Elemente zwischen Gruppen
 - [x] Zweitgutachter:innen-Auswahl (SecondExaminerPicker): ebenfalls alphabetisch + Buchstabentrenner
+
+## Auslastungs-Badge in Prüferlisten
+
+- [x] Badge-Logik: verfügbar (grün), teilweise ausgelastet (amber), ausgelastet (rot) – WorkloadBadge-Komponente
+- [x] Dual-List-Picker (Kommissionspräferenzen): kompaktes Badge unter jedem Namen in AvailableItem und SelectedItem
+- [x] Prüfer:innen-Auswahl für Studierende: Hinweistext "Ausgelastet" / "Fast ausgelastet" im option-Label; ausgelastete Einträge deaktiviert
+- [x] Prüfer:innen-Verzeichnis (ExaminerDirectory): WorkloadBadge mit Zähler (X/Y) auf Karte
+- [x] ExaminerManagement-Tabelle: kompaktes WorkloadBadge in Auslastungs-Spalte
+- [x] getAllExaminers, getFirstExaminers, listExaminers um activeSupervisions erweitert
+- [x] Tests grün (55/55), Checkpoint gespeichert
