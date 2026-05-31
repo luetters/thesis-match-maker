@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, name, avatarUrl, avatarKey FROM users WHERE avatarUrl IS NOT NULL LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, avatarUrl, avatarKey FROM users WHERE avatarUrl IS NOT NULL LIMIT 5;",
+  "rows": [
+    {
+      "id": "690079",
+      "name": "Prof. Dr. Holger Lütters",
+      "avatarUrl": "/manus-storage/avatars/user-690079_0413eb1e.jpeg",
+      "avatarKey": "avatars/user-690079.jpeg"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tavatarUrl\tavatarKey\n690079\tProf. Dr. Holger Lütters\t/manus-storage/avatars/user-690079_0413eb1e.jpeg\tavatars/user-690079.jpeg\n",
+  "stderr": "",
+  "execution_time_ms": 278
+}

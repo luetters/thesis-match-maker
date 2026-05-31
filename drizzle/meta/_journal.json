@@ -225,6 +225,13 @@
       "when": 1780026522307,
       "tag": "0031_steep_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1780224352300,
+      "tag": "0032_black_dark_beast",
+      "breakpoints": true
     }
   ]
 }

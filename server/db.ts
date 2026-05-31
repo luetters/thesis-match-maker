@@ -3436,7 +3436,7 @@ export async function getProfile(userId: number) {
   if (!db) return null;
   try {
     const rows = await db.execute(
-      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, second_email AS secondEmail, website, linked_in AS linkedIn, research_gate AS researchGate, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
+      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, second_email AS secondEmail, website, linked_in AS linkedIn, research_gate AS researchGate, htw_profile_url AS htwProfileUrl, misc_link AS miscLink, booking_url AS bookingUrl, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
     );
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return null;
@@ -3466,6 +3466,9 @@ export async function getProfile(userId: number) {
       website: user.website as string | null,
       linkedIn: user.linkedIn as string | null,
       researchGate: user.researchGate as string | null,
+      htwProfileUrl: user.htwProfileUrl as string | null,
+      miscLink: user.miscLink as string | null,
+      bookingUrl: user.bookingUrl as string | null,
       createdAt: user.createdAt as Date,
       lastSignedIn: user.lastSignedIn as Date,
     };
@@ -3484,6 +3487,7 @@ export async function updateProfile(
     academicTitle?: string; officeRoom?: string; officeHours?: string; researchTags?: string;
     staffId?: string; responsibilityArea?: string; officeLocation?: string;
     secondEmail?: string; website?: string; linkedIn?: string; researchGate?: string;
+    htwProfileUrl?: string; miscLink?: string; bookingUrl?: string;
   }
 ) {
   const db = await getDb();
@@ -3509,6 +3513,9 @@ export async function updateProfile(
     if (data.website !== undefined) sets.push(`website = '${data.website.replace(/'/g, "''")}'`);
     if (data.linkedIn !== undefined) sets.push(`linked_in = '${data.linkedIn.replace(/'/g, "''")}'`);
     if (data.researchGate !== undefined) sets.push(`research_gate = '${data.researchGate.replace(/'/g, "''")}'`);
+    if (data.htwProfileUrl !== undefined) sets.push(`htw_profile_url = '${data.htwProfileUrl.replace(/'/g, "''")}'`);
+    if (data.miscLink !== undefined) sets.push(`misc_link = '${data.miscLink.replace(/'/g, "''")}'`);
+    if (data.bookingUrl !== undefined) sets.push(`booking_url = '${data.bookingUrl.replace(/'/g, "''")}'`);
     if (sets.length === 0) return true;
     await db.execute(`UPDATE users SET ${sets.join(", ")} WHERE id = ${userId}`);
     return true;

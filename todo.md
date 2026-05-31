@@ -432,3 +432,27 @@
 - [ ] Frontend: "Passwort vergessen"-Link in Login.tsx
 - [ ] Frontend: ResetPassword.tsx Seite
 - [ ] Route /reset-password in App.tsx registrieren
+
+## Phase 60: Profil-Verbesserungen
+- [ ] Avatar-Upload-Bug final beheben (Bild wird nach Upload nicht angezeigt)
+- [ ] "Weitere Links" als editierbares Feld in Profile.tsx
+- [ ] HTW-Berlin-Profil-Link als editierbares Feld in Profile.tsx
+- [ ] Terminbuchung: BookingModal durch einfaches Link-Feld ersetzen
+- [ ] DB-Schema: miscLink und htwProfileUrl Felder hinzufügen
+
+
+## Phase 48: Profil-Verbesserungen ✅ KOMPLETT
+
+- [x] DB-Migration: ALTER TABLE users ADD COLUMN htw_profile_url, misc_link, booking_url
+- [x] drizzle/schema.ts: htwProfileUrl, miscLink, bookingUrl Felder hinzugefügt
+- [x] server/db.ts: getProfile() SQL-Query um neue Felder erweitert
+- [x] server/db.ts: updateProfile() um neue Felder erweitert
+- [x] server/routers.ts: Zod-Schema für profile.update um neue Felder erweitert
+- [x] Profile.tsx: Formular-State um htwProfileUrl, miscLink, bookingUrl erweitert
+- [x] Profile.tsx: handleEditStart() initialisiert neue Felder aus Profil-Daten
+- [x] Profile.tsx: handleSave() übergibt neue Felder an Mutation
+- [x] Profile.tsx: Online-Präsenz-Sektion – HTW Berlin Profil als editierbares URL-Feld
+- [x] Profile.tsx: Online-Präsenz-Sektion – Weiterer Link (miscLink) als editierbares URL-Feld
+- [x] Profile.tsx: Terminbuchung ersetzt BookingModal durch einfaches bookingUrl-Link-Feld
+- [x] Profile.tsx: BookingModal-Import und -Verwendung entfernt
+- [x] Profile.tsx: LinkDisplay-Hilfskomponente für einheitliche Link-Darstellung

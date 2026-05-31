@@ -229,6 +229,9 @@ const profileRouterDef = router({
       website: z.string().max(512).optional(),
       linkedIn: z.string().max(512).optional(),
       researchGate: z.string().max(512).optional(),
+      htwProfileUrl: z.string().max(512).optional(),
+      miscLink: z.string().max(512).optional(),
+      bookingUrl: z.string().max(512).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const ok = await updateProfile(ctx.user.id, input);

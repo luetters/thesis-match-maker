@@ -238,6 +238,9 @@ export const users = mysqlTable("users", {
   website: varchar("website", { length: 512 }),
   linkedIn: varchar("linked_in", { length: 512 }),
   researchGate: varchar("research_gate", { length: 512 }),
+  htwProfileUrl: varchar("htw_profile_url", { length: 512 }),
+  miscLink: varchar("misc_link", { length: 512 }),
+  bookingUrl: varchar("booking_url", { length: 512 }),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

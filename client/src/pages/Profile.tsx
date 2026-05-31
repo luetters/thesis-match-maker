@@ -3,7 +3,6 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Link } from "wouter";
-import { BookingModal } from "@/components/BookingModal";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -121,6 +120,32 @@ function TagInput({
   );
 }
 
+// ─── Link-Anzeige-Komponente ──────────────────────────────────────────────────
+function LinkDisplay({
+  href, label, iconBg, iconColor, iconContent, hoverBorderColor, hoverBgColor, textColor,
+}: {
+  href: string; label: string; iconBg: string; iconColor?: string;
+  iconContent: React.ReactNode; hoverBorderColor: string; hoverBgColor: string; textColor: string;
+}) {
+  const displayText = (() => {
+    try {
+      return new URL(href).hostname.replace(/^www\./, "") + (new URL(href).pathname !== "/" ? new URL(href).pathname : "");
+    } catch {
+      return href;
+    }
+  })();
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className={`inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 transition-all group max-w-full ${hoverBorderColor} ${hoverBgColor}`}>
+      <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: iconBg, color: iconColor }}>
+        {iconContent}
+      </span>
+      <span className={`text-sm group-hover:underline truncate ${textColor}`}>{label || displayText}</span>
+      <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+    </a>
+  );
+}
+
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
   const { user } = useAuth();
@@ -134,11 +159,11 @@ export default function Profile() {
     academicTitle: "", officeRoom: "", officeHours: "",
     staffId: "", responsibilityArea: "", officeLocation: "",
     secondEmail: "", website: "", linkedIn: "", researchGate: "",
+    htwProfileUrl: "", miscLink: "", bookingUrl: "",
   });
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   const updateMutation = trpc.profile.update.useMutation({
     onSuccess: () => { toast.success("Profil gespeichert"); setEditMode(false); refetch(); },
@@ -172,7 +197,6 @@ export default function Profile() {
 
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
-      // Direkt die S3-URL als Preview setzen (kein DataURL-Zwischenzustand)
       setAvatarPreview(data.avatarUrl);
       toast.success(
         <div className="flex items-center gap-2">
@@ -182,12 +206,7 @@ export default function Profile() {
           <span>Profilfoto erfolgreich aktualisiert</span>
         </div>
       );
-      // Cache leeren und Profil neu laden damit die S3-URL aus der DB kommt
       utils.profile.get.invalidate();
-      setTimeout(() => {
-        setAvatarPreview(null); // Preview löschen damit profile.avatarUrl verwendet wird
-        refetch();
-      }, 800);
     },
     onError: (e) => {
       console.error("[Avatar Upload] Error:", e);
@@ -207,6 +226,7 @@ export default function Profile() {
       academicTitle: profile.academicTitle ?? "", officeRoom: profile.officeRoom ?? "", officeHours: profile.officeHours ?? "",
       staffId: profile.staffId ?? "", responsibilityArea: profile.responsibilityArea ?? "", officeLocation: profile.officeLocation ?? "",
       secondEmail: profile.secondEmail ?? "", website: profile.website ?? "", linkedIn: profile.linkedIn ?? "", researchGate: profile.researchGate ?? "",
+      htwProfileUrl: profile.htwProfileUrl ?? "", miscLink: profile.miscLink ?? "", bookingUrl: profile.bookingUrl ?? "",
     });
     setEditMode(true);
   };
@@ -220,6 +240,7 @@ export default function Profile() {
       researchTags: researchTagList.join(", ") || undefined,
       staffId: form.staffId || undefined, responsibilityArea: form.responsibilityArea || undefined, officeLocation: form.officeLocation || undefined,
       secondEmail: form.secondEmail || undefined, website: form.website || undefined, linkedIn: form.linkedIn || undefined, researchGate: form.researchGate || undefined,
+      htwProfileUrl: form.htwProfileUrl || undefined, miscLink: form.miscLink || undefined, bookingUrl: form.bookingUrl || undefined,
     });
   };
 
@@ -432,6 +453,7 @@ export default function Profile() {
             Online-Präsenz
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
             {/* Website */}
             {editMode ? (
               <FieldInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" type="url" />
@@ -439,20 +461,24 @@ export default function Profile() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Website</label>
                 {profile.website ? (
-                  <a href={profile.website} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#76b900] hover:bg-[#f6ffe0] transition-all group max-w-full">
-                    {/* Globe icon */}
-                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#f0fdf4" }}>
-                      <svg className="w-4 h-4" style={{ color: "#76b900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <LinkDisplay
+                    href={profile.website}
+                    label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                    iconBg="#f0fdf4"
+                    iconColor="#76b900"
+                    hoverBorderColor="hover:border-[#76b900]"
+                    hoverBgColor="hover:bg-[#f6ffe0]"
+                    textColor="text-[#76b900]"
+                    iconContent={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
                       </svg>
-                    </span>
-                    <span className="text-sm text-[#76b900] group-hover:underline truncate">{profile.website.replace(/^https?:\/\//, "")}</span>
-                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                  </a>
+                    }
+                  />
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
+
             {/* LinkedIn */}
             {editMode ? (
               <FieldInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" type="url" />
@@ -460,20 +486,23 @@ export default function Profile() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">LinkedIn-Profil</label>
                 {profile.linkedIn ? (
-                  <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#0a66c2] hover:bg-[#eff6ff] transition-all group max-w-full">
-                    {/* LinkedIn Logo */}
-                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#0a66c2" }}>
+                  <LinkDisplay
+                    href={profile.linkedIn}
+                    label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
+                    iconBg="#0a66c2"
+                    hoverBorderColor="hover:border-[#0a66c2]"
+                    hoverBgColor="hover:bg-[#eff6ff]"
+                    textColor="text-[#0a66c2]"
+                    iconContent={
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                       </svg>
-                    </span>
-                    <span className="text-sm text-[#0a66c2] group-hover:underline truncate">{profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || profile.linkedIn.replace(/^https?:\/\//, "")}</span>
-                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                  </a>
+                    }
+                  />
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
+
             {/* ResearchGate */}
             {editMode ? (
               <FieldInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" type="url" />
@@ -481,53 +510,89 @@ export default function Profile() {
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">ResearchGate-Profil</label>
                 {profile.researchGate ? (
-                  <a href={profile.researchGate} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#00d0af] hover:bg-[#ecfdf5] transition-all group max-w-full">
-                    {/* ResearchGate Logo (RG) */}
-                    <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs text-white" style={{ background: "#00d0af", letterSpacing: "-0.5px" }}>RG</span>
-                    <span className="text-sm text-[#00a896] group-hover:underline truncate">{profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || profile.researchGate.replace(/^https?:\/\//, "")}</span>
-                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                  </a>
+                  <LinkDisplay
+                    href={profile.researchGate}
+                    label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
+                    iconBg="#00d0af"
+                    hoverBorderColor="hover:border-[#00d0af]"
+                    hoverBgColor="hover:bg-[#ecfdf5]"
+                    textColor="text-[#00a896]"
+                    iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
+                  />
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
-            {/* HTW Berlin Seite */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">HTW Berlin Profil</label>
-              <a href="https://www.htw-berlin.de/" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#1a5490] hover:bg-[#f0f4f8] transition-all group max-w-full">
-                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs text-white" style={{ background: "#1a5490" }}>HTW</span>
-                <span className="text-sm text-[#1a5490] group-hover:underline truncate">HTW Berlin</span>
-                <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-              </a>
-            </div>
-            {/* MISC Link */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Weitere Links</label>
-              <button type="button" onClick={() => toast.info("Weitere Links können später hinzugefügt werden")}
-                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all group max-w-full text-gray-600">
-                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#f3f4f6" }}>
-                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6h-6" />
-                  </svg>
-                </span>
-                <span className="text-sm text-gray-600 group-hover:underline truncate">Weitere Links</span>
-              </button>
-            </div>
-            {/* Terminbuchung */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
-              <button type="button" onClick={() => setBookingModalOpen(true)}
-                className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#7c3aed] hover:bg-[#faf5ff] transition-all group max-w-full">
-                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#faf5ff" }}>
-                  <svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </span>
-                <span className="text-sm text-[#7c3aed] group-hover:underline truncate">Termin buchen</span>
-                <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-              </button>
-            </div>
+
+            {/* HTW Berlin Profil */}
+            {editMode ? (
+              <FieldInput label="HTW Berlin Profil" value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder="https://www.htw-berlin.de/hochschule/personen/…" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">HTW Berlin Profil</label>
+                {profile.htwProfileUrl ? (
+                  <LinkDisplay
+                    href={profile.htwProfileUrl}
+                    label="HTW Berlin"
+                    iconBg="#1a5490"
+                    hoverBorderColor="hover:border-[#1a5490]"
+                    hoverBgColor="hover:bg-[#f0f4f8]"
+                    textColor="text-[#1a5490]"
+                    iconContent={<span className="text-white font-bold text-xs">HTW</span>}
+                  />
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+              </div>
+            )}
+
+            {/* Weiterer Link (miscLink) */}
+            {editMode ? (
+              <FieldInput label="Weiterer Link" value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder="https://…" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Weiterer Link</label>
+                {profile.miscLink ? (
+                  <LinkDisplay
+                    href={profile.miscLink}
+                    label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                    iconBg="#f3f4f6"
+                    iconColor="#6b7280"
+                    hoverBorderColor="hover:border-gray-400"
+                    hoverBgColor="hover:bg-gray-50"
+                    textColor="text-gray-700"
+                    iconContent={
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    }
+                  />
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+              </div>
+            )}
+
+            {/* Terminbuchung (bookingUrl) */}
+            {editMode ? (
+              <FieldInput label="Terminbuchungs-Link" value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder="https://calendly.com/… oder ähnlich" type="url" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
+                {profile.bookingUrl ? (
+                  <LinkDisplay
+                    href={profile.bookingUrl}
+                    label="Termin buchen"
+                    iconBg="#faf5ff"
+                    iconColor="#7c3aed"
+                    hoverBorderColor="hover:border-[#7c3aed]"
+                    hoverBgColor="hover:bg-[#faf5ff]"
+                    textColor="text-[#7c3aed]"
+                    iconContent={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    }
+                  />
+                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -650,14 +715,6 @@ export default function Profile() {
           <p className="text-sm text-blue-700">Klicken Sie auf das Kamera-Symbol am Profilfoto, um ein neues Bild hochzuladen. Erlaubte Formate: JPEG, PNG, WebP, GIF (max. 5 MB).</p>
         </div>
       </div>
-
-      {/* Booking Modal */}
-      <BookingModal
-        open={bookingModalOpen}
-        onOpenChange={setBookingModalOpen}
-        examinerName={profile?.name || "Prüfer:in"}
-        examinerEmail={profile?.email || ""}
-      />
     </div>
   );
 }
