@@ -663,3 +663,10 @@
 - [x] Login.tsx: Alle hardcodierten deutschen Strings durch i18n-Keys ersetzt
 - [x] Login.tsx: Fehlermeldungen (toast), Placeholder, Labels, Buttons, Status-Meldungen übersetzt
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## Logo-Update und E-Mail-Validierungs-Fix ✅ KOMPLETT
+
+- [x] Logo in allen Dateien auf IconMaleMale_c7af7f10.webp aktualisiert (Home.tsx, ThesisDashboardLayout.tsx, ExaminerDirectory.tsx, Maintenance.tsx, index.html)
+- [x] Backend register-Prozedur: E-Mail-Domain-Validierung ergänzt (student: @student.htw-berlin.de; examiner/admin: @htw-berlin.de; second_examiner: beliebig)
+- [x] @htw-berlin.com wird bei Registrierung nicht mehr akzeptiert (nur @htw-berlin.de für HTW-Mitarbeitende)
+- [x] Tests grün (55/55), Checkpoint gespeichert

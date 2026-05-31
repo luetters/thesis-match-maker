@@ -390,6 +390,24 @@ export const appRouter = router({
         if (input.role === "student" && (!input.matrikelNr || !input.matrikelNr.trim())) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Studierende müssen eine Matrikelnummer angeben." });
         }
+        // E-Mail-Domain-Validierung bei Registrierung
+        const emailLowerReg = input.email.toLowerCase();
+        if (input.role === "student") {
+          if (!emailLowerReg.endsWith("@student.htw-berlin.de")) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.",
+            });
+          }
+        } else if (input.role === "examiner" || input.role === "admin") {
+          if (!emailLowerReg.endsWith("@htw-berlin.de")) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) registrieren.",
+            });
+          }
+        }
+        // second_examiner: externe E-Mails erlaubt – keine Domain-Einschränkung
         const existing = await getUserByEmail(input.email);
         if (existing) {
           throw new TRPCError({ code: "CONFLICT", message: "Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an." });

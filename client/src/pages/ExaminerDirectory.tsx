@@ -279,7 +279,7 @@ export default function ExaminerDirectory() {
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
               <img
-                src="/manus-storage/thesis-logo-512_06e6e923.png"
+                src="/manus-storage/IconMaleMale_c7af7f10.webp"
                 alt="HTW Berlin Thesis Match Maker"
                 className="w-8 h-8 rounded-lg object-contain"
                 onError={(e) => {
