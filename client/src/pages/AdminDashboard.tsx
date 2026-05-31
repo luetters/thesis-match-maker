@@ -595,6 +595,7 @@ function UserManagement() {
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
   const [userTab, setUserTab] = useState<"examiners" | "students">("examiners");
+  const [searchQuery, setSearchQuery] = useState("");
   const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
@@ -646,9 +647,16 @@ function UserManagement() {
 
   const examinerRoles = ["examiner", "second_examiner", "pav", "dean", "vice_dean", "admin", "user"];
   const studentRoles = ["student"];
-  const filteredUsers = users?.filter(({ user }) =>
-    userTab === "examiners" ? examinerRoles.includes(user.role) : studentRoles.includes(user.role)
-  ) ?? [];
+  const query = searchQuery.trim().toLowerCase();
+  const filteredUsers = users?.filter(({ user }) => {
+    const matchesTab = userTab === "examiners" ? examinerRoles.includes(user.role) : studentRoles.includes(user.role);
+    if (!matchesTab) return false;
+    if (!query) return true;
+    return (
+      (user.name ?? "").toLowerCase().includes(query) ||
+      (user.email ?? "").toLowerCase().includes(query)
+    );
+  }) ?? [];
 
   return (
     <div className="space-y-4">
@@ -665,6 +673,27 @@ function UserManagement() {
           onCancel={() => setPendingRoleChange(null)}
         />
       )}
+      {/* Suchleiste */}
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Nach Name oder E-Mail suchen…"
+          className="w-full pl-9 pr-9 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Suche löschen"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        )}
+      </div>
       {/* Tab-Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
@@ -719,7 +748,9 @@ function UserManagement() {
             </thead>
             <tbody>
               {filteredUsers.length === 0 && (
-                <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-400">Keine Einträge vorhanden.</td></tr>
+                <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-400">
+                  {query ? `Keine Ergebnisse für „${searchQuery}“.` : "Keine Einträge vorhanden."}
+                </td></tr>
               )}
               {filteredUsers.map(({ user, profile }) => (
                 <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
