@@ -544,7 +544,8 @@ const ROLE_CHANGE_WARNINGS: Record<string, Record<string, string>> = {
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  user: "Nutzer:in", student: "Studierende:r", examiner: "Prüfer:in",
+  user: "Nutzer:in", student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)",
+  second_examiner: "Zweitprüfer:in",
   pav: "PA-Vorsitzende:r", dean: "Dekan:in", vice_dean: "Prodekan:in",
   admin: "Admin", superadmin: "Superadmin",
 };
@@ -630,8 +631,12 @@ function UserManagement() {
   const roleLabels: Record<string, string> = {
     student: "Studierende:r",
     examiner: "Prüfer:in",
+    second_examiner: "Zweitprüfer:in",
     admin: "Admin",
     user: "Nutzer:in",
+    pav: "PA-Vorsitzende:r",
+    dean: "Dekan:in",
+    vice_dean: "Prodekan:in",
   };
 
   if (isLoading) {
@@ -647,7 +652,7 @@ function UserManagement() {
           fromRole={pendingRoleChange.fromRole}
           toRole={pendingRoleChange.toRole}
           onConfirm={() => {
-            updateRole.mutate({ userId: pendingRoleChange.userId, role: pendingRoleChange.toRole as "student" | "examiner" | "admin" | "user" });
+            updateRole.mutate({ userId: pendingRoleChange.userId, role: pendingRoleChange.toRole as "student" | "examiner" | "second_examiner" | "admin" | "user" | "pav" | "dean" | "vice_dean" });
             setPendingRoleChange(null);
           }}
           onCancel={() => setPendingRoleChange(null)}
@@ -736,14 +741,15 @@ function UserManagement() {
                           if (needsWarning) {
                             setPendingRoleChange({ userId: user.id, userName: user.name ?? user.email ?? "?", fromRole: user.role, toRole: newRole });
                           } else {
-                            updateRole.mutate({ userId: user.id, role: newRole as "student" | "examiner" | "admin" | "user" });
+                            updateRole.mutate({ userId: user.id, role: newRole as "student" | "examiner" | "second_examiner" | "admin" | "user" | "pav" | "dean" | "vice_dean" });
                           }
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
                       >
                         <option value="user">Nutzer:in</option>
                         <option value="student">Studierende:r</option>
-                        <option value="examiner">Prüfer:in</option>
+                        <option value="examiner">Prüfer:in (Erstprüfer:in)</option>
+                        <option value="second_examiner">Zweitprüfer:in</option>
                         <option value="pav">PA-Vorsitzende:r</option>
                         <option value="dean">Dekan:in</option>
                         <option value="vice_dean">Prodekan:in</option>
