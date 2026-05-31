@@ -253,6 +253,13 @@
       "when": 1780236720816,
       "tag": "0035_worried_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1780237482597,
+      "tag": "0036_colossal_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

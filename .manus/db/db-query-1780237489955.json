@@ -1,0 +1,9 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS `examiner_commission_preferences` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `first_examiner_id` int NOT NULL,\n  `second_examiner_id` int NOT NULL,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `examiner_commission_preferences_id` PRIMARY KEY(`id`),\n  INDEX `uq_ecp` (`first_examiner_id`, `second_examiner_id`)\n);\n\nALTER TABLE `thesis_requests` ADD COLUMN IF NOT EXISTS `wanted_second_examiner_id` int;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nCREATE TABLE IF NOT EXISTS `examiner_commission_preferences` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `first_examiner_id` int NOT NULL,\n  `second_examiner_id` int NOT NULL,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `examiner_commission_preferences_id` PRIMARY KEY(`id`),\n  INDEX `uq_ecp` (`first_examiner_id`, `second_examiner_id`)\n);\n\nALTER TABLE `thesis_requests` ADD COLUMN IF NOT EXISTS `wanted_second_examiner_id` int;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 523
+}

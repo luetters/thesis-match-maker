@@ -131,6 +131,12 @@ import {
   updateProfile,
   updateProfileAvatar,
   clearProfileAvatar,
+  getFirstExaminers,
+  getAllSecondExaminerCandidates,
+  getCommissionPreferences,
+  setCommissionPreferences,
+  setWantedSecondExaminer,
+  getFilteredSecondExaminers,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1886,6 +1892,56 @@ export const appRouter = router({
         });
 
         return { success: true };
+      }),
+
+    // Student: Alle Erstgutachter:innen abrufen (role=examiner)
+    getFirstExaminers: studentProcedure
+      .query(async () => {
+        return getFirstExaminers();
+      }),
+
+    // Student: Zweitgutachter-Kandidaten gefiltert nach Erstgutachter-Präferenzen
+    getFilteredSecondExaminers: studentProcedure
+      .input(z.object({ firstExaminerId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getFilteredSecondExaminers(input.firstExaminerId);
+      }),
+
+    // Student: Alle Zweitgutachter-Kandidaten (ohne Filter)
+    getAllSecondExaminerCandidates: studentProcedure
+      .query(async () => {
+        return getAllSecondExaminerCandidates();
+      }),
+
+    // Student: Zweitgutachter-Wunsch für eine Anfrage setzen
+    setWantedSecondExaminer: studentProcedure
+      .input(z.object({
+        requestId: z.number().int().positive(),
+        secondExaminerId: z.number().int().positive().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await setWantedSecondExaminer(input.requestId, ctx.user.id, input.secondExaminerId);
+        if (!result.success) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+        }
+        return { success: true };
+      }),
+
+    // Erstgutachter:in: Eigene Kommissionspräferenzen abrufen
+    getCommissionPreferences: protectedProcedure
+      .query(async ({ ctx }) => {
+        return getCommissionPreferences(ctx.user.id);
+      }),
+
+    // Erstgutachter:in: Eigene Kommissionspräferenzen setzen
+    setCommissionPreferences: protectedProcedure
+      .input(z.object({ secondExaminerIds: z.array(z.number().int().positive()) }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstprüfer:innen können Kommissionspräferenzen setzen." });
+        }
+        const success = await setCommissionPreferences(ctx.user.id, input.secondExaminerIds);
+        return { success };
       }),
   }),
 

@@ -71,11 +71,8 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   // Alle Programme laden (für dynamisches Dropdown)
   const { data: allProgrammes = [] } = trpc.programmes.list.useQuery();
   
-  // Qualifizierte Gutachter:innen laden
-  const { data: qualifiedExaminers = [] } = trpc.thesisPhase27.getQualifiedExaminers.useQuery(
-    { department: myProgramme?.abbreviation ?? "" },
-    { enabled: !!myProgramme }
-  );
+  // Alle Erstgutachter:innen laden (role=examiner)
+  const { data: firstExaminers = [] } = trpc.thesisPhase27.getFirstExaminers.useQuery();
 
   const [hasOwnTopic, setHasOwnTopic] = useState(true);
   const [exposeFile, setExposeFile] = useState<File | null>(null);
@@ -94,6 +91,12 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     degreeType: "bachelor" as "bachelor" | "master",
     wantedExaminerId: 0,
   });
+
+  // Zweitgutachter-Kandidaten gefiltert nach Erstgutachter-Präferenzen
+  const { data: filteredSecondExaminers = [] } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
+    { firstExaminerId: form.wantedExaminerId },
+    { enabled: form.wantedExaminerId > 0 }
+  );
 
   // Gespeicherten Entwurf beim ersten Laden prüfen
   useEffect(() => {
@@ -688,28 +691,65 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
         </div>
 
-        {/* Wunschgutachter:in */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
-          <select
-            required
-            value={form.wantedExaminerId}
-            onChange={(e) => { setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) })); if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" })); }}
-            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
-              errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
-            }`}
-          >
-            <option value={0}>-- Bitte wählen --</option>
-            {qualifiedExaminers.map((examiner: any) => (
-              <option key={examiner.id} value={examiner.id}>
-                {examiner.name} ({examiner.title})
-              </option>
-            ))}
-          </select>
-          {errors.wantedExaminerId && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.wantedExaminerId}</p>}
-          {!errors.wantedExaminerId && qualifiedExaminers.length === 0 && myProgramme && (
-            <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
-          )}
+        {/* Zweistufige Gutachter-Auswahl */}
+        <div className="space-y-4 rounded-2xl border border-[#76B900]/20 bg-[#76B900]/5 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-6 h-6 rounded-full bg-[#76B900] text-white flex items-center justify-center text-xs font-bold">1</div>
+            <h4 className="text-sm font-semibold text-gray-800">Erstgutachter:in auswählen</h4>
+          </div>
+          <p className="text-xs text-gray-500 -mt-2">Wählen Sie Ihre Wunsch-Erstgutachter:in. Diese Person wird per E-Mail kontaktiert und muss zustimmen.</p>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Erstgutachter:in <span className="text-red-500">*</span></label>
+            <select
+              required
+              value={form.wantedExaminerId}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setForm((f) => ({ ...f, wantedExaminerId: val }));
+                if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" }));
+              }}
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
+                errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
+              }`}
+            >
+              <option value={0}>-- Bitte wählen --</option>
+              {(firstExaminers as any[]).map((examiner: any) => (
+                <option key={examiner.id} value={examiner.id}>
+                  {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}
+                </option>
+              ))}
+            </select>
+            {errors.wantedExaminerId && (
+              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                {errors.wantedExaminerId}
+              </p>
+            )}
+          </div>
+
+          {/* Schritt 2: Zweitgutachter:in – nur nach Zusage des Erstgutachters */}
+          <div className="pt-3 border-t border-[#76B900]/20">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">2</div>
+              <h4 className="text-sm font-semibold text-gray-500">Zweitgutachter:in (nach Zusage)</h4>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">Die Auswahl der Zweitgutachter:in ist erst möglich, nachdem die Erstgutachter:in zugesagt hat.</p>
+            <div className="relative">
+              <select
+                disabled
+                value={0}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+              >
+                <option value={0}>Keine Präferenz – Zweitgutachter:in kann zugeteilt werden</option>
+              </select>
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50/60 rounded-xl">
+                <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  Verfügbar nach Erstgutachter-Zusage
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <button
@@ -797,6 +837,72 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
           Exposé hochladen
         </button>
       )}
+    </div>
+  );
+}
+
+// ─── Zweitgutachter-Auswahl nach Erstgutachter-Zusage ──────────────────────────
+function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExaminerId }: { requestId: number; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null }) {
+  const utils = trpc.useUtils();
+  const [selectedId, setSelectedId] = useState<number>(wantedSecondExaminerId ?? 0);
+  const [saving, setSaving] = useState(false);
+
+  // Gefilterte Zweitgutachter nach Erstgutachter-Präferenzen
+  const { data: secondExaminers = [] } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
+    { firstExaminerId: wantedExaminerId ?? 0 },
+    { enabled: !!wantedExaminerId && wantedExaminerId > 0 }
+  );
+
+  const setMutation = trpc.thesisPhase27.setWantedSecondExaminer.useMutation({
+    onSuccess: () => {
+      toast.success("Zweitgutachter:in-Präferenz gespeichert.");
+      utils.thesis.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+    onSettled: () => setSaving(false),
+  });
+
+  const handleSave = () => {
+    setSaving(true);
+    setMutation.mutate({ requestId, secondExaminerId: selectedId > 0 ? selectedId : null });
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-50">
+      <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+          <span className="text-xs font-semibold text-blue-800">Zweitgutachter:in auswählen</span>
+          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Erstgutachter:in hat zugesagt</span>
+        </div>
+        <p className="text-xs text-blue-600 mb-2">Sie können jetzt Ihre Präferenz für die Zweitgutachter:in angeben.</p>
+        <div className="flex gap-2">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(parseInt(e.target.value))}
+            className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <option value={0}>Keine Präferenz – Zweitgutachter:in kann zugeteilt werden</option>
+            {(secondExaminers as any[]).filter((e: any) => e.id !== wantedExaminerId).map((e: any) => (
+              <option key={e.id} value={e.id}>
+                {e.name}{e.title ? ` (${e.title})` : ""}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+          >
+            {saving ? "..." : "Speichern"}
+          </button>
+        </div>
+        {wantedSecondExaminerId && wantedSecondExaminerId > 0 && (
+          <p className="mt-1.5 text-xs text-blue-700">
+            Aktuelle Präferenz: {(secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId)?.name ?? `ID ${wantedSecondExaminerId}`}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -895,6 +1001,14 @@ function MyRequests() {
                 Kalender
               </a>
             </div>
+          )}
+          {/* Zweitgutachter-Auswahl nach Erstgutachter-Zusage */}
+          {req.status === "FIRST_EXAMINER_ACCEPTED" && (
+            <SecondExaminerPicker
+              requestId={req.id}
+              wantedExaminerId={(req as any).wantedExaminerId}
+              wantedSecondExaminerId={(req as any).wantedSecondExaminerId}
+            />
           )}
           <div className="mt-3 pt-3 border-t border-gray-50">
             <ExposeUploadButton

@@ -27,6 +27,7 @@ function useNavItems() {
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
     { href: "/examiner/programmes", label: "Studiengänge", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+    { href: "/examiner/commission", label: "Kommissionspräferenzen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
   ];
 }
 
@@ -780,9 +781,164 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Commission Preferences ────────────────────────────────────────────────────
+function CommissionPreferences() {
+  const utils = trpc.useUtils();
+  const { data: prefs, isLoading: prefsLoading } = trpc.thesisPhase27.getCommissionPreferences.useQuery();
+  const { data: allCandidates = [], isLoading: candidatesLoading } = trpc.thesisPhase27.getAllSecondExaminerCandidates.useQuery();
+
+  // Ausgewählte IDs (rechte Liste)
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Präferenzen beim Laden initialisieren
+  useEffect(() => {
+    if (prefs) {
+      setSelectedIds((prefs as any[]).map((p: any) => p.secondExaminerId));
+    }
+  }, [prefs]);
+
+  const setMutation = trpc.thesisPhase27.setCommissionPreferences.useMutation({
+    onSuccess: () => {
+      toast.success("Kommissionspräferenzen gespeichert.");
+      utils.thesisPhase27.getCommissionPreferences.invalidate();
+    },
+    onError: (err: any) => toast.error(err.message),
+    onSettled: () => setSaving(false),
+  });
+
+  const available = (allCandidates as any[]).filter((c: any) => !selectedIds.includes(c.id));
+  const selected = (allCandidates as any[]).filter((c: any) => selectedIds.includes(c.id));
+
+  const addToSelected = (id: number) => setSelectedIds((prev) => [...prev, id]);
+  const removeFromSelected = (id: number) => setSelectedIds((prev) => prev.filter((x) => x !== id));
+
+  const handleSave = () => {
+    setSaving(true);
+    setMutation.mutate({ secondExaminerIds: selectedIds });
+  };
+
+  if (prefsLoading || candidatesLoading) {
+    return <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">Kommissionspräferenzen</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Wählen Sie die Zweitgutachter:innen aus, mit denen Sie bevorzugt zusammenarbeiten möchten.
+          Wenn Studierende Ihre Erstgutachter-Zusage erhalten, sehen sie nur Ihre bevorzugten Zweitgutachter:innen zur Auswahl.
+          Wenn Sie keine Präferenzen hinterlegen, stehen alle Zweitgutachter:innen zur Verfügung.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
+        {/* Linke Liste: Verfügbare Zweitgutachter:innen */}
+        <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
+            <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
+          </div>
+          <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+            {available.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-gray-400">Alle Kandidat:innen wurden ausgewählt.</div>
+            ) : (
+              available.map((c: any) => (
+                <button
+                  key={c.id}
+                  onClick={() => addToSelected(c.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#76B900]/5 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 group-hover:bg-[#76B900]/20">
+                    {(c.name ?? "").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
+                    {c.title && <p className="text-xs text-gray-400 truncate">{c.title}</p>}
+                  </div>
+                  <svg className="w-4 h-4 text-[#76B900] opacity-0 group-hover:opacity-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Pfeil-Indikator */}
+        <div className="flex flex-col items-center justify-center gap-2 py-4">
+          <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center">
+            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+          <span className="text-xs text-gray-400 text-center">Klicken zum<br/>Verschieben</span>
+        </div>
+
+        {/* Rechte Liste: Bevorzugte Zweitgutachter:innen */}
+        <div className="rounded-2xl border border-[#76B900]/30 bg-[#76B900]/5 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
+            <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
+            <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt</p>
+          </div>
+          <div className="divide-y divide-[#76B900]/10 max-h-80 overflow-y-auto">
+            {selected.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-gray-400">
+                Noch keine Präferenzen gewählt.<br/>
+                <span className="text-[#76B900]">Klicken Sie links auf eine Person.</span>
+              </div>
+            ) : (
+              selected.map((c: any) => (
+                <button
+                  key={c.id}
+                  onClick={() => removeFromSelected(c.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#76B900]/20 flex items-center justify-center text-xs font-bold text-[#76B900] flex-shrink-0 group-hover:bg-red-100">
+                    {(c.name ?? "").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
+                    {c.title && <p className="text-xs text-gray-400 truncate">{c.title}</p>}
+                  </div>
+                  <svg className="w-4 h-4 text-red-400 opacity-0 group-hover:opacity-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Speichern-Button */}
+      <div className="flex items-center justify-between pt-2">
+        <p className="text-xs text-gray-400">
+          {selected.length === 0
+            ? "Ohne Präferenzen stehen alle Zweitgutachter:innen für Studierende zur Verfügung."
+            : `${selected.length} bevorzugte Zweitgutachter:in${selected.length !== 1 ? "nen" : ""} ausgewählt.`}
+        </p>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
+          style={{ backgroundColor: "#76B900" }}
+        >
+          {saving ? (
+            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Speichern...</>
+          ) : (
+            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Präferenzen speichern</>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes" | "commission">("overview");
   const [, navigate] = useLocation();
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -814,6 +970,7 @@ export default function ExaminerDashboard() {
       else if (item.href === "/examiner/history") setActiveTab("history");
       else if (item.href === "/examiner/profile") setActiveTab("profile");
       else if (item.href === "/examiner/programmes") setActiveTab("programmes");
+      else if (item.href === "/examiner/commission") setActiveTab("commission");
     },
   }));
 
@@ -824,6 +981,7 @@ export default function ExaminerDashboard() {
     history: t.examiner.history,
     profile: t.examiner.profile,
     programmes: t.examiner.programmes ?? "Studiengänge",
+    commission: "Kommissionspräferenzen",
   };
 
   return (
@@ -834,6 +992,7 @@ export default function ExaminerDashboard() {
       {activeTab === "history" && <ExaminerStatusHistory />}
       {activeTab === "profile" && <ProfileEdit />}
       {activeTab === "programmes" && <ProgrammeSettings />}
+      {activeTab === "commission" && <CommissionPreferences />}
     </ThesisDashboardLayout>
   );
 }

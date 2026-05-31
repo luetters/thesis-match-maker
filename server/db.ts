@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
   examinerProfiles,
+  examinerCommissionPreferences,
   InsertAuditLogEntry,
   InsertExaminerProfile,
   InsertNotification,
@@ -3555,4 +3556,137 @@ export async function clearProfileAvatar(userId: number) {
     console.error("[Profile] Fehler beim Avatar-Löschen:", error);
     return false;
   }
+}
+
+// ─── Kommissionspräferenzen ───────────────────────────────────────────────────
+
+/**
+ * Alle Erstgutachter:innen abrufen (role = 'examiner')
+ * Gibt id (userId), name, email, title, department zurück
+ */
+export async function getFirstExaminers() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    studyPrograms: examinerProfiles.studyPrograms,
+  })
+    .from(users)
+    .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
+    .where(and(eq(users.role, "examiner"), eq(users.roleStatus, "approved")));
+  return result;
+}
+
+/**
+ * Alle Zweitgutachter:innen abrufen (role = 'examiner' mit isSecondExaminer=1 ODER role = 'second_examiner')
+ */
+export async function getAllSecondExaminerCandidates() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    isSecondExaminer: examinerProfiles.isSecondExaminer,
+  })
+    .from(users)
+    .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
+    .where(
+      and(
+        eq(users.roleStatus, "approved"),
+        or(
+          eq(users.role, "second_examiner"),
+          and(eq(users.role, "examiner"), eq(examinerProfiles.isSecondExaminer, 1))
+        )
+      )
+    );
+  return result;
+}
+
+/**
+ * Kommissionspräferenzen eines Erstgutachters abrufen
+ * Gibt die secondExaminerIds zurück, die der Erstgutachter bevorzugt
+ */
+export async function getCommissionPreferences(firstExaminerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ secondExaminerId: examinerCommissionPreferences.secondExaminerId })
+    .from(examinerCommissionPreferences)
+    .where(eq(examinerCommissionPreferences.firstExaminerId, firstExaminerId));
+  return rows.map(r => r.secondExaminerId);
+}
+
+/**
+ * Kommissionspräferenzen eines Erstgutachters setzen (vollständig ersetzen)
+ */
+export async function setCommissionPreferences(firstExaminerId: number, secondExaminerIds: number[]) {
+  const db = await getDb();
+  if (!db) return false;
+  // Alle bestehenden Präferenzen löschen
+  await db
+    .delete(examinerCommissionPreferences)
+    .where(eq(examinerCommissionPreferences.firstExaminerId, firstExaminerId));
+  // Neue Präferenzen einfügen
+  if (secondExaminerIds.length > 0) {
+    await db.insert(examinerCommissionPreferences).values(
+      secondExaminerIds.map(sid => ({ firstExaminerId, secondExaminerId: sid }))
+    );
+  }
+  return true;
+}
+
+/**
+ * Zweitgutachter-Wunsch für eine Anfrage setzen
+ * Nur erlaubt wenn Status = FIRST_EXAMINER_ACCEPTED
+ */
+export async function setWantedSecondExaminer(requestId: number, studentId: number, secondExaminerId: number | null) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  // Anfrage laden und Berechtigungen prüfen
+  const rows = await db
+    .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status, wantedExaminerId: thesisRequests.wantedExaminerId })
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, requestId))
+    .limit(1);
+  if (!rows.length) return { success: false, error: "Anfrage nicht gefunden" };
+  const req = rows[0];
+  if (req.studentId !== studentId) return { success: false, error: "Keine Berechtigung" };
+  if (req.status !== "FIRST_EXAMINER_ACCEPTED") {
+    return { success: false, error: "Zweitgutachter:in kann erst nach Zusage des Erstgutachters gewählt werden" };
+  }
+  // Zweitgutachter darf nicht identisch mit Erstgutachter sein
+  if (secondExaminerId !== null && secondExaminerId === req.wantedExaminerId) {
+    return { success: false, error: "Zweitgutachter:in darf nicht identisch mit Erstgutachter:in sein" };
+  }
+  await db.execute(
+    `UPDATE thesis_requests SET wanted_second_examiner_id = ${secondExaminerId === null ? "NULL" : secondExaminerId} WHERE id = ${requestId}`
+  );
+  return { success: true };
+}
+
+/**
+ * Gefilterte Zweitgutachter-Liste für eine Anfrage:
+ * Wenn der Erstgutachter Präferenzen hat → nur diese anzeigen
+ * Sonst alle Zweitgutachter-Kandidaten
+ */
+export async function getFilteredSecondExaminers(firstExaminerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Präferenzen des Erstgutachters laden
+  const prefs = await getCommissionPreferences(firstExaminerId);
+  // Alle Zweitgutachter-Kandidaten laden
+  const all = await getAllSecondExaminerCandidates();
+  if (prefs.length === 0) {
+    // Keine Präferenzen → alle anzeigen
+    return all;
+  }
+  // Nur bevorzugte anzeigen
+  return all.filter(e => prefs.includes(e.id));
 }

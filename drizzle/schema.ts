@@ -80,6 +80,16 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
 	onboardingCompleted: int().default(0).notNull(),
 });
 
+export const examinerCommissionPreferences = mysqlTable("examiner_commission_preferences", {
+	id: int().autoincrement().notNull(),
+	firstExaminerId: int("first_examiner_id").notNull(),
+	secondExaminerId: int("second_examiner_id").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("uq_ecp").on(table.firstExaminerId, table.secondExaminerId),
+]);
+
 export const examinerProgrammes = mysqlTable("examiner_programmes", {
 	id: int().autoincrement().notNull(),
 	examinerId: int("examiner_id").notNull(),
@@ -179,6 +189,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	examinerId: int(),
 	secondExaminerId: int(),
 	wantedExaminerId: int(),
+	wantedSecondExaminerId: int("wanted_second_examiner_id"),
 	title: varchar({ length: 512 }).notNull(),
 	description: text().notNull(),
 	department: varchar({ length: 255 }).notNull(),

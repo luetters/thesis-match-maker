@@ -525,3 +525,41 @@
 - [x] ExaminerDashboard.tsx: Role-Guard und Onboarding-Weiterleitung für second_examiner
 - [x] DashboardLayout.tsx: Menü-Einträge für second_examiner ergänzt
 - [x] AdminManagementTab.tsx: second_examiner als Rollen-Option im Dropdown
+
+## Phase 56: Zweistufiger Gutachter-Auswahlprozess ✅ KOMPLETT
+
+### DB-Schema
+- [x] drizzle/schema.ts: Neue Tabelle `examiner_commission_preferences` (firstExaminerId, secondExaminerId)
+- [x] drizzle/schema.ts: thesis_requests: Spalte `wantedSecondExaminerId` hinzugefügt
+- [x] DB-Migration: Direkt per SQL ausgeführt
+
+### Backend (server/db.ts)
+- [x] getFirstExaminers(): Alle Nutzer mit role='examiner'
+- [x] getAllSecondExaminerCandidates(): Alle möglichen Zweitgutachter (examiner + second_examiner)
+- [x] getCommissionPreferences(firstExaminerId): Bevorzugte Zweitgutachter eines Erstgutachters
+- [x] setCommissionPreferences(firstExaminerId, secondExaminerIds[]): Präferenzen speichern
+- [x] setWantedSecondExaminer(requestId, studentId, secondExaminerId): Zweitgutachter-Wunsch setzen
+- [x] getFilteredSecondExaminers(firstExaminerId): Gefilterte Zweitgutachter nach Präferenzen
+
+### Backend (server/routers.ts)
+- [x] thesisPhase27.getFirstExaminers: Erstgutachter-Liste
+- [x] thesisPhase27.getFilteredSecondExaminers: Zweitgutachter gefiltert nach Erstgutachter-Präferenzen
+- [x] thesisPhase27.getAllSecondExaminerCandidates: Alle Zweitgutachter-Kandidaten
+- [x] thesisPhase27.setWantedSecondExaminer: Zweitgutachter-Wunsch setzen
+- [x] thesisPhase27.getCommissionPreferences: Eigene Präferenzen abrufen
+- [x] thesisPhase27.setCommissionPreferences: Eigene Präferenzen speichern
+
+### Frontend: StudentDashboard.tsx
+- [x] Erstgutachter-Dropdown (role=examiner, Pflichtfeld)
+- [x] Zweitgutachter-Dropdown: deaktiviert bis Erstgutachter zugesagt hat (Status FIRST_EXAMINER_ACCEPTED)
+- [x] Zweitgutachter-Dropdown: erster Eintrag "Keine Präferenz – Zweitgutachter:in kann zugeteilt werden"
+- [x] Zweitgutachter-Dropdown: zeigt nur Präferenzen des gewählten Erstgutachters (wenn vorhanden)
+- [x] Erstgutachter darf nicht gleichzeitig als Zweitgutachter gewählt werden
+- [x] SecondExaminerPicker-Komponente nach FIRST_EXAMINER_ACCEPTED in MyRequests
+
+### Frontend: ExaminerDashboard.tsx (Kommissionspräferenzen)
+- [x] Neuer Tab "Kommissionspräferenzen" im ExaminerDashboard
+- [x] Dual-List-Picker: Alle Zweitgutachter links, bevorzugte rechts
+- [x] Klick zum Übertragen zwischen den Listen
+- [x] Speichern-Button für Präferenzen
+- [x] Nur Erstgutachter:innen (role=examiner) sehen diesen Tab (Backend-Prüfung)
