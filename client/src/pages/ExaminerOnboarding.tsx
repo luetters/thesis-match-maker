@@ -452,7 +452,7 @@ function Step5Capacity({
         <label className="block text-xs font-semibold text-gray-600 mb-2">Prüfer:innen-Typ <span className="text-red-400">*</span></label>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { value: false, label: "Erstprüfer:in", sub: "HTW-Berlin-Lehrperson (@htw-berlin.de)", icon: "🎓" },
+            { value: false, label: "Erstprüfer:in", sub: "HTW-Berlin-Lehrperson (@htw-berlin.de / @htw-berlin.com)", icon: "🎓" },
             { value: true, label: "Zweitprüfer:in", sub: "Externe Fachperson (beliebige E-Mail)", icon: "👥" },
           ].map((opt) => (
             <button

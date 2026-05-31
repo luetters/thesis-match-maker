@@ -418,7 +418,7 @@ function ProfileEdit() {
               <div>
                 <p className="text-sm font-medium text-gray-700">Ich bin Zweitprüfer:in</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Aktivieren Sie diese Option, wenn Sie als Zweitprüfer:in agieren und keine HTW-Berlin-E-Mail-Adresse verwenden. Erstprüfer:innen müssen sich mit einer <strong>@htw-berlin.de</strong>-Adresse anmelden.
+                  Aktivieren Sie diese Option, wenn Sie als Zweitprüfer:in agieren und keine HTW-Berlin-E-Mail-Adresse verwenden. Erstprüfer:innen müssen sich mit einer <strong>@htw-berlin.de</strong>- oder <strong>@htw-berlin.com</strong>-Adresse anmelden.
                 </p>
               </div>
             </div>
@@ -721,7 +721,7 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
             </div>
             {isSecondExaminer === false && (
               <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                Als Erstprüfer:in müssen Sie sich mit einer <strong>@htw-berlin.de</strong>-E-Mail-Adresse anmelden.
+                Als Erstprüfer:in müssen Sie sich mit einer <strong>@htw-berlin.de</strong>- oder <strong>@htw-berlin.com</strong>-E-Mail-Adresse anmelden.
               </p>
             )}
             {isSecondExaminer === true && (

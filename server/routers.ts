@@ -424,32 +424,37 @@ export const appRouter = router({
           });
         }
         // HTW-E-Mail-Validierung:
-        // Studierende müssen immer @htw-berlin.de verwenden.
-        // Erstprüfer:innen (examiner, isSecondExaminer=false) müssen @htw-berlin.de verwenden.
-        // Zweitprüfer:innen (examiner, isSecondExaminer=true) dürfen externe E-Mails nutzen.
-        // Admins/Superadmins sind ausgenommen.
-        const isHtwEmail = input.email.toLowerCase().endsWith("@htw-berlin.de");
-        if (!isHtwEmail) {
-          if (user.role === "student") {
+        // Studierende: nur @student.htw-berlin.de
+        // Erstprüfer:innen: @htw-berlin.de oder @htw-berlin.com
+        // Zweitprüfer:innen: externe E-Mails erlaubt
+        // Admins/Superadmins: ausgenommen
+        const emailLower = input.email.toLowerCase();
+        const isStudentEmail = emailLower.endsWith("@student.htw-berlin.de");
+        const isHtwStaffEmail = emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com");
+        if (user.role === "student") {
+          if (!isStudentEmail) {
             throw new TRPCError({
               code: "FORBIDDEN",
-              message: "Studierende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) anmelden.",
+              message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) anmelden.",
             });
           }
-          if (user.role === "examiner") {
+        } else if (user.role === "examiner") {
+          if (!isHtwStaffEmail) {
             // Profil laden um isSecondExaminer-Flag zu prüfen
             const profile = await getExaminerProfileByUserId(user.id);
             const isSecondExaminer = profile && (profile as { isSecondExaminer?: number }).isSecondExaminer === 1;
             if (!isSecondExaminer) {
               throw new TRPCError({
                 code: "FORBIDDEN",
-                message: "Erstprüfer:innen müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) anmelden. Wenn Sie als Zweitprüfer:in agieren, aktivieren Sie bitte zunächst das entsprechende Flag in Ihrem Profil.",
+                message: "Erstprüfer:innen müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) anmelden. Wenn Sie als Zweitprüfer:in agieren, aktivieren Sie bitte zunächst das entsprechende Flag in Ihrem Profil.",
               });
             }
-          } else if (user.role !== "admin" && user.role !== "superadmin") {
+          }
+        } else if (user.role !== "admin" && user.role !== "superadmin") {
+          if (!isHtwStaffEmail) {
             throw new TRPCError({
               code: "FORBIDDEN",
-              message: "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) zur Anmeldung.",
+              message: "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) zur Anmeldung.",
             });
           }
         }

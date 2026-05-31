@@ -147,6 +147,20 @@ export default function Login() {
       toast.error("Das Passwort muss mindestens 8 Zeichen lang sein.");
       return;
     }
+    // E-Mail-Domain-Validierung je nach Rolle
+    const emailLower = regEmail.trim().toLowerCase();
+    const role = selectedRole ?? "student";
+    if (role === "student") {
+      if (!emailLower.endsWith("@student.htw-berlin.de")) {
+        toast.error("Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.");
+        return;
+      }
+    } else if (role === "examiner" || role === "admin") {
+      if (!emailLower.endsWith("@htw-berlin.de") && !emailLower.endsWith("@htw-berlin.com")) {
+        toast.error("Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) zur Registrierung.");
+        return;
+      }
+    }
     registerMutation.mutate({
       name: regName.trim(),
       email: regEmail.trim(),
@@ -619,7 +633,11 @@ export default function Login() {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
                           type="email"
-                          placeholder="vorname.nachname@htw-berlin.de"
+                          placeholder={
+                            selectedRole === "student"
+                              ? "vorname.nachname@student.htw-berlin.de"
+                              : "vorname.nachname@htw-berlin.de"
+                          }
                           value={regEmail}
                           onChange={(e) => setRegEmail(e.target.value)}
                           required
@@ -667,11 +685,15 @@ export default function Login() {
                       </div>
                     </div>
                     <div
-                      className="p-3 rounded-lg text-xs leading-relaxed"
+                      className="p-3 rounded-lg text-xs leading-relaxed space-y-1"
                       style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
                     >
-                      Nach der Registrierung wird Ihr Konto von der Verwaltung der HTW Berlin geprüft und freigeschaltet.
-                      Sie können sich erst nach der Freischaltung anmelden.
+                      <p>
+                        {selectedRole === "student"
+                          ? "Erlaubte E-Mail-Domain: @student.htw-berlin.de"
+                          : "Erlaubte E-Mail-Domains: @htw-berlin.de oder @htw-berlin.com"}
+                      </p>
+                      <p>Nach der Registrierung wird Ihr Konto von der Verwaltung der HTW Berlin geprüft und freigeschaltet. Sie können sich erst nach der Freischaltung anmelden.</p>
                     </div>
                     <Button
                       type="submit"

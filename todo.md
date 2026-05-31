@@ -465,3 +465,15 @@
 - [x] Speichern-Button deaktiviert solange URL-Fehler vorhanden
 - [x] Verbesserte Icons in LinkDisplay: Kalender-Symbol für bookingUrl, Link-Ketten-Symbol für miscLink
 - [x] „Link kopieren"-Button neben jeder angezeigten URL (Clipboard-Icon, Toast-Bestätigung)
+
+
+## Phase 50: E-Mail-Domain-Einschränkungen ✅ KOMPLETT
+
+- [x] Backend routers.ts: isHtwEmail prüft @htw-berlin.de UND @htw-berlin.com
+- [x] Backend routers.ts: Studierende (student) nur @student.htw-berlin.de erlaubt
+- [x] Backend routers.ts: Fehlermeldungen aktualisieren (neue Domains nennen)
+- [x] Frontend Login.tsx: handleRegisterSubmit prüft E-Mail-Domain je nach Rolle
+- [x] Frontend Login.tsx: Fehlermeldung bei falscher Domain (vor dem API-Call)
+- [x] Frontend Login.tsx: Placeholder und Hinweistexte aktualisieren
+- [x] Frontend ExaminerOnboarding.tsx: Hinweistext @htw-berlin.de/.com aktualisieren
+- [x] Frontend ExaminerDashboard.tsx: Hinweistexte @htw-berlin.de/.com aktualisieren
