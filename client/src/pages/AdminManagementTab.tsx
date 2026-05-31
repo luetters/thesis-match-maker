@@ -114,6 +114,26 @@ export function AdminManagementTab() {
         u.email?.toLowerCase().includes(promoteSearch.toLowerCase()))
   );
 
+  const handleExportCSV = () => {
+    const headers = ["ID", "Name", "E-Mail", "Rolle", "Rollenbezeichnung"];
+    const rows = adminUsers.map((u) => [
+      u.id,
+      `"${(u.name ?? "").replace(/"/g, '""')}"`,
+      `"${(u.email ?? "").replace(/"/g, '""')}"`,
+      u.role,
+      `"${(ROLE_CONFIG[u.role as AdminRole]?.label ?? u.role).replace(/"/g, '""')}"`,
+    ]);
+    const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `HTW-Berlin_Administratoren_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${adminUsers.length} Einträge als CSV exportiert.`);
+  };
+
   const handleRoleChange = (userId: number, userName: string, currentRole: string, newRole: string) => {
     if (userId === currentUser?.id) {
       toast.error("Sie können Ihre eigene Rolle nicht ändern.");
@@ -135,10 +155,21 @@ export function AdminManagementTab() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-xl">🛡️</div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-xl font-bold text-gray-900">Rechteverwaltung</h2>
           <p className="text-sm text-gray-500">Verwaltung von Administratoren und Berechtigungen</p>
         </div>
+        <button
+          onClick={handleExportCSV}
+          disabled={isLoading || adminUsers.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm disabled:opacity-50"
+          title="Administratorenliste als CSV exportieren"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#76b900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          CSV-Export
+        </button>
       </div>
 
       {/* Statistik-Karten */}
