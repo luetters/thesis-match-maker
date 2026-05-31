@@ -14,7 +14,6 @@ import {
   ArrowLeft,
   BookOpen,
   Settings,
-  ChevronRight,
   UserPlus,
   LogIn,
   CheckCircle2,
@@ -22,52 +21,56 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 
-const ROLE_OPTIONS: {
-  id: Role;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  accentColor: string;
-  bgColor: string;
-}[] = [
-  {
-    id: "student",
-    label: "Studierende:r",
-    description: "Ich möchte eine Abschlussarbeit anmelden und Prüfer:innen finden.",
-    icon: <GraduationCap className="w-7 h-7" />,
-    accentColor: "#76b900",
-    bgColor: "rgba(118,185,0,0.08)",
-  },
-  {
-    id: "examiner",
-    label: "Prüfer:in",
-    description: "Ich betreue Abschlussarbeiten als Erst- oder Zweitprüfer:in.",
-    icon: <BookOpen className="w-7 h-7" />,
-    accentColor: "#3b82f6",
-    bgColor: "rgba(59,130,246,0.08)",
-  },
-  {
-    id: "second_examiner",
-    label: "Zweitprüfer:in",
-    description: "Ich betreue Abschlussarbeiten ausschließlich als Zweitprüfer:in (ohne Erstprüfer-Berechtigung).",
-    icon: <BookOpen className="w-7 h-7" />,
-    accentColor: "#0891b2",
-    bgColor: "rgba(8,145,178,0.08)",
-  },
-  {
-    id: "admin",
-    label: "Verwaltungsmitarbeiter:in",
-    description: "Ich bin in der Studiengangs- oder Prüfungsverwaltung tätig.",
-    icon: <Settings className="w-7 h-7" />,
-    accentColor: "#a855f7",
-    bgColor: "rgba(168,85,247,0.08)",
-  },
-];
-
 export default function Login() {
+  const { t } = useLanguage();
+  const L = t.login;
+
+  const ROLE_OPTIONS: {
+    id: Role;
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+    accentColor: string;
+    bgColor: string;
+  }[] = [
+    {
+      id: "student",
+      label: L.roleStudent,
+      description: L.roleStudentDesc,
+      icon: <GraduationCap className="w-7 h-7" />,
+      accentColor: "#76b900",
+      bgColor: "rgba(118,185,0,0.08)",
+    },
+    {
+      id: "examiner",
+      label: L.roleExaminer,
+      description: L.roleExaminerDesc,
+      icon: <BookOpen className="w-7 h-7" />,
+      accentColor: "#3b82f6",
+      bgColor: "rgba(59,130,246,0.08)",
+    },
+    {
+      id: "second_examiner",
+      label: L.roleSecondExaminer,
+      description: L.roleSecondExaminerDesc,
+      icon: <BookOpen className="w-7 h-7" />,
+      accentColor: "#0891b2",
+      bgColor: "rgba(8,145,178,0.08)",
+    },
+    {
+      id: "admin",
+      label: L.roleAdmin,
+      description: L.roleAdminDesc,
+      icon: <Settings className="w-7 h-7" />,
+      accentColor: "#a855f7",
+      bgColor: "rgba(168,85,247,0.08)",
+    },
+  ];
+
   // Schritte: "role" → "action" → "login" oder "register"
   const [step, setStep] = useState<"role" | "action" | "login" | "register">("role");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -108,7 +111,6 @@ export default function Login() {
       setLocation(target);
     },
     onError: (error) => {
-      // Spezifische Statusmeldungen persistent anzeigen statt nur Toast
       const msg = error.message ?? "";
       if (msg.includes("noch nicht freigeschaltet") || msg.includes("pending")) {
         setLoginStatus("pending");
@@ -116,7 +118,7 @@ export default function Login() {
         setLoginStatus("rejected");
       } else {
         setLoginStatus(null);
-        toast.error(msg || "Anmeldung fehlgeschlagen");
+        toast.error(msg || L.loginFailed);
       }
     },
   });
@@ -126,14 +128,14 @@ export default function Login() {
       setRegistered(true);
     },
     onError: (error) => {
-      toast.error(error.message ?? "Registrierung fehlgeschlagen");
+      toast.error(error.message ?? L.registerFailed);
     },
   });
 
   const requestReset = trpc.auth.requestPasswordReset.useMutation({
     onSuccess: () => {
       setResetSent(true);
-      toast.success("Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.");
+      toast.success(L.resetSent);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -149,32 +151,30 @@ export default function Login() {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
     if ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) {
-      toast.error("Bitte geben Sie Ihre Matrikelnummer an.");
+      toast.error(L.matrikelNrRequired);
       return;
     }
     if (regPassword !== regPasswordConfirm) {
-      toast.error("Die Passwörter stimmen nicht überein.");
+      toast.error(L.passwordMismatch);
       return;
     }
     if (regPassword.length < 8) {
-      toast.error("Das Passwort muss mindestens 8 Zeichen lang sein.");
+      toast.error(L.passwordTooShort);
       return;
     }
-    // E-Mail-Domain-Validierung je nach Rolle
     const emailLower = regEmail.trim().toLowerCase();
     const role = selectedRole ?? "student";
     if (role === "student") {
       if (!emailLower.endsWith("@student.htw-berlin.de")) {
-        toast.error("Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.");
+        toast.error(L.emailDomainErrorStudent);
         return;
       }
     } else if (role === "examiner" || role === "admin") {
       if (!emailLower.endsWith("@htw-berlin.de") && !emailLower.endsWith("@htw-berlin.com")) {
-        toast.error("Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) zur Registrierung.");
+        toast.error(L.emailDomainErrorExaminer);
         return;
       }
     }
-    // second_examiner: beliebige E-Mail erlaubt (keine Einschränkung)
     registerMutation.mutate({
       name: regName.trim(),
       email: regEmail.trim(),
@@ -211,7 +211,7 @@ export default function Login() {
         className="absolute top-6 left-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
-        Zurück zur Startseite
+        {L.backToHome}
       </Link>
 
       <div className="w-full max-w-lg px-4 py-12">
@@ -229,9 +229,7 @@ export default function Login() {
 
         {urlError && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
-            {urlError === "invalid_token"
-              ? "Der Anmeldelink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an."
-              : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."}
+            {urlError === "invalid_token" ? L.errorInvalidToken : L.errorGeneric}
           </div>
         )}
 
@@ -239,8 +237,8 @@ export default function Login() {
         {step === "role" && (
           <div>
             <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-white mb-1">Willkommen</h2>
-              <p className="text-white/50 text-sm">Bitte wählen Sie Ihre Rolle an der HTW Berlin.</p>
+              <h2 className="text-xl font-semibold text-white mb-1">{L.welcomeTitle}</h2>
+              <p className="text-white/50 text-sm">{L.welcomeSubtitle}</p>
             </div>
             <div className="space-y-3">
               {ROLE_OPTIONS.map((option) => (
@@ -277,13 +275,10 @@ export default function Login() {
                     <div className="font-semibold text-white text-sm">{option.label}</div>
                     <div className="text-white/50 text-xs mt-0.5 leading-relaxed">{option.description}</div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-white/30 flex-shrink-0 group-hover:text-white/60 transition-colors" />
                 </button>
               ))}
             </div>
-            <p className="text-center text-white/25 text-xs mt-8">
-              HTW Berlin – Hochschule für Technik und Wirtschaft Berlin
-            </p>
+            <p className="text-center text-white/25 text-xs mt-8">{L.footer}</p>
           </div>
         )}
 
@@ -296,7 +291,7 @@ export default function Login() {
               className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
-              Rolle ändern
+              {L.changeRole}
             </button>
 
             {/* Rollen-Badge */}
@@ -310,13 +305,13 @@ export default function Login() {
               <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
               <div>
                 <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+                <div className="text-white/50 text-xs">{L.selectedRole}</div>
               </div>
             </div>
 
             <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-white mb-1">Was möchten Sie tun?</h2>
-              <p className="text-white/50 text-sm">Melden Sie sich an oder erstellen Sie ein neues Konto.</p>
+              <h2 className="text-xl font-semibold text-white mb-1">{L.whatToDo}</h2>
+              <p className="text-white/50 text-sm">{L.whatToDoSub}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -341,8 +336,8 @@ export default function Login() {
                   <LogIn className="w-6 h-6" />
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-white text-sm">Anmelden</div>
-                  <div className="text-white/40 text-xs mt-0.5">Ich habe bereits ein Konto</div>
+                  <div className="font-semibold text-white text-sm">{L.signIn}</div>
+                  <div className="text-white/40 text-xs mt-0.5">{L.signInSub}</div>
                 </div>
               </button>
 
@@ -367,8 +362,8 @@ export default function Login() {
                   <UserPlus className="w-6 h-6" />
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-white text-sm">Registrieren</div>
-                  <div className="text-white/40 text-xs mt-0.5">Neues Konto erstellen</div>
+                  <div className="font-semibold text-white text-sm">{L.register}</div>
+                  <div className="text-white/40 text-xs mt-0.5">{L.registerSub}</div>
                 </div>
               </button>
             </div>
@@ -384,7 +379,7 @@ export default function Login() {
               className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
-              Zurück
+              {L.back}
             </button>
 
             <div
@@ -397,7 +392,7 @@ export default function Login() {
               <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
               <div>
                 <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+                <div className="text-white/50 text-xs">{L.selectedRole}</div>
               </div>
             </div>
 
@@ -406,20 +401,18 @@ export default function Login() {
               style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
             >
               <CardHeader className="pb-4">
-                <CardTitle className="text-white text-xl">Anmelden</CardTitle>
-                <CardDescription className="text-white/50">
-                  Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an
-                </CardDescription>
+                <CardTitle className="text-white text-xl">{L.signIn}</CardTitle>
+                <CardDescription className="text-white/50">{L.signInDesc}</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLoginSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="text-white/70 text-sm">E-Mail-Adresse</Label>
+                    <Label className="text-white/70 text-sm">{L.emailLabel}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                       <Input
                         type="email"
-                        placeholder="vorname.nachname@htw-berlin.de"
+                        placeholder={L.emailPlaceholderLogin}
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         required
@@ -430,13 +423,13 @@ export default function Login() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-white/70 text-sm">Passwort</Label>
+                      <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
                       {!resetSent && (
                         <button
                           type="button"
                           onClick={() => {
                             if (!loginEmail.includes("@")) {
-                              toast.error("Bitte zuerst Ihre E-Mail-Adresse eingeben.");
+                              toast.error(L.enterEmailFirst);
                               return;
                             }
                             requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
@@ -444,7 +437,7 @@ export default function Login() {
                           disabled={requestReset.isPending}
                           className="text-xs text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 transition-colors font-medium"
                         >
-                          {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
+                          {requestReset.isPending ? L.sendingReset : L.forgotPassword}
                         </button>
                       )}
                     </div>
@@ -452,7 +445,7 @@ export default function Login() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                       <Input
                         type={showLoginPw ? "text" : "password"}
-                        placeholder="Ihr Passwort"
+                        placeholder={L.passwordPlaceholder}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
@@ -469,6 +462,7 @@ export default function Login() {
                       </button>
                     </div>
                   </div>
+
                   {/* Persistente Statusmeldung: Konto ausstehend */}
                   {loginStatus === "pending" && (
                     <div
@@ -488,14 +482,9 @@ export default function Login() {
                           </svg>
                         </div>
                         <div>
-                          <p className="font-semibold mb-1" style={{ color: "#f59e0b" }}>Konto noch nicht freigeschaltet</p>
-                          <p style={{ color: "rgba(251,191,36,0.75)" }}>
-                            Ihre Registrierung wurde eingereicht und wird derzeit von der Verwaltung der HTW Berlin geprüft.
-                            Sie erhalten eine Benachrichtigung, sobald Ihr Zugang aktiviert wurde.
-                          </p>
-                          <p className="mt-2 text-xs" style={{ color: "rgba(251,191,36,0.5)" }}>
-                            Bei Fragen wenden Sie sich bitte an die Studiengangs­verwaltung.
-                          </p>
+                          <p className="font-semibold mb-1" style={{ color: "#f59e0b" }}>{L.pendingTitle}</p>
+                          <p style={{ color: "rgba(251,191,36,0.75)" }}>{L.pendingText}</p>
+                          <p className="mt-2 text-xs" style={{ color: "rgba(251,191,36,0.5)" }}>{L.pendingNote}</p>
                         </div>
                       </div>
                     </div>
@@ -520,11 +509,8 @@ export default function Login() {
                           </svg>
                         </div>
                         <div>
-                          <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>Registrierungsantrag abgelehnt</p>
-                          <p style={{ color: "rgba(239,68,68,0.75)" }}>
-                            Ihr Registrierungsantrag wurde von der Verwaltung der HTW Berlin abgelehnt.
-                            Bitte wenden Sie sich direkt an die Studiengangs­verwaltung für weitere Informationen.
-                          </p>
+                          <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>{L.rejectedTitle}</p>
+                          <p style={{ color: "rgba(239,68,68,0.75)" }}>{L.rejectedText}</p>
                         </div>
                       </div>
                     </div>
@@ -535,9 +521,10 @@ export default function Login() {
                       className="p-3 rounded-lg text-sm"
                       style={{ background: "rgba(118,185,0,0.1)", border: "1px solid rgba(118,185,0,0.3)", color: "#76b900" }}
                     >
-                      Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
+                      {L.resetSent}
                     </div>
                   )}
+
                   <Button
                     type="submit"
                     disabled={loginMutation.isPending || !loginEmail.trim() || !loginPassword}
@@ -547,15 +534,13 @@ export default function Login() {
                     {loginMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Anmeldung läuft …
+                        {L.signingIn}
                       </>
                     ) : (
-                      "Anmelden"
+                      L.signInBtn
                     )}
                   </Button>
-                  <p className="text-white/30 text-xs text-center leading-relaxed">
-                    Durch die Anmeldung stimmen Sie der Verarbeitung Ihrer Daten gemäß der Datenschutzerklärung der HTW Berlin zu.
-                  </p>
+                  <p className="text-white/30 text-xs text-center leading-relaxed">{L.privacyConsent}</p>
                 </form>
               </CardContent>
             </Card>
@@ -571,7 +556,7 @@ export default function Login() {
               className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
-              Zurück
+              {L.back}
             </button>
 
             <div
@@ -584,7 +569,7 @@ export default function Login() {
               <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
               <div>
                 <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                <div className="text-white/50 text-xs">Ausgewählte Rolle</div>
+                <div className="text-white/50 text-xs">{L.selectedRole}</div>
               </div>
             </div>
 
@@ -600,17 +585,14 @@ export default function Login() {
                   >
                     <CheckCircle2 className="w-8 h-8" style={{ color: "#76b900" }} />
                   </div>
-                  <h3 className="text-white font-semibold text-lg mb-2">Registrierung eingereicht</h3>
-                  <p className="text-white/50 text-sm leading-relaxed mb-6">
-                    Ihr Konto wurde angelegt und wartet auf die Freischaltung durch die Verwaltung der HTW Berlin.
-                    Sie erhalten eine Benachrichtigung, sobald Ihr Zugang aktiviert wurde.
-                  </p>
+                  <h3 className="text-white font-semibold text-lg mb-2">{L.registrationSubmitted}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed mb-6">{L.registrationSubmittedDesc}</p>
                   <Button
                     variant="outline"
                     onClick={() => setStep("login")}
                     className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
                   >
-                    Zur Anmeldung
+                    {L.toLogin}
                   </Button>
                 </CardContent>
               </Card>
@@ -620,21 +602,23 @@ export default function Login() {
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
               >
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-white text-xl">Konto erstellen</CardTitle>
-                  <CardDescription className="text-white/50">
-                    Ihr Konto wird nach der Registrierung von der Verwaltung freigeschaltet.
-                  </CardDescription>
+                  <CardTitle className="text-white text-xl">{L.createAccountTitle}</CardTitle>
+                  <CardDescription className="text-white/50">{L.createAccountDesc}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     {(selectedRole ?? "student") === "student" && (
                       <div className="space-y-2">
-                        <Label className="text-white/70 text-sm">Matrikelnummer <span className="text-red-400">*</span></Label>
+                        <Label className="text-white/70 text-sm">
+                          {L.matrikelNr} <span className="text-red-400">*</span>
+                        </Label>
                         <div className="relative">
-                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                          </svg>
                           <Input
                             type="text"
-                            placeholder="z.B. 123456"
+                            placeholder={L.matrikelNrPlaceholder}
                             value={regMatrikelNr}
                             onChange={(e) => setRegMatrikelNr(e.target.value)}
                             required
@@ -645,12 +629,12 @@ export default function Login() {
                       </div>
                     )}
                     <div className="space-y-2">
-                      <Label className="text-white/70 text-sm">Vollständiger Name</Label>
+                      <Label className="text-white/70 text-sm">{L.fullName}</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
                           type="text"
-                          placeholder="Vorname Nachname"
+                          placeholder={L.fullNamePlaceholder}
                           value={regName}
                           onChange={(e) => setRegName(e.target.value)}
                           required
@@ -660,17 +644,17 @@ export default function Login() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-white/70 text-sm">E-Mail-Adresse</Label>
+                      <Label className="text-white/70 text-sm">{L.emailLabel}</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
                           type="email"
                           placeholder={
                             selectedRole === "student"
-                              ? "vorname.nachname@student.htw-berlin.de"
+                              ? L.emailPlaceholderStudent
                               : selectedRole === "second_examiner"
-                              ? "ihre.email@beispiel.de"
-                              : "vorname.nachname@htw-berlin.de"
+                              ? L.emailPlaceholderSecondExaminer
+                              : L.emailPlaceholderExaminer
                           }
                           value={regEmail}
                           onChange={(e) => setRegEmail(e.target.value)}
@@ -681,12 +665,12 @@ export default function Login() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-white/70 text-sm">Passwort</Label>
+                      <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
                           type={showRegPw ? "text" : "password"}
-                          placeholder="Mindestens 8 Zeichen"
+                          placeholder={L.passwordMin}
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
                           required
@@ -704,12 +688,12 @@ export default function Login() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-white/70 text-sm">Passwort bestätigen</Label>
+                      <Label className="text-white/70 text-sm">{L.confirmPassword}</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
                           type={showRegPw ? "text" : "password"}
-                          placeholder="Passwort wiederholen"
+                          placeholder={L.passwordRepeat}
                           value={regPasswordConfirm}
                           onChange={(e) => setRegPasswordConfirm(e.target.value)}
                           required
@@ -724,31 +708,36 @@ export default function Login() {
                     >
                       <p>
                         {selectedRole === "student"
-                          ? "Erlaubte E-Mail-Domain: @student.htw-berlin.de"
+                          ? L.emailDomainStudent
                           : selectedRole === "second_examiner"
-                          ? "Als Zweitprüfer:in können Sie eine beliebige E-Mail-Adresse verwenden."
-                          : "Erlaubte E-Mail-Domains: @htw-berlin.de oder @htw-berlin.com"}
+                          ? L.emailDomainSecondExaminer
+                          : L.emailDomainExaminer}
                       </p>
-                      <p>Nach der Registrierung wird Ihr Konto von der Verwaltung der HTW Berlin geprüft und freigeschaltet. Sie können sich erst nach der Freischaltung anmelden.</p>
+                      <p>{L.pendingApproval}</p>
                     </div>
                     <Button
                       type="submit"
-                      disabled={registerMutation.isPending || !regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm || ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim())}
+                      disabled={
+                        registerMutation.isPending ||
+                        !regName.trim() ||
+                        !regEmail.trim() ||
+                        !regPassword ||
+                        !regPasswordConfirm ||
+                        ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim())
+                      }
                       className="w-full font-semibold h-11"
                       style={{ background: "#3b82f6", color: "white" }}
                     >
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Registrierung läuft …
+                          {L.registering}
                         </>
                       ) : (
-                        "Konto erstellen"
+                        L.createAccount
                       )}
                     </Button>
-                    <p className="text-white/30 text-xs text-center leading-relaxed">
-                      Mit der Registrierung stimmen Sie der Verarbeitung Ihrer Daten gemäß der Datenschutzerklärung der HTW Berlin zu.
-                    </p>
+                    <p className="text-white/30 text-xs text-center leading-relaxed">{L.registerPrivacyConsent}</p>
                   </form>
                 </CardContent>
               </Card>
@@ -756,9 +745,7 @@ export default function Login() {
           </>
         )}
 
-        <p className="text-center text-white/25 text-xs mt-6">
-          HTW Berlin – Hochschule für Technik und Wirtschaft Berlin
-        </p>
+        <p className="text-center text-white/25 text-xs mt-6">{L.footer}</p>
       </div>
     </div>
   );

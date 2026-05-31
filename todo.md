@@ -654,3 +654,12 @@
 - [x] Frontend: Zurücksetzen-Button (RotateCcw) pro Zeile
 - [x] Frontend: Kapazitäten-Button in jeder Tabellenzeile der Prüfer:innen-Verwaltung
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## i18n-Bug: Login-Formular auf Englisch ✅ KOMPLETT
+
+- [x] LanguageContext.tsx: `login`-Übersetzungsblock für DE und EN hinzugefügt (alle Strings)
+- [x] Login.tsx: `useLanguage()` importiert und `const L = t.login` verwendet
+- [x] Login.tsx: ROLE_OPTIONS jetzt dynamisch mit `L.roleStudent`, `L.roleExaminer` etc.
+- [x] Login.tsx: Alle hardcodierten deutschen Strings durch i18n-Keys ersetzt
+- [x] Login.tsx: Fehlermeldungen (toast), Placeholder, Labels, Buttons, Status-Meldungen übersetzt
+- [x] Tests grün (55/55), Checkpoint gespeichert
