@@ -208,9 +208,12 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-5">
-        {hasOwnTopic && (
-          <div className="sm:col-span-2">
+      {/* ── Abschnitt 1: Thema ──────────────────────────────────────────── */}
+      {hasOwnTopic && (
+        <div className="rounded-2xl border border-[#76B900]/20 bg-[#f9ffe8] p-5 space-y-4">
+          <h3 className="text-xs font-semibold text-[#4a7a00] uppercase tracking-widest">Thema</h3>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Titel der Abschlussarbeit <span className="text-red-500">*</span>
             </label>
@@ -220,98 +223,12 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="z.B. Einsatz von LLMs in der Kundenbetreuung"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white"
               style={{ "--tw-ring-color": "#76B900" } as React.CSSProperties}
             />
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Fachbereich / Studiengang <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={form.department}
-            onChange={(e) => !myProgramme && setForm((f) => ({ ...f, department: e.target.value }))}
-            readOnly={!!myProgramme}
-            placeholder="z.B. M.Sc. Wirtschaftsinformatik"
-            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-              myProgramme
-                ? "border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium cursor-not-allowed"
-                : "border-gray-200"
-            }`}
-            title={myProgramme ? "Studiengang ist Ihrem Profil fest zugeordnet" : undefined}
-          />
-          {myProgramme && (
-            <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Zielsemester <span className="text-red-500">*</span></label>
-          <select
-            required
-            value={form.targetSemester}
-            onChange={(e) => setForm((f) => ({ ...f, targetSemester: e.target.value }))}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-          >
-            <option value="">-- Bitte wählen --</option>
-            {getNextSemesters().map((sem) => (
-              <option key={sem.value} value={sem.value}>
-                {sem.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
-          <select
-            required
-            value={form.wantedExaminerId}
-            onChange={(e) => setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) }))}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-          >
-            <option value={0}>-- Bitte wählen --</option>
-            {qualifiedExaminers.map((examiner: any) => (
-              <option key={examiner.id} value={examiner.id}>
-                {examiner.name} ({examiner.title})
-              </option>
-            ))}
-          </select>
-          {qualifiedExaminers.length === 0 && myProgramme && (
-            <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Abschlussart</label>
-          <select
-            value={form.degreeType}
-            onChange={(e) => setForm((f) => ({ ...f, degreeType: e.target.value as "bachelor" | "master" }))}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-          >
-            <option value="bachelor">Bachelor</option>
-            <option value="master">Master</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprache</label>
-          <select
-            value={form.language}
-            onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as "de" | "en" }))}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-          >
-            <option value="de">Deutsch</option>
-            <option value="en">Englisch</option>
-          </select>
-        </div>
-
-        {hasOwnTopic && (
-          <div className="sm:col-span-2">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Beschreibung <span className="text-red-500">*</span>
             </label>
@@ -320,14 +237,12 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               rows={4}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Beschreibe Ihr Thema, die Problemstellung und den geplanten Ansatz..."
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+              placeholder="Beschreiben Sie Ihr Thema, die Problemstellung und den geplanten Ansatz..."
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
           </div>
-        )}
 
-        {hasOwnTopic && (
-          <div className="sm:col-span-2">
+          <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
               Abstract (optional)
               <span className="relative group cursor-default">
@@ -345,66 +260,153 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               value={form.abstract}
               onChange={(e) => setForm((f) => ({ ...f, abstract: e.target.value }))}
               placeholder="Kurze Zusammenfassung der geplanten Arbeit..."
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
           </div>
-        )}
-        
-        {hasOwnTopic && (
-          <div className="sm:col-span-2">
+
+          <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 10 MB)</span>
+              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 10 MB)</span>
               <span className="relative group cursor-default">
                 <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
-                  Das Exposé ist ein 5–10-seitiges Dokument, das Ihr Thema, den Forschungsstand, die Methodik, einen Zeitplan sowie ein vorläufiges Literaturverzeichnis enthält. Es ist keine Pflichtangabe, erhöht aber Ihre Chancen auf eine Zusage.
+                  Das Exposé ist ein ca. 2-seitiges Dokument, das Ihr Thema, die Problemstellung und den geplanten Ansatz kurz zusammenfasst. Es ist keine Pflichtangabe, erhöht aber Ihre Chancen auf eine Zusage.
                   <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />
                 </span>
               </span>
             </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  if (file.type !== "application/pdf") {
-                    toast.error("Nur PDF-Dateien sind erlaubt.");
-                    return;
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.type !== "application/pdf") {
+                      toast.error("Nur PDF-Dateien sind erlaubt.");
+                      return;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                      toast.error("Datei ist zu groß (max. 10 MB).");
+                      return;
+                    }
+                    setExposeFile(file);
                   }
-                  if (file.size > 10 * 1024 * 1024) {
-                    toast.error("Datei ist zu groß (max. 10 MB).");
-                    return;
-                  }
-                  setExposeFile(file);
-                }
-              }}
-              className="hidden"
-              id="expose-upload"
-            />
-            <label
-              htmlFor="expose-upload"
-              className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gray-400 transition-all text-sm font-medium text-gray-600"
-            >
-              {exposeFile ? `✓ ${exposeFile.name}` : "PDF auswählen..."}
-            </label>
-            {exposeFile && (
-              <button
-                type="button"
-                onClick={() => setExposeFile(null)}
-                className="text-xs text-red-500 hover:text-red-700 font-medium"
+                }}
+                className="hidden"
+                id="expose-upload"
+              />
+              <label
+                htmlFor="expose-upload"
+                className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gray-400 transition-all text-sm font-medium text-gray-600 bg-white"
               >
-                Entfernen
-              </button>
+                {exposeFile ? `✓ ${exposeFile.name}` : "PDF auswählen..."}
+              </label>
+              {exposeFile && (
+                <button
+                  type="button"
+                  onClick={() => setExposeFile(null)}
+                  className="text-xs text-red-500 hover:text-red-700 font-medium"
+                >
+                  Entfernen
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Abschnitt 2: Rahmenbedingungen ──────────────────────────────── */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Rahmenbedingungen</h3>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Fachbereich / Studiengang <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={form.department}
+              onChange={(e) => !myProgramme && setForm((f) => ({ ...f, department: e.target.value }))}
+              readOnly={!!myProgramme}
+              placeholder="z.B. M.Sc. Wirtschaftsinformatik"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                myProgramme
+                  ? "border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium cursor-not-allowed"
+                  : "border-gray-200"
+              }`}
+              title={myProgramme ? "Studiengang ist Ihrem Profil fest zugeordnet" : undefined}
+            />
+            {myProgramme && (
+              <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
             )}
           </div>
-          </div>
-        )}
-      </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Zielsemester <span className="text-red-500">*</span></label>
+            <select
+              required
+              value={form.targetSemester}
+              onChange={(e) => setForm((f) => ({ ...f, targetSemester: e.target.value }))}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            >
+              <option value="">-- Bitte wählen --</option>
+              {getNextSemesters().map((sem) => (
+                <option key={sem.value} value={sem.value}>
+                  {sem.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
+            <select
+              required
+              value={form.wantedExaminerId}
+              onChange={(e) => setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) }))}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            >
+              <option value={0}>-- Bitte wählen --</option>
+              {qualifiedExaminers.map((examiner: any) => (
+                <option key={examiner.id} value={examiner.id}>
+                  {examiner.name} ({examiner.title})
+                </option>
+              ))}
+            </select>
+            {qualifiedExaminers.length === 0 && myProgramme && (
+              <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Abschlussart</label>
+            <select
+              value={form.degreeType}
+              onChange={(e) => setForm((f) => ({ ...f, degreeType: e.target.value as "bachelor" | "master" }))}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            >
+              <option value="bachelor">Bachelor</option>
+              <option value="master">Master</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprache</label>
+            <select
+              value={form.language}
+              onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as "de" | "en" }))}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            >
+              <option value="de">Deutsch</option>
+              <option value="en">Englisch</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <button
         type="submit"
         disabled={createMutation.isPending}
