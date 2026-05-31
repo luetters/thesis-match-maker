@@ -1093,6 +1093,16 @@ function CommissionPreferences() {
   const addToSelected = (id: number) => setSelectedIds((prev) => [...prev, id]);
   const removeFromSelected = (id: number) => setSelectedIds((prev) => prev.filter((x) => x !== id));
 
+  // Move-All: alle verfügbaren (ungefiltert) hinzufügen
+  const addAll = () => {
+    const allAvailableIds = (allCandidates as any[])
+      .filter((c: any) => !selectedIds.includes(c.id))
+      .map((c: any) => c.id);
+    setSelectedIds((prev) => [...prev, ...allAvailableIds]);
+  };
+  // Move-All: alle ausgewählten entfernen
+  const removeAll = () => setSelectedIds([]);
+
   const handleSave = () => {
     setSaving(true);
     setMutation.mutate({ secondExaminerIds: selectedIds });
@@ -1201,8 +1211,23 @@ function CommissionPreferences() {
           {/* Linke Liste: Verfügbare Zweitgutachter:innen */}
           <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
-              <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
+              <div className="flex items-center justify-between mb-1">
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
+                </div>
+                <button
+                  onClick={addAll}
+                  disabled={(allCandidates as any[]).filter((c: any) => !selectedIds.includes(c.id)).length === 0}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#76B900]/10 text-[#76B900] hover:bg-[#76B900]/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Alle hinzufügen"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                  Alle
+                </button>
+              </div>
               <div className="mt-2 relative">
                 <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1246,8 +1271,23 @@ function CommissionPreferences() {
               : "border-[#76B900]/30 bg-[#76B900]/5"
           }`}>
             <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
-              <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
-              <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt · Reihenfolge = Präferenz</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
+                  <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt · Reihenfolge = Präferenz</p>
+                </div>
+                <button
+                  onClick={removeAll}
+                  disabled={selected.length === 0}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-400 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Alle entfernen"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
+                  </svg>
+                  Alle
+                </button>
+              </div>
             </div>
             <div className="max-h-80 overflow-y-auto" ref={setRightDropRef}>
               {selected.length === 0 ? (

@@ -713,11 +713,30 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               }`}
             >
               <option value={0}>-- Bitte wählen --</option>
-              {(firstExaminers as any[]).map((examiner: any) => (
-                <option key={examiner.id} value={examiner.id}>
-                  {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}
-                </option>
-              ))}
+              {(() => {
+                // Alphabetisch nach Nachname sortieren und Buchstabentrenner einfügen
+                const sorted = [...(firstExaminers as any[])].sort((a: any, b: any) => {
+                  const lastA = (a.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastB = (b.name ?? "").trim().split(" ").pop() ?? "";
+                  return lastA.localeCompare(lastB, "de");
+                });
+                const result: React.ReactNode[] = [];
+                let currentLetter = "";
+                sorted.forEach((examiner: any) => {
+                  const lastName = (examiner.name ?? "").trim().split(" ").pop() ?? "";
+                  const letter = lastName.charAt(0).toUpperCase();
+                  if (letter !== currentLetter) {
+                    currentLetter = letter;
+                    result.push(<option key={`sep-${letter}`} disabled value="">── {letter} ──</option>);
+                  }
+                  result.push(
+                    <option key={examiner.id} value={examiner.id}>
+                      {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}
+                    </option>
+                  );
+                });
+                return result;
+              })()}
             </select>
             {errors.wantedExaminerId && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -883,11 +902,31 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
             className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
             <option value={0}>Keine Präferenz – Zweitgutachter:in kann zugeteilt werden</option>
-            {(secondExaminers as any[]).filter((e: any) => e.id !== wantedExaminerId).map((e: any) => (
-              <option key={e.id} value={e.id}>
-                {e.name}{e.title ? ` (${e.title})` : ""}
-              </option>
-            ))}
+            {(() => {
+              const sorted = [...(secondExaminers as any[])]
+                .filter((e: any) => e.id !== wantedExaminerId)
+                .sort((a: any, b: any) => {
+                  const lastA = (a.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastB = (b.name ?? "").trim().split(" ").pop() ?? "";
+                  return lastA.localeCompare(lastB, "de");
+                });
+              const result: React.ReactNode[] = [];
+              let currentLetter = "";
+              sorted.forEach((e: any) => {
+                const lastName = (e.name ?? "").trim().split(" ").pop() ?? "";
+                const letter = lastName.charAt(0).toUpperCase();
+                if (letter !== currentLetter) {
+                  currentLetter = letter;
+                  result.push(<option key={`sep2-${letter}`} disabled value="">── {letter} ──</option>);
+                }
+                result.push(
+                  <option key={e.id} value={e.id}>
+                    {e.name}{e.title ? ` (${e.title})` : ""}
+                  </option>
+                );
+              });
+              return result;
+            })()}
           </select>
           <button
             onClick={handleSave}

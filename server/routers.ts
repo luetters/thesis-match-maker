@@ -79,6 +79,8 @@ import {
   updateEmailTemplate,
   listExaminers,
   updateExaminerProfileByAdmin,
+  updateUserFields,
+  upsertUser,
   getThesisStatsByPeriod,
   getThesisStatsByFaculty,
   getThesisStatsByStatus,
@@ -1332,6 +1334,74 @@ export const appRouter = router({
         return { success: true };
       }),
     // toggleExaminerStatus wurde entfernt (isActive-Spalte nicht in DB vorhanden)
+
+    /** Prüfer:innen per CSV/Excel-Daten importieren */
+    importExaminers: superadminProcedure
+      .input(z.object({
+        rows: z.array(z.object({
+          name: z.string().min(1),
+          email: z.string().email(),
+          role: z.enum(["examiner", "second_examiner"]),
+          title: z.string().optional(),
+          department: z.string().optional(),
+          tags: z.string().optional(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        let created = 0;
+        let updated = 0;
+        const errors: string[] = [];
+        for (const row of input.rows) {
+          try {
+            const existing = await getUserByEmail(row.email);
+            if (existing) {
+              // Nutzer existiert – Rolle und Profil aktualisieren
+              await updateUserRole(existing.id, row.role);
+              await upsertExaminerProfile({
+                userId: existing.id,
+                department: row.department ?? null,
+                researchFocus: row.tags ?? null,
+              });
+              if (row.title || row.department) {
+                await updateUserFields(existing.id, {
+                  academicTitle: row.title ?? undefined,
+                  department: row.department ?? undefined,
+                });
+              }
+              updated++;
+            } else {
+              // Neuen Nutzer anlegen (openId = email, loginMethod = magic_link)
+              const openId = `import_${row.email.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}`;
+              await upsertUser({
+                openId,
+                name: row.name,
+                email: row.email,
+                role: row.role,
+                loginMethod: "magic_link",
+                roleStatus: "approved",
+              });
+              const newUser = await getUserByEmail(row.email);
+              if (newUser) {
+                await upsertExaminerProfile({
+                  userId: newUser.id,
+                  department: row.department ?? null,
+                  researchFocus: row.tags ?? null,
+                });
+                if (row.title || row.department) {
+                  await updateUserFields(newUser.id, {
+                    academicTitle: row.title ?? undefined,
+                    department: row.department ?? undefined,
+                  });
+                }
+              }
+              created++;
+            }
+          } catch (e: any) {
+            errors.push(`${row.email}: ${e.message ?? "Unbekannter Fehler"}`);
+          }
+        }
+        return { created, updated, errors };
+      }),
 
     // --- Phase 39: Superadmin-Rolle-Wechsel ---
     getSuperadminStatus: protectedProcedure

@@ -586,3 +586,26 @@
 - [x] Frontend: CandidateTooltip-Komponente mit Institut, Auslastung (Balken + Farbe), Forschungsgebiete, Tags, Sprechstunden
 - [x] Frontend: Tooltip in AvailableItem (rechts) und SelectedItem (links) eingebunden
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## Move-All-Button im Dual-List-Picker ✅ KOMPLETT
+
+- [x] "Alle hinzufügen"-Button (→→) über der linken Liste
+- [x] "Alle entfernen"-Button (←←) über der rechten Liste
+- [x] Buttons deaktiviert wenn keine Einträge vorhanden
+
+## CSV/Excel-Upload für Prüfer:innen-Anlage ✅ KOMPLETT
+
+- [x] Backend: importExaminers-Prozedur (superadminProcedure) – CSV/Excel parsen, Nutzer anlegen/aktualisieren
+- [x] Backend: Felder Titel, Name, E-Mail, Rolle (examiner/second_examiner), Fachbereich, Fachgebiete (tags)
+- [x] Backend: Duplikat-Prüfung per E-Mail (update statt insert bei Existenz)
+- [x] Frontend: Import-Dialog in ExaminerManagement.tsx mit Drag-and-Drop-Dropzone
+- [x] Frontend: Vorlagen-Download (CSV-Beispieldatei mit BOM für Excel-Kompatibilität)
+- [x] Frontend: Vorschau-Tabelle vor dem Import, Fehler-Anzeige
+- [x] Frontend: Ergebnis-Zusammenfassung (X angelegt, Y aktualisiert, Z Fehler)
+- [x] updateUserFields-Hilfsfunktion in db.ts hinzugefügt
+
+## Alphabetische Sortierung + Buchstabentrenner in Prüfer:innen-Auswahl ✅ KOMPLETT
+
+- [x] Erstgutachter:innen-Auswahl für Studierende: Sortierung nach Nachname (letztes Wort im Namen)
+- [x] Buchstabentrenner (── A ──) als deaktivierte option-Elemente zwischen Gruppen
+- [x] Zweitgutachter:innen-Auswahl (SecondExaminerPicker): ebenfalls alphabetisch + Buchstabentrenner

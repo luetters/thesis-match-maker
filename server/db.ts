@@ -3744,3 +3744,19 @@ export async function getFilteredSecondExaminers(firstExaminerId: number) {
   // Nur bevorzugte anzeigen
   return all.filter(e => prefs.includes(e.id));
 }
+
+// ─── Nutzerfelder aktualisieren (für Import) ──────────────────────────────────
+export async function updateUserFields(userId: number, fields: {
+  academicTitle?: string;
+  department?: string;
+  name?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  const set: Record<string, unknown> = {};
+  if (fields.academicTitle !== undefined) set.academicTitle = fields.academicTitle;
+  if (fields.department !== undefined) set.department = fields.department;
+  if (fields.name !== undefined) set.name = fields.name;
+  if (Object.keys(set).length === 0) return;
+  await db.update(users).set(set as any).where(eq(users.id, userId));
+}
