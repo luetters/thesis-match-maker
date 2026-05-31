@@ -71,6 +71,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const [exposeFile, setExposeFile] = useState<File | null>(null);
   const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -161,13 +162,17 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleShowPreview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
       toast.error("Bitte korrigieren Sie die markierten Felder.");
       return;
     }
-    
+    setShowPreview(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
     let exposeUrl = "";
     let exposeKey = "";
     
@@ -197,8 +202,137 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     });
   };
 
+  // Vorschau-Sektion
+  if (showPreview) {
+    const selectedExaminer = (qualifiedExaminers as any[]).find((e: any) => e.id === form.wantedExaminerId);
+    const semesterLabel = getNextSemesters().find(s => s.value === form.targetSemester)?.label ?? form.targetSemester;
+    return (
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Vorschau Ihrer Anfrage</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Bitte überprüfen Sie Ihre Angaben vor dem endgültigen Einreichen.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPreview(false)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Zurück bearbeiten
+          </button>
+        </div>
+
+        {/* Themenart */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Themenauswahl</h3>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+              hasOwnTopic ? "bg-[#76B900]/10 text-[#76B900]" : "bg-blue-50 text-blue-700"
+            }`}>
+              {hasOwnTopic ? (
+                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>Eigener Vorschlag</>
+              ) : (
+                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>Themenzuteilung gewünscht</>
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Thema (nur bei eigenem Vorschlag) */}
+        {hasOwnTopic && (
+          <div className="rounded-2xl border border-[#76B900]/20 bg-[#76B900]/5 p-5 shadow-sm space-y-4">
+            <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Thema</h3>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Titel der Abschlussarbeit</p>
+              <p className="text-sm font-semibold text-gray-900">{form.title || <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Beschreibung</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.description || <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+            </div>
+            {form.abstract && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Abstract</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.abstract}</p>
+              </div>
+            )}
+            {exposeFile && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Exposé</p>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                  {exposeFile.name} <span className="text-gray-400">({(exposeFile.size / 1024).toFixed(0)} KB)</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rahmenbedingungen */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Rahmenbedingungen</h3>
+          <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+            <div>
+              <dt className="text-xs text-gray-500">Fachbereich / Studiengang</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.department || <span className="text-gray-400 italic">Nicht angegeben</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Zielsemester</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{semesterLabel || <span className="text-gray-400 italic">Nicht angegeben</span>}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-gray-500">Wunschgutachter:in</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">
+                {selectedExaminer ? `${selectedExaminer.name} (${selectedExaminer.title})` : <span className="text-gray-400 italic">Nicht ausgewählt</span>}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Abschlussart</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.degreeType === "master" ? "Master" : "Bachelor"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Sprache</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.language === "en" ? "Englisch" : "Deutsch"}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* Aktions-Buttons */}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowPreview(false)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Bearbeiten
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={createMutation.isPending}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ backgroundColor: "#76B900" }}
+          >
+            {createMutation.isPending ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Wird eingereicht...</>
+            ) : (
+              <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Jetzt einreichen</>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleShowPreview} className="space-y-5">
       {/* Wiederherstellungs-Banner */}
       {showRestoreBanner && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm">
@@ -492,23 +626,14 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <button
         type="submit"
-        disabled={createMutation.isPending}
-        className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+        className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95"
         style={{ backgroundColor: "#76B900" }}
       >
-        {createMutation.isPending ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Wird eingereicht...
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Anfrage einreichen
-          </>
-        )}
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        Vorschau &amp; Einreichen
       </button>
     </form>
   );
