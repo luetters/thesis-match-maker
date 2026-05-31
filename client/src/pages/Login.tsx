@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 
@@ -213,6 +213,9 @@ export default function Login() {
         <ArrowLeft className="w-4 h-4" />
         {L.backToHome}
       </Link>
+      <div className="absolute top-6 right-6">
+        <LanguageSwitcher />
+      </div>
 
       <div className="w-full max-w-lg px-4 py-12">
         {/* Logo */}
