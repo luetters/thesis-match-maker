@@ -1,0 +1,3 @@
+ALTER TABLE `magic_links` MODIFY COLUMN `role` enum('student','examiner','second_examiner','admin','user') NOT NULL DEFAULT 'student';--> statement-breakpoint
+ALTER TABLE `users` MODIFY COLUMN `role` enum('user','admin','student','examiner','second_examiner','superadmin','pav','dean','vice_dean') NOT NULL DEFAULT 'student';--> statement-breakpoint
+ALTER TABLE `users` MODIFY COLUMN `requestedRole` enum('user','admin','student','examiner','second_examiner','superadmin','pav','dean','vice_dean');

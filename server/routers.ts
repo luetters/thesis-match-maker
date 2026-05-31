@@ -161,8 +161,17 @@ const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// Erstprüfer:innen-Prozedur: nur Rolle 'examiner' (+ Admin)
 const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen mit Erstprüfer-Berechtigung haben Zugriff." });
+  }
+  return next({ ctx });
+});
+
+// Zweitprüfer:innen-Prozedur: Rolle 'examiner' ODER 'second_examiner' (+ Admin)
+const anyExaminerProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "examiner" && ctx.user.role !== "second_examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen haben Zugriff." });
   }
   return next({ ctx });
@@ -364,7 +373,7 @@ export const appRouter = router({
           name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein."),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
-          role: z.enum(["student", "examiner", "admin"]),
+          role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
         })
       )
@@ -445,17 +454,15 @@ export const appRouter = router({
             });
           }
         } else if (user.role === "examiner") {
+          // Prüfer:in (Erstprüfer:in): HTW-E-Mail erforderlich
           if (!isHtwStaffEmail) {
-            // Profil laden um isSecondExaminer-Flag zu prüfen
-            const profile = await getExaminerProfileByUserId(user.id);
-            const isSecondExaminer = profile && (profile as { isSecondExaminer?: number }).isSecondExaminer === 1;
-            if (!isSecondExaminer) {
-              throw new TRPCError({
-                code: "FORBIDDEN",
-                message: "Erstprüfer:innen müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) anmelden. Wenn Sie als Zweitprüfer:in agieren, aktivieren Sie bitte zunächst das entsprechende Flag in Ihrem Profil.",
-              });
-            }
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Prüfer:innen mit Erstprüfer-Berechtigung müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) anmelden.",
+            });
           }
+        } else if (user.role === "second_examiner") {
+          // Zweitprüfer:in only: beliebige E-Mail erlaubt (keine Einschränkung)
         } else if (user.role !== "admin" && user.role !== "superadmin") {
           if (!isHtwStaffEmail) {
             throw new TRPCError({
@@ -731,12 +738,12 @@ export const appRouter = router({
     }),
 
     // Prüfer: Eigenes Profil abrufen
-    myProfile: examinerProcedure.query(async ({ ctx }) => {
+    myProfile: anyExaminerProcedure.query(async ({ ctx }) => {
       return getExaminerProfileByUserId(ctx.user.id);
     }),
 
     // Prüfer: Profil aktualisieren
-    updateProfile: examinerProcedure
+    updateProfile: anyExaminerProcedure
       .input(
         z.object({
           title: z.string().optional(),
@@ -807,7 +814,7 @@ export const appRouter = router({
         return found;
       }),
     // Prüfer: Erweiterte Profil-Felder aktualisieren
-    updateProfileExtended: examinerProcedure
+    updateProfileExtended: anyExaminerProcedure
       .input(
         z.object({
           title: z.string().optional(),
@@ -828,7 +835,7 @@ export const appRouter = router({
         return { success: true };
       }),
     // Prüfer:in: Alternative E-Mail-Adresse setzen (für Zweitprüfer:innen mit externer E-Mail)
-    setAlternativeEmail: examinerProcedure
+    setAlternativeEmail: anyExaminerProcedure
       .input(
         z.object({
           alternativeEmail: z.string().email().optional().nullable(),
@@ -841,7 +848,7 @@ export const appRouter = router({
 
     // Prüfer:in oder Admin: Zweitprüfer:in-Flag setzen
     // Admins können userId angeben, Prüfer:innen setzen ihr eigenes Flag
-    setSecondExaminerFlag: examinerProcedure
+    setSecondExaminerFlag: anyExaminerProcedure
       .input(
         z.object({
           isSecondExaminer: z.boolean(),
@@ -857,7 +864,7 @@ export const appRouter = router({
       }),
 
     // Prüfer:in: Onboarding abschließen (vollständiger 5-Schritt-Assistent)
-    completeOnboarding: examinerProcedure
+    completeOnboarding: anyExaminerProcedure
       .input(
         z.object({
           isSecondExaminer: z.boolean(),
@@ -908,27 +915,27 @@ export const appRouter = router({
   }),
 
     // Phase 28: Examiner-Dashboard für Anfrage-Verwaltung
-    getPendingRequests: examinerProcedure.query(async ({ ctx }) => {
+    getPendingRequests: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerPendingRequests } = await import("./db");
       return getExaminerPendingRequests(ctx.user.id);
     }),
 
-    getAcceptedRequests: examinerProcedure.query(async ({ ctx }) => {
+    getAcceptedRequests: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerAcceptedRequests } = await import("./db");
       return getExaminerAcceptedRequests(ctx.user.id);
     }),
 
-    getRejectedRequests: examinerProcedure.query(async ({ ctx }) => {
+    getRejectedRequests: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerRejectedRequests } = await import("./db");
       return getExaminerRejectedRequests(ctx.user.id);
     }),
 
-    getSecondExaminerRequests: examinerProcedure.query(async ({ ctx }) => {
+    getSecondExaminerRequests: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerSecondExaminerRequests } = await import("./db");
       return getExaminerSecondExaminerRequests(ctx.user.id);
     }),
 
-    getRequestStats: examinerProcedure.query(async ({ ctx }) => {
+    getRequestStats: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerRequestStats } = await import("./db");
       return getExaminerRequestStats(ctx.user.id);
     }),
@@ -1184,7 +1191,7 @@ export const appRouter = router({
       return getColloquiumsByStudent(ctx.user.id);
     }),
     // Prüfer:innen: Eigene Kolloquien abrufen
-    myExaminerColloquiums: examinerProcedure.query(async ({ ctx }) => {
+    myExaminerColloquiums: anyExaminerProcedure.query(async ({ ctx }) => {
       return getColloquiumsByExaminer(ctx.user.id);
     }),
   }),
@@ -1234,7 +1241,7 @@ export const appRouter = router({
       .input(
         z.object({
           userId: z.number().int().positive(),
-          role: z.enum(["student", "examiner", "pav", "admin", "dean", "vice_dean", "superadmin"]),
+          role: z.enum(["student", "examiner", "second_examiner", "pav", "admin", "dean", "vice_dean", "superadmin"]),
         })
       )
       .mutation(async ({ input }) => {

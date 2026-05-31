@@ -787,17 +787,18 @@ export default function ExaminerDashboard() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  // Role-Guard: Nur Prüfer:innen und Superadmins dürfen hier rein
+  // Role-Guard: Nur Prüfer:innen (Erst- und Zweitprüfer:innen) und Superadmins dürfen hier rein
   useEffect(() => {
-    if (user && user.role !== "examiner" && user.role !== "superadmin") {
+    if (user && user.role !== "examiner" && user.role !== "second_examiner" && user.role !== "superadmin") {
       navigate("/");
     }
   }, [user, navigate]);
 
-  // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist (nur für echte Prüfer:innen, nicht für Superadmins)
+  // Weiterleitung zum Onboarding-Assistenten wenn onboardingCompleted noch nicht gesetzt ist
+  // (nur für echte Prüfer:innen, nicht für Superadmins)
   const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
   useEffect(() => {
-    if (user?.role === "examiner" && !profileLoading) {
+    if ((user?.role === "examiner" || user?.role === "second_examiner") && !profileLoading) {
       const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
       if (!completed) navigate("/examiner/onboarding");
     }

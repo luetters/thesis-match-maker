@@ -51,7 +51,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     onSuccess: (data) => {
       onClose();
       if (data.role === "student") navigate("/student");
-      else if (data.role === "examiner") navigate("/examiner");
+      else if (data.role === "examiner" || data.role === "second_examiner") navigate("/examiner");
       else if (data.role === "admin") navigate("/admin");
       else navigate("/student");
     },
@@ -352,7 +352,7 @@ export default function Home() {
                 onClick={() => {
                   const role = user?.role;
                   if (role === "student") navigate("/student");
-                  else if (role === "examiner") navigate("/examiner");
+                  else if (role === "examiner" || role === "second_examiner") navigate("/examiner");
                   else if (role === "admin") navigate("/admin");
                   else navigate("/student");
                 }}

@@ -29,10 +29,10 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Startseite", path: "/", roles: ["student", "examiner", "admin", "pav", "dean", "vice_dean", "superadmin"] },
+  { icon: LayoutDashboard, label: "Startseite", path: "/", roles: ["student", "examiner", "second_examiner", "admin", "pav", "dean", "vice_dean", "superadmin"] },
   { icon: Users, label: "Pruefer:innen", path: "/examiners", roles: ["student", "admin", "pav", "dean", "superadmin"] },
   { icon: LayoutDashboard, label: "Meine Anfragen", path: "/student", roles: ["student"] },
-  { icon: LayoutDashboard, label: "Anfragen", path: "/examiner", roles: ["examiner"] },
+  { icon: LayoutDashboard, label: "Anfragen", path: "/examiner", roles: ["examiner", "second_examiner"] },
   { icon: LayoutDashboard, label: "Verwaltung", path: "/admin", roles: ["admin", "pav", "dean", "vice_dean"] },
   { icon: Users, label: "Nutzer", path: "/superadmin", roles: ["superadmin"] },
 ];

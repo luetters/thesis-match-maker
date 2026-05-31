@@ -267,7 +267,8 @@ export function AdminManagementTab() {
                             <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>
                           ))}
                           <option value="student">Studierende:r (entfernen)</option>
-                          <option value="examiner">Prüfer:in (entfernen)</option>
+                          <option value="examiner">Prüfer:in / Erstprüfer:in (entfernen)</option>
+                          <option value="second_examiner">Zweitprüfer:in (entfernen)</option>
                         </select>
                       )}
                     </td>

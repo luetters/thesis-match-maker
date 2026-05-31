@@ -23,7 +23,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
-type Role = "student" | "examiner" | "admin";
+type Role = "student" | "examiner" | "second_examiner" | "admin";
 
 const ROLE_OPTIONS: {
   id: Role;
@@ -48,6 +48,14 @@ const ROLE_OPTIONS: {
     icon: <BookOpen className="w-7 h-7" />,
     accentColor: "#3b82f6",
     bgColor: "rgba(59,130,246,0.08)",
+  },
+  {
+    id: "second_examiner",
+    label: "Zweitprüfer:in",
+    description: "Ich betreue Abschlussarbeiten ausschließlich als Zweitprüfer:in (ohne Erstprüfer-Berechtigung).",
+    icon: <BookOpen className="w-7 h-7" />,
+    accentColor: "#0891b2",
+    bgColor: "rgba(8,145,178,0.08)",
   },
   {
     id: "admin",
@@ -166,6 +174,7 @@ export default function Login() {
         return;
       }
     }
+    // second_examiner: beliebige E-Mail erlaubt (keine Einschränkung)
     registerMutation.mutate({
       name: regName.trim(),
       email: regEmail.trim(),
@@ -659,6 +668,8 @@ export default function Login() {
                           placeholder={
                             selectedRole === "student"
                               ? "vorname.nachname@student.htw-berlin.de"
+                              : selectedRole === "second_examiner"
+                              ? "ihre.email@beispiel.de"
                               : "vorname.nachname@htw-berlin.de"
                           }
                           value={regEmail}
@@ -714,6 +725,8 @@ export default function Login() {
                       <p>
                         {selectedRole === "student"
                           ? "Erlaubte E-Mail-Domain: @student.htw-berlin.de"
+                          : selectedRole === "second_examiner"
+                          ? "Als Zweitprüfer:in können Sie eine beliebige E-Mail-Adresse verwenden."
                           : "Erlaubte E-Mail-Domains: @htw-berlin.de oder @htw-berlin.com"}
                       </p>
                       <p>Nach der Registrierung wird Ihr Konto von der Verwaltung der HTW Berlin geprüft und freigeschaltet. Sie können sich erst nach der Freischaltung anmelden.</p>

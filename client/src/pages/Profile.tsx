@@ -16,7 +16,8 @@ const DEPARTMENTS = [
 // ─── Rollen-Konfiguration ─────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   student:    { label: "Studierende:r",             color: "#16a34a", bg: "#f0fdf4", border: "#86efac" },
-  examiner:   { label: "Prüfer:in",                 color: "#2563eb", bg: "#eff6ff", border: "#93c5fd" },
+  examiner:   { label: "Prüfer:in (Erstprüfer:in)",   color: "#2563eb", bg: "#eff6ff", border: "#93c5fd" },
+  second_examiner: { label: "Zweitprüfer:in",          color: "#0891b2", bg: "#ecfeff", border: "#67e8f9" },
   admin:      { label: "Verwaltungsmitarbeiter:in",  color: "#7c3aed", bg: "#faf5ff", border: "#c4b5fd" },
   superadmin: { label: "Superadmin",                color: "#dc2626", bg: "#fef2f2", border: "#fca5a5" },
   pav:        { label: "PAV",                       color: "#d97706", bg: "#fffbeb", border: "#fcd34d" },

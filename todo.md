@@ -506,3 +506,22 @@
 - [x] getUserByEmail priorisiert Passwort-Account (openId beginnt mit pw_) bei mehreren Accounts mit gleicher E-Mail
 - [x] Toast-Meldung für Avatar-Upload vereinfacht (kein eigenes SVG-Icon, nur Text → kein doppeltes Haken-Icon)
 - [x] Nach erfolgreichem Upload: avatarPreview sofort setzen, dann nach DB-Reload auf null zurücksetzen
+
+## Phase 55: Neue Rolle "Zweitprüfer:in" (second_examiner) ✅ KOMPLETT
+
+- [x] drizzle/schema.ts: Enum um 'second_examiner' erweitert
+- [x] DB-Migration: role-Enum und requestedRole-Enum um second_examiner erweitert
+- [x] routers.ts: Registrierung erlaubt Rolle 'second_examiner'
+- [x] routers.ts: E-Mail-Validierung für second_examiner (externe E-Mails erlaubt)
+- [x] routers.ts: examinerProcedure (nur Erstprüfer:in) vs. anyExaminerProcedure (beide)
+- [x] routers.ts: setUserRole um second_examiner erweitert
+- [x] db.ts: setUserRole und updateUserRole Typen erweitert
+- [x] db.ts: approveUserRole / rejectUserRole: admin darf auch second_examiner bestätigen/ablehnen
+- [x] db.ts: roleLabels um second_examiner ergänzt
+- [x] Login.tsx: ROLE_OPTIONS um second_examiner-Karte ergänzt
+- [x] Login.tsx: E-Mail-Validierung und Hinweistexte für second_examiner
+- [x] Profile.tsx: ROLE_CONFIG um second_examiner ergänzt
+- [x] Home.tsx: Weiterleitung nach Login für second_examiner → /examiner
+- [x] ExaminerDashboard.tsx: Role-Guard und Onboarding-Weiterleitung für second_examiner
+- [x] DashboardLayout.tsx: Menü-Einträge für second_examiner ergänzt
+- [x] AdminManagementTab.tsx: second_examiner als Rollen-Option im Dropdown

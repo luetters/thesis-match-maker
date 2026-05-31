@@ -94,7 +94,7 @@ export async function getAllUsers() {
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
 
-export async function updateUserRole(userId: number, role: "student" | "examiner" | "admin" | "user") {
+export async function updateUserRole(userId: number, role: "student" | "examiner" | "second_examiner" | "admin" | "user") {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ role }).where(eq(users.id, userId));
@@ -1028,7 +1028,7 @@ export async function getAllUsersWithRoles() {
 /** Rolle eines Nutzers setzen (SuperAdmin) */
 export async function setUserRole(
   userId: number,
-  role: "student" | "examiner" | "pav" | "admin" | "dean" | "vice_dean" | "superadmin"
+  role: "student" | "examiner" | "second_examiner" | "pav" | "admin" | "dean" | "vice_dean" | "superadmin"
 ) {
   const db = await getDb();
   if (!db) return;
@@ -3309,8 +3309,8 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    if (confirmedByRole === "admin" && requestedRole !== "student") {
-      return { success: false, error: "Verwaltung darf nur Studierende bestätigen" };
+    if (confirmedByRole === "admin" && requestedRole !== "student" && requestedRole !== "second_examiner") {
+      return { success: false, error: "Verwaltung darf nur Studierende und Zweitprüfer:innen bestätigen" };
     }
     await db.execute(
       `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`
@@ -3321,9 +3321,9 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     );
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in", admin: "Verwaltung" };
+      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung" };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
-      const dashboardLinks: Record<string, string> = { student: "/student", examiner: "/examiner", admin: "/admin" };
+      const dashboardLinks: Record<string, string> = { student: "/student", examiner: "/examiner", second_examiner: "/examiner", admin: "/admin" };
       const dashboardLink = dashboardLinks[requestedRole] ?? "/";
       try {
         const template = await getEmailTemplateByKey("role_approved");
@@ -3362,8 +3362,8 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    if (confirmedByRole === "admin" && requestedRole !== "student") {
-      return { success: false, error: "Verwaltung darf nur Studierende ablehnen" };
+    if (confirmedByRole === "admin" && requestedRole !== "student" && requestedRole !== "second_examiner") {
+      return { success: false, error: "Verwaltung darf nur Studierende und Zweitprüfer:innen ablehnen" };
     }
     await db.execute(
       `UPDATE users SET roleStatus = 'rejected', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW() WHERE id = ${userId}`
@@ -3376,7 +3376,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     );
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in", admin: "Verwaltung" };
+      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung" };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
       const reasonBlock = reason
         ? `<p style="color:#474747;line-height:1.6"><strong>Begründung:</strong> ${reason}</p>`
