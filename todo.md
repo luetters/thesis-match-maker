@@ -619,3 +619,24 @@
 - [x] ExaminerManagement-Tabelle: kompaktes WorkloadBadge in Auslastungs-Spalte
 - [x] getAllExaminers, getFirstExaminers, listExaminers um activeSupervisions erweitert
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## Admin: Maximale Betreuungskapazität anpassen
+
+- [ ] Backend: updateMaxSupervisions-Prozedur (adminProcedure) – examinerProfiles.maxSupervisions setzen
+- [ ] Frontend: Inline-Bearbeitungsfeld in ExaminerManagement-Tabelle (Klick auf Wert → Input)
+- [ ] Frontend: Speichern per Enter oder Blur, Abbrechen per Escape
+- [ ] Frontend: Optimistische Aktualisierung der Tabelle nach Speichern
+- [ ] Frontend: Validierung: nur positive ganze Zahlen (1–99)
+- [ ] Tests grün, Checkpoint gespeichert
+
+## Prüfer:innen-Kapazitäten pro Semester ✅ KOMPLETT
+
+- [x] DB: Tabelle examiner_semester_capacities angelegt (userId, semester, maxFirst, maxSecond)
+- [x] DB: Tabelle per SQL direkt erstellt
+- [x] Backend: getSemesterCapacities-Prozedur (anyExaminerProcedure)
+- [x] Backend: upsertSemesterCapacity-Prozedur (anyExaminerProcedure)
+- [x] Router-Strukturfehler behoben (examiner-Router korrekt geschlossen)
+- [x] Frontend: Kapazitäts-Abschnitt im Profil-Formular (4 kommende Semester)
+- [x] Frontend: Getrennte +/−-Steuerelemente für Erst- und Zweitbetreuungen pro Semester
+- [x] Frontend: Gespeicherte Werte werden beim Öffnen vorgeladen
+- [x] Tests grün (55/55), Checkpoint gespeichert

@@ -282,9 +282,63 @@ function RequestsView() {
 }
 
 // ─── Profile Edit ─────────────────────────────────────────────────────────────
+/** Aktuelle und nächste 3 Semester generieren */
+function generateUpcomingSemesters(): string[] {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const isWinter = month >= 10 || month <= 3;
+  const semesters: string[] = [];
+  let y = year;
+  let ws = isWinter;
+  for (let i = 0; i < 4; i++) {
+    semesters.push(ws ? `WS${y}` : `SoSe${y}`);
+    if (ws) { y++; ws = false; } else { ws = true; }
+  }
+  return semesters;
+}
+
+function semesterLabel(s: string): string {
+  if (s.startsWith("WS")) {
+    const y = parseInt(s.slice(2));
+    return `WS ${y}/${y + 1}`;
+  }
+  if (s.startsWith("SoSe")) return `SoSe ${s.slice(4)}`;
+  return s;
+}
+
+type SemesterCapacity = { semester: string; maxFirst: number; maxSecond: number };
+
 function ProfileEdit() {
   const { t } = useLanguage();
   const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
+  const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
+  const upsertCapacity = trpc.examiner.upsertSemesterCapacity.useMutation({
+    onError: (err) => toast.error(err.message),
+  });
+
+  const upcomingSemesters = generateUpcomingSemesters();
+  const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
+  const [capacitiesInitialized, setCapacitiesInitialized] = useState(false);
+
+  useEffect(() => {
+    if (capacitiesInitialized) return;
+    if (isLoading) return;
+    const merged = upcomingSemesters.map((sem) => {
+      const saved = (savedCapacities as SemesterCapacity[]).find((c) => c.semester === sem);
+      return { semester: sem, maxFirst: saved?.maxFirst ?? 0, maxSecond: saved?.maxSecond ?? 0 };
+    });
+    setCapacities(merged);
+    setCapacitiesInitialized(true);
+  }, [savedCapacities, isLoading, capacitiesInitialized]);
+
+  const handleSaveCapacities = async () => {
+    for (const cap of capacities) {
+      await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
+    }
+    toast.success("Kapazitäten gespeichert!");
+  };
+
   const [form, setForm] = useState({
     title: "",
     department: "",
@@ -303,9 +357,9 @@ function ProfileEdit() {
       title: profile.title ?? "",
       department: profile.department ?? "",
       bio: profile.bio ?? "",
-      tags: (profile.tags ?? []).join(", "),
-      languages: (profile.languages ?? []).join(", "),
-      studyPrograms: (profile.studyPrograms ?? []).join(", "),
+      tags: (Array.isArray(profile.tags) ? profile.tags : []).join(", "),
+      languages: (Array.isArray(profile.languages) ? profile.languages : []).join(", "),
+      studyPrograms: (Array.isArray(profile.studyPrograms) ? profile.studyPrograms : []).join(", "),
       maxSupervisions: profile.maxSupervisions ?? 5,
     });
     setAlternativeEmail((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "");
@@ -482,6 +536,79 @@ function ProfileEdit() {
             )}
           </button>
         </form>
+      </div>
+
+      {/* ─── Betreuungskapazitäten pro Semester ─────────────────────────────── */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#76B90015" }}>
+            <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-900">Betreuungskapazitäten</h2>
+            <p className="text-xs text-gray-500">Legen Sie fest, wie viele Erst- und Zweitbetreuungen Sie pro Semester übernehmen können.</p>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {/* Tabellenheader */}
+          <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">
+            <span>Semester</span>
+            <span className="text-center">Max. Erstbetreuungen</span>
+            <span className="text-center">Max. Zweitbetreuungen</span>
+          </div>
+
+          {capacities.map((cap, idx) => (
+            <div key={cap.semester} className="grid grid-cols-3 gap-3 items-center bg-gray-50 rounded-xl px-4 py-3">
+              <span className="text-sm font-medium text-gray-800">{semesterLabel(cap.semester)}</span>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.max(0, c.maxFirst - 1) } : c))}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                >−</button>
+                <span className="w-8 text-center text-sm font-semibold text-gray-900">{cap.maxFirst}</span>
+                <button
+                  type="button"
+                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.min(50, c.maxFirst + 1) } : c))}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                >+</button>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.max(0, c.maxSecond - 1) } : c))}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                >−</button>
+                <span className="w-8 text-center text-sm font-semibold text-gray-900">{cap.maxSecond}</span>
+                <button
+                  type="button"
+                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.min(50, c.maxSecond + 1) } : c))}
+                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                >+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveCapacities}
+            disabled={upsertCapacity.isPending}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: "#76B900" }}
+          >
+            {upsertCapacity.isPending ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Speichern...</>
+            ) : (
+              <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Kapazitäten speichern</>
+            )}
+          </button>
+          <p className="text-xs text-gray-400">Angaben gelten für die kommenden 4 Semester</p>
+        </div>
       </div>
     </div>
   );

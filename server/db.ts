@@ -21,6 +21,7 @@ import {
   reminderSchedules,
   reminderTemplates,
   savedFilters,
+  examinerSemesterCapacities,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -3828,4 +3829,75 @@ export async function updateUserFields(userId: number, fields: {
   if (fields.name !== undefined) set.name = fields.name;
   if (Object.keys(set).length === 0) return;
   await db.update(users).set(set as any).where(eq(users.id, userId));
+}
+
+// ─── Semesterkapazitäten ──────────────────────────────────────────────────────
+
+/**
+ * Alle Semesterkapazitäten eines Prüfers laden
+ */
+export async function getSemesterCapacities(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerSemesterCapacities)
+    .where(eq(examinerSemesterCapacities.examinerId, examinerId))
+    .orderBy(examinerSemesterCapacities.semester);
+}
+
+/**
+ * Kapazität für ein Semester setzen (upsert)
+ */
+export async function upsertSemesterCapacity(
+  examinerId: number,
+  semester: string,
+  maxFirst: number,
+  maxSecond: number,
+) {
+  const db = await getDb();
+  if (!db) return;
+  // Prüfen ob Eintrag existiert
+  const existing = await db
+    .select({ id: examinerSemesterCapacities.id })
+    .from(examinerSemesterCapacities)
+    .where(
+      and(
+        eq(examinerSemesterCapacities.examinerId, examinerId),
+        eq(examinerSemesterCapacities.semester, semester),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(examinerSemesterCapacities)
+      .set({ maxFirst, maxSecond })
+      .where(
+        and(
+          eq(examinerSemesterCapacities.examinerId, examinerId),
+          eq(examinerSemesterCapacities.semester, semester),
+        ),
+      );
+  } else {
+    await db.insert(examinerSemesterCapacities).values({
+      examinerId,
+      semester,
+      maxFirst,
+      maxSecond,
+    });
+  }
+}
+
+/**
+ * Kapazitäten aller Prüfer für ein bestimmtes Semester laden
+ * (für Auslastungsberechnung)
+ */
+export async function getCapacitiesForSemester(semester: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerSemesterCapacities)
+    .where(eq(examinerSemesterCapacities.semester, semester));
 }

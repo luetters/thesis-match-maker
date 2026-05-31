@@ -289,6 +289,22 @@ export const savedFilters = mysqlTable("saved_filters", {
   createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
 });
 
+/**
+ * Betreuungskapazitäten eines Prüfers pro Semester
+ * semester: z.B. "WS2025" oder "SoSe2026"
+ */
+export const examinerSemesterCapacities = mysqlTable("examiner_semester_capacities", {
+  id: int().autoincrement().notNull(),
+  examinerId: int("examiner_id").notNull(),
+  semester: varchar({ length: 16 }).notNull(),
+  maxFirst: int("max_first").default(0).notNull(),
+  maxSecond: int("max_second").default(0).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+  index("uq_esc").on(table.examinerId, table.semester),
+]);
+
 // ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────
 import { InferInsertModel } from "drizzle-orm";
 

@@ -920,7 +920,6 @@ export const appRouter = router({
         const token = await signExaminerActionToken(input);
         return { token };
       }),
-  }),
 
     // Phase 28: Examiner-Dashboard für Anfrage-Verwaltung
     getPendingRequests: anyExaminerProcedure.query(async ({ ctx }) => {
@@ -947,6 +946,28 @@ export const appRouter = router({
       const { getExaminerRequestStats } = await import("./db");
       return getExaminerRequestStats(ctx.user.id);
     }),
+
+    // Semesterkapazitäten lesen
+    getSemesterCapacities: anyExaminerProcedure.query(async ({ ctx }) => {
+      const { getSemesterCapacities } = await import("./db");
+      return getSemesterCapacities(ctx.user.id);
+    }),
+
+    // Kapazität für ein Semester setzen
+    upsertSemesterCapacity: anyExaminerProcedure
+      .input(
+        z.object({
+          semester: z.string().min(4).max(16),
+          maxFirst: z.number().int().min(0).max(50),
+          maxSecond: z.number().int().min(0).max(50),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { upsertSemesterCapacity } = await import("./db");
+        await upsertSemesterCapacity(ctx.user.id, input.semester, input.maxFirst, input.maxSecond);
+        return { success: true };
+      }),
+  }),
 
   // --- Audit Log ------------------------------------------------------------
 
