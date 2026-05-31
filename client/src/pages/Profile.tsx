@@ -172,7 +172,7 @@ export default function Profile() {
 
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
-      console.log("[Avatar Upload] Success:", data);
+      // Direkt die S3-URL als Preview setzen (kein DataURL-Zwischenzustand)
       setAvatarPreview(data.avatarUrl);
       toast.success(
         <div className="flex items-center gap-2">
@@ -182,10 +182,12 @@ export default function Profile() {
           <span>Profilfoto erfolgreich aktualisiert</span>
         </div>
       );
-      // Invalidate profile query to force refresh from server
+      // Cache leeren und Profil neu laden damit die S3-URL aus der DB kommt
       utils.profile.get.invalidate();
-      // Refetch after a short delay to ensure DB is updated
-      setTimeout(() => refetch(), 500);
+      setTimeout(() => {
+        setAvatarPreview(null); // Preview löschen damit profile.avatarUrl verwendet wird
+        refetch();
+      }, 800);
     },
     onError: (e) => {
       console.error("[Avatar Upload] Error:", e);

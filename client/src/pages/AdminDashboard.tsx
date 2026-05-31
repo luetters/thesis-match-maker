@@ -1,5 +1,6 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import RoleApprovalTab from "@/components/RoleApprovalTab";
+import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ function useNavItems() {
     { href: "/admin/settings", label: t.admin.settings, icon: IconSettings },
     { href: "/admin/stats", label: t.admin.stats, icon: IconStats },
     { href: "/admin/colloquiums", label: t.admin.colloquiums, icon: IconCalendar },
+    { href: "/admin/email-templates", label: "E-Mail-Vorlagen", icon: Icons.list },
   ];
 }
 
@@ -775,8 +777,18 @@ function Overview() {
   const { data: requests } = trpc.thesis.all.useQuery();
   const { data: users } = trpc.admin.users.useQuery();
   const { data: logs } = trpc.auditLog.all.useQuery();
-  const { data: pendingRoles } = trpc.roleApproval.getPending.useQuery();
+  const { data: pendingRoles, refetch: refetchPending } = trpc.roleApproval.getPending.useQuery();
   const { data: thesisStats } = trpc.admin.stats.useQuery();
+  const utils = trpc.useUtils();
+
+  const approveMutation = trpc.roleApproval.approve.useMutation({
+    onSuccess: () => { toast.success("Nutzer:in wurde freigeschaltet."); refetchPending(); utils.admin.users.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const rejectMutation = trpc.roleApproval.reject.useMutation({
+    onSuccess: () => { toast.success("Registrierung wurde abgelehnt."); refetchPending(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   // KPI-Berechnungen
   const total = requests?.length ?? 0;
@@ -897,15 +909,34 @@ function Overview() {
             </h2>
             <p className="text-sm text-gray-500 mb-4">{pendingRoleCount} Nutzer:in warten auf Bestätigung ihrer Rolle.</p>
             <div className="space-y-2">
-              {(pendingRoles ?? []).filter(u => u.roleStatus === "pending").slice(0, 5).map(u => (
-                <div key={u.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-amber-100">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{u.name}</p>
-                    <p className="text-xs text-gray-500">{u.email}</p>
+              {(pendingRoles ?? []).filter(u => u.roleStatus === "pending").slice(0, 10).map(u => (
+                <div key={u.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-amber-100 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{u.email}</p>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium capitalize">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium whitespace-nowrap shrink-0">
                     {u.requestedRole === "student" ? "Studierende:r" : u.requestedRole === "examiner" ? "Prüfer:in" : "Verwaltung"}
                   </span>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      onClick={() => approveMutation.mutate({ userId: u.id })}
+                      disabled={approveMutation.isPending}
+                      className="text-xs px-2.5 py-1 rounded-lg bg-[#76b900] text-white font-medium hover:bg-[#5a8c00] transition-colors disabled:opacity-50"
+                    >
+                      Freischalten
+                    </button>
+                    <button
+                      onClick={() => {
+                        const reason = window.prompt("Begründung (optional):") ?? undefined;
+                        rejectMutation.mutate({ userId: u.id, reason });
+                      }}
+                      disabled={rejectMutation.isPending}
+                      className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition-colors border border-red-200 disabled:opacity-50"
+                    >
+                      Ablehnen
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1097,7 +1128,7 @@ export default function AdminDashboard() {
     return null;
   }
   
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates">("overview");
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
@@ -1109,6 +1140,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/users") setActiveTab("users");
       else if (item.href === "/admin/stats") setActiveTab("stats");
       else if (item.href === "/admin/settings") setActiveTab("settings");
+      else if (item.href === "/admin/email-templates") setActiveTab("email_templates");
     },
   }));
   const titles: Record<string, string> = {
@@ -1119,6 +1151,7 @@ export default function AdminDashboard() {
     users: "Nutzerverwaltung",
     stats: "Statistiken",
     settings: "Einstellungen",
+    email_templates: "E-Mail-Vorlagen",
   };
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
@@ -1129,6 +1162,7 @@ export default function AdminDashboard() {
       {activeTab === "users" && <UserManagement />}
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
+      {activeTab === "email_templates" && <EmailTemplatesTab />}
     </ThesisDashboardLayout>
   );
 }
