@@ -20,15 +20,21 @@ const Icons2 = {
 };
 function useNavItems() {
   const { t } = useLanguage();
-  return [
+  const { user } = useAuth();
+  const isFirstExaminer = user?.role === "examiner" || user?.role === "admin" || user?.role === "superadmin";
+  const items = [
     { href: "/examiner", label: t.examiner.title.replace("-Dashboard", "") || "Übersicht", icon: Icons.home },
     { href: "/examiner/requests", label: t.examiner.requests, icon: Icons.inbox },
     { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
     { href: "/examiner/programmes", label: "Studiengänge", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
-    { href: "/examiner/commission", label: "Kommissionspräferenzen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
   ];
+  // Kommissionspräferenzen nur für Erstprüfer:innen (role=examiner)
+  if (isFirstExaminer) {
+    items.push({ href: "/examiner/commission", label: "Kommissionspräferenzen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> });
+  }
+  return items;
 }
 
 // ─── Request Card ─────────────────────────────────────────────────────────────
@@ -790,11 +796,13 @@ function CommissionPreferences() {
   // Ausgewählte IDs (rechte Liste)
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Präferenzen beim Laden initialisieren
+  // getCommissionPreferences gibt number[] zurück (direkte secondExaminerIds)
   useEffect(() => {
     if (prefs) {
-      setSelectedIds((prefs as any[]).map((p: any) => p.secondExaminerId));
+      setSelectedIds(prefs as number[]);
     }
   }, [prefs]);
 
@@ -807,7 +815,9 @@ function CommissionPreferences() {
     onSettled: () => setSaving(false),
   });
 
-  const available = (allCandidates as any[]).filter((c: any) => !selectedIds.includes(c.id));
+  const available = (allCandidates as any[])
+    .filter((c: any) => !selectedIds.includes(c.id))
+    .filter((c: any) => !searchQuery || (c.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()));
   const selected = (allCandidates as any[]).filter((c: any) => selectedIds.includes(c.id));
 
   const addToSelected = (id: number) => setSelectedIds((prev) => [...prev, id]);
@@ -839,6 +849,18 @@ function CommissionPreferences() {
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
             <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
+            <div className="mt-2 relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Suchen..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#76B900]/50 focus:border-[#76B900]/50"
+              />
+            </div>
           </div>
           <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
             {available.length === 0 ? (

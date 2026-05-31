@@ -1907,8 +1907,8 @@ export const appRouter = router({
         return getFilteredSecondExaminers(input.firstExaminerId);
       }),
 
-    // Student: Alle Zweitgutachter-Kandidaten (ohne Filter)
-    getAllSecondExaminerCandidates: studentProcedure
+    // Alle Zweitgutachter-Kandidaten (ohne Filter) – zugänglich für Studierende und Prüfer:innen
+    getAllSecondExaminerCandidates: protectedProcedure
       .query(async () => {
         return getAllSecondExaminerCandidates();
       }),

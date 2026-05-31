@@ -563,3 +563,7 @@
 - [x] Klick zum Übertragen zwischen den Listen
 - [x] Speichern-Button für Präferenzen
 - [x] Nur Erstgutachter:innen (role=examiner) sehen diesen Tab (Backend-Prüfung)
+- [x] Suchfeld in linker Liste des Dual-List-Pickers
+- [x] getAllSecondExaminerCandidates auf protectedProcedure (statt studentProcedure) umgestellt
+- [x] Frontend-Mapping-Fehler behoben: prefs als number[] statt Objekt-Array
+- [x] useNavItems: Kommissionspräferenzen-Tab nur für Erstprüfer:innen (role=examiner) sichtbar
