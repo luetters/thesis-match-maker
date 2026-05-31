@@ -36,7 +36,15 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    // Erwartete auth.me-Fehler auf öffentlichen Seiten nicht in die Konsole loggen
+    const isExpectedAuthError =
+      error instanceof TRPCClientError &&
+      error.message === UNAUTHED_ERR_MSG &&
+      typeof window !== "undefined" &&
+      isPublicPath(window.location.pathname);
+    if (!isExpectedAuthError) {
+      console.error("[API Query Error]", error);
+    }
   }
 });
 
