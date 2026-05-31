@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
+import { AdminManagementTab } from "./AdminManagementTab";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -948,6 +949,7 @@ export default function SuperadminDashboard() {
     { id: "audit", label: "Audit-Log", icon: "📋" },
     { id: "config", label: t.superadmin.tabs.settings, icon: "⚙️" },
     { id: "email_templates", label: t.superadmin.tabs.emailTemplates, icon: "✉️" },
+    { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
   ];
 
   if (loading) return null;
@@ -999,6 +1001,7 @@ export default function SuperadminDashboard() {
       {activeTab === "audit" && <AuditLogTab />}
       {activeTab === "config" && <SystemConfigTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
+      {activeTab === "admin_management" && <AdminManagementTab />}
     </ThesisDashboardLayout>
   );
 }

@@ -408,3 +408,14 @@
 - [x] MISC-Link (Weitere Links) hinzugefügt
 - [x] Terminbuchungs-Link hinzugefügt
 - [ ] Profilfoto-Upload-Bug: avatarUrl wird nicht korrekt gespeichert/angezeigt (DB-Update prüfen)
+
+## Phase 57: Superadmin-Rechteverwaltung
+
+- [x] AdminManagementTab.tsx erstellt (Rechteverwaltung für Admins)
+- [x] Tab "Rechteverwaltung" im Superadmin-Dashboard eingebunden
+- [x] Admin-Liste mit Rollen-Filter und Suche
+- [x] Rollen-Dropdown zum Ändern von Admin-Rollen
+- [x] Bestätigungs-Dialog vor Rollenänderungen
+- [x] Nutzer:in zur Verwaltung hinzufügen (Beförderung)
+- [x] Rollenbeschreibungen als Übersichtskarte
+- [x] Schutz: Eigene Rolle kann nicht geändert werden
