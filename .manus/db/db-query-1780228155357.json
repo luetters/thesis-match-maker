@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, name, abbreviation, level, fachbereich FROM programmes LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, abbreviation, level, fachbereich FROM programmes LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Betriebswirtschaftslehre",
+      "abbreviation": "BWL",
+      "level": "bachelor",
+      "fachbereich": "FB3"
+    },
+    {
+      "id": "2",
+      "name": "Betriebswirtschaftslehre (Fernstudium)",
+      "abbreviation": "BWLfern",
+      "level": "bachelor",
+      "fachbereich": "FB3"
+    },
+    {
+      "id": "3",
+      "name": "Immobilienwirtschaft",
+      "abbreviation": "IW",
+      "level": "bachelor",
+      "fachbereich": "FB3"
+    },
+    {
+      "id": "4",
+      "name": "International Business",
+      "abbreviation": "IB",
+      "level": "bachelor",
+      "fachbereich": "FB3"
+    },
+    {
+      "id": "5",
+      "name": "Public und Nonprofit-Management",
+      "abbreviation": "PuMa",
+      "level": "bachelor",
+      "fachbereich": "FB3"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tabbreviation\tlevel\tfachbereich\n1\tBetriebswirtschaftslehre\tBWL\tbachelor\tFB3\n2\tBetriebswirtschaftslehre (Fernstudium)\tBWLfern\tbachelor\tFB3\n3\tImmobilienwirtschaft\tIW\tbachelor\tFB3\n4\tInternational Business\tIB\tbachelor\tFB3\n5\tPublic und Nonprofit-Management\tPuMa\tbachelor\tFB3\n",
+  "stderr": "",
+  "execution_time_ms": 271
+}

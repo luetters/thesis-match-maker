@@ -153,6 +153,7 @@ export const programmes = mysqlTable("programmes", {
 	name: varchar({ length: 255 }).notNull(),
 	abbreviation: varchar({ length: 32 }).notNull(),
 	level: mysqlEnum(['bachelor','master']).notNull(),
+	fachbereich: varchar({ length: 8 }).notNull().default('FB3'),
 	pictogramUrl: varchar("pictogram_url", { length: 512 }),
 	sortOrder: int("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),

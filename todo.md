@@ -491,3 +491,12 @@
 - [x] Registrierung: Matrikelnummer als Pflichtfeld für Studierende (Zod + Frontend)
 - [x] Login.tsx: Matrikelnummer-Eingabefeld bei Rolle "student" im Registrierungsformular
 - [x] routers.ts: register-Prozedur: matrikelNr als optionales Feld (Pflicht nur für student)
+
+## Phase 52: Studiengang-Dropdown dynamisch nach FB und Abschlussart ✅ KOMPLETT
+
+- [x] programmes-Tabelle in DB: fachbereich-Spalte hinzugefügt (VARCHAR(8), DEFAULT 'FB3')
+- [x] drizzle/schema.ts: fachbereich-Feld in programmes-Tabelle hinzugefügt
+- [x] tRPC programmes.list: gibt nun fachbereich-Feld zurück (raw SQL Query)
+- [x] StudentDashboard.tsx: Studiengang-Textfeld → dynamisches Dropdown (gefiltert nach form.fachbereich + form.degreeType)
+- [x] Dropdown zeigt nur passende Programme an; bei Wechsel von FB oder Abschlussart wird Auswahl zurückgesetzt
+- [x] Hinweis wenn keine Programme für gewählte Kombination verfügbar

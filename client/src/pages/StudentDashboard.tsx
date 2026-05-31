@@ -68,6 +68,8 @@ const DRAFT_KEY = "htw-thesis-request-draft";
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
+  // Alle Programme laden (für dynamisches Dropdown)
+  const { data: allProgrammes = [] } = trpc.programmes.list.useQuery();
   
   // Qualifizierte Gutachter:innen laden
   const { data: qualifiedExaminers = [] } = trpc.thesisPhase27.getQualifiedExaminers.useQuery(
@@ -595,7 +597,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Fachbereich <span className="text-red-500">*</span></label>
             <select
               value={form.fachbereich}
-              onChange={(e) => setForm((f) => ({ ...f, fachbereich: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, fachbereich: e.target.value, department: "" }))}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
             >
               {FACHBEREICHE.map((fb) => (
@@ -604,28 +606,51 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             </select>
           </div>
 
-          {/* Studiengang */}
+          {/* Studiengang – dynamisches Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Studiengang <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              required
-              value={form.department}
-              onChange={(e) => !myProgramme && setForm((f) => ({ ...f, department: e.target.value }))}
-              readOnly={!!myProgramme}
-              placeholder={form.degreeType === "master" ? "z.B. M.Sc. Wirtschaftsinformatik" : "z.B. B.Sc. Betriebswirtschaftslehre"}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                myProgramme
-                  ? "border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium cursor-not-allowed"
-                  : "border-gray-200"
-              }`}
-              title={myProgramme ? "Studiengang ist Ihrem Profil fest zugeordnet" : undefined}
-            />
-            {myProgramme && (
-              <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
-            )}
+            {myProgramme ? (
+              <>
+                <input
+                  type="text"
+                  readOnly
+                  value={myProgramme.name}
+                  className="w-full px-3.5 py-2.5 border border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium rounded-xl text-sm cursor-not-allowed"
+                  title="Studiengang ist Ihrem Profil fest zugeordnet"
+                />
+                <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
+              </>
+            ) : (() => {
+              const filtered = allProgrammes.filter(
+                (p: any) => p.level === form.degreeType && (p.fachbereich ?? 'FB3') === form.fachbereich
+              );
+              return (
+                <>
+                  <select
+                    required
+                    value={form.department}
+                    onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
+                      errors.department ? 'border-red-400' : 'border-gray-200'
+                    }`}
+                  >
+                    <option value="">-- Bitte wählen --</option>
+                    {filtered.length > 0 ? (
+                      filtered.map((p: any) => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))
+                    ) : (
+                      <option disabled value="">Keine Studiengänge für diese Auswahl verfügbar</option>
+                    )}
+                  </select>
+                  {filtered.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">Für {form.fachbereich} sind noch keine {form.degreeType === 'master' ? 'Master-' : 'Bachelor-'}Studiengänge hinterlegt.</p>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Geplantes Semester der Thesis */}

@@ -1,0 +1,143 @@
+{
+  "query": "SELECT id, name, abbreviation, level, sort_order FROM programmes ORDER BY sort_order, name LIMIT 100;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, abbreviation, level, sort_order FROM programmes ORDER BY sort_order, name LIMIT 100;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Betriebswirtschaftslehre",
+      "abbreviation": "BWL",
+      "level": "bachelor",
+      "sort_order": "1"
+    },
+    {
+      "id": "2",
+      "name": "Betriebswirtschaftslehre (Fernstudium)",
+      "abbreviation": "BWLfern",
+      "level": "bachelor",
+      "sort_order": "2"
+    },
+    {
+      "id": "3",
+      "name": "Immobilienwirtschaft",
+      "abbreviation": "IW",
+      "level": "bachelor",
+      "sort_order": "3"
+    },
+    {
+      "id": "4",
+      "name": "International Business",
+      "abbreviation": "IB",
+      "level": "bachelor",
+      "sort_order": "4"
+    },
+    {
+      "id": "5",
+      "name": "Public und Nonprofit-Management",
+      "abbreviation": "PuMa",
+      "level": "bachelor",
+      "sort_order": "5"
+    },
+    {
+      "id": "6",
+      "name": "Wirtschaft und Politik",
+      "abbreviation": "WiPo",
+      "level": "bachelor",
+      "sort_order": "6"
+    },
+    {
+      "id": "7",
+      "name": "Wirtschaftsrecht",
+      "abbreviation": "WiRe",
+      "level": "bachelor",
+      "sort_order": "7"
+    },
+    {
+      "id": "8",
+      "name": "Arbeits- und Personalmanagement",
+      "abbreviation": "MAP",
+      "level": "master",
+      "sort_order": "10"
+    },
+    {
+      "id": "9",
+      "name": "Europäische Wirtschaftspolitik",
+      "abbreviation": "EWP",
+      "level": "master",
+      "sort_order": "11"
+    },
+    {
+      "id": "10",
+      "name": "Finance, Accounting, Corporate Law and Taxation",
+      "abbreviation": "FACT",
+      "level": "master",
+      "sort_order": "12"
+    },
+    {
+      "id": "11",
+      "name": "General Management (Fernstudium)",
+      "abbreviation": "GEM",
+      "level": "master",
+      "sort_order": "13"
+    },
+    {
+      "id": "12",
+      "name": "Industrial Sales and Innovation Management",
+      "abbreviation": "MISIM",
+      "level": "master",
+      "sort_order": "14"
+    },
+    {
+      "id": "13",
+      "name": "International and Development Economics",
+      "abbreviation": "MIDE",
+      "level": "master",
+      "sort_order": "15"
+    },
+    {
+      "id": "14",
+      "name": "International Business",
+      "abbreviation": "MIB",
+      "level": "master",
+      "sort_order": "16"
+    },
+    {
+      "id": "15",
+      "name": "Nonprofit-Management & Public Governance",
+      "abbreviation": "Mango",
+      "level": "master",
+      "sort_order": "17"
+    },
+    {
+      "id": "16",
+      "name": "Project Management and Data Science",
+      "abbreviation": "MPMD",
+      "level": "master",
+      "sort_order": "18"
+    },
+    {
+      "id": "17",
+      "name": "Unternehmenssteuerrecht",
+      "abbreviation": "USR",
+      "level": "master",
+      "sort_order": "19"
+    },
+    {
+      "id": "18",
+      "name": "Wirtschaftsrecht",
+      "abbreviation": "MWR",
+      "level": "master",
+      "sort_order": "20"
+    },
+    {
+      "id": "19",
+      "name": "Real Estate Management (MBA)",
+      "abbreviation": "REM",
+      "level": "master",
+      "sort_order": "21"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tabbreviation\tlevel\tsort_order\n1\tBetriebswirtschaftslehre\tBWL\tbachelor\t1\n2\tBetriebswirtschaftslehre (Fernstudium)\tBWLfern\tbachelor\t2\n3\tImmobilienwirtschaft\tIW\tbachelor\t3\n4\tInternational Business\tIB\tbachelor\t4\n5\tPublic und Nonprofit-Management\tPuMa\tbachelor\t5\n6\tWirtschaft und Politik\tWiPo\tbachelor\t6\n7\tWirtschaftsrecht\tWiRe\tbachelor\t7\n8\tArbeits- und Personalmanagement\tMAP\tmaster\t10\n9\tEuropäische Wirtschaftspolitik\tEWP\tmaster\t11\n10\tFinance, Accounting, Corporate Law and Taxation\tFACT\tmaster\t12\n11\tGeneral Management (Fernstudium)\tGEM\tmaster\t13\n12\tIndustrial Sales and Innovation Management\tMISIM\tmaster\t14\n13\tInternational and Development Economics\tMIDE\tmaster\t15\n14\tInternational Business\tMIB\tmaster\t16\n15\tNonprofit-Management & Public Governance\tMango\tmaster\t17\n16\tProject Management and Data Science\tMPMD\tmaster\t18\n17\tUnternehmenssteuerrecht\tUSR\tmaster\t19\n18\tWirtschaftsrecht\tMWR\tmaster\t20\n19\tReal Estate Management (MBA)\tREM\tmaster\t21\n",
+  "stderr": "",
+  "execution_time_ms": 260
+}

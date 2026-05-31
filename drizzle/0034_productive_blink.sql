@@ -1,0 +1,1 @@
+ALTER TABLE `programmes` ADD `fachbereich` varchar(8) DEFAULT 'FB3' NOT NULL;

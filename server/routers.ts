@@ -1430,7 +1430,14 @@ export const appRouter = router({
   // --- Studiengänge ---
   programmes: router({
     list: publicProcedure.query(async () => {
-      return getAllProgrammes();
+      // Gibt alle Programme inkl. fachbereich zurück
+      const mysql2 = await import('mysql2/promise');
+      const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
+      const [rows] = await conn.execute(
+        'SELECT id, name, abbreviation, level, fachbereich, pictogram_url AS pictogramUrl, sort_order AS sortOrder FROM programmes ORDER BY sort_order, name'
+      ) as any;
+      await conn.end();
+      return rows as Array<{ id: number; name: string; abbreviation: string; level: string; fachbereich: string; pictogramUrl: string | null; sortOrder: number }>;
     }),
     setStudentProgramme: protectedProcedure
       .input(z.object({ programmeId: z.number().int().positive() }))
