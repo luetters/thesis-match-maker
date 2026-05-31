@@ -173,6 +173,22 @@
 
 /* ── Smooth Transitions ── */
 @layer utilities {
+  /* Mobile-Sichtbarkeits-Utilities */
+  .show-mobile {
+    display: block;
+  }
+  .hide-mobile {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .show-mobile {
+      display: none;
+    }
+    .hide-mobile {
+      display: block;
+    }
+  }
+
   .transition-smooth {
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);

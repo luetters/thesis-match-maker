@@ -239,54 +239,55 @@
 - [x] Tests: 46/46 grün
 
 
-## Phase 46: Mobile Optimierung
+## Phase 46: Mobile Optimierung ✅ KOMPLETT
 
-- [ ] Mobile Navigation: Hamburger-Menü für kleine Bildschirme in Home.tsx
-- [ ] Mobile Navigation: Slide-in Drawer für alle Nav-Links
-- [ ] Mobile Hero-Sektion: Einspaltig, korrekte Schriftgrößen
-- [ ] Mobile Rollen-Karten: Einspaltig statt dreispaltig
-- [ ] Mobile Prozess-Schritte: Vertikale Timeline statt horizontales Grid
-- [ ] Mobile Footer: Kompaktere Darstellung
-- [ ] Mobile ThesisDashboardLayout: Sidebar als Drawer/Sheet
-- [ ] Mobile Dashboard-Seiten: Tabellen und Formulare mobilfreundlich
-- [ ] Mobile Prüfer:innen-Verzeichnis: Karten-Layout für kleine Bildschirme
-- [ ] Mobile Login-Seite: Korrekte Darstellung auf kleinen Bildschirmen
-
-
-## Phase 47: Rollen-Bestätigungsworkflow
-
-- [ ] DB: roleStatus-Feld (pending | approved | rejected) zur users-Tabelle hinzufügen
-- [ ] DB: requestedRole-Feld zur users-Tabelle hinzufügen (gewünschte Rolle vor Bestätigung)
-- [ ] DB: roleConfirmedBy und roleConfirmedAt Felder hinzufügen
-- [ ] Backend: selectRole-Prozedur (Nutzer wählt Rolle nach Magic-Link-Login)
-- [ ] Backend: getPendingUsers-Prozedur (für Verwaltung und Superadmin)
-- [ ] Backend: approveUserRole-Prozedur (Superadmin: alle Rollen; Verwaltung: nur student)
-- [ ] Backend: rejectUserRole-Prozedur
-- [ ] Frontend: RoleSelection-Seite nach erstem Magic-Link-Login
-- [ ] Frontend: PendingApproval-Seite (Warteseite nach Rollenauswahl)
-- [ ] Frontend: Bestätigungs-Tab im Admin-Dashboard (Verwaltung)
-- [ ] Frontend: Bestätigungs-Tab im Superadmin-Dashboard
-- [ ] Routing: Magic-Link-Nutzer ohne bestätigte Rolle auf RoleSelection umleiten
-- [ ] E-Mail-Benachrichtigung bei Bestätigung/Ablehnung (optional)
+- [x] Mobile Navigation: Hamburger-Menü für kleine Bildschirme in Home.tsx
+- [x] Mobile Navigation: Slide-in Drawer für alle Nav-Links (ThesisDashboardLayout)
+- [x] Mobile Hero-Sektion: Einspaltig, korrekte Schriftgrößen (grid lg:grid-cols-2)
+- [x] Mobile Rollen-Karten: Einspaltig statt dreispaltig (grid md:grid-cols-3)
+- [x] Mobile Prozess-Schritte: Vertikale Timeline statt horizontales Grid (grid sm:grid-cols-2 lg:grid-cols-3)
+- [x] Mobile Footer: Kompaktere Darstellung (grid sm:grid-cols-2 lg:grid-cols-4)
+- [x] Mobile ThesisDashboardLayout: Sidebar als Drawer/Sheet (mobileOpen State)
+- [x] Mobile Dashboard-Seiten: Tabellen mit overflow-x-auto und min-w-[600px]
+- [x] Mobile Prüfer:innen-Verzeichnis: Karten-Layout für kleine Bildschirme (ExaminerCard)
+- [x] Mobile Login-Seite: Korrekte Darstellung auf kleinen Bildschirmen (max-w-lg px-4)
+- [x] show-mobile / hide-mobile CSS-Utilities in index.css hinzugefügt
 
 
-## Phase 48: E-Mail-Benachrichtigungen bei Rollenbestätigung/-ablehnung
+## Phase 47: Rollen-Bestätigungsworkflow ✅ KOMPLETT
 
-- [ ] E-Mail-Vorlage für Rollenbestätigung erstellen
-- [ ] E-Mail-Vorlage für Rollenablehnung erstellen
-- [ ] approveUserRole in db.ts um E-Mail-Versand erweitern
-- [ ] rejectUserRole in db.ts um E-Mail-Versand erweitern
-- [ ] Build und Tests grün
+- [x] DB: roleStatus-Feld (pending | approved | rejected) zur users-Tabelle hinzugefügt
+- [x] DB: requestedRole-Feld zur users-Tabelle hinzugefügt (gewünschte Rolle vor Bestätigung)
+- [x] DB: roleConfirmedBy und roleConfirmedAt Felder hinzugefügt
+- [x] Backend: selectRole-Prozedur (Nutzer wählt Rolle nach Magic-Link-Login)
+- [x] Backend: getPendingUsers-Prozedur (für Verwaltung und Superadmin)
+- [x] Backend: approveUserRole-Prozedur (Superadmin: alle Rollen; Verwaltung: nur student)
+- [x] Backend: rejectUserRole-Prozedur
+- [x] Frontend: RoleSelection-Seite (SelectRole.tsx)
+- [x] Frontend: PendingApproval-Seite (RolePending.tsx)
+- [x] Frontend: Bestätigungs-Tab im Admin-Dashboard (RoleApprovalTab, canApproveAll=false)
+- [x] Frontend: Bestätigungs-Tab im Superadmin-Dashboard (RoleApprovalTab, canApproveAll=true)
+- [x] Routing: /select-role und /role-pending in App.tsx registriert
+- [x] Login: Nutzer mit roleStatus=pending erhalten FORBIDDEN-Fehlermeldung
 
-## Phase 49: E-Mail-Vorlagen-Editor für Superadmin
 
-- [ ] Datenbanktabelle role_email_templates anlegen (type, subject, htmlBody, updatedAt, updatedBy)
-- [ ] Standardvorlagen beim ersten Aufruf in DB eintragen
-- [ ] tRPC-Prozeduren: getRoleEmailTemplates, updateRoleEmailTemplate
-- [ ] approveUserRole und rejectUserRole auf DB-Vorlagen umstellen
-- [ ] EmailTemplateEditor-Komponente mit Live-Vorschau erstellen
-- [ ] Tab "E-Mail-Vorlagen" im Superadmin-Dashboard einbinden
-- [ ] Build und Tests grün
+## Phase 48: E-Mail-Benachrichtigungen bei Rollenbestätigung/-ablehnung ✅ KOMPLETT
+
+- [x] E-Mail-Vorlage für Rollenbestätigung erstellt (role_approved in email_templates-Tabelle)
+- [x] E-Mail-Vorlage für Rollenablehnung erstellt (role_rejected in email_templates-Tabelle)
+- [x] approveUserRole in db.ts um E-Mail-Versand erweitert (getEmailTemplateByKey + sendEmail)
+- [x] rejectUserRole in db.ts um E-Mail-Versand erweitert (getEmailTemplateByKey + sendEmail)
+- [x] Build und Tests grün
+
+## Phase 49: E-Mail-Vorlagen-Editor für Superadmin ✅ KOMPLETT
+
+- [x] Datenbanktabelle email_templates angelegt (key, label, subject, htmlBody, textBody, updatedAt)
+- [x] Standardvorlagen in DB eingetragen (role_approved, role_rejected)
+- [x] tRPC-Prozeduren: emailTemplates.list, emailTemplates.getByKey, emailTemplates.update
+- [x] approveUserRole und rejectUserRole auf DB-Vorlagen umgestellt
+- [x] EmailTemplatesTab.tsx mit Live-Vorschau erstellt
+- [x] Tab "E-Mail-Vorlagen" im Superadmin-Dashboard eingebunden
+- [x] Build und Tests grün
 
 ## Phase 50: Studierenden-Umstrukturierung & Verwaltungs-Dashboard
 

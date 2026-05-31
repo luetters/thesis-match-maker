@@ -79,7 +79,8 @@ function UserManagementTab() {
         </select>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
@@ -114,6 +115,7 @@ function UserManagementTab() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
       <p className="text-xs text-gray-400 mt-2">{filtered.length} von {users?.length ?? 0} Nutzer:innen angezeigt</p>
     </div>

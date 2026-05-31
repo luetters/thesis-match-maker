@@ -298,9 +298,11 @@ export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const [showLogin, setShowLogin] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, navigate] = useLocation();
 
   const handleRoleNavigate = (path: string) => {
+    setMobileMenuOpen(false);
     if (isAuthenticated) {
       navigate(path);
     } else {
@@ -356,7 +358,7 @@ export default function Home() {
                   else if (role === "admin") navigate("/admin");
                   else navigate("/student");
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#006937" }}
               >
                 {t.nav.dashboard}
@@ -364,14 +366,78 @@ export default function Home() {
             ) : (
               <button
                 onClick={() => navigate("/login")}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                className="hidden md:flex px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
                 style={{ backgroundColor: "#006937" }}
               >
                 {t.nav.login}
               </button>
             )}
+            {/* Hamburger-Button für mobile */}
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Menü öffnen"
+            >
+              {mobileMenuOpen ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown-Menü */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white shadow-lg">
+            <div className="container py-3 space-y-1">
+              {[
+                { label: t.nav.student, path: "/student" },
+                { label: t.nav.examiner, path: "/examiner" },
+                { label: t.nav.admin, path: "/admin" },
+                { label: t.nav.directory, path: "/examiners" },
+              ].map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => handleRoleNavigate(item.path)}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <div className="pt-2 border-t border-gray-100">
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      const role = user?.role;
+                      if (role === "student") navigate("/student");
+                      else if (role === "examiner" || role === "second_examiner") navigate("/examiner");
+                      else if (role === "admin") navigate("/admin");
+                      else navigate("/student");
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                    style={{ backgroundColor: "#006937" }}
+                  >
+                    {t.nav.dashboard}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); navigate("/login"); }}
+                    className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                    style={{ backgroundColor: "#006937" }}
+                  >
+                    {t.nav.login}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ─── Hero ────────────────────────────────────────────────────────── */}

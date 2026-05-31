@@ -367,7 +367,7 @@ export const appRouter = router({
         const record = await getPasswordResetToken(input.token);
         if (!record) throw new TRPCError({ code: "BAD_REQUEST", message: "Ungültiger oder abgelaufener Reset-Link." });
         if (record.used) throw new TRPCError({ code: "BAD_REQUEST", message: "Dieser Reset-Link wurde bereits verwendet." });
-        if (new Date() > record.expiresAt) throw new TRPCError({ code: "BAD_REQUEST", message: "Der Reset-Link ist abgelaufen. Bitte fordern Sie einen neuen an." });
+        if (new Date() > new Date(record.expiresAt as string)) throw new TRPCError({ code: "BAD_REQUEST", message: "Der Reset-Link ist abgelaufen. Bitte fordern Sie einen neuen an." });
         const newHash = await bcrypt.hash(input.newPassword, 12);
         await setUserPasswordHash(record.userId, newHash);
         await markPasswordResetTokenUsed(input.token);
@@ -1147,7 +1147,7 @@ export const appRouter = router({
         const id = await createColloquium({
           thesisRequestId: input.thesisRequestId,
           title: input.title,
-          scheduledAt: new Date(input.scheduledAt),
+          scheduledAt: new Date(input.scheduledAt).toISOString().slice(0, 19).replace('T', ' '),
           location: input.location ?? null,
           room: input.room ?? null,
           notes: input.notes ?? null,
@@ -1185,7 +1185,7 @@ export const appRouter = router({
         if (!col) throw new TRPCError({ code: "NOT_FOUND", message: "Kolloquium nicht gefunden" });
         const icsContent = createIcsEvent({
           title: col.title,
-          start: col.scheduledAt,
+          start: new Date(col.scheduledAt as string),
           durationMinutes: 60,
           location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
           description: col.notes || undefined,
@@ -1548,7 +1548,7 @@ export const appRouter = router({
           examinerId: input.examinerId,
           examinerRole: input.examinerRole,
           actionToken: token,
-          emailSentAt: new Date(),
+          emailSentAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         });
         // E-Mail an Prüfer:in
         const examinerEmail = await resolveExaminerEmail(input.examinerId);

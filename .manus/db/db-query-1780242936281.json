@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, `key`, label, subject FROM email_templates WHERE `key` IN ('role_approved', 'role_rejected') LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, `key`, label, subject FROM email_templates WHERE `key` IN ('role_approved', 'role_rejected') LIMIT 10;",
+  "rows": [
+    {
+      "id": "30001",
+      "key": "role_approved",
+      "label": "Rollenanfrage bestätigt",
+      "subject": "Ihre Rolle wurde bestätigt – HTW Berlin Thesis Match Maker"
+    },
+    {
+      "id": "30002",
+      "key": "role_rejected",
+      "label": "Rollenanfrage abgelehnt",
+      "subject": "Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tkey\tlabel\tsubject\n30001\trole_approved\tRollenanfrage bestätigt\tIhre Rolle wurde bestätigt – HTW Berlin Thesis Match Maker\n30002\trole_rejected\tRollenanfrage abgelehnt\tIhre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker\n",
+  "stderr": "",
+  "execution_time_ms": 293
+}
