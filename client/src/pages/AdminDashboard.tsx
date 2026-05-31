@@ -594,6 +594,7 @@ function UserManagement() {
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
+  const [userTab, setUserTab] = useState<"examiners" | "students">("examiners");
   const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
@@ -643,6 +644,12 @@ function UserManagement() {
     return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>;
   }
 
+  const examinerRoles = ["examiner", "second_examiner", "pav", "dean", "vice_dean", "admin", "user"];
+  const studentRoles = ["student"];
+  const filteredUsers = users?.filter(({ user }) =>
+    userTab === "examiners" ? examinerRoles.includes(user.role) : studentRoles.includes(user.role)
+  ) ?? [];
+
   return (
     <div className="space-y-4">
       {showCreate && <CreateExaminerModal onClose={() => setShowCreate(false)} />}
@@ -658,16 +665,46 @@ function UserManagement() {
           onCancel={() => setPendingRoleChange(null)}
         />
       )}
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-500">{users?.length ?? 0} Nutzer:innen registriert</p>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Prüfer:in anlegen
-        </button>
+      {/* Tab-Navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+          <button
+            onClick={() => setUserTab("examiners")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              userTab === "examiners"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Prüfer:innen
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              ({users?.filter(({ user }) => examinerRoles.includes(user.role)).length ?? 0})
+            </span>
+          </button>
+          <button
+            onClick={() => setUserTab("students")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              userTab === "students"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Studierende
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              ({users?.filter(({ user }) => studentRoles.includes(user.role)).length ?? 0})
+            </span>
+          </button>
+        </div>
+        {userTab === "examiners" && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
+            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Prüfer:in anlegen
+          </button>
+        )}
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -681,7 +718,10 @@ function UserManagement() {
               </tr>
             </thead>
             <tbody>
-              {users?.map(({ user, profile }) => (
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-400">Keine Einträge vorhanden.</td></tr>
+              )}
+              {filteredUsers.map(({ user, profile }) => (
                 <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">

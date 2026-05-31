@@ -392,19 +392,19 @@ export const appRouter = router({
         }
         // E-Mail-Domain-Validierung bei Registrierung
         const emailLowerReg = input.email.toLowerCase();
+        const isHtwEmail = emailLowerReg.endsWith("@htw-berlin.de") || emailLowerReg.endsWith("@htw-berlin.com") || emailLowerReg.endsWith("@student.htw-berlin.de");
         if (input.role === "student") {
-          if (!emailLowerReg.endsWith("@student.htw-berlin.de")) {
+          if (!emailLowerReg.endsWith("@student.htw-berlin.de") && !isHtwEmail) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.",
             });
           }
         } else if (input.role === "examiner" || input.role === "admin") {
-          const isHtwStaff = emailLowerReg.endsWith("@htw-berlin.de") || emailLowerReg.endsWith("@htw-berlin.com");
-          if (!isHtwStaff) {
+          if (!isHtwEmail) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
+              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit einer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
             });
           }
         }
@@ -465,38 +465,16 @@ export const appRouter = router({
             message: "Ihr Registrierungsantrag wurde abgelehnt. Bitte wenden Sie sich an die Verwaltung der HTW Berlin.",
           });
         }
-        // HTW-E-Mail-Validierung:
-        // Studierende: nur @student.htw-berlin.de
-        // Erstprüfer:innen: @htw-berlin.de oder @htw-berlin.com
-        // Zweitprüfer:innen: externe E-Mails erlaubt
-        // Admins/Superadmins: ausgenommen
+        // E-Mail-Domain-Prüfung beim Login:
+        // Alle HTW-Domains (@htw-berlin.de, @htw-berlin.com, @student.htw-berlin.de) sind erlaubt.
+        // Zweitprüfer:innen und externe Gutachter:innen dürfen beliebige E-Mail-Adressen verwenden.
         const emailLower = input.email.toLowerCase();
-        const isStudentEmail = emailLower.endsWith("@student.htw-berlin.de");
-        const isHtwStaffEmail = emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com");
-        if (user.role === "student") {
-          if (!isStudentEmail) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) anmelden.",
-            });
-          }
-        } else if (user.role === "examiner") {
-          // Prüfer:in (Erstprüfer:in): HTW-E-Mail erforderlich
-          if (!isHtwStaffEmail) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "Prüfer:innen mit Erstprüfer-Berechtigung müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) anmelden.",
-            });
-          }
-        } else if (user.role === "second_examiner") {
-          // Zweitprüfer:in only: beliebige E-Mail erlaubt (keine Einschränkung)
-        } else if (user.role !== "admin" && user.role !== "superadmin") {
-          if (!isHtwStaffEmail) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) zur Anmeldung.",
-            });
-          }
+        const isHtwLoginEmail = emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com") || emailLower.endsWith("@student.htw-berlin.de");
+        if (user.role !== "second_examiner" && user.role !== "admin" && user.role !== "superadmin" && !isHtwLoginEmail) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Bitte melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) an.",
+          });
         }
         // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
         const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
