@@ -568,3 +568,13 @@
 - [x] getAllSecondExaminerCandidates auf protectedProcedure (statt studentProcedure) umgestellt
 - [x] Frontend-Mapping-Fehler behoben: prefs als number[] statt Objekt-Array
 - [x] useNavItems: Kommissionspräferenzen-Tab nur für Erstprüfer:innen (role=examiner) sichtbar
+
+## Drag-and-Drop Dual-List-Picker (Kommissionspräferenzen)
+
+- [x] @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities installiert
+- [x] Drag-and-Drop: Elemente aus linker Liste per Drag in rechte Liste verschieben
+- [x] Drag-and-Drop: Elemente aus rechter Liste per Drag in linke Liste zurückverschieben
+- [x] Sortierung in der rechten Liste per Drag-and-Drop (Reihenfolge anpassbar)
+- [x] Visuelles Feedback: Drag-Overlay, Drop-Zonen-Highlight, Cursor-Änderung
+- [x] Barrierefreiheit: Klick-Interaktion weiterhin verfügbar (kein reines DnD)
+- [x] Tests grün (55/55), Checkpoint gespeichert

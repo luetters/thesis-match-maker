@@ -6,6 +6,25 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -787,23 +806,149 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+// ─── Drag-and-Drop Hilfselemente ─────────────────────────────────────────────
+
+/** Einzelnes Element in der linken (verfügbaren) Liste – nur draggable */
+function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: number) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({
+    id: `available-${candidate.id}`,
+    data: { type: "available", candidateId: candidate.id },
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/5 transition-colors group border-b border-gray-50 last:border-0"
+    >
+      {/* Drag-Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing"
+        title="Ziehen zum Verschieben"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+        </svg>
+      </div>
+      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 group-hover:bg-[#76B900]/20">
+        {(candidate.name ?? "").charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
+        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+      </div>
+      <button
+        onClick={() => onAdd(candidate.id)}
+        className="flex-shrink-0 w-6 h-6 rounded-full bg-[#76B900]/10 hover:bg-[#76B900]/30 flex items-center justify-center transition-colors"
+        title="Hinzufügen"
+      >
+        <svg className="w-3.5 h-3.5 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/** Einzelnes Element in der rechten (ausgewählten) Liste – sortierbar und draggable */
+function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: number; onRemove: (id: number) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `selected-${candidate.id}`,
+    data: { type: "selected", candidateId: candidate.id },
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/10 transition-colors group border-b border-[#76B900]/10 last:border-0"
+    >
+      {/* Rang-Badge */}
+      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#76B900]/20 text-[#76B900] text-[10px] font-bold flex items-center justify-center">{index + 1}</span>
+      {/* Drag-Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 text-[#76B900]/40 hover:text-[#76B900] cursor-grab active:cursor-grabbing"
+        title="Reihenfolge ändern"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+        </svg>
+      </div>
+      <div className="w-8 h-8 rounded-full bg-[#76B900]/20 flex items-center justify-center text-xs font-bold text-[#76B900] flex-shrink-0">
+        {(candidate.name ?? "").charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
+        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+      </div>
+      <button
+        onClick={() => onRemove(candidate.id)}
+        className="flex-shrink-0 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+        title="Entfernen"
+      >
+        <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/** Drop-Zone für die rechte Liste (wenn leer) */
+function SelectedDropZone({ isOver }: { isOver: boolean }) {
+  return (
+    <div className={`px-4 py-8 text-center transition-colors ${
+      isOver ? "bg-[#76B900]/10" : ""
+    }`}>
+      <div className={`mx-auto w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors ${
+        isOver ? "bg-[#76B900]/30" : "bg-gray-100"
+      }`}>
+        <svg className={`w-5 h-5 transition-colors ${ isOver ? "text-[#76B900]" : "text-gray-400" }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
+      <p className="text-xs text-gray-400">
+        {isOver ? (
+          <span className="text-[#76B900] font-medium">Hier ablegen</span>
+        ) : (
+          <>Noch keine Präferenzen gewählt.<br/><span className="text-[#76B900]">Klicken oder hierher ziehen.</span></>
+        )}
+      </p>
+    </div>
+  );
+}
+
 // ─── Commission Preferences ────────────────────────────────────────────────────
 function CommissionPreferences() {
   const utils = trpc.useUtils();
   const { data: prefs, isLoading: prefsLoading } = trpc.thesisPhase27.getCommissionPreferences.useQuery();
   const { data: allCandidates = [], isLoading: candidatesLoading } = trpc.thesisPhase27.getAllSecondExaminerCandidates.useQuery();
 
-  // Ausgewählte IDs (rechte Liste)
+  // Ausgewählte IDs in Reihenfolge (rechte Liste)
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Aktives Drag-Element
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // Ob ein Element gerade über die rechte Drop-Zone schwebt
+  const [overRight, setOverRight] = useState(false);
 
   // Präferenzen beim Laden initialisieren
-  // getCommissionPreferences gibt number[] zurück (direkte secondExaminerIds)
   useEffect(() => {
-    if (prefs) {
-      setSelectedIds(prefs as number[]);
-    }
+    if (prefs) setSelectedIds(prefs as number[]);
   }, [prefs]);
 
   const setMutation = trpc.thesisPhase27.setCommissionPreferences.useMutation({
@@ -815,10 +960,13 @@ function CommissionPreferences() {
     onSettled: () => setSaving(false),
   });
 
+  // Kandidaten-Maps
+  const candidateMap = new Map((allCandidates as any[]).map((c: any) => [c.id, c]));
   const available = (allCandidates as any[])
     .filter((c: any) => !selectedIds.includes(c.id))
     .filter((c: any) => !searchQuery || (c.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()));
-  const selected = (allCandidates as any[]).filter((c: any) => selectedIds.includes(c.id));
+  // Reihenfolge der rechten Liste entspricht selectedIds
+  const selected = selectedIds.map((id) => candidateMap.get(id)).filter(Boolean) as any[];
 
   const addToSelected = (id: number) => setSelectedIds((prev) => [...prev, id]);
   const removeFromSelected = (id: number) => setSelectedIds((prev) => prev.filter((x) => x !== id));
@@ -827,6 +975,83 @@ function CommissionPreferences() {
     setSaving(true);
     setMutation.mutate({ secondExaminerIds: selectedIds });
   };
+
+  // DnD-Sensoren: 8px Bewegung nötig, damit Klick nicht als Drag gilt
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  // IDs für SortableContext
+  const availableIds = available.map((c: any) => `available-${c.id}`);
+  const selectedSortableIds = selectedIds.map((id) => `selected-${id}`);
+
+  // Drop-Zone für rechte Liste (wenn leer)
+  const { setNodeRef: setRightDropRef, isOver: isOverRight } = useDroppable({ id: "selected-zone" });
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { over } = event;
+    if (!over) { setOverRight(false); return; }
+    const overId = String(over.id);
+    setOverRight(overId === "selected-zone" || overId.startsWith("selected-"));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    setOverRight(false);
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeIdStr = String(active.id);
+    const overIdStr = String(over.id);
+    const activeData = active.data.current as any;
+    const overData = over.data.current as any;
+
+    // Fall 1: Element aus linker Liste → rechte Liste (oder Drop-Zone)
+    if (activeData?.type === "available") {
+      const candidateId = activeData.candidateId as number;
+      if (overIdStr === "selected-zone" || overData?.type === "selected") {
+        // Einfügen an der richtigen Position
+        if (overData?.type === "selected") {
+          const overCandidateId = overData.candidateId as number;
+          const overIndex = selectedIds.indexOf(overCandidateId);
+          setSelectedIds((prev) => {
+            const next = prev.filter((x) => x !== candidateId);
+            next.splice(overIndex, 0, candidateId);
+            return next;
+          });
+        } else {
+          addToSelected(candidateId);
+        }
+      }
+      return;
+    }
+
+    // Fall 2: Element aus rechter Liste → linke Liste
+    if (activeData?.type === "selected" && overData?.type === "available") {
+      removeFromSelected(activeData.candidateId);
+      return;
+    }
+
+    // Fall 3: Umsortierung innerhalb der rechten Liste
+    if (activeData?.type === "selected" && overData?.type === "selected") {
+      const oldIndex = selectedIds.indexOf(activeData.candidateId);
+      const newIndex = selectedIds.indexOf(overData.candidateId);
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        setSelectedIds((prev) => arrayMove(prev, oldIndex, newIndex));
+      }
+    }
+  }
+
+  // Aktives Drag-Element für Overlay
+  const activeCandidateId = activeId
+    ? parseInt(activeId.replace("available-", "").replace("selected-", ""), 10)
+    : null;
+  const activeCandidate = activeCandidateId ? candidateMap.get(activeCandidateId) : null;
+  const activeType = activeId?.startsWith("available-") ? "available" : "selected";
 
   if (prefsLoading || candidatesLoading) {
     return <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
@@ -838,101 +1063,105 @@ function CommissionPreferences() {
         <h2 className="text-lg font-bold text-gray-900">Kommissionspräferenzen</h2>
         <p className="text-sm text-gray-500 mt-1">
           Wählen Sie die Zweitgutachter:innen aus, mit denen Sie bevorzugt zusammenarbeiten möchten.
-          Wenn Studierende Ihre Erstgutachter-Zusage erhalten, sehen sie nur Ihre bevorzugten Zweitgutachter:innen zur Auswahl.
-          Wenn Sie keine Präferenzen hinterlegen, stehen alle Zweitgutachter:innen zur Verfügung.
+          Ziehen Sie Personen zwischen den Listen oder klicken Sie auf einen Eintrag.
+          Die Reihenfolge in der rechten Liste gibt Ihre Präferenz an.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
-        {/* Linke Liste: Verfügbare Zweitgutachter:innen */}
-        <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
-            <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
-            <div className="mt-2 relative">
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Suchen..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#76B900]/50 focus:border-[#76B900]/50"
-              />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
+          {/* Linke Liste: Verfügbare Zweitgutachter:innen */}
+          <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
+              <div className="mt-2 relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Suchen..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#76B900]/50 focus:border-[#76B900]/50"
+                />
+              </div>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {available.length === 0 ? (
+                <div className="px-4 py-6 text-center text-xs text-gray-400">Alle Kandidat:innen wurden ausgewählt.</div>
+              ) : (
+                <SortableContext items={availableIds} strategy={verticalListSortingStrategy}>
+                  {available.map((c: any) => (
+                    <AvailableItem key={c.id} candidate={c} onAdd={addToSelected} />
+                  ))}
+                </SortableContext>
+              )}
             </div>
           </div>
-          <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
-            {available.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-gray-400">Alle Kandidat:innen wurden ausgewählt.</div>
-            ) : (
-              available.map((c: any) => (
-                <button
-                  key={c.id}
-                  onClick={() => addToSelected(c.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#76B900]/5 transition-colors group"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 group-hover:bg-[#76B900]/20">
-                    {(c.name ?? "").charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
-                    {c.title && <p className="text-xs text-gray-400 truncate">{c.title}</p>}
-                  </div>
-                  <svg className="w-4 h-4 text-[#76B900] opacity-0 group-hover:opacity-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))
-            )}
+
+          {/* Mittel-Indikator */}
+          <div className="flex flex-col items-center justify-center gap-2 py-4">
+            <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </div>
+            <span className="text-xs text-gray-400 text-center">Ziehen oder<br/>Klicken</span>
+          </div>
+
+          {/* Rechte Liste: Bevorzugte Zweitgutachter:innen */}
+          <div className={`rounded-2xl border overflow-hidden transition-colors ${
+            isOverRight || overRight
+              ? "border-[#76B900] bg-[#76B900]/10 shadow-[0_0_0_3px_rgba(118,185,0,0.15)]"
+              : "border-[#76B900]/30 bg-[#76B900]/5"
+          }`}>
+            <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
+              <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
+              <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt · Reihenfolge = Präferenz</p>
+            </div>
+            <div className="max-h-80 overflow-y-auto" ref={setRightDropRef}>
+              {selected.length === 0 ? (
+                <SelectedDropZone isOver={isOverRight || overRight} />
+              ) : (
+                <SortableContext items={selectedSortableIds} strategy={verticalListSortingStrategy}>
+                  {selected.map((c: any, idx: number) => (
+                    <SelectedItem key={c.id} candidate={c} index={idx} onRemove={removeFromSelected} />
+                  ))}
+                </SortableContext>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Pfeil-Indikator */}
-        <div className="flex flex-col items-center justify-center gap-2 py-4">
-          <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-          </div>
-          <span className="text-xs text-gray-400 text-center">Klicken zum<br/>Verschieben</span>
-        </div>
-
-        {/* Rechte Liste: Bevorzugte Zweitgutachter:innen */}
-        <div className="rounded-2xl border border-[#76B900]/30 bg-[#76B900]/5 overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
-            <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
-            <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt</p>
-          </div>
-          <div className="divide-y divide-[#76B900]/10 max-h-80 overflow-y-auto">
-            {selected.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-gray-400">
-                Noch keine Präferenzen gewählt.<br/>
-                <span className="text-[#76B900]">Klicken Sie links auf eine Person.</span>
+        {/* Drag-Overlay: schwebendes Element beim Ziehen */}
+        <DragOverlay>
+          {activeCandidate ? (
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${
+              activeType === "available"
+                ? "bg-white border-gray-200"
+                : "bg-[#76B900]/10 border-[#76B900]/40"
+            }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                activeType === "available" ? "bg-gray-100 text-gray-500" : "bg-[#76B900]/20 text-[#76B900]"
+              }`}>
+                {(activeCandidate.name ?? "").charAt(0).toUpperCase()}
               </div>
-            ) : (
-              selected.map((c: any) => (
-                <button
-                  key={c.id}
-                  onClick={() => removeFromSelected(c.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 transition-colors group"
-                >
-                  <div className="w-8 h-8 rounded-full bg-[#76B900]/20 flex items-center justify-center text-xs font-bold text-[#76B900] flex-shrink-0 group-hover:bg-red-100">
-                    {(c.name ?? "").charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
-                    {c.title && <p className="text-xs text-gray-400 truncate">{c.title}</p>}
-                  </div>
-                  <svg className="w-4 h-4 text-red-400 opacity-0 group-hover:opacity-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 truncate">{activeCandidate.name}</p>
+                {activeCandidate.title && <p className="text-xs text-gray-400 truncate">{activeCandidate.title}</p>}
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Speichern-Button */}
       <div className="flex items-center justify-between pt-2">
