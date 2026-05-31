@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users SET avatarUrl = '/manus-storage/avatars/user-690079_9a287903.jpeg', avatarKey = 'avatars/user-690079.jpeg' WHERE email = 'holger@luetters.net' AND id != 690079;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute UPDATE users SET avatarUrl = '/manus-storage/avatars/user-690079_9a287903.jpeg', avatarKey = 'avatars/user-690079.jpeg' WHERE email = 'holger@luetters.net' AND id != 690079;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 277
+}

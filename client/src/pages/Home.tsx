@@ -77,7 +77,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center gap-3 mb-6">
           <img
-            src="/manus-storage/thesis-logo-512_d468512d.png"
+            src="/manus-storage/thesis-logo-512_06e6e923.png"
             alt="Thesis Match Maker Logo"
             className="w-10 h-10 object-contain"
           />
@@ -318,7 +318,7 @@ export default function Home() {
             className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
           >
             <img
-              src="/manus-storage/IconFemaleFemale_210f65cb.webp"
+              src="/manus-storage/thesis-logo-512_06e6e923.png"
               alt="Thesis Match Maker Logo"
               className="w-9 h-9 object-contain rounded-lg"
             />

@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, email, avatarUrl, avatarKey FROM users WHERE email = 'holger@luetters.net' ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, email, avatarUrl, avatarKey FROM users WHERE email = 'holger@luetters.net' ORDER BY id;",
+  "rows": [
+    {
+      "id": "690079",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/manus-storage/avatars/user-690079_9a287903.jpeg",
+      "avatarKey": "avatars/user-690079.jpeg"
+    },
+    {
+      "id": "4050049",
+      "email": "holger@luetters.net",
+      "avatarUrl": "NULL",
+      "avatarKey": "NULL"
+    },
+    {
+      "id": "4080481",
+      "email": "holger@luetters.net",
+      "avatarUrl": "NULL",
+      "avatarKey": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tavatarUrl\tavatarKey\n690079\tholger@luetters.net\t/manus-storage/avatars/user-690079_9a287903.jpeg\tavatars/user-690079.jpeg\n4050049\tholger@luetters.net\tNULL\tNULL\n4080481\tholger@luetters.net\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 265
+}

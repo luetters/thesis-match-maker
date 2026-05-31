@@ -11,7 +11,7 @@ export default function Maintenance() {
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
         <img
-          src="/manus-storage/logo_512_5f2dc9c0.png"
+          src="/manus-storage/thesis-logo-512_06e6e923.png"
           alt="HTW Berlin Logo"
           className="w-20 h-20 object-contain"
           onError={(e) => {

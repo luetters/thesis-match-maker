@@ -3534,8 +3534,13 @@ export async function updateProfileAvatar(userId: number, avatarUrl: string, ava
   const db = await getDb();
   if (!db) return false;
   try {
+    // Erst den eigenen Account aktualisieren
     await db.execute(
       `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE id = ${userId}`
+    );
+    // Dann alle anderen Accounts mit gleicher E-Mail synchronisieren (mehrere Login-Methoden)
+    await db.execute(
+      `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE email = (SELECT email FROM (SELECT email FROM users WHERE id = ${userId}) AS sub) AND id != ${userId}`
     );
     return true;
   } catch (error) {
@@ -3548,8 +3553,11 @@ export async function clearProfileAvatar(userId: number) {
   const db = await getDb();
   if (!db) return false;
   try {
+    // Eigenen Account leeren
+    await db.execute(`UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE id = ${userId}`);
+    // Alle anderen Accounts mit gleicher E-Mail ebenfalls leeren
     await db.execute(
-      `UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE id = ${userId}`
+      `UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE email = (SELECT email FROM (SELECT email FROM users WHERE id = ${userId}) AS sub) AND id != ${userId}`
     );
     return true;
   } catch (error) {
