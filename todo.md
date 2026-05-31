@@ -500,3 +500,9 @@
 - [x] StudentDashboard.tsx: Studiengang-Textfeld → dynamisches Dropdown (gefiltert nach form.fachbereich + form.degreeType)
 - [x] Dropdown zeigt nur passende Programme an; bei Wechsel von FB oder Abschlussart wird Auswahl zurückgesetzt
 - [x] Hinweis wenn keine Programme für gewählte Kombination verfügbar
+
+## Phase 53: Avatar-Upload-Bug und Toast-Fix ✅ KOMPLETT
+
+- [x] getUserByEmail priorisiert Passwort-Account (openId beginnt mit pw_) bei mehreren Accounts mit gleicher E-Mail
+- [x] Toast-Meldung für Avatar-Upload vereinfacht (kein eigenes SVG-Icon, nur Text → kein doppeltes Haken-Icon)
+- [x] Nach erfolgreichem Upload: avatarPreview sofort setzen, dann nach DB-Reload auf null zurücksetzen

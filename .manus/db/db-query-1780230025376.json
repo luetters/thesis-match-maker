@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, name, email, openId, avatarUrl FROM users WHERE email = 'holger@luetters.net' ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, email, openId, avatarUrl FROM users WHERE email = 'holger@luetters.net' ORDER BY id;",
+  "rows": [
+    {
+      "id": "690079",
+      "name": "Prof. Dr. Holger Lütters",
+      "email": "holger@luetters.net",
+      "openId": "pw_holger_luetters_net",
+      "avatarUrl": "/manus-storage/avatars/user-690079_0a0aa43e.png"
+    },
+    {
+      "id": "4050049",
+      "name": "Holger Lütters",
+      "email": "holger@luetters.net",
+      "openId": "CspuhmTu4HCor7SJN8x8no",
+      "avatarUrl": "NULL"
+    },
+    {
+      "id": "4080481",
+      "name": "holger",
+      "email": "holger@luetters.net",
+      "openId": "magic:holger@luetters.net",
+      "avatarUrl": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\topenId\tavatarUrl\n690079\tProf. Dr. Holger Lütters\tholger@luetters.net\tpw_holger_luetters_net\t/manus-storage/avatars/user-690079_0a0aa43e.png\n4050049\tHolger Lütters\tholger@luetters.net\tCspuhmTu4HCor7SJN8x8no\tNULL\n4080481\tholger\tholger@luetters.net\tmagic:holger@luetters.net\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 274
+}

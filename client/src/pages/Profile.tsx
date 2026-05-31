@@ -322,16 +322,14 @@ export default function Profile() {
 
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
+      // Sofortige Vorschau setzen
       setAvatarPreview(data.avatarUrl);
-      toast.success(
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>Profilfoto erfolgreich aktualisiert</span>
-        </div>
-      );
-      utils.profile.get.invalidate();
+      toast.success("Profilfoto erfolgreich aktualisiert");
+      // Profil neu laden damit avatarUrl aus DB aktualisiert wird
+      utils.profile.get.invalidate().then(() => {
+        // Preview nach Reload aus DB entfernen (DB-Wert wird nun direkt verwendet)
+        setAvatarPreview(null);
+      });
     },
     onError: (e) => {
       console.error("[Avatar Upload] Error:", e);
