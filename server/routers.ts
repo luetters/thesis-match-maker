@@ -400,10 +400,11 @@ export const appRouter = router({
             });
           }
         } else if (input.role === "examiner" || input.role === "admin") {
-          if (!emailLowerReg.endsWith("@htw-berlin.de")) {
+          const isHtwStaff = emailLowerReg.endsWith("@htw-berlin.de") || emailLowerReg.endsWith("@htw-berlin.com");
+          if (!isHtwStaff) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de) registrieren.",
+              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
             });
           }
         }
