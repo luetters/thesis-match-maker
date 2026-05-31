@@ -507,7 +507,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 10 MB)</span>
+              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 5 MB)</span>
               <span className="relative group cursor-default">
                 <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -529,8 +529,9 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                       toast.error("Nur PDF-Dateien sind erlaubt.");
                       return;
                     }
-                    if (file.size > 10 * 1024 * 1024) {
-                      toast.error("Datei ist zu groß (max. 10 MB).");
+                    if (file.size > 5 * 1024 * 1024) {
+                      toast.error("Die Datei ist zu groß. Bitte laden Sie eine PDF-Datei mit maximal 5 MB hoch.");
+                      e.target.value = "";
                       return;
                     }
                     setExposeFile(file);

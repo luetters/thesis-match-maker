@@ -19,7 +19,7 @@ const upload = multer({
 });
 const pdfUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 16 * 1024 * 1024 }, // 16 MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype !== "application/pdf") {
       cb(new Error("Nur PDF-Dateien sind erlaubt."));
@@ -33,7 +33,15 @@ export function registerUploadRoutes(app: Express) {
   // POST /api/upload/expose  (pre-upload vor Thesis-Erstellung – kein thesisId erforderlich)
   app.post(
     "/api/upload/expose",
-    pdfUpload.single("file"),
+    (req, res, next) => pdfUpload.single("file")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu groß. Bitte laden Sie eine PDF-Datei mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ungültige Datei." });
+      }
+      next();
+    }),
     async (req: Request, res: Response) => {
       try {
         let user = null;
