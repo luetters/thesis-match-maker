@@ -596,6 +596,8 @@ function UserManagement() {
   const [showCreate, setShowCreate] = useState(false);
   const [userTab, setUserTab] = useState<"examiners" | "students">("examiners");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
   const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
@@ -657,6 +659,9 @@ function UserManagement() {
       (user.email ?? "").toLowerCase().includes(query)
     );
   }) ?? [];
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedUsers = filteredUsers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="space-y-4">
@@ -679,7 +684,7 @@ function UserManagement() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
           placeholder="Nach Name oder E-Mail suchen…"
           className="w-full pl-9 pr-9 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
@@ -698,7 +703,7 @@ function UserManagement() {
       <div className="flex items-center justify-between">
         <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
           <button
-            onClick={() => setUserTab("examiners")}
+            onClick={() => { setUserTab("examiners"); setCurrentPage(1); }}
             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
               userTab === "examiners"
                 ? "bg-white text-gray-900 shadow-sm border border-gray-200"
@@ -711,7 +716,7 @@ function UserManagement() {
             </span>
           </button>
           <button
-            onClick={() => setUserTab("students")}
+            onClick={() => { setUserTab("students"); setCurrentPage(1); }}
             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
               userTab === "students"
                 ? "bg-white text-gray-900 shadow-sm border border-gray-200"
@@ -752,7 +757,7 @@ function UserManagement() {
                   {query ? `Keine Ergebnisse für „${searchQuery}“.` : "Keine Einträge vorhanden."}
                 </td></tr>
               )}
-              {filteredUsers.map(({ user, profile }) => (
+              {pagedUsers.map(({ user, profile }) => (
                 <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
@@ -845,6 +850,73 @@ function UserManagement() {
           </table>
         </div>
       </div>
+      {/* Paginierung */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs text-gray-400">
+            {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredUsers.length)} von {filteredUsers.length} Einträgen
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={safePage === 1}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Erste Seite"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M18 19l-7-7 7-7" /></svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Vorherige Seite"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+              .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                if (idx > 0 && (p as number) - (arr[idx - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, idx) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 text-xs text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`min-w-[2rem] h-8 rounded-lg text-xs font-semibold transition-colors ${
+                      safePage === p
+                        ? "text-white shadow-sm"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                    style={safePage === p ? { backgroundColor: "oklch(38.5% 0.12 152)" } : {}}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Nächste Seite"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={safePage === totalPages}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Letzte Seite"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M6 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
