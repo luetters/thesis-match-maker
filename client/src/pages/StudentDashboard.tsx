@@ -207,9 +207,15 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     const selectedExaminer = (qualifiedExaminers as any[]).find((e: any) => e.id === form.wantedExaminerId);
     const semesterLabel = getNextSemesters().find(s => s.value === form.targetSemester)?.label ?? form.targetSemester;
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 print-area">
+        {/* Druckkopf – nur im Druck sichtbar */}
+        <div className="hidden print:block mb-6 pb-4 border-b-2 border-gray-800">
+          <h1 className="text-xl font-bold text-gray-900">HTW Berlin – Thesis Match Maker</h1>
+          <p className="text-sm text-gray-600 mt-1">Betreuungsanfrage – Zusammenfassung</p>
+          <p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between no-print">
           <div>
             <h2 className="text-lg font-bold text-gray-900">Vorschau Ihrer Anfrage</h2>
             <p className="text-sm text-gray-500 mt-0.5">Bitte überprüfen Sie Ihre Angaben vor dem endgültigen Einreichen.</p>
@@ -302,7 +308,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         {/* Aktions-Buttons */}
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-3 pt-2 flex-wrap no-print">
           <button
             type="button"
             onClick={() => setShowPreview(false)}
@@ -312,6 +318,16 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Bearbeiten
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Als PDF speichern / Drucken
           </button>
           <button
             type="button"
