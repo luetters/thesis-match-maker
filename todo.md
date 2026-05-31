@@ -456,3 +456,12 @@
 - [x] Profile.tsx: Terminbuchung ersetzt BookingModal durch einfaches bookingUrl-Link-Feld
 - [x] Profile.tsx: BookingModal-Import und -Verwendung entfernt
 - [x] Profile.tsx: LinkDisplay-Hilfskomponente für einheitliche Link-Darstellung
+
+
+## Phase 49: Profil-URL-Verbesserungen ✅ KOMPLETT
+
+- [x] Echtzeit-URL-Validierung für alle URL-Felder (website, linkedIn, researchGate, htwProfileUrl, miscLink, bookingUrl)
+- [x] Fehlermeldung unter dem Feld bei ungültiger URL (Rot-Rahmen + Hinweistext)
+- [x] Speichern-Button deaktiviert solange URL-Fehler vorhanden
+- [x] Verbesserte Icons in LinkDisplay: Kalender-Symbol für bookingUrl, Link-Ketten-Symbol für miscLink
+- [x] „Link kopieren"-Button neben jeder angezeigten URL (Clipboard-Icon, Toast-Bestätigung)

@@ -28,6 +28,17 @@ const ROLE_STATUS_CONFIG: Record<string, { label: string; color: string; bg: str
   rejected: { label: "Abgelehnt", color: "#dc2626", bg: "#fef2f2" },
 };
 
+// ─── URL-Validierung ──────────────────────────────────────────────────────────
+function isValidUrl(value: string): boolean {
+  if (!value) return true; // Leer ist erlaubt (optional)
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
@@ -60,6 +71,7 @@ function FieldView({ label, value }: { label: string; value: string | null | und
     </div>
   );
 }
+
 function FieldInput({
   label, value, onChange, placeholder, type = "text",
 }: {
@@ -76,6 +88,61 @@ function FieldInput({
         placeholder={placeholder}
         className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
       />
+    </div>
+  );
+}
+
+// ─── URL-Eingabe mit Echtzeit-Validierung ─────────────────────────────────────
+function UrlInput({
+  label, value, onChange, placeholder,
+}: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const [touched, setTouched] = useState(false);
+  const isValid = isValidUrl(value);
+  const showError = touched && value.length > 0 && !isValid;
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <div className="relative">
+        <input
+          type="url"
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setTouched(true); }}
+          onBlur={() => setTouched(true)}
+          placeholder={placeholder ?? "https://…"}
+          className={`w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all pr-9 ${
+            showError
+              ? "border-red-400 focus:ring-red-200 focus:border-red-500 bg-red-50"
+              : isValid && value.length > 0
+              ? "border-[#76b900] focus:ring-[#76b900]/30 focus:border-[#76b900] bg-[#f9ffe6]"
+              : "border-gray-200 focus:ring-[#76b900]/30 focus:border-[#76b900]"
+          }`}
+        />
+        {/* Validierungs-Icon */}
+        {value.length > 0 && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            {isValid ? (
+              <svg className="w-4 h-4 text-[#76b900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+          </span>
+        )}
+      </div>
+      {showError && (
+        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Bitte eine gültige Webadresse eingeben (z.B. https://beispiel.de)
+        </p>
+      )}
     </div>
   );
 }
@@ -120,29 +187,83 @@ function TagInput({
   );
 }
 
-// ─── Link-Anzeige-Komponente ──────────────────────────────────────────────────
+// ─── Kopier-Button ────────────────────────────────────────────────────────────
+function CopyButton({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      toast.success(
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-[#76b900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Link in Zwischenablage kopiert</span>
+        </div>,
+        { duration: 2000 }
+      );
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Kopieren fehlgeschlagen");
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title="Link kopieren"
+      className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
+        copied
+          ? "border-[#76b900] bg-[#f0fdf4] text-[#76b900]"
+          : "border-gray-200 bg-white text-gray-400 hover:border-[#76b900] hover:bg-[#f6ffe0] hover:text-[#76b900]"
+      }`}
+    >
+      {copied ? (
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// ─── Link-Anzeige-Komponente mit Kopier-Button ────────────────────────────────
 function LinkDisplay({
-  href, label, iconBg, iconColor, iconContent, hoverBorderColor, hoverBgColor, textColor,
+  href, label, iconBg, iconColor, iconContent,
+  hoverBorderColor, hoverBgColor, textColor,
 }: {
   href: string; label: string; iconBg: string; iconColor?: string;
   iconContent: React.ReactNode; hoverBorderColor: string; hoverBgColor: string; textColor: string;
 }) {
-  const displayText = (() => {
-    try {
-      return new URL(href).hostname.replace(/^www\./, "") + (new URL(href).pathname !== "/" ? new URL(href).pathname : "");
-    } catch {
-      return href;
-    }
-  })();
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 transition-all group max-w-full ${hoverBorderColor} ${hoverBgColor}`}>
-      <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: iconBg, color: iconColor }}>
-        {iconContent}
-      </span>
-      <span className={`text-sm group-hover:underline truncate ${textColor}`}>{label || displayText}</span>
-      <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-    </a>
+    <div className="flex items-center gap-2">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`flex-1 inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 transition-all group min-w-0 ${hoverBorderColor} ${hoverBgColor}`}
+      >
+        <span
+          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ background: iconBg, color: iconColor }}
+        >
+          {iconContent}
+        </span>
+        <span className={`text-sm group-hover:underline truncate ${textColor}`}>{label}</span>
+        <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+      <CopyButton url={href} />
+    </div>
   );
 }
 
@@ -164,6 +285,10 @@ export default function Profile() {
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // URL-Felder die validiert werden
+  const urlFields = ["website", "linkedIn", "researchGate", "htwProfileUrl", "miscLink", "bookingUrl"] as const;
+  const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
 
   const updateMutation = trpc.profile.update.useMutation({
     onSuccess: () => { toast.success("Profil gespeichert"); setEditMode(false); refetch(); },
@@ -232,6 +357,10 @@ export default function Profile() {
   };
 
   const handleSave = () => {
+    if (hasUrlErrors) {
+      toast.error("Bitte korrigieren Sie die ungültigen Webadressen vor dem Speichern.");
+      return;
+    }
     updateMutation.mutate({
       name: form.name || undefined, bio: form.bio || undefined, phone: form.phone || undefined, department: form.department || undefined,
       matrikelNr: form.matrikelNr || undefined, thesisType: (form.thesisType as "bachelor" | "master") || undefined,
@@ -312,7 +441,13 @@ export default function Profile() {
           ) : (
             <div className="flex items-center gap-2">
               <button onClick={() => setEditMode(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors">Abbrechen</button>
-              <button onClick={handleSave} disabled={updateMutation.isPending} className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg text-white transition-colors disabled:opacity-60" style={{ backgroundColor: "#76b900" }}>
+              <button
+                onClick={handleSave}
+                disabled={updateMutation.isPending || hasUrlErrors}
+                title={hasUrlErrors ? "Bitte zuerst ungültige Webadressen korrigieren" : undefined}
+                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: "#76b900" }}
+              >
                 {updateMutation.isPending
                   ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                   : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
@@ -321,6 +456,15 @@ export default function Profile() {
             </div>
           )}
         </div>
+        {/* URL-Fehler-Banner */}
+        {editMode && hasUrlErrors && (
+          <div className="bg-red-50 border-t border-red-200 px-4 py-2 flex items-center gap-2">
+            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xs text-red-600">Einige Webadressen sind ungültig. Bitte korrigieren Sie diese, bevor Sie speichern.</p>
+          </div>
+        )}
       </div>
 
       {/* ── Inhalt ── */}
@@ -456,7 +600,7 @@ export default function Profile() {
 
             {/* Website */}
             {editMode ? (
-              <FieldInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" type="url" />
+              <UrlInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Website</label>
@@ -464,11 +608,8 @@ export default function Profile() {
                   <LinkDisplay
                     href={profile.website}
                     label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                    iconBg="#f0fdf4"
-                    iconColor="#76b900"
-                    hoverBorderColor="hover:border-[#76b900]"
-                    hoverBgColor="hover:bg-[#f6ffe0]"
-                    textColor="text-[#76b900]"
+                    iconBg="#f0fdf4" iconColor="#76b900"
+                    hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
                     iconContent={
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
@@ -481,7 +622,7 @@ export default function Profile() {
 
             {/* LinkedIn */}
             {editMode ? (
-              <FieldInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" type="url" />
+              <UrlInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">LinkedIn-Profil</label>
@@ -490,9 +631,7 @@ export default function Profile() {
                     href={profile.linkedIn}
                     label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
                     iconBg="#0a66c2"
-                    hoverBorderColor="hover:border-[#0a66c2]"
-                    hoverBgColor="hover:bg-[#eff6ff]"
-                    textColor="text-[#0a66c2]"
+                    hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
                     iconContent={
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
@@ -505,7 +644,7 @@ export default function Profile() {
 
             {/* ResearchGate */}
             {editMode ? (
-              <FieldInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" type="url" />
+              <UrlInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">ResearchGate-Profil</label>
@@ -514,9 +653,7 @@ export default function Profile() {
                     href={profile.researchGate}
                     label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
                     iconBg="#00d0af"
-                    hoverBorderColor="hover:border-[#00d0af]"
-                    hoverBgColor="hover:bg-[#ecfdf5]"
-                    textColor="text-[#00a896]"
+                    hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
                     iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
                   />
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
@@ -525,7 +662,7 @@ export default function Profile() {
 
             {/* HTW Berlin Profil */}
             {editMode ? (
-              <FieldInput label="HTW Berlin Profil" value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder="https://www.htw-berlin.de/hochschule/personen/…" type="url" />
+              <UrlInput label="HTW Berlin Profil" value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder="https://www.htw-berlin.de/hochschule/personen/…" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">HTW Berlin Profil</label>
@@ -534,18 +671,16 @@ export default function Profile() {
                     href={profile.htwProfileUrl}
                     label="HTW Berlin"
                     iconBg="#1a5490"
-                    hoverBorderColor="hover:border-[#1a5490]"
-                    hoverBgColor="hover:bg-[#f0f4f8]"
-                    textColor="text-[#1a5490]"
+                    hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
                     iconContent={<span className="text-white font-bold text-xs">HTW</span>}
                   />
                 ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
               </div>
             )}
 
-            {/* Weiterer Link (miscLink) */}
+            {/* Weiterer Link (miscLink) – mit Ketten-Symbol */}
             {editMode ? (
-              <FieldInput label="Weiterer Link" value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder="https://…" type="url" />
+              <UrlInput label="Weiterer Link" value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder="https://…" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Weiterer Link</label>
@@ -553,12 +688,10 @@ export default function Profile() {
                   <LinkDisplay
                     href={profile.miscLink}
                     label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                    iconBg="#f3f4f6"
-                    iconColor="#6b7280"
-                    hoverBorderColor="hover:border-gray-400"
-                    hoverBgColor="hover:bg-gray-50"
-                    textColor="text-gray-700"
+                    iconBg="#f3f4f6" iconColor="#6b7280"
+                    hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
                     iconContent={
+                      /* Ketten-/Link-Symbol */
                       <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
@@ -568,9 +701,9 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Terminbuchung (bookingUrl) */}
+            {/* Terminbuchung (bookingUrl) – mit Kalender-Symbol */}
             {editMode ? (
-              <FieldInput label="Terminbuchungs-Link" value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder="https://calendly.com/… oder ähnlich" type="url" />
+              <UrlInput label="Terminbuchungs-Link" value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder="https://calendly.com/… oder ähnlich" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
@@ -578,13 +711,11 @@ export default function Profile() {
                   <LinkDisplay
                     href={profile.bookingUrl}
                     label="Termin buchen"
-                    iconBg="#faf5ff"
-                    iconColor="#7c3aed"
-                    hoverBorderColor="hover:border-[#7c3aed]"
-                    hoverBgColor="hover:bg-[#faf5ff]"
-                    textColor="text-[#7c3aed]"
+                    iconBg="#faf5ff" iconColor="#7c3aed"
+                    hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
                     iconContent={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      /* Kalender-Symbol */
+                      <svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     }
