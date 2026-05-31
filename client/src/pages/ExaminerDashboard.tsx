@@ -808,8 +808,114 @@ function ExaminerOnboardingModal({ onComplete }: { onComplete: () => void }) {
 
 // ─── Drag-and-Drop Hilfselemente ─────────────────────────────────────────────
 
+// ─── Kandidaten-Tooltip ─────────────────────────────────────────────────────
+
+function CandidateTooltip({ candidate }: { candidate: any }) {
+  const active = candidate.activeSupervisions ?? 0;
+  const max = candidate.maxSupervisions ?? 5;
+  const pct = Math.min(100, Math.round((active / Math.max(max, 1)) * 100));
+  const tags: string[] = Array.isArray(candidate.tags)
+    ? candidate.tags
+    : typeof candidate.tags === "string"
+    ? (() => { try { return JSON.parse(candidate.tags); } catch { return []; } })()
+    : [];
+
+  const loadColor =
+    pct >= 90 ? "bg-red-500" :
+    pct >= 60 ? "bg-amber-400" :
+    "bg-[#76B900]";
+  const loadLabel =
+    pct >= 90 ? "Ausgelastet" :
+    pct >= 60 ? "Teilweise ausgelastet" :
+    "Verfügbar";
+  const loadTextColor =
+    pct >= 90 ? "text-red-600" :
+    pct >= 60 ? "text-amber-600" :
+    "text-[#76B900]";
+
+  return (
+    <div className="absolute z-50 left-full top-0 ml-3 w-64 rounded-2xl bg-white border border-gray-200 shadow-xl p-4 pointer-events-none">
+      {/* Pfeil */}
+      <div className="absolute -left-2 top-4 w-3 h-3 rotate-45 bg-white border-l border-b border-gray-200" />
+
+      {/* Kopfzeile */}
+      <div className="flex items-center gap-3 mb-3">
+        {candidate.photoUrl ? (
+          <img src={candidate.photoUrl} alt={candidate.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
+            {(candidate.name ?? "").charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{candidate.name}</p>
+          {candidate.title && <p className="text-xs text-gray-500 truncate">{candidate.title}</p>}
+        </div>
+      </div>
+
+      {/* Institut */}
+      {candidate.department && (
+        <div className="flex items-start gap-2 mb-2">
+          <svg className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          <p className="text-xs text-gray-600 leading-tight">{candidate.department}</p>
+        </div>
+      )}
+
+      {/* Auslastung */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-gray-500">Aktive Betreuungen</span>
+          <span className={`text-xs font-semibold ${loadTextColor}`}>{loadLabel}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${loadColor}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-500 flex-shrink-0">{active} / {max}</span>
+        </div>
+      </div>
+
+      {/* Forschungsgebiete */}
+      {candidate.researchFocus && (
+        <div className="mb-2">
+          <p className="text-xs font-medium text-gray-500 mb-1">Forschungsgebiete</p>
+          <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">{candidate.researchFocus}</p>
+        </div>
+      )}
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {tags.slice(0, 4).map((tag: string, i: number) => (
+            <span key={i} className="px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px]">{tag}</span>
+          ))}
+          {tags.length > 4 && (
+            <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-400 text-[10px]">+{tags.length - 4}</span>
+          )}
+        </div>
+      )}
+
+      {/* Sprechstunden */}
+      {candidate.officeHours && (
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+          <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-xs text-gray-500 truncate">{candidate.officeHours}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Einzelnes Element in der linken (verfügbaren) Liste – nur draggable */
 function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: number) => void }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({
     id: `available-${candidate.id}`,
     data: { type: "available", candidateId: candidate.id },
@@ -823,8 +929,13 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/5 transition-colors group border-b border-gray-50 last:border-0"
+      className="relative flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/5 transition-colors group border-b border-gray-50 last:border-0"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
     >
+      {/* Tooltip */}
+      {showTooltip && !isDragging && <CandidateTooltip candidate={candidate} />}
+
       {/* Drag-Handle */}
       <div
         {...attributes}
@@ -858,6 +969,7 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
 
 /** Einzelnes Element in der rechten (ausgewählten) Liste – sortierbar und draggable */
 function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: number; onRemove: (id: number) => void }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `selected-${candidate.id}`,
     data: { type: "selected", candidateId: candidate.id },
@@ -872,8 +984,18 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/10 transition-colors group border-b border-[#76B900]/10 last:border-0"
+      className="relative flex items-center gap-3 px-4 py-3 hover:bg-[#76B900]/10 transition-colors group border-b border-[#76B900]/10 last:border-0"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
     >
+      {/* Tooltip – auf der linken Seite (da rechte Liste am Rand) */}
+      {showTooltip && !isDragging && (
+        <div className="absolute z-50 right-full top-0 mr-3 w-64 rounded-2xl bg-white border border-gray-200 shadow-xl p-4 pointer-events-none">
+          <div className="absolute -right-2 top-4 w-3 h-3 rotate-45 bg-white border-r border-t border-gray-200" />
+          <CandidateTooltip candidate={candidate} />
+        </div>
+      )}
+
       {/* Rang-Badge */}
       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#76B900]/20 text-[#76B900] text-[10px] font-bold flex items-center justify-center">{index + 1}</span>
       {/* Drag-Handle */}

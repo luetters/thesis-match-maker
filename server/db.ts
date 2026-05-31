@@ -3595,13 +3595,20 @@ export async function getFirstExaminers() {
 export async function getAllSecondExaminerCandidates() {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.select({
+  // Basisdaten + Profil-Details
+  const candidates = await db.select({
     id: users.id,
     name: users.name,
     email: users.email,
     title: examinerProfiles.title,
     department: examinerProfiles.department,
     isSecondExaminer: examinerProfiles.isSecondExaminer,
+    bio: examinerProfiles.bio,
+    maxSupervisions: examinerProfiles.maxSupervisions,
+    researchFocus: examinerProfiles.researchFocus,
+    officeHours: examinerProfiles.officeHours,
+    tags: examinerProfiles.tags,
+    photoUrl: examinerProfiles.photoUrl,
   })
     .from(users)
     .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
@@ -3614,7 +3621,46 @@ export async function getAllSecondExaminerCandidates() {
         )
       )
     );
-  return result;
+
+  // Aktive Betreuungsanzahl pro Kandidat:in berechnen
+  // Aktiv = Anfragen mit Status nicht COMPLETED/WITHDRAWN/CANCELLED/REJECTED
+  const activeStatuses = [
+    "PENDING", "ACCEPTED", "MATCHED",
+    "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
+    "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+    "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET",
+  ] as const;
+
+  const candidateIds = candidates.map((c) => c.id);
+  let activeCountMap = new Map<number, number>();
+
+  if (candidateIds.length > 0) {
+    // Zähle Anfragen wo die Person Zweitgutachter:in ist (secondExaminerId)
+    const rows = await db
+      .select({
+        examinerId: thesisRequests.secondExaminerId,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(thesisRequests)
+      .where(
+        and(
+          inArray(thesisRequests.secondExaminerId, candidateIds),
+          inArray(thesisRequests.status, activeStatuses as unknown as string[])
+        )
+      )
+      .groupBy(thesisRequests.secondExaminerId);
+
+    for (const row of rows) {
+      if (row.examinerId != null) {
+        activeCountMap.set(row.examinerId, Number(row.count));
+      }
+    }
+  }
+
+  return candidates.map((c) => ({
+    ...c,
+    activeSupervisions: activeCountMap.get(c.id) ?? 0,
+  }));
 }
 
 /**

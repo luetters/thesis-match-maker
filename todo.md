@@ -578,3 +578,11 @@
 - [x] Visuelles Feedback: Drag-Overlay, Drop-Zonen-Highlight, Cursor-Änderung
 - [x] Barrierefreiheit: Klick-Interaktion weiterhin verfügbar (kein reines DnD)
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## Hover-Tooltip im Dual-List-Picker (Kommissionspräferenzen)
+
+- [x] Backend: getAllSecondExaminerCandidates um bio, maxSupervisions, researchFocus, officeHours, tags, photoUrl erweitert
+- [x] Backend: aktive Betreuungsanzahl (laufende Anfragen) pro Kandidat:in berechnet und zurückgegeben
+- [x] Frontend: CandidateTooltip-Komponente mit Institut, Auslastung (Balken + Farbe), Forschungsgebiete, Tags, Sprechstunden
+- [x] Frontend: Tooltip in AvailableItem (rechts) und SelectedItem (links) eingebunden
+- [x] Tests grün (55/55), Checkpoint gespeichert
