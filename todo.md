@@ -640,3 +640,17 @@
 - [x] Frontend: Getrennte +/−-Steuerelemente für Erst- und Zweitbetreuungen pro Semester
 - [x] Frontend: Gespeicherte Werte werden beim Öffnen vorgeladen
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+## Admin: Semesterkapazitäten einsehen und überschreiben ✅ KOMPLETT
+
+- [x] Backend: getExaminerCapacities-Prozedur (adminProcedure) – Kapazitäten einer Person abrufen
+- [x] Backend: overrideExaminerCapacity-Prozedur (adminProcedure) – Kapazität überschreiben
+- [x] Backend: resetExaminerCapacityOverride-Prozedur (adminProcedure) – Override zurücksetzen
+- [x] DB: adminOverride, adminOverrideBy, adminOverrideAt, adminMaxFirst, adminMaxSecond Spalten
+- [x] Frontend: CapacityPanel-Komponente in ExaminerManagement.tsx
+- [x] Frontend: Tabelle mit Prüfer-Werten und Admin-Override-Spalten (inline editierbar)
+- [x] Frontend: Inline-Bearbeitung per Klick, Enter zum Speichern, Escape zum Abbrechen
+- [x] Frontend: Überschriebene Werte amber-farbig hervorgehoben, Badge "Überschrieben"
+- [x] Frontend: Zurücksetzen-Button (RotateCcw) pro Zeile
+- [x] Frontend: Kapazitäten-Button in jeder Tabellenzeile der Prüfer:innen-Verwaltung
+- [x] Tests grün (55/55), Checkpoint gespeichert

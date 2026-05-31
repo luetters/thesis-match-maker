@@ -3901,3 +3901,98 @@ export async function getCapacitiesForSemester(semester: string) {
     .from(examinerSemesterCapacities)
     .where(eq(examinerSemesterCapacities.semester, semester));
 }
+
+// ─── Admin: Semesterkapazitäten einsehen und überschreiben ───────────────────
+
+/**
+ * Alle Semesterkapazitäten einer Prüferin / eines Prüfers für Admins abrufen.
+ * Gibt sowohl die selbst eingetragenen Werte als auch eventuelle Admin-Overrides zurück.
+ */
+export async function getExaminerSemesterCapacitiesForAdmin(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerSemesterCapacities)
+    .where(eq(examinerSemesterCapacities.examinerId, examinerId))
+    .orderBy(examinerSemesterCapacities.semester);
+}
+
+/**
+ * Admin überschreibt die Kapazität für ein bestimmtes Semester.
+ * Wenn kein Eintrag existiert, wird ein neuer angelegt.
+ */
+export async function adminOverrideExaminerCapacity(
+  examinerId: number,
+  semester: string,
+  adminMaxFirst: number,
+  adminMaxSecond: number,
+  adminId: number,
+) {
+  const db = await getDb();
+  if (!db) return;
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const existing = await db
+    .select({ id: examinerSemesterCapacities.id })
+    .from(examinerSemesterCapacities)
+    .where(
+      and(
+        eq(examinerSemesterCapacities.examinerId, examinerId),
+        eq(examinerSemesterCapacities.semester, semester),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(examinerSemesterCapacities)
+      .set({
+        adminOverride: 1,
+        adminOverrideBy: adminId,
+        adminOverrideAt: now as any,
+        adminMaxFirst,
+        adminMaxSecond,
+      } as any)
+      .where(
+        and(
+          eq(examinerSemesterCapacities.examinerId, examinerId),
+          eq(examinerSemesterCapacities.semester, semester),
+        ),
+      );
+  } else {
+    await db.insert(examinerSemesterCapacities).values({
+      examinerId,
+      semester,
+      maxFirst: adminMaxFirst,
+      maxSecond: adminMaxSecond,
+      adminOverride: 1,
+      adminOverrideBy: adminId,
+      adminOverrideAt: now as any,
+      adminMaxFirst,
+      adminMaxSecond,
+    } as any);
+  }
+}
+
+/**
+ * Admin-Override für ein Semester zurücksetzen (auf Prüfer-Wert zurückfallen).
+ */
+export async function resetAdminOverride(examinerId: number, semester: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(examinerSemesterCapacities)
+    .set({
+      adminOverride: 0,
+      adminOverrideBy: null,
+      adminOverrideAt: null,
+      adminMaxFirst: null,
+      adminMaxSecond: null,
+    } as any)
+    .where(
+      and(
+        eq(examinerSemesterCapacities.examinerId, examinerId),
+        eq(examinerSemesterCapacities.semester, semester),
+      ),
+    );
+}

@@ -7,7 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ChevronLeft, Edit2, AlertCircle, Upload, Download, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Loader2, ChevronLeft, Edit2, AlertCircle, Upload, Download,
+  CheckCircle2, XCircle, BarChart2, RotateCcw, Check, X,
+} from "lucide-react";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { toast } from "sonner";
 import Papa from "papaparse";
@@ -59,8 +62,7 @@ function parseRows(data: Record<string, string>[]): { rows: ParsedRow[]; errors:
   const rows: ParsedRow[] = [];
   const errors: ParseError[] = [];
   data.forEach((record, idx) => {
-    const lineNum = idx + 2; // 1-based + header
-    // Normalisiere Spaltenbezeichnungen
+    const lineNum = idx + 2;
     const keys = Object.keys(record);
     const get = (candidates: string[]) => {
       for (const c of candidates) {
@@ -79,7 +81,7 @@ function parseRows(data: Record<string, string>[]): { rows: ParsedRow[]; errors:
     if (!name) { errors.push({ line: lineNum, message: "Name fehlt" }); return; }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errors.push({ line: lineNum, message: `Ungültige E-Mail: "${email}"` }); return; }
     const role = parseRole(rolleRaw);
-    if (!role) { errors.push({ line: lineNum, message: `Unbekannte Rolle: "${rolleRaw}" – erlaubt: "1. Prüfer" oder "2. Prüfer"` }); return; }
+    if (!role) { errors.push({ line: lineNum, message: `Unbekannte Rolle: "${rolleRaw}"` }); return; }
     rows.push({ name, email, role, title: title || undefined, department: department || undefined, tags: tags || undefined, _raw: JSON.stringify(record) });
   });
   return { rows, errors };
@@ -87,17 +89,17 @@ function parseRows(data: Record<string, string>[]): { rows: ParsedRow[]; errors:
 
 // ─── Import-Dialog ────────────────────────────────────────────────────────────
 function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState("");
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [parseErrors, setParseErrors] = useState<ParseError[]>([]);
-  const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ created: number; updated: number; errors: string[] } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const importMutation = trpc.superadmin.importExaminers.useMutation({
     onSuccess: (data) => {
-      setResult(data);
       setImporting(false);
+      setResult(data);
       if (data.errors.length === 0) {
         toast.success(`Import abgeschlossen: ${data.created} angelegt, ${data.updated} aktualisiert.`);
         onSuccess();
@@ -116,7 +118,6 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
     setParsedRows([]);
     setParseErrors([]);
     setResult(null);
-
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext === "csv") {
       Papa.parse(file, {
@@ -176,7 +177,6 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
           </DialogTitle>
         </DialogHeader>
 
-        {/* Vorlage-Download */}
         <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50 border border-blue-100">
           <div>
             <p className="text-sm font-medium text-blue-800">CSV-Vorlage herunterladen</p>
@@ -188,7 +188,6 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
           </Button>
         </div>
 
-        {/* Datei-Dropzone */}
         {!result && (
           <div
             onDrop={handleDrop}
@@ -211,7 +210,6 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
           </div>
         )}
 
-        {/* Vorschau-Tabelle */}
         {parsedRows.length > 0 && !result && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">
@@ -252,49 +250,40 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
           </div>
         )}
 
-        {/* Parse-Fehler */}
         {parseErrors.length > 0 && !result && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs font-semibold text-amber-800 mb-1">Zeilen mit Fehlern (werden übersprungen):</p>
-            <ul className="space-y-0.5">
-              {parseErrors.map((e, i) => (
-                <li key={i} className="text-xs text-amber-700">Zeile {e.line}: {e.message}</li>
-              ))}
-            </ul>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+            <p className="text-sm font-semibold text-red-700 mb-1">Fehler in der Datei:</p>
+            {parseErrors.slice(0, 5).map((e, i) => (
+              <p key={i} className="text-xs text-red-600">Zeile {e.line}: {e.message}</p>
+            ))}
+            {parseErrors.length > 5 && <p className="text-xs text-red-400">… und {parseErrors.length - 5} weitere</p>}
           </div>
         )}
 
-        {/* Ergebnis */}
         {result && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
-              <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-green-800">Import abgeschlossen</p>
-                <p className="text-xs text-green-600 mt-0.5">
-                  {result.created} neu angelegt · {result.updated} aktualisiert
-                </p>
-              </div>
+          <div className="rounded-xl border p-4 space-y-2">
+            <div className="flex items-center gap-2 text-green-700">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="font-semibold">{result.created} Prüfer:in{result.created !== 1 ? "nen" : ""} angelegt</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-700">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="font-semibold">{result.updated} Profil{result.updated !== 1 ? "e" : ""} aktualisiert</span>
             </div>
             {result.errors.length > 0 && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3">
-                <p className="text-xs font-semibold text-red-800 mb-1 flex items-center gap-1">
-                  <XCircle className="w-3.5 h-3.5" /> {result.errors.length} Fehler beim Import:
-                </p>
-                <ul className="space-y-0.5">
-                  {result.errors.map((e, i) => (
-                    <li key={i} className="text-xs text-red-700">{e}</li>
-                  ))}
-                </ul>
+              <div className="flex items-start gap-2 text-red-700">
+                <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">{result.errors.length} Fehler</p>
+                  {result.errors.slice(0, 3).map((e, i) => <p key={i} className="text-xs">{e}</p>)}
+                </div>
               </div>
             )}
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            {result ? "Schließen" : "Abbrechen"}
-          </Button>
+          <Button variant="outline" onClick={handleClose}>Schließen</Button>
           {!result && (
             <Button
               onClick={handleImport}
@@ -311,6 +300,241 @@ function ImportDialog({ open, onClose, onSuccess }: { open: boolean; onClose: ()
   );
 }
 
+// ─── Kapazitäts-Panel ─────────────────────────────────────────────────────────
+function CapacityPanel({ examiner, onClose }: { examiner: any; onClose: () => void }) {
+  const { data: capacities, isLoading, refetch } = trpc.admin.getExaminerCapacities.useQuery(
+    { examinerId: examiner.id },
+    { enabled: !!examiner.id },
+  );
+
+  const overrideMutation = trpc.admin.overrideExaminerCapacity.useMutation({
+    onSuccess: () => { toast.success("Kapazität überschrieben."); refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const resetMutation = trpc.admin.resetExaminerCapacityOverride.useMutation({
+    onSuccess: () => { toast.success("Override zurückgesetzt."); refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const [editing, setEditing] = useState<{ semester: string; field: "first" | "second"; value: string } | null>(null);
+
+  const startEdit = (semester: string, field: "first" | "second", currentVal: number) => {
+    setEditing({ semester, field, value: String(currentVal) });
+  };
+
+  const commitEdit = (semester: string, field: "first" | "second", row: any) => {
+    const num = parseInt(editing?.value ?? "0", 10);
+    if (isNaN(num) || num < 0 || num > 99) { toast.error("Bitte eine Zahl zwischen 0 und 99 eingeben."); return; }
+    const currentFirst = field === "first" ? num : (row?.adminMaxFirst ?? row?.maxFirst ?? 0);
+    const currentSecond = field === "second" ? num : (row?.adminMaxSecond ?? row?.maxSecond ?? 0);
+    overrideMutation.mutate({ examinerId: examiner.id, semester, maxFirst: currentFirst, maxSecond: currentSecond });
+    setEditing(null);
+  };
+
+  const cancelEdit = () => setEditing(null);
+
+  // Generiere die nächsten 6 Semester
+  const upcomingSemesters = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const semesters: string[] = [];
+    let y = year;
+    let isWinter = month >= 10;
+    for (let i = 0; i < 6; i++) {
+      if (isWinter) { semesters.push(`WS ${y}/${String(y + 1).slice(2)}`); y++; isWinter = false; }
+      else { semesters.push(`SoSe ${y}`); isWinter = true; }
+    }
+    return semesters;
+  })();
+
+  const allSemesters = Array.from(new Set([
+    ...(capacities?.map((c: any) => c.semester) ?? []),
+    ...upcomingSemesters,
+  ])).sort();
+
+  const getRow = (sem: string) => capacities?.find((c: any) => c.semester === sem);
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <BarChart2 className="w-5 h-5" />
+            Semesterkapazitäten – {examiner.title ? `${examiner.title} ` : ""}{examiner.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <p className="text-sm text-muted-foreground">
+          Die linken Spalten zeigen die von der Prüferin / dem Prüfer selbst eingetragenen Werte.
+          Klicken Sie auf einen Wert in der Spalte „Admin-Override", um ihn zu bearbeiten.
+          Ein gesetzter Override ersetzt den Prüfer-Wert im System. Über das Zurücksetzen-Symbol
+          wird der Override entfernt und der Prüfer-Wert gilt wieder.
+        </p>
+
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="bg-muted/50 border-b">
+                  <th className="text-left p-3 font-semibold">Semester</th>
+                  <th className="text-center p-3 font-semibold text-muted-foreground">
+                    Erst<br /><span className="font-normal text-xs">Prüfer-Wert</span>
+                  </th>
+                  <th className="text-center p-3 font-semibold text-muted-foreground">
+                    Zweit<br /><span className="font-normal text-xs">Prüfer-Wert</span>
+                  </th>
+                  <th className="text-center p-3 font-semibold">
+                    Erst<br /><span className="font-normal text-xs text-amber-600">Admin-Override</span>
+                  </th>
+                  <th className="text-center p-3 font-semibold">
+                    Zweit<br /><span className="font-normal text-xs text-amber-600">Admin-Override</span>
+                  </th>
+                  <th className="text-center p-3 font-semibold">Status</th>
+                  <th className="p-3 w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {allSemesters.map((sem) => {
+                  const row = getRow(sem);
+                  const hasOverride = row?.adminOverride === 1;
+                  const isEditingFirst = editing !== null && editing.semester === sem && editing.field === "first";
+                  const isEditingSecond = editing !== null && editing.semester === sem && editing.field === "second";
+                  return (
+                    <tr key={sem} className={`border-b transition-colors ${hasOverride ? "bg-amber-50/40" : "hover:bg-muted/30"}`}>
+                      <td className="p-3 font-medium">{sem}</td>
+
+                      {/* Prüfer-Wert Erst */}
+                      <td className="p-3 text-center text-muted-foreground">
+                        {row?.maxFirst ?? "—"}
+                      </td>
+
+                      {/* Prüfer-Wert Zweit */}
+                      <td className="p-3 text-center text-muted-foreground">
+                        {row?.maxSecond ?? "—"}
+                      </td>
+
+                      {/* Admin-Override Erst */}
+                      <td className="p-3 text-center">
+                        {isEditingFirst ? (
+                          <div className="flex items-center gap-1 justify-center">
+                            <input
+                              type="number" min="0" max="99"
+                              value={editing!.value}
+                              onChange={(e) => setEditing({ ...editing!, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitEdit(sem, "first", row);
+                                if (e.key === "Escape") cancelEdit();
+                              }}
+                              autoFocus
+                              className="w-14 text-center border rounded px-1 py-0.5 text-sm bg-background"
+                            />
+                            <button onClick={() => commitEdit(sem, "first", row)} className="text-green-600 hover:text-green-700">
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEdit(sem, "first", row?.adminMaxFirst ?? row?.maxFirst ?? 0)}
+                            title="Klicken zum Bearbeiten"
+                            className={`px-2 py-0.5 rounded text-sm font-medium transition-colors hover:bg-amber-100 cursor-pointer ${
+                              hasOverride && row?.adminMaxFirst !== null && row?.adminMaxFirst !== undefined
+                                ? "text-amber-700 font-semibold"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {hasOverride && row?.adminMaxFirst !== null && row?.adminMaxFirst !== undefined
+                              ? row.adminMaxFirst
+                              : "—"}
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Admin-Override Zweit */}
+                      <td className="p-3 text-center">
+                        {isEditingSecond ? (
+                          <div className="flex items-center gap-1 justify-center">
+                            <input
+                              type="number" min="0" max="99"
+                              value={editing!.value}
+                              onChange={(e) => setEditing({ ...editing!, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitEdit(sem, "second", row);
+                                if (e.key === "Escape") cancelEdit();
+                              }}
+                              autoFocus
+                              className="w-14 text-center border rounded px-1 py-0.5 text-sm bg-background"
+                            />
+                            <button onClick={() => commitEdit(sem, "second", row)} className="text-green-600 hover:text-green-700">
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEdit(sem, "second", row?.adminMaxSecond ?? row?.maxSecond ?? 0)}
+                            title="Klicken zum Bearbeiten"
+                            className={`px-2 py-0.5 rounded text-sm font-medium transition-colors hover:bg-amber-100 cursor-pointer ${
+                              hasOverride && row?.adminMaxSecond !== null && row?.adminMaxSecond !== undefined
+                                ? "text-amber-700 font-semibold"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {hasOverride && row?.adminMaxSecond !== null && row?.adminMaxSecond !== undefined
+                              ? row.adminMaxSecond
+                              : "—"}
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="p-3 text-center">
+                        {hasOverride ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                            Überschrieben
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Prüfer-Wert</span>
+                        )}
+                      </td>
+
+                      {/* Reset */}
+                      <td className="p-3 text-right">
+                        {hasOverride && (
+                          <button
+                            onClick={() => resetMutation.mutate({ examinerId: examiner.id, semester: sem })}
+                            disabled={resetMutation.isPending}
+                            title="Admin-Override zurücksetzen"
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Schließen</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Hauptkomponente ──────────────────────────────────────────────────────────
 export default function ExaminerManagement() {
   const [, setLocation] = useLocation();
@@ -319,6 +543,7 @@ export default function ExaminerManagement() {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [capacityExaminer, setCapacityExaminer] = useState<any | null>(null);
 
   const [editData, setEditData] = useState({
     title: "",
@@ -410,7 +635,7 @@ export default function ExaminerManagement() {
           </Card>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
+            <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-semibold">{t.common.name}</th>
@@ -448,9 +673,21 @@ export default function ExaminerManagement() {
                       />
                     </td>
                     <td className="p-3 text-right">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(examiner)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCapacityExaminer(examiner)}
+                          title="Semesterkapazitäten einsehen / überschreiben"
+                          className="gap-1.5"
+                        >
+                          <BarChart2 className="w-4 h-4" />
+                          <span className="hidden sm:inline text-xs">Kapazitäten</span>
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(examiner)}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -523,6 +760,14 @@ export default function ExaminerManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Kapazitäts-Panel */}
+      {capacityExaminer && (
+        <CapacityPanel
+          examiner={capacityExaminer}
+          onClose={() => setCapacityExaminer(null)}
+        />
+      )}
 
       {/* Import Dialog */}
       <ImportDialog

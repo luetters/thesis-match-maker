@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE examiner_semester_capacities\n  ADD COLUMN admin_override TINYINT(1) NOT NULL DEFAULT 0,\n  ADD COLUMN admin_override_by INT NULL,\n  ADD COLUMN admin_override_at DATETIME NULL,\n  ADD COLUMN admin_max_first INT NULL,\n  ADD COLUMN admin_max_second INT NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nALTER TABLE examiner_semester_capacities\n  ADD COLUMN admin_override TINYINT(1) NOT NULL DEFAULT 0,\n  ADD COLUMN admin_override_by INT NULL,\n  ADD COLUMN admin_override_at DATETIME NULL,\n  ADD COLUMN admin_max_first INT NULL,\n  ADD COLUMN admin_max_second INT NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 829
+}

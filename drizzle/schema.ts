@@ -300,6 +300,11 @@ export const examinerSemesterCapacities = mysqlTable("examiner_semester_capaciti
   maxFirst: int("max_first").default(0).notNull(),
   maxSecond: int("max_second").default(0).notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+  adminOverride: tinyint("admin_override").default(0).notNull(),
+  adminOverrideBy: int("admin_override_by"),
+  adminOverrideAt: datetime("admin_override_at"),
+  adminMaxFirst: int("admin_max_first"),
+  adminMaxSecond: int("admin_max_second"),
 },
 (table) => [
   index("uq_esc").on(table.examinerId, table.semester),

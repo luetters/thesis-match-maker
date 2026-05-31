@@ -1140,6 +1140,46 @@ export const appRouter = router({
     stats: adminProcedure.query(async () => {
       return getThesisStats();
     }),
+
+    // Semesterkapazitäten einer Prüferin / eines Prüfers einsehen
+    getExaminerCapacities: adminProcedure
+      .input(z.object({ examinerId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        const { getExaminerSemesterCapacitiesForAdmin } = await import("./db");
+        return getExaminerSemesterCapacitiesForAdmin(input.examinerId);
+      }),
+
+    // Admin-Override für ein Semester setzen
+    overrideExaminerCapacity: adminProcedure
+      .input(z.object({
+        examinerId: z.number().int().positive(),
+        semester: z.string().min(4).max(16),
+        maxFirst: z.number().int().min(0).max(99),
+        maxSecond: z.number().int().min(0).max(99),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { adminOverrideExaminerCapacity } = await import("./db");
+        await adminOverrideExaminerCapacity(
+          input.examinerId,
+          input.semester,
+          input.maxFirst,
+          input.maxSecond,
+          ctx.user.id,
+        );
+        return { success: true };
+      }),
+
+    // Admin-Override für ein Semester zurücksetzen
+    resetExaminerCapacityOverride: adminProcedure
+      .input(z.object({
+        examinerId: z.number().int().positive(),
+        semester: z.string().min(4).max(16),
+      }))
+      .mutation(async ({ input }) => {
+        const { resetAdminOverride } = await import("./db");
+        await resetAdminOverride(input.examinerId, input.semester);
+        return { success: true };
+      }),
   }),
 
   // --- Onboarding: Rolle nach erstem Login setzen ---
