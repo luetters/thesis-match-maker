@@ -419,3 +419,8 @@
 - [x] Nutzer:in zur Verwaltung hinzufügen (Beförderung)
 - [x] Rollenbeschreibungen als Übersichtskarte
 - [x] Schutz: Eigene Rolle kann nicht geändert werden
+
+## Phase 58: Formular-Verbesserungen
+- [ ] Formularvalidierung mit visuellen Fehlermeldungen (Pflichtfelder, Formatprüfung)
+- [ ] Zwischenspeichern des Antragsformulars im localStorage für spätere Weiterbearbeitung
+- [ ] Wiederherstellungs-Banner wenn gespeicherter Entwurf gefunden wird

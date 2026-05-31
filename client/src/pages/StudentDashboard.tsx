@@ -55,6 +55,8 @@ function getNextSemesters(): { label: string; value: string }[] {
   return semesters;
 }
 
+const DRAFT_KEY = "htw-thesis-request-draft";
+
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
@@ -67,6 +69,8 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   const [hasOwnTopic, setHasOwnTopic] = useState(true);
   const [exposeFile, setExposeFile] = useState<File | null>(null);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [form, setForm] = useState({
     title: "",
@@ -78,6 +82,47 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     degreeType: "bachelor" as "bachelor" | "master",
     wantedExaminerId: 0,
   });
+
+  // Gespeicherten Entwurf beim ersten Laden prüfen
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.form || parsed?.hasOwnTopic !== undefined) {
+          setShowRestoreBanner(true);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Entwurf wiederherstellen
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.form) setForm(parsed.form);
+        if (parsed.hasOwnTopic !== undefined) setHasOwnTopic(parsed.hasOwnTopic);
+      }
+    } catch {}
+    setShowRestoreBanner(false);
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setShowRestoreBanner(false);
+  };
+
+  // Entwurf automatisch speichern bei Änderungen
+  useEffect(() => {
+    const draft = { form, hasOwnTopic };
+    const isEmpty = !form.title && !form.description && !form.abstract && !form.targetSemester && form.wantedExaminerId === 0;
+    if (isEmpty) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+  }, [form, hasOwnTopic]);
 
   // Studiengang und Abschlussart automatisch vorausfüllen sobald Profil geladen
   useEffect(() => {
@@ -93,23 +138,33 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const createMutation = trpc.thesisPhase27.createWithWantedExaminer.useMutation({
     onSuccess: () => {
       toast.success("Anfrage erfolgreich eingereicht!");
+      localStorage.removeItem(DRAFT_KEY);
       setForm({ title: "", description: "", department: myProgramme?.name ?? "", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
       setExposeFile(null);
+      setErrors({});
       onSuccess();
     },
     onError: (err) => toast.error(err.message),
   });
 
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (hasOwnTopic) {
+      if (!form.title.trim()) newErrors.title = "Bitte geben Sie einen Titel ein.";
+      else if (form.title.trim().length < 10) newErrors.title = "Der Titel sollte mindestens 10 Zeichen lang sein.";
+      if (!form.description.trim()) newErrors.description = "Bitte beschreiben Sie Ihr Thema.";
+      else if (form.description.trim().length < 30) newErrors.description = "Die Beschreibung sollte mindestens 30 Zeichen lang sein.";
+    }
+    if (!form.targetSemester) newErrors.targetSemester = "Bitte wählen Sie ein Zielsemester aus.";
+    if (!form.wantedExaminerId) newErrors.wantedExaminerId = "Bitte wählen Sie eine Wunschgutachter:in aus.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!form.wantedExaminerId) {
-      toast.error("Bitte wählen Sie einen Wunschgutachter aus.");
-      return;
-    }
-    
-    if (!form.targetSemester) {
-      toast.error("Bitte wählen Sie ein Zielsemester aus.");
+    if (!validate()) {
+      toast.error("Bitte korrigieren Sie die markierten Felder.");
       return;
     }
     
@@ -144,6 +199,22 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Wiederherstellungs-Banner */}
+      {showRestoreBanner && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm">
+          <svg className="w-5 h-5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="flex-1 text-amber-800 font-medium">Sie haben einen unvollständigen Entwurf. Möchten Sie ihn wiederherstellen?</span>
+          <button type="button" onClick={restoreDraft} className="px-3 py-1 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors">
+            Wiederherstellen
+          </button>
+          <button type="button" onClick={discardDraft} className="px-3 py-1 rounded-lg bg-white border border-amber-200 text-amber-700 text-xs font-medium hover:bg-amber-50 transition-colors">
+            Verwerfen
+          </button>
+        </div>
+      )}
+
       {/* Themenauswahl – zwei Karten */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-3">Wie möchten Sie Ihr Thema erhalten? <span className="text-red-500">*</span></p>
@@ -221,11 +292,14 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               type="text"
               required
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="z.B. Einsatz von LLMs in der Kundenbetreuung"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white ${
+                errors.title ? "border-red-400 ring-1 ring-red-300" : "border-gray-200"
+              }`}
               style={{ "--tw-ring-color": "#76B900" } as React.CSSProperties}
+              onChange={(e) => { setForm((f) => ({ ...f, title: e.target.value })); if (errors.title) setErrors((er) => ({ ...er, title: "" })); }}
             />
+            {errors.title && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.title}</p>}
           </div>
 
           <div>
@@ -236,10 +310,13 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               required
               rows={4}
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => { setForm((f) => ({ ...f, description: e.target.value })); if (errors.description) setErrors((er) => ({ ...er, description: "" })); }}
               placeholder="Beschreiben Sie Ihr Thema, die Problemstellung und den geplanten Ansatz..."
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white ${
+                errors.description ? "border-red-400 ring-1 ring-red-300" : "border-gray-200"
+              }`}
             />
+            {errors.description && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.description}</p>}
           </div>
 
           <div>
@@ -350,8 +427,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <select
               required
               value={form.targetSemester}
-              onChange={(e) => setForm((f) => ({ ...f, targetSemester: e.target.value }))}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
+                errors.targetSemester ? "border-red-400" : "border-gray-200"
+              }`}
+              onChange={(e) => { setForm((f) => ({ ...f, targetSemester: e.target.value })); if (errors.targetSemester) setErrors((er) => ({ ...er, targetSemester: "" })); }}
             >
               <option value="">-- Bitte wählen --</option>
               {getNextSemesters().map((sem) => (
@@ -360,6 +439,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 </option>
               ))}
             </select>
+            {errors.targetSemester && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.targetSemester}</p>}
           </div>
 
           <div className="sm:col-span-2">
@@ -367,8 +447,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <select
               required
               value={form.wantedExaminerId}
-              onChange={(e) => setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) }))}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+              onChange={(e) => { setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) })); if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" })); }}
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
+                errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
+              }`}
             >
               <option value={0}>-- Bitte wählen --</option>
               {qualifiedExaminers.map((examiner: any) => (
@@ -377,7 +459,8 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 </option>
               ))}
             </select>
-            {qualifiedExaminers.length === 0 && myProgramme && (
+            {errors.wantedExaminerId && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.wantedExaminerId}</p>}
+            {!errors.wantedExaminerId && qualifiedExaminers.length === 0 && myProgramme && (
               <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
             )}
           </div>
