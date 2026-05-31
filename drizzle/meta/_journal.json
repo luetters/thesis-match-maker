@@ -232,6 +232,13 @@
       "when": 1780224352300,
       "tag": "0032_black_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1780227665660,
+      "tag": "0033_majestic_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

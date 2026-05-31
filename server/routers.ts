@@ -365,9 +365,14 @@ export const appRouter = router({
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
           role: z.enum(["student", "examiner", "admin"]),
+          matrikelNr: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
+        // Matrikelnummer ist Pflicht für Studierende
+        if (input.role === "student" && (!input.matrikelNr || !input.matrikelNr.trim())) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Studierende müssen eine Matrikelnummer angeben." });
+        }
         const existing = await getUserByEmail(input.email);
         if (existing) {
           throw new TRPCError({ code: "CONFLICT", message: "Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an." });
@@ -388,6 +393,7 @@ export const appRouter = router({
           loginMethod: "password",
           passwordHash,
           lastSignedIn: new Date(),
+          ...(input.matrikelNr ? { matrikelNr: input.matrikelNr.trim() } : {}),
         } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
@@ -395,7 +401,7 @@ export const appRouter = router({
           action: "USER_REGISTERED",
           actorId: 0,
           metadata: { email: input.email, requestedRole: input.role },
-        });
+        } as any);
         return { success: true };
       }),
     loginWithPassword: publicProcedure

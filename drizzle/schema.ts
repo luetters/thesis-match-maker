@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm"
 
 export const auditLog = mysqlTable("audit_log", {
 	id: int().autoincrement().notNull(),
-	thesisRequestId: int().notNull(),
+	thesisRequestId: int(),
 	actorId: int(),
 	actorRole: varchar({ length: 32 }),
 	action: varchar({ length: 128 }).notNull(),

@@ -76,6 +76,7 @@ export default function Login() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+  const [regMatrikelNr, setRegMatrikelNr] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
 
@@ -139,6 +140,10 @@ export default function Login() {
   function handleRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
+    if ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) {
+      toast.error("Bitte geben Sie Ihre Matrikelnummer an.");
+      return;
+    }
     if (regPassword !== regPasswordConfirm) {
       toast.error("Die Passwörter stimmen nicht überein.");
       return;
@@ -166,6 +171,7 @@ export default function Login() {
       email: regEmail.trim(),
       password: regPassword,
       role: selectedRole ?? "student",
+      matrikelNr: regMatrikelNr.trim() || undefined,
     });
   }
 
@@ -612,6 +618,23 @@ export default function Login() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                    {(selectedRole ?? "student") === "student" && (
+                      <div className="space-y-2">
+                        <Label className="text-white/70 text-sm">Matrikelnummer <span className="text-red-400">*</span></Label>
+                        <div className="relative">
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
+                          <Input
+                            type="text"
+                            placeholder="z.B. 123456"
+                            value={regMatrikelNr}
+                            onChange={(e) => setRegMatrikelNr(e.target.value)}
+                            required
+                            autoComplete="off"
+                            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">Vollständiger Name</Label>
                       <div className="relative">
@@ -697,7 +720,7 @@ export default function Login() {
                     </div>
                     <Button
                       type="submit"
-                      disabled={registerMutation.isPending || !regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm}
+                      disabled={registerMutation.isPending || !regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm || ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim())}
                       className="w-full font-semibold h-11"
                       style={{ background: "#3b82f6", color: "white" }}
                     >

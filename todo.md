@@ -477,3 +477,17 @@
 - [x] Frontend Login.tsx: Placeholder und Hinweistexte aktualisieren
 - [x] Frontend ExaminerOnboarding.tsx: Hinweistext @htw-berlin.de/.com aktualisieren
 - [x] Frontend ExaminerDashboard.tsx: Hinweistexte @htw-berlin.de/.com aktualisieren
+
+
+## Phase 51: Rahmenbedingungen-Formular überarbeiten ✅ KOMPLETT
+
+- [x] Bachelor/Master-Schalter als Toggle-Buttons (nicht Dropdown)
+- [x] Studiengangsliste filtert nach gewähltem Abschlusstyp (nur Bachelor- bzw. nur Master-Programme)
+- [x] Zielsemester-Feld umbenannt in "Geplantes Semester der Thesis"
+- [x] Zielsemester: 5 Semester in die Zukunft als Dropdown (aktuelles + 4 folgende)
+- [x] Sprache-Feld umbenannt in "Sprache der Thesis"
+- [x] "Fachbereich / Studiengang" aufgeteilt in "Fachbereich" (Dropdown FB1–FB5) und "Studiengang" (Textfeld)
+- [x] Fachbereich als separates Auswahlfeld (FB1–FB5), Default: FB3
+- [x] Registrierung: Matrikelnummer als Pflichtfeld für Studierende (Zod + Frontend)
+- [x] Login.tsx: Matrikelnummer-Eingabefeld bei Rolle "student" im Registrierungsformular
+- [x] routers.ts: register-Prozedur: matrikelNr als optionales Feld (Pflicht nur für student)

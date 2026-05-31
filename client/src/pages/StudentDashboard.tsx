@@ -32,6 +32,14 @@ function useNavItems() {
 
 // ─── New Request Form ─────────────────────────────────────────────────────────
 // ─── Semester-Berechnung ────────────────────────────────────────────────────────
+const FACHBEREICHE = [
+  { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
+  { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+  { value: "FB3", label: "FB 3 – Wirtschaft" },
+  { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+  { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
+];
+
 function getNextSemesters(): { label: string; value: string }[] {
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -42,7 +50,7 @@ function getNextSemesters(): { label: string; value: string }[] {
   if (startSemester === "WS" && currentMonth < 10) startYear -= 1;
   
   const semesters = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     if (startSemester === "WS") {
       semesters.push({ label: `WS ${startYear}/${startYear + 1}`, value: `WS${startYear}` });
       startYear += 1;
@@ -77,6 +85,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     title: "",
     description: "",
     department: "",
+    fachbereich: "FB3",
     abstract: "",
     targetSemester: "",
     language: "de" as "de" | "en",
@@ -140,7 +149,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: () => {
       toast.success("Anfrage erfolgreich eingereicht!");
       localStorage.removeItem(DRAFT_KEY);
-      setForm({ title: "", description: "", department: myProgramme?.name ?? "", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
+      setForm({ title: "", description: "", department: myProgramme?.name ?? "", fachbereich: "FB3", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
       setExposeFile(null);
       setErrors({});
       onSuccess();
@@ -548,10 +557,57 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
       {/* ── Abschnitt 2: Rahmenbedingungen ──────────────────────────────── */}
       <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Rahmenbedingungen</h3>
+
+        {/* Abschlussart als Toggle-Schalter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Abschlussart <span className="text-red-500">*</span></label>
+          <div className="flex gap-2">
+            {(["bachelor", "master"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => {
+                  if (!myProgramme) {
+                    setForm((f) => ({ ...f, degreeType: type, department: "" }));
+                  }
+                }}
+                disabled={!!myProgramme}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold border-2 transition-all ${
+                  form.degreeType === type
+                    ? "border-[#006937] bg-[#006937] text-white"
+                    : myProgramme
+                      ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                      : "border-gray-200 text-gray-600 hover:border-[#006937]/50 hover:bg-[#006937]/5"
+                }`}
+              >
+                {type === "bachelor" ? "🎓 Bachelor" : "🎖️ Master"}
+              </button>
+            ))}
+          </div>
+          {myProgramme && (
+            <p className="mt-1 text-xs text-gray-400">Abschlussart aus Ihrem Profil übernommen – nicht änderbar.</p>
+          )}
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-4">
+          {/* Fachbereich */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Fachbereich <span className="text-red-500">*</span></label>
+            <select
+              value={form.fachbereich}
+              onChange={(e) => setForm((f) => ({ ...f, fachbereich: e.target.value }))}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            >
+              {FACHBEREICHE.map((fb) => (
+                <option key={fb.value} value={fb.value}>{fb.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Studiengang */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Fachbereich / Studiengang <span className="text-red-500">*</span>
+              Studiengang <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -559,7 +615,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               value={form.department}
               onChange={(e) => !myProgramme && setForm((f) => ({ ...f, department: e.target.value }))}
               readOnly={!!myProgramme}
-              placeholder="z.B. M.Sc. Wirtschaftsinformatik"
+              placeholder={form.degreeType === "master" ? "z.B. M.Sc. Wirtschaftsinformatik" : "z.B. B.Sc. Betriebswirtschaftslehre"}
               className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
                 myProgramme
                   ? "border-[#006937]/30 bg-[#006937]/5 text-[#006937] font-medium cursor-not-allowed"
@@ -572,8 +628,9 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             )}
           </div>
 
+          {/* Geplantes Semester der Thesis */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Zielsemester <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Geplantes Semester der Thesis <span className="text-red-500">*</span></label>
             <select
               required
               value={form.targetSemester}
@@ -592,43 +649,9 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             {errors.targetSemester && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.targetSemester}</p>}
           </div>
 
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
-            <select
-              required
-              value={form.wantedExaminerId}
-              onChange={(e) => { setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) })); if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" })); }}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
-                errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
-              }`}
-            >
-              <option value={0}>-- Bitte wählen --</option>
-              {qualifiedExaminers.map((examiner: any) => (
-                <option key={examiner.id} value={examiner.id}>
-                  {examiner.name} ({examiner.title})
-                </option>
-              ))}
-            </select>
-            {errors.wantedExaminerId && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.wantedExaminerId}</p>}
-            {!errors.wantedExaminerId && qualifiedExaminers.length === 0 && myProgramme && (
-              <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
-            )}
-          </div>
-
+          {/* Sprache der Thesis */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Abschlussart</label>
-            <select
-              value={form.degreeType}
-              onChange={(e) => setForm((f) => ({ ...f, degreeType: e.target.value as "bachelor" | "master" }))}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-            >
-              <option value="bachelor">Bachelor</option>
-              <option value="master">Master</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprache</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprache der Thesis</label>
             <select
               value={form.language}
               onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as "de" | "en" }))}
@@ -638,6 +661,30 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               <option value="en">Englisch</option>
             </select>
           </div>
+        </div>
+
+        {/* Wunschgutachter:in */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Wunschgutachter:in <span className="text-red-500">*</span></label>
+          <select
+            required
+            value={form.wantedExaminerId}
+            onChange={(e) => { setForm((f) => ({ ...f, wantedExaminerId: parseInt(e.target.value) })); if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" })); }}
+            className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
+              errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
+            }`}
+          >
+            <option value={0}>-- Bitte wählen --</option>
+            {qualifiedExaminers.map((examiner: any) => (
+              <option key={examiner.id} value={examiner.id}>
+                {examiner.name} ({examiner.title})
+              </option>
+            ))}
+          </select>
+          {errors.wantedExaminerId && <p className="mt-1 text-xs text-red-500 flex items-center gap-1"><svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>{errors.wantedExaminerId}</p>}
+          {!errors.wantedExaminerId && qualifiedExaminers.length === 0 && myProgramme && (
+            <p className="mt-1 text-xs text-amber-600">Keine qualifizierten Gutachter:innen für diesen Studiengang verfügbar.</p>
+          )}
         </div>
       </div>
       <button
