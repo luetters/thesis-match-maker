@@ -295,27 +295,22 @@ export default function Profile() {
     onError: (e) => toast.error(e.message),
   });
   const [deletingAvatar, setDeletingAvatar] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAvatarPreviewModal, setShowAvatarPreviewModal] = useState(false);
 
   const deleteAvatarMutation = trpc.profile.deleteAvatar.useMutation({
     onSuccess: () => {
       setAvatarPreview(null);
+      setShowDeleteConfirm(false);
       utils.profile.get.invalidate();
       setTimeout(() => refetch(), 300);
-      toast.success(
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>Profilfoto wurde zurückgesetzt</span>
-        </div>
-      );
+      toast.success("Profilfoto wurde zurückgesetzt");
     },
     onError: (e) => toast.error(`Fehler: ${e.message}`),
     onSettled: () => setDeletingAvatar(false),
   });
 
   const handleDeleteAvatar = () => {
-    if (!window.confirm("Profilfoto wirklich löschen und auf Standard-Avatar zurücksetzen?")) return;
     setDeletingAvatar(true);
     deleteAvatarMutation.mutate();
   };
@@ -474,8 +469,16 @@ export default function Profile() {
           <div className="px-6 pb-6">
             <div className="flex items-end gap-4 -mt-12 mb-4">
               <div className="relative flex-shrink-0">
-                <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden" style={{ background: avatarSrc ? "transparent" : roleConf.bg }}>
-                  {avatarSrc ? <img src={avatarSrc} alt="Profilfoto" className="w-full h-full object-cover" /> : <span className="text-2xl font-bold" style={{ color: roleConf.color }}>{initials}</span>}
+                {/* Avatar-Bild (klickbar für Vorschau-Modal) */}
+                <div
+                  className="w-24 h-24 rounded-2xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden cursor-pointer"
+                  style={{ background: avatarSrc ? "transparent" : roleConf.bg }}
+                  onClick={() => avatarSrc && !uploadingAvatar && setShowAvatarPreviewModal(true)}
+                  title={avatarSrc ? "Vorschau vergrößern" : undefined}
+                >
+                  {avatarSrc
+                    ? <img src={avatarSrc} alt="Profilfoto" className="w-full h-full object-cover" />
+                    : <span className="text-2xl font-bold" style={{ color: roleConf.color }}>{initials}</span>}
                   {uploadingAvatar && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center rounded-2xl gap-2">
                       <svg className="w-8 h-8 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -483,9 +486,15 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}
+
+                {/* Kamera-Button: neues Foto hochladen */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
                   className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-[#76b900] hover:bg-[#76b900]/5 transition-all disabled:opacity-50 cursor-pointer group"
-                  title={uploadingAvatar ? "Wird hochgeladen…" : "Profilfoto hochladen"}>
+                  title={uploadingAvatar ? "Wird hochgeladen…" : "Neues Profilfoto hochladen"}
+                >
                   {uploadingAvatar ? (
                     <svg className="w-5 h-5 animate-spin text-[#76b900]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                   ) : (
@@ -495,14 +504,19 @@ export default function Profile() {
                     </svg>
                   )}
                 </button>
+
+                {/* Verstecktes Datei-Input */}
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileChange} />
+
+                {/* Löschen-Button: nur wenn Foto vorhanden */}
                 {avatarSrc && (
                   <button
                     type="button"
-                    onClick={handleDeleteAvatar}
+                    onClick={() => setShowDeleteConfirm(true)}
                     disabled={deletingAvatar || uploadingAvatar}
-                    className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-red-400 hover:bg-red-50 transition-all disabled:opacity-50 cursor-pointer group"
-                    title="Profilfoto löschen">
+                    className="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-red-400 hover:bg-red-50 transition-all disabled:opacity-50 cursor-pointer group"
+                    title="Profilfoto löschen"
+                  >
                     {deletingAvatar ? (
                       <svg className="w-3.5 h-3.5 animate-spin text-red-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                     ) : (
@@ -841,9 +855,106 @@ export default function Profile() {
         {/* ── Hinweis ── */}
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
           <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <p className="text-sm text-blue-700">Klicken Sie auf das Kamera-Symbol am Profilfoto, um ein neues Bild hochzuladen. Erlaubte Formate: JPEG, PNG, WebP, GIF (max. 5 MB).</p>
+          <p className="text-sm text-blue-700">Klicken Sie auf das Profilfoto, um eine Vorschau zu öffnen. Über das Kamera-Symbol können Sie ein neues Bild hochladen (JPEG, PNG, WebP, GIF, max. 5 MB). Das X-Symbol oben links am Foto öffnet den Löschen-Dialog.</p>
         </div>
       </div>
+
+      {/* ── Vorschau-Modal ── */}
+      {showAvatarPreviewModal && avatarSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowAvatarPreviewModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-700">Profilfoto</span>
+              <button
+                type="button"
+                onClick={() => setShowAvatarPreviewModal(false)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <img src={avatarSrc} alt="Profilfoto Vorschau" className="w-full rounded-xl object-cover max-h-80" />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowAvatarPreviewModal(false); fileInputRef.current?.click(); }}
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-[#76b900]/10 text-[#76b900] hover:bg-[#76b900]/20 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Neues Foto hochladen
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowAvatarPreviewModal(false); setShowDeleteConfirm(true); }}
+                className="py-2 px-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Löschen-Bestätigungs-Dialog ── */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => !deletingAvatar && setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Profilfoto löschen?</h3>
+                <p className="text-sm text-gray-500 mt-1">Das aktuelle Profilfoto wird gelöscht und durch Ihre Initialen ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deletingAvatar}
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAvatar}
+                disabled={deletingAvatar}
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deletingAvatar ? (
+                  <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Wird gelöscht…</>
+                ) : (
+                  "Foto löschen"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
