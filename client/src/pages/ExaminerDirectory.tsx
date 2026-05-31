@@ -212,7 +212,7 @@ export default function ExaminerDirectory() {
   const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState("");
   const [filterProgramme, setFilterProgramme] = useState<number | "">("");
-  const [filterAvailable, setFilterAvailable] = useState(false);
+  const [filterCapacity, setFilterCapacity] = useState<"all" | "available" | "partial">("all");
   const [filterRole, setFilterRole] = useState<"all" | "first" | "second">("all");
 
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery(undefined, {
@@ -252,15 +252,20 @@ export default function ExaminerDirectory() {
     const matchesProgramme = !filterProgramme ||
       (ex as ExaminerListItem).programmes?.some((p) => p.id === filterProgramme);
 
-    const available = ex.profile?.maxSupervisions ?? 0;
-    const matchesAvailable = !filterAvailable || available > 0;
+    const maxSup = ex.profile?.maxSupervisions ?? 0;
+    const activeSup = (ex as any).activeSupervisions as number ?? 0;
+    const ratio = maxSup > 0 ? activeSup / maxSup : null;
+    const matchesCapacity =
+      filterCapacity === "all" ||
+      (filterCapacity === "available" && ratio !== null && ratio < 0.8) ||
+      (filterCapacity === "partial" && ratio !== null && ratio >= 0.5 && ratio < 0.8);
     const isSecond = (ex.profile as { isSecondExaminer?: number } | null)?.isSecondExaminer === 1;
     const matchesRole =
       filterRole === "all" ||
       (filterRole === "first" && !isSecond) ||
       (filterRole === "second" && isSecond);
 
-    return matchesSearch && matchesProgramme && matchesAvailable && matchesRole;
+    return matchesSearch && matchesProgramme && matchesCapacity && matchesRole;
   });
 
   const bachelorProgrammes = (programmes ?? []).filter((p) => p.level === "bachelor");
@@ -372,20 +377,36 @@ export default function ExaminerDirectory() {
             ))}
           </div>
 
-          {/* Available Filter */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <div
-              onClick={() => setFilterAvailable(!filterAvailable)}
-              className={`w-10 h-5 rounded-full transition-colors relative ${
-                filterAvailable ? "bg-primary" : "bg-gray-200"
-              }`}
-            >
-              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                filterAvailable ? "translate-x-5" : "translate-x-0.5"
-              }`} />
-            </div>
-            <span className="text-sm text-gray-600">Nur verfügbare</span>
-          </label>
+          {/* Kapazitäts-Filter */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            {([
+              { value: "all", label: "Alle Kapazitäten" },
+              { value: "available", label: "Freie Kapazität" },
+              { value: "partial", label: "Teilweise belegt" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setFilterCapacity(opt.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                  filterCapacity === opt.value
+                    ? opt.value === "available"
+                      ? "bg-primary text-white shadow"
+                      : opt.value === "partial"
+                        ? "bg-amber-500 text-white shadow"
+                        : "bg-white text-gray-800 shadow"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {opt.value === "available" && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
+                )}
+                {opt.value === "partial" && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
+                )}
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
           {/* Result count */}
           <span className="text-sm text-gray-400 ml-auto">
@@ -411,13 +432,13 @@ export default function ExaminerDirectory() {
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">Keine Prüfer:innen gefunden</h3>
             <p className="text-sm text-gray-500">
-              {search || filterProgramme || filterAvailable
+              {search || filterProgramme || filterCapacity !== "all" || filterRole !== "all"
                 ? "Versuchen Sie es mit anderen Suchbegriffen oder Filtern."
                 : "Noch keine Prüfer:innen registriert."}
             </p>
-            {(search || filterProgramme || filterAvailable) && (
+            {(search || filterProgramme || filterCapacity !== "all") && (
               <button
-                onClick={() => { setSearch(""); setFilterProgramme(""); setFilterAvailable(false); }}
+                onClick={() => { setSearch(""); setFilterProgramme(""); setFilterCapacity("all"); setFilterRole("all"); }}
                 className="mt-4 text-sm font-medium transition-opacity hover:opacity-80"
                 style={{ color: "#76B900" }}
               >
