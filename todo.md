@@ -812,3 +812,20 @@
 - [x] EN: "Colloquiums" → "Colloquium" in LanguageContext (Sidebar-Labels, Feature-Listen, Beschreibungstexte)
 - [x] DB: Felder `is_repeat_colloquium` und `repeat_reason` in colloquiums-Tabelle für Wiederholungs-Kolloquium vorbereitet
 - [x] Schema-Migration per SQL ausgeführt
+
+## Feature: Administrative Filter – Anmeldefähigkeit & Verteidigungsfähigkeit ✅ KOMPLETT
+
+- [x] DB: Felder `enrollment_eligibility` (enum: pending/approved/rejected) und `enrollment_eligibility_note` in thesis_requests
+- [x] DB: Felder `defense_eligibility` (enum: pending/approved/blocked) und `defense_eligibility_note` in thesis_requests
+- [x] DB: Felder `enrollment_eligibility_checked_by` und `defense_eligibility_checked_by` (FK auf users.id)
+- [x] DB: Migration per SQL ausgeführt
+- [x] Backend: PAV-Prozedur `pav.getPendingEnrollmentChecks` (Anträge mit ausstehender Anmeldefähigkeit)
+- [x] Backend: PAV-Prozedur `pav.setEnrollmentEligibility` (Anmeldefähigkeit bestätigen/ablehnen)
+- [x] Backend: PAV-Prozedur `pav.getPendingDefenseChecks` (Anträge mit ausstehender Verteidigungsfähigkeit)
+- [x] Backend: PAV-Prozedur `pav.setDefenseEligibility` (Verteidigungsfähigkeit bestätigen/blockieren)
+- [x] Backend: Workflow-Logik: Bei Ablehnung der Anmeldefähigkeit → Platz wieder freigeben (Status zurücksetzen)
+- [x] Frontend: PAV-Dashboard – neuer Tab „Anmeldefähigkeit“ mit Freigabe-/Ablehnungs-Buttons
+- [x] Frontend: PAV-Dashboard – neuer Tab „Verteidigungsfähigkeit“ mit Freigabe-/Blockierungs-Buttons
+- [x] Frontend: Status-Badges in Antragsübersicht (Anmeldefähigkeit, Verteidigungsfähigkeit)
+- [x] Frontend: Studierenden-Dashboard – Hinweis wenn Anmeldefähigkeit/Verteidigungsfähigkeit ausstehend oder abgelehnt
+- [x] Benachrichtigung an Studierende bei Statusänderung

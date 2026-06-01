@@ -140,6 +140,10 @@ import {
   setWantedSecondExaminer,
   getFilteredSecondExaminers,
   hasSharedThesisRequest,
+  getRequestsPendingEnrollmentEligibility,
+  getRequestsPendingDefenseEligibility,
+  setEnrollmentEligibility,
+  setDefenseEligibility,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1782,6 +1786,79 @@ export const appRouter = router({
         return { success: true, action: input.action };
       }),
 
+    /** Alle Anträge mit ausstehender Anmeldefähigkeit */
+    getPendingEnrollmentEligibility: pavProcedure.query(async ({ ctx }) => {
+      return getRequestsPendingEnrollmentEligibility(ctx.user.id);
+    }),
+    /** Alle Anträge mit ausstehender Verteidigungsfähigkeit */
+    getPendingDefenseEligibility: pavProcedure.query(async ({ ctx }) => {
+      return getRequestsPendingDefenseEligibility(ctx.user.id);
+    }),
+    /** Anmeldefähigkeit bestätigen oder ablehnen */
+    setEnrollmentEligibility: pavProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        eligibility: z.enum(["approved", "rejected"]),
+        note: z.string().max(512).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Antrag nicht gefunden." });
+        await setEnrollmentEligibility(input.thesisRequestId, input.eligibility, ctx.user.id, input.note);
+        if (input.eligibility === "rejected") {
+          await updateThesisRequestStatus(input.thesisRequestId, "REJECTED", { rejectionReason: input.note ?? "Anmeldefähigkeit nicht bestätigt." });
+        }
+        const student = await getUserById(thesis.studentId);
+        if (student?.email) {
+          const statusText = input.eligibility === "approved"
+            ? "Ihre Anmeldefähigkeit wurde bestätigt. Ihr Antrag wird nun weiterbearbeitet."
+            : `Ihre Anmeldefähigkeit wurde nicht bestätigt. Ihr Antrag wurde abgelehnt.${input.note ? " Begründung: " + input.note : ""}`;
+          await sendEmail({
+            to: student.email,
+            subject: `HTW Berlin – Anmeldefähigkeit: ${thesis.title}`,
+            html: `<p>Sehr geehrte/r ${student.name ?? "Studierende/r"},</p><p>${statusText}</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
+          });
+        }
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: "pav",
+          action: input.eligibility === "approved" ? "ENROLLMENT_ELIGIBILITY_APPROVED" : "ENROLLMENT_ELIGIBILITY_REJECTED",
+          reason: input.note,
+        });
+        return { success: true };
+      }),
+    /** Verteidigungsfähigkeit bestätigen oder blockieren */
+    setDefenseEligibility: pavProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        eligibility: z.enum(["approved", "blocked"]),
+        note: z.string().max(512).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Antrag nicht gefunden." });
+        await setDefenseEligibility(input.thesisRequestId, input.eligibility, ctx.user.id, input.note);
+        const student = await getUserById(thesis.studentId);
+        if (student?.email) {
+          const statusText = input.eligibility === "approved"
+            ? "Sie sind prüfungsfähig. Ihr Kolloquium kann geplant werden."
+            : `Sie sind derzeit nicht prüfungsfähig (Student not legally qualified to take final exam).${input.note ? " Begründung: " + input.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
+          await sendEmail({
+            to: student.email,
+            subject: `HTW Berlin – Prüfungsfähigkeit: ${thesis.title}`,
+            html: `<p>Sehr geehrte/r ${student.name ?? "Studierende/r"},</p><p>${statusText}</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
+          });
+        }
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: "pav",
+          action: input.eligibility === "approved" ? "DEFENSE_ELIGIBILITY_APPROVED" : "DEFENSE_ELIGIBILITY_BLOCKED",
+          reason: input.note,
+        });
+        return { success: true };
+      }),
     /** PAV weist Prüfer:in direkt zu (ohne Rückfrage-E-Mail) */
     directAssignExaminer: pavProcedure
       .input(

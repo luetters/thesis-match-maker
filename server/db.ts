@@ -4188,3 +4188,94 @@ export function resolveEmailTemplate(
       .replace(/\{\{studiengang\}\}/g, vars.studiengang ?? "");
   return { subject: replace(template.subject), body: replace(template.body) };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Anmeldefähigkeit & Verteidigungsfähigkeit
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Alle Anträge mit ausstehender Anmeldefähigkeit im Zuständigkeitsbereich der PAV */
+export async function getRequestsPendingEnrollmentEligibility(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const pavProgrammeRows = await db
+    .select({ programmeId: pavProgrammes.programmeId })
+    .from(pavProgrammes)
+    .where(eq(pavProgrammes.pavUserId, pavUserId));
+  const programmeIds = pavProgrammeRows.map((r) => r.programmeId);
+  if (programmeIds.length === 0) return [];
+  return db
+    .select({
+      request: thesisRequests,
+      student: { id: users.id, name: users.name, email: users.email, matrikelNr: users.matrikelNr, programmeId: users.programmeId },
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(and(eq(thesisRequests.enrollmentEligibility, "pending"), inArray(users.programmeId, programmeIds)))
+    .orderBy(thesisRequests.createdAt);
+}
+
+/** Alle Anträge mit ausstehender Verteidigungsfähigkeit im Zuständigkeitsbereich der PAV */
+export async function getRequestsPendingDefenseEligibility(pavUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const pavProgrammeRows = await db
+    .select({ programmeId: pavProgrammes.programmeId })
+    .from(pavProgrammes)
+    .where(eq(pavProgrammes.pavUserId, pavUserId));
+  const programmeIds = pavProgrammeRows.map((r) => r.programmeId);
+  if (programmeIds.length === 0) return [];
+  return db
+    .select({
+      request: thesisRequests,
+      student: { id: users.id, name: users.name, email: users.email, matrikelNr: users.matrikelNr, programmeId: users.programmeId },
+    })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(and(eq(thesisRequests.defenseEligibility, "pending"), inArray(users.programmeId, programmeIds)))
+    .orderBy(thesisRequests.createdAt);
+}
+
+/** Anmeldefähigkeit eines Antrags setzen */
+export async function setEnrollmentEligibility(
+  thesisRequestId: number,
+  eligibility: "approved" | "rejected",
+  checkedBy: number,
+  note?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    enrollmentEligibility: eligibility,
+    enrollmentEligibilityNote: note ?? null,
+    enrollmentEligibilityCheckedBy: checkedBy,
+    enrollmentEligibilityCheckedAt: now,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Verteidigungsfähigkeit eines Antrags setzen */
+export async function setDefenseEligibility(
+  thesisRequestId: number,
+  eligibility: "approved" | "blocked",
+  checkedBy: number,
+  note?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    defenseEligibility: eligibility,
+    defenseEligibilityNote: note ?? null,
+    defenseEligibilityCheckedBy: checkedBy,
+    defenseEligibilityCheckedAt: now,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Verteidigungsfähigkeit auf "pending" setzen (wenn Thesis abgegeben wird) */
+export async function triggerDefenseEligibilityCheck(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(thesisRequests).set({ defenseEligibility: "pending" }).where(
+    and(eq(thesisRequests.id, thesisRequestId), eq(thesisRequests.defenseEligibility, "not_applicable"))
+  );
+}

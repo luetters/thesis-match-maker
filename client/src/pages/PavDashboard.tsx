@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
+type ActiveTab = "unassigned" | "proposals" | "programmes" | "enrollment" | "defense";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 function formatDate(d: Date | string | null | undefined) {
@@ -25,6 +26,163 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
       {s.label}
     </span>
+  );
+}
+
+function EligibilityBadge({ status, type }: { status: string; type: "enrollment" | "defense" }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    pending:        { label: "Ausstehend",    cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    approved:       { label: "Freigegeben",   cls: "bg-green-50 text-green-700 border-green-200" },
+    rejected:       { label: "Abgelehnt",     cls: "bg-red-50 text-red-700 border-red-200" },
+    blocked:        { label: "Blockiert",     cls: "bg-red-50 text-red-700 border-red-200" },
+    not_applicable: { label: "Nicht relevant", cls: "bg-gray-50 text-gray-500 border-gray-200" },
+  };
+  const s = map[status] ?? { label: status, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
+
+// ─── EligibilityActionDialog ──────────────────────────────────────────────────
+function EligibilityActionDialog({
+  thesisRequestId,
+  thesisTitle,
+  studentName,
+  type,
+  onClose,
+}: {
+  thesisRequestId: number;
+  thesisTitle: string;
+  studentName: string;
+  type: "enrollment" | "defense";
+  onClose: () => void;
+}) {
+  const utils = trpc.useUtils();
+  const [note, setNote] = useState("");
+  const [action, setAction] = useState<"approve" | "reject" | null>(null);
+
+  const setEnrollment = trpc.pav.setEnrollmentEligibility.useMutation({
+    onSuccess: () => {
+      toast.success(action === "approve" ? "Anmeldefähigkeit bestätigt." : "Anmeldefähigkeit abgelehnt.");
+      utils.pav.getPendingEnrollmentEligibility.invalidate();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const setDefense = trpc.pav.setDefenseEligibility.useMutation({
+    onSuccess: () => {
+      toast.success(action === "approve" ? "Prüfungsfähigkeit bestätigt." : "Prüfungsfähigkeit blockiert.");
+      utils.pav.getPendingDefenseEligibility.invalidate();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const isPending = setEnrollment.isPending || setDefense.isPending;
+
+  function handleSubmit() {
+    if (!action) return;
+    if (type === "enrollment") {
+      setEnrollment.mutate({
+        thesisRequestId,
+        eligibility: action === "approve" ? "approved" : "rejected",
+        note: note.trim() || undefined,
+      });
+    } else {
+      setDefense.mutate({
+        thesisRequestId,
+        eligibility: action === "approve" ? "approved" : "blocked",
+        note: note.trim() || undefined,
+      });
+    }
+  }
+
+  const isEnrollment = type === "enrollment";
+  const approveLabel = isEnrollment ? "Anmeldefähigkeit bestätigen" : "Prüfungsfähigkeit bestätigen";
+  const rejectLabel  = isEnrollment ? "Anmeldefähigkeit ablehnen"   : "Prüfungsfähigkeit blockieren";
+  const title        = isEnrollment ? "Anmeldefähigkeit prüfen"     : "Prüfungsfähigkeit prüfen";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
+        <p className="text-sm text-gray-500 mb-1 line-clamp-2">{thesisTitle}</p>
+        <p className="text-xs text-gray-400 mb-4">Studierende:r: {studentName}</p>
+
+        {isEnrollment ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-4 text-xs text-blue-700">
+            Hat die Person genügend Credits erworben, um sich für die Abschlussarbeit anzumelden?
+            Bei Ablehnung wird der Platz wieder freigegeben.
+          </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 text-xs text-amber-700">
+            Sind alle Prüfungsleistungen erbracht? Sind noch offene Prüfungen vorhanden,
+            darf das Kolloquium nicht stattfinden (Student not legally qualified to take final exam).
+          </div>
+        )}
+
+        {/* Aktionsauswahl */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setAction("approve")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+              action === "approve"
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-green-300 hover:text-green-700"
+            }`}
+          >
+            ✓ {approveLabel}
+          </button>
+          <button
+            onClick={() => setAction("reject")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+              action === "reject"
+                ? "bg-red-600 text-white border-red-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-700"
+            }`}
+          >
+            ✕ {rejectLabel}
+          </button>
+        </div>
+
+        {/* Begründung */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Begründung {action === "reject" ? "(empfohlen)" : "(optional)"}
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            maxLength={512}
+            placeholder="Begründung für die Entscheidung…"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1 text-right">{note.length}/512</p>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+            disabled={!action || isPending}
+            onClick={handleSubmit}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+              action === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+            }`}
+          >
+            {isPending ? "Wird gespeichert…" : "Entscheidung speichern"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -58,7 +216,6 @@ function ProposeDialog({
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-1">Prüfer:in vorschlagen</h3>
         <p className="text-sm text-gray-500 mb-4 line-clamp-2">{thesisTitle}</p>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
@@ -78,7 +235,6 @@ function ProposeDialog({
               ))}
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prüfer:in auswählen</label>
             <select
@@ -100,24 +256,15 @@ function ProposeDialog({
             </select>
           </div>
         </div>
-
         <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             Abbrechen
           </button>
           <button
             disabled={!examinerId || propose.isPending}
             onClick={() => {
               if (!examinerId) return;
-              propose.mutate({
-                thesisRequestId,
-                examinerId: Number(examinerId),
-                examinerRole,
-                origin: window.location.origin,
-              });
+              propose.mutate({ thesisRequestId, examinerId: Number(examinerId), examinerRole, origin: window.location.origin });
             }}
             className="flex-1 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] disabled:opacity-50 transition-colors"
           >
@@ -162,7 +309,6 @@ function DirectAssignDialog({
         <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
           Die Zuweisung erfolgt sofort und verbindlich – ohne Rückfrage an die Prüfer:in.
         </p>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
@@ -182,7 +328,6 @@ function DirectAssignDialog({
               ))}
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prüfer:in auswählen</label>
             <select
@@ -204,23 +349,15 @@ function DirectAssignDialog({
             </select>
           </div>
         </div>
-
         <div className="flex gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
             Abbrechen
           </button>
           <button
             disabled={!examinerId || directAssign.isPending}
             onClick={() => {
               if (!examinerId) return;
-              directAssign.mutate({
-                thesisRequestId,
-                examinerId: Number(examinerId),
-                examinerRole,
-              });
+              directAssign.mutate({ thesisRequestId, examinerId: Number(examinerId), examinerRole });
             }}
             className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
           >
@@ -236,20 +373,20 @@ function DirectAssignDialog({
 export default function PavDashboard() {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<"unassigned" | "proposals" | "programmes">("unassigned");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("unassigned");
   const [proposeFor, setProposeFor] = useState<{ id: number; title: string } | null>(null);
   const [directAssignFor, setDirectAssignFor] = useState<{ id: number; title: string } | null>(null);
+  const [eligibilityFor, setEligibilityFor] = useState<{
+    id: number; title: string; studentName: string; type: "enrollment" | "defense";
+  } | null>(null);
 
-  const { data: unassigned, isLoading: loadingUnassigned } = trpc.pav.getUnassignedStudentsFiltered.useQuery(undefined, {
-    enabled: !!user,
-  });
-  const { data: proposals, isLoading: loadingProposals } = trpc.pav.getProposals.useQuery(undefined, {
-    enabled: !!user,
-  });
-  const { data: myProgrammes, refetch: refetchProgrammes } = trpc.pav.getProgrammes.useQuery(undefined, {
-    enabled: !!user,
-  });
+  const { data: unassigned, isLoading: loadingUnassigned } = trpc.pav.getUnassignedStudentsFiltered.useQuery(undefined, { enabled: !!user });
+  const { data: proposals, isLoading: loadingProposals } = trpc.pav.getProposals.useQuery(undefined, { enabled: !!user });
+  const { data: myProgrammes, refetch: refetchProgrammes } = trpc.pav.getProgrammes.useQuery(undefined, { enabled: !!user });
   const { data: allProgrammes } = trpc.programmes.list.useQuery();
+  const { data: pendingEnrollment, isLoading: loadingEnrollment } = trpc.pav.getPendingEnrollmentEligibility.useQuery(undefined, { enabled: !!user });
+  const { data: pendingDefense, isLoading: loadingDefense } = trpc.pav.getPendingDefenseEligibility.useQuery(undefined, { enabled: !!user });
+
   const addProg = trpc.pav.addProgramme.useMutation({ onSuccess: () => refetchProgrammes() });
   const removeProg = trpc.pav.removeProgramme.useMutation({ onSuccess: () => refetchProgrammes() });
 
@@ -273,6 +410,16 @@ export default function PavDashboard() {
   }
 
   const pendingCount = (proposals ?? []).filter((p) => p.proposal.status === "pending").length;
+  const enrollmentCount = (pendingEnrollment ?? []).length;
+  const defenseCount = (pendingDefense ?? []).length;
+
+  const tabs: { id: ActiveTab; label: string; badge?: number }[] = [
+    { id: "unassigned",  label: t.pav.unassigned },
+    { id: "proposals",   label: "Vorschläge", badge: pendingCount },
+    { id: "enrollment",  label: "Anmeldefähigkeit", badge: enrollmentCount },
+    { id: "defense",     label: "Prüfungsfähigkeit", badge: defenseCount },
+    { id: "programmes",  label: t.pav.myProgrammes },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -295,42 +442,36 @@ export default function PavDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 flex gap-1">
-          {(["unassigned", "proposals", "programmes"] as const).map((tab) => (
+      <div className="bg-white border-b border-gray-100 overflow-x-auto">
+        <div className="max-w-5xl mx-auto px-4 flex gap-1 min-w-max">
+          {tabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                activeTab === tab.id
                   ? "border-[#76B900] text-[#76B900]"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              {tab === "unassigned" ? t.pav.unassigned :
-               tab === "proposals" ? (
-                <span className="flex items-center gap-1.5">
-                  {t.pav.myProgrammes.replace("Studiengänge", "Vorschläge").replace("Programmes", "Proposals")}
-                  {pendingCount > 0 && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-white text-[10px] font-bold">
-                      {pendingCount}
-                    </span>
-                  )}
+              {tab.label}
+              {tab.badge != null && tab.badge > 0 && (
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-400 text-white text-[10px] font-bold">
+                  {tab.badge}
                 </span>
-              ) : t.pav.myProgrammes}
+              )}
             </button>
           ))}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
+
         {/* Tab: Unzugeteilte Studierende */}
         {activeTab === "unassigned" && (
           <>
             {loadingUnassigned ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}
-              </div>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
             ) : (unassigned ?? []).length === 0 ? (
               <div className="text-center py-16 text-gray-400">
                 <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,8 +482,6 @@ export default function PavDashboard() {
             ) : (
               <div className="space-y-3">
                 {(unassigned ?? []).map((row) => {
-                  // Unterstützt sowohl flaches Schema (getUnassignedStudentsByPavProgrammes)
-                  // als auch verschachteltes Schema (getUnassignedStudents)
                   const isFlat = "studentName" in row;
                   const id = isFlat ? (row as any).id : (row as any).request.id;
                   const title = isFlat ? (row as any).title : (row as any).request.title;
@@ -350,32 +489,34 @@ export default function PavDashboard() {
                   const degreeType = isFlat ? (row as any).degreeType : (row as any).request.degreeType;
                   const createdAt = isFlat ? (row as any).createdAt : (row as any).request.createdAt;
                   const studentName = isFlat ? (row as any).studentName : (row as any).student?.name;
+                  const enrollElig = isFlat ? (row as any).enrollmentEligibility : (row as any).request?.enrollmentEligibility;
                   return (
-                  <div key={id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{title || "(kein Titel)"}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {studentName ?? "–"} · {department} · {degreeType === "master" ? "Master" : "Bachelor"}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Eingereicht: {formatDate(createdAt)}
-                      </p>
+                    <div key={id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-gray-900 truncate">{title || "(kein Titel)"}</p>
+                          {enrollElig && <EligibilityBadge status={enrollElig} type="enrollment" />}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {studentName ?? "–"} · {department} · {degreeType === "master" ? "Master" : "Bachelor"}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Eingereicht: {formatDate(createdAt)}</p>
+                      </div>
+                      <div className="shrink-0 flex flex-col gap-2">
+                        <button
+                          onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
+                          className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
+                        >
+                          {t.pav.proposeExaminer}
+                        </button>
+                        <button
+                          onClick={() => setDirectAssignFor({ id, title: title || "(kein Titel)" })}
+                          className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
+                        >
+                          {t.pav.directAssign}
+                        </button>
+                      </div>
                     </div>
-                    <div className="shrink-0 flex flex-col gap-2">
-                      <button
-                        onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
-                        className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
-                      >
-                        {t.pav.proposeExaminer}
-                      </button>
-                      <button
-                        onClick={() => setDirectAssignFor({ id, title: title || "(kein Titel)" })}
-                        className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
-                      >
-                        {t.pav.directAssign}
-                      </button>
-                    </div>
-                  </div>
                   );
                 })}
               </div>
@@ -387,13 +528,9 @@ export default function PavDashboard() {
         {activeTab === "proposals" && (
           <>
             {loadingProposals ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}
-              </div>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
             ) : (proposals ?? []).length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <p>Noch keine Vorschläge unterbreitet.</p>
-              </div>
+              <div className="text-center py-16 text-gray-400"><p>Noch keine Vorschläge unterbreitet.</p></div>
             ) : (
               <div className="space-y-3">
                 {(proposals ?? []).map(({ proposal, request }) => (
@@ -418,12 +555,108 @@ export default function PavDashboard() {
           </>
         )}
 
+        {/* Tab: Anmeldefähigkeit */}
+        {activeTab === "enrollment" && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+              <strong>Anmeldefähigkeit:</strong> Prüfen Sie, ob die Studierenden genügend Credits erworben haben,
+              um sich für eine Abschlussarbeit anzumelden. Bei Ablehnung wird der Platz wieder freigegeben.
+            </div>
+            {loadingEnrollment ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
+            ) : (pendingEnrollment ?? []).length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>Keine ausstehenden Anmeldefähigkeitsprüfungen.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(pendingEnrollment ?? []).map(({ request, student }) => (
+                  <div key={request.id} className="bg-white rounded-xl border border-yellow-200 p-4 flex items-start justify-between gap-4 shadow-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{request.title || "(kein Titel)"}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {student.name ?? "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Eingereicht: {formatDate(request.createdAt)} · {request.degreeType === "master" ? "Master" : "Bachelor"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setEligibilityFor({
+                        id: request.id,
+                        title: request.title || "(kein Titel)",
+                        studentName: student.name ?? "–",
+                        type: "enrollment",
+                      })}
+                      className="shrink-0 px-4 py-2 rounded-xl bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600 transition-colors"
+                    >
+                      Prüfen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Prüfungsfähigkeit */}
+        {activeTab === "defense" && (
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <strong>Prüfungsfähigkeit:</strong> Prüfen Sie, ob alle Prüfungsleistungen erbracht wurden.
+              Sind noch offene Prüfungen vorhanden, darf das Kolloquium nicht stattfinden
+              (<em>Student not legally qualified to take final exam</em>).
+            </div>
+            {loadingDefense ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
+            ) : (pendingDefense ?? []).length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p>Keine ausstehenden Prüfungsfähigkeitsprüfungen.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(pendingDefense ?? []).map(({ request, student }) => (
+                  <div key={request.id} className="bg-white rounded-xl border border-amber-200 p-4 flex items-start justify-between gap-4 shadow-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{request.title || "(kein Titel)"}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {student.name ?? "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Eingereicht: {formatDate(request.createdAt)} · {request.degreeType === "master" ? "Master" : "Bachelor"}
+                      </p>
+                      {request.defenseEligibilityNote && (
+                        <p className="text-xs text-amber-600 mt-1">Hinweis: {request.defenseEligibilityNote}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setEligibilityFor({
+                        id: request.id,
+                        title: request.title || "(kein Titel)",
+                        studentName: student.name ?? "–",
+                        type: "defense",
+                      })}
+                      className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors"
+                    >
+                      Prüfen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tab: Meine Studiengänge */}
         {activeTab === "programmes" && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">
-              {t.pav.proposalNote}
-            </p>
+            <p className="text-sm text-gray-500">{t.pav.proposalNote}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(allProgrammes ?? []).map((prog) => {
                 const isAssigned = (myProgrammes ?? []).some((p) => p.programmeId === prog.id);
@@ -439,16 +672,10 @@ export default function PavDashboard() {
                       <p className="text-xs text-gray-400 mt-0.5">{prog.level === "master" ? t.pav.master : t.pav.bachelor} · {prog.abbreviation}</p>
                     </div>
                     <button
-                      onClick={() =>
-                        isAssigned
-                          ? removeProg.mutate({ programmeId: prog.id })
-                          : addProg.mutate({ programmeId: prog.id })
-                      }
+                      onClick={() => isAssigned ? removeProg.mutate({ programmeId: prog.id }) : addProg.mutate({ programmeId: prog.id })}
                       disabled={addProg.isPending || removeProg.isPending}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        isAssigned
-                          ? "bg-red-50 text-red-600 hover:bg-red-100"
-                          : "bg-[#76B900] text-white hover:bg-[var(--primary)]"
+                        isAssigned ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-[#76B900] text-white hover:bg-[var(--primary)]"
                       } disabled:opacity-50`}
                     >
                       {isAssigned ? t.pav.removeProgramme : t.pav.addProgramme}
@@ -461,18 +688,20 @@ export default function PavDashboard() {
         )}
       </div>
 
+      {/* Dialoge */}
       {proposeFor && (
-        <ProposeDialog
-          thesisRequestId={proposeFor.id}
-          thesisTitle={proposeFor.title}
-          onClose={() => setProposeFor(null)}
-        />
+        <ProposeDialog thesisRequestId={proposeFor.id} thesisTitle={proposeFor.title} onClose={() => setProposeFor(null)} />
       )}
       {directAssignFor && (
-        <DirectAssignDialog
-          thesisRequestId={directAssignFor.id}
-          thesisTitle={directAssignFor.title}
-          onClose={() => setDirectAssignFor(null)}
+        <DirectAssignDialog thesisRequestId={directAssignFor.id} thesisTitle={directAssignFor.title} onClose={() => setDirectAssignFor(null)} />
+      )}
+      {eligibilityFor && (
+        <EligibilityActionDialog
+          thesisRequestId={eligibilityFor.id}
+          thesisTitle={eligibilityFor.title}
+          studentName={eligibilityFor.studentName}
+          type={eligibilityFor.type}
+          onClose={() => setEligibilityFor(null)}
         />
       )}
     </div>

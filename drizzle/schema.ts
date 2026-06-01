@@ -208,6 +208,16 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	exposeUrl: text(),
 	exposeKey: varchar({ length: 512 }),
 	hasOwnTopic: int().default(1).notNull(),
+	// ─── Anmeldefähigkeit (Verwaltungsfreigabe vor Betreuerzuweisung) ───
+	enrollmentEligibility: mysqlEnum("enrollment_eligibility", ["pending","approved","rejected"]).default("pending").notNull(),
+	enrollmentEligibilityNote: text("enrollment_eligibility_note"),
+	enrollmentEligibilityCheckedBy: int("enrollment_eligibility_checked_by"),
+	enrollmentEligibilityCheckedAt: datetime("enrollment_eligibility_checked_at", { mode: "string" }),
+	// ─── Verteidigungsfähigkeit (Verwaltungsfreigabe vor Kolloquium) ───
+	defenseEligibility: mysqlEnum("defense_eligibility", ["not_applicable","pending","approved","blocked"]).default("not_applicable").notNull(),
+	defenseEligibilityNote: text("defense_eligibility_note"),
+	defenseEligibilityCheckedBy: int("defense_eligibility_checked_by"),
+	defenseEligibilityCheckedAt: datetime("defense_eligibility_checked_at", { mode: "string" }),
 });
 
 export const users = mysqlTable("users", {
