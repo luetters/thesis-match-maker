@@ -1,0 +1,8 @@
+{
+  "query": "\nUPDATE users \nSET avatar_url = REPLACE(avatar_url, '/manus-storage/', '/api/storage/')\nWHERE avatar_url LIKE '/manus-storage/%';\n\nUPDATE users \nSET avatar_key = avatar_key\nWHERE avatar_url LIKE '/api/storage/%';\n\nSELECT id, email, avatar_url FROM users WHERE avatar_url IS NOT NULL LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nUPDATE users \nSET avatar_url = REPLACE(avatar_url, '/manus-storage/', '/api/storage/')\nWHERE avatar_url LIKE '/manus-storage/%';\n\nUPDATE users \nSET avatar_key = avatar_key\nWHERE avatar_url LIKE '/api/storage/%';\n\nSELECT id, email, avatar_url FROM users WHERE avatar_url IS NOT NULL LIMIT 10;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'avatar_url' in 'where clause'"
+  ]
+}

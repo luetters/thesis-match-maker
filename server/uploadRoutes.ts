@@ -219,6 +219,35 @@ export function registerUploadRoutes(app: Express) {
     }
   );
 
+  // --- Storage-Proxy: Bilder direkt streamen (verhindert CloudFront-IP-Binding-Problem) ---
+  app.get("/api/storage/*", async (req: Request, res: Response) => {
+    const key = (req.params as Record<string, string | undefined>)[0];
+    if (!key) { res.status(400).send("Missing key"); return; }
+    const forgeApiUrl = process.env.BUILT_IN_FORGE_API_URL;
+    const forgeApiKey = process.env.BUILT_IN_FORGE_API_KEY;
+    if (!forgeApiUrl || !forgeApiKey) { res.status(500).send("Not configured"); return; }
+    try {
+      const forgeUrl = new URL("v1/storage/presign/get", forgeApiUrl.replace(/\/+$/, "") + "/");
+      forgeUrl.searchParams.set("path", key);
+      const forgeResp = await fetch(forgeUrl.toString(), {
+        headers: { Authorization: `Bearer ${forgeApiKey}` },
+      });
+      if (!forgeResp.ok) { res.status(502).send("Storage backend error"); return; }
+      const { url } = (await forgeResp.json()) as { url: string };
+      if (!url) { res.status(502).send("Empty URL"); return; }
+      const imgResp = await fetch(url);
+      if (!imgResp.ok) { res.status(imgResp.status).send("Upstream error"); return; }
+      const contentType = imgResp.headers.get("content-type") ?? "application/octet-stream";
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=3600");
+      const buf = await imgResp.arrayBuffer();
+      res.send(Buffer.from(buf));
+    } catch (err) {
+      console.error("[StorageProxy/api] failed:", err);
+      res.status(502).send("Storage proxy error");
+    }
+  });
+
   // --- ICS-Kalender-Export für Thesis-Deadline ---
   app.get("/api/thesis/:id/deadline.ics", async (req: Request, res: Response) => {
     const thesisId = parseInt(req.params.id, 10);

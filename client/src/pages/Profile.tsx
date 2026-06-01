@@ -338,12 +338,16 @@ export default function Profile() {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
       const newAvatarUrl: string = json.avatarUrl;
-      // S3-URL als Vorschau setzen – bleibt dauerhaft (kein Reset)
-      setAvatarPreview(newAvatarUrl);
+      // Blob-URL als Vorschau BEHALTEN (nicht auf S3-URL wechseln).
+      // S3-URLs führen zu signierten CloudFront-Redirects die im Browser ablaufen können.
+      // Die Blob-URL bleibt gültig solange die Komponente gemountet ist.
+      // setAvatarPreview(localPreview) ist bereits gesetzt – kein weiterer Aufruf nötig.
       toast.success(p.avatarSuccess);
-      // Sofortiger Cache-Update ohne Netzwerkwartzeit (verhindert Flash of old content)
+      // Cache-Update: S3-URL in DB-Cache speichern für spätere Seiten-Reloads
       utils.profile.get.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
       utils.auth.me.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
+      // Nach kurzem Delay: profile.get neu laden damit frische signierte URL im Cache ist
+      setTimeout(() => utils.profile.get.invalidate(), 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);

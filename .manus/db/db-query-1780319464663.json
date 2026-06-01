@@ -1,0 +1,35 @@
+{
+  "query": "\nUPDATE users \nSET avatarUrl = REPLACE(avatarUrl, '/manus-storage/', '/api/storage/')\nWHERE avatarUrl LIKE '/manus-storage/%';\n\nSELECT id, email, avatarUrl FROM users WHERE avatarUrl IS NOT NULL LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nUPDATE users \nSET avatarUrl = REPLACE(avatarUrl, '/manus-storage/', '/api/storage/')\nWHERE avatarUrl LIKE '/manus-storage/%';\n\nSELECT id, email, avatarUrl FROM users WHERE avatarUrl IS NOT NULL LIMIT 10;\n",
+  "rows": [
+    {
+      "id": "690079",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/api/storage/avatars/user-4050049-1780308142832_9782e892.gif"
+    },
+    {
+      "id": "690080",
+      "email": "student@htw-berlin.com",
+      "avatarUrl": "/api/storage/avatars/user-690080-1780318157377_f86acd31.png"
+    },
+    {
+      "id": "690081",
+      "email": "firstsupervisor@htw-berlin.com",
+      "avatarUrl": "/api/storage/avatars/user-690081-1780312573462_1db24115.png"
+    },
+    {
+      "id": "4050049",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/api/storage/avatars/user-4050049-1780308142832_9782e892.gif"
+    },
+    {
+      "id": "4080481",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/api/storage/avatars/user-4050049-1780308142832_9782e892.gif"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tavatarUrl\n690079\tholger@luetters.net\t/api/storage/avatars/user-4050049-1780308142832_9782e892.gif\n690080\tstudent@htw-berlin.com\t/api/storage/avatars/user-690080-1780318157377_f86acd31.png\n690081\tfirstsupervisor@htw-berlin.com\t/api/storage/avatars/user-690081-1780312573462_1db24115.png\n4050049\tholger@luetters.net\t/api/storage/avatars/user-4050049-1780308142832_9782e892.gif\n4080481\tholger@luetters.net\t/api/storage/avatars/user-4050049-1780308142832_9782e892.gif\n",
+  "stderr": "",
+  "execution_time_ms": 281
+}
