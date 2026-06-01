@@ -66,6 +66,7 @@ function getNextSemesters(): { label: string; value: string }[] {
 const DRAFT_KEY = "htw-thesis-request-draft";
 
 function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useLanguage();
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
   // Alle Programme laden (für dynamisches Dropdown)
@@ -218,7 +219,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   // Vorschau-Sektion
   if (showPreview) {
-    const selectedExaminer = (qualifiedExaminers as any[]).find((e: any) => e.id === form.wantedExaminerId);
+    const selectedExaminer = (firstExaminers as any[]).find((e: any) => e.id === form.wantedExaminerId);
     const semesterLabel = getNextSemesters().find(s => s.value === form.targetSemester)?.label ?? form.targetSemester;
     return (
       <div className="space-y-5 print-area">
@@ -795,6 +796,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }// ─── Exposé-Upload ────────────────────────────────────────────────────────────────
 function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: number; currentUrl?: string | null; onSuccess: () => void }) {
+  const { t } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -871,6 +873,7 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
 
 // ─── Zweitgutachter-Auswahl nach Erstgutachter-Zusage ──────────────────────────
 function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExaminerId }: { requestId: number; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null }) {
+  const { t } = useLanguage();
   const utils = trpc.useUtils();
   const [selectedId, setSelectedId] = useState<number>(wantedSecondExaminerId ?? 0);
   const [saving, setSaving] = useState(false);
@@ -966,6 +969,7 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
 
 // ─── My Requests ────────────────────────────────────────────────────────────────
 function MyRequests() {
+  const { t } = useLanguage();
   const utils = trpc.useUtils();
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
 
@@ -1082,6 +1086,7 @@ function MyRequests() {
 
 // ─── Examiner List ────────────────────────────────────────────────────────────
 function ExaminerList() {
+  const { t } = useLanguage();
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery();
   const [search, setSearch] = useState("");
 
@@ -1167,6 +1172,7 @@ function ExaminerList() {
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview() {
+  const { t } = useLanguage();
   const { data: requests } = trpc.thesis.myRequests.useQuery();
 
   const stats = {
@@ -1211,7 +1217,7 @@ function Overview() {
         )}
       </div>
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="font-semibold text-gray-900 mb-4">{t.student.myProgramme}</h2>
+        <h2 className="font-semibold text-gray-900 mb-4">{t.student.myRequests}</h2>
         <StudentProgrammeSelector />
       </div>
 
@@ -1237,7 +1243,7 @@ function MyColloquiums() {
         <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
       </div>
       <p className="text-sm font-medium text-gray-700">{t.student.noColloquiums}</p>
-      <p className="text-xs text-gray-500 mt-1">{t.student.noColloquiumsDesc}</p>
+      <p className="text-xs text-gray-500 mt-1">{t.student.noColloquiums}</p>
     </div>
   );
   return (
@@ -1297,8 +1303,8 @@ function StatusHistory() {
     STATUS_CHANGED: t.student.auditStatusChanged,
     EXAMINER_ACCEPTED: t.student.auditExaminerAccepted,
     EXAMINER_REJECTED: t.student.auditExaminerRejected,
-    FIRST_EXAMINER_ASSIGNED: t.student.auditFirstExaminerAssigned,
-    SECOND_EXAMINER_ASSIGNED: t.student.auditSecondExaminerAssigned,
+    FIRST_EXAMINER_ASSIGNED: t.student.auditFirstAssigned,
+    SECOND_EXAMINER_ASSIGNED: t.student.auditSecondAssigned,
     COLLOQUIUM_CREATED: t.student.auditColloquiumCreated,
     DEADLINE_SET: t.student.auditDeadlineSet,
   };

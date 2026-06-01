@@ -309,9 +309,9 @@ export default function ExaminerProfile() {
 
   const { user, profile } = data;
   const photoUrl = localPhotoUrl ?? profile?.photoUrl;
-  const tags = profile?.tags ?? [];
-  const languages = profile?.languages ?? [];
-  const studyPrograms = profile?.studyPrograms ?? [];
+  const tags = (profile?.tags as string[] | null | undefined) ?? [];
+  const languages = (profile?.languages as string[] | null | undefined) ?? [];
+  const studyPrograms = (profile?.studyPrograms as string[] | null | undefined) ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -577,7 +577,7 @@ export default function ExaminerProfile() {
 
       {showEdit && profile && (
         <EditProfileModal
-          profile={profile}
+          profile={profile as any}
           onClose={() => setShowEdit(false)}
           onSaved={() => utils.examiner.getPublicProfile.invalidate({ userId })}
         />

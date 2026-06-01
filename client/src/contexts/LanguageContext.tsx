@@ -629,6 +629,8 @@ const translations = {
       accessDenied: "Sie haben keinen Zugriff auf diesen Bereich.",
       backHome: "Zur Startseite",
       close: "Schließen",
+      contact: "Kontakt",
+      aboutMe: "Über mich",
     },
   },
   en: {
@@ -1260,6 +1262,8 @@ const translations = {
       accessDenied: "You do not have access to this area.",
       backHome: "Back to Home",
       close: "Close",
+      contact: "Contact",
+      aboutMe: "About Me",
     },
   },
 } as const;

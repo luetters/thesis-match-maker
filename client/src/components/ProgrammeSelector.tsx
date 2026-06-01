@@ -12,7 +12,8 @@ interface Programme {
   id: number;
   name: string;
   abbreviation: string;
-  level: "bachelor" | "master";
+  level: string;
+  fachbereich?: string | null;
   pictogramUrl: string | null;
   sortOrder: number;
 }

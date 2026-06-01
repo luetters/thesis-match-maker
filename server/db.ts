@@ -391,7 +391,7 @@ export async function createExaminerByAdmin(data: {
       name: data.name,
       loginMethod: "admin_created",
       role: "examiner",
-      lastSignedIn: new Date(),
+      lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .onDuplicateKeyUpdate({ set: { name: data.name, role: "examiner" } });
 
@@ -530,9 +530,10 @@ export async function deleteUserByAdmin(userId: number): Promise<void> {
 export async function updateThesisDeadline(thesisId: number, deadline: Date | null): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
+  const deadlineStr = deadline instanceof Date ? deadline.toISOString().slice(0, 19).replace('T', ' ') : deadline;
   await db
     .update(thesisRequests)
-    .set({ deadline, updatedAt: new Date() })
+    .set({ deadline: deadlineStr, updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') })
     .where(eq(thesisRequests.id, thesisId));
 }
 
@@ -678,7 +679,7 @@ export async function createUserWithPassword(data: {
       role: data.role,
       loginMethod: "password",
       passwordHash: data.passwordHash,
-      lastSignedIn: new Date(),
+      lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
     } as any)
     .onDuplicateKeyUpdate({
       set: {
@@ -989,7 +990,7 @@ export async function updatePavProposalStatus(
     .update(pavExaminerProposals)
     .set({
       status,
-      respondedAt: new Date(),
+      respondedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
       declineReason: declineReason ?? null,
     })
     .where(eq(pavExaminerProposals.id, id));
@@ -1379,7 +1380,7 @@ export async function updateEmailTemplate(
 ) {
   const db = await getDb();
   if (!db) throw new Error('Datenbank nicht verfügbar');
-  const update: Record<string, unknown> = { updatedAt: new Date() };
+  const update: Record<string, unknown> = { updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') };
   if (data.subject !== undefined) update.subject = data.subject;
   if (data.htmlBody !== undefined) update.htmlBody = data.htmlBody;
   if (data.textBody !== undefined) update.textBody = data.textBody;
@@ -1449,7 +1450,7 @@ export async function updateExaminerProfileByAdmin(
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
   
-  const update: Record<string, unknown> = { updatedAt: new Date() };
+  const update: Record<string, unknown> = { updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') };
   if (data.title !== undefined) update.title = data.title;
   if (data.department !== undefined) update.department = data.department;
   if (data.bio !== undefined) update.bio = data.bio;
@@ -1467,7 +1468,7 @@ export async function updateExaminerProfileByAdmin(
 //   if (!db) throw new Error("Datenbank nicht verfügbar");
 //   
 //   await db.update(examinerProfiles)
-//     .set({ isActive: isActive ? 1 : 0, updatedAt: new Date() })
+//     .set({ isActive: isActive ? 1 : 0, updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') })
 //     .where(eq(examinerProfiles.id, examinerId));
 // }
 
@@ -1577,11 +1578,12 @@ export async function createExaminerActionToken(
   // Importiere examinerActionTokens aus schema
   const { examinerActionTokens } = await import("../drizzle/schema");
   
+  const expiresAtStr = expiresAt instanceof Date ? expiresAt.toISOString().slice(0, 19).replace('T', ' ') : expiresAt;
   await db.insert(examinerActionTokens).values({
     thesisRequestId,
     examinerId,
     token,
-    expiresAt,
+    expiresAt: expiresAtStr,
   });
   
   return token;
@@ -1601,7 +1603,7 @@ export async function verifyExaminerActionToken(token: string) {
     .where(
       and(
         eq(examinerActionTokens.token, token),
-        gt(examinerActionTokens.expiresAt, new Date()),
+        gt(examinerActionTokens.expiresAt, new Date().toISOString().slice(0, 19).replace('T', ' ')),
         isNull(examinerActionTokens.usedAt)
       )
     )
@@ -1620,7 +1622,7 @@ export async function markTokenAsUsed(token: string) {
   const { examinerActionTokens } = await import("../drizzle/schema");
   
   await db.update(examinerActionTokens)
-    .set({ usedAt: new Date() })
+    .set({ usedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') })
     .where(eq(examinerActionTokens.token, token));
 }
 
@@ -1643,7 +1645,7 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
     .set({
       status: "FIRST_EXAMINER_ACCEPTED",
       examinerId,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
   
@@ -1662,7 +1664,7 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
     type: "status_change",
     thesisRequestId: thesisRequestId,
     read: 0,
-    createdAt: new Date(),
+    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
   });
 }
 
@@ -1685,7 +1687,7 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
     .set({
       status: "FIRST_EXAMINER_REJECTED",
       rejectionReason: rejectionReason || null,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
   
@@ -1702,7 +1704,7 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
     type: "status_change",
     thesisRequestId: thesisRequestId,
     read: 0,
-    createdAt: new Date(),
+    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
   });
 }
 
@@ -1715,8 +1717,8 @@ export async function withdrawThesisRequest(thesisRequestId: number) {
   
   await db.update(thesisRequests)
     .set({
-      withdrawnAt: new Date(),
-      updatedAt: new Date(),
+      withdrawnAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
 }
@@ -1732,7 +1734,7 @@ export async function setSecondExaminer(thesisRequestId: number, secondExaminerI
     .set({
       secondExaminerId,
       status: "PENDING_SECOND_EXAMINER",
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
 }
@@ -2352,7 +2354,7 @@ export async function createReminderSchedule(
   const db = await getDb();
   if (!db) return null;
 
-  const scheduledAt = new Date();
+  const scheduledAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
   scheduledAt.setDate(scheduledAt.getDate() + delayDays);
 
   const result = await db
@@ -2441,7 +2443,7 @@ export async function markReminderAsSent(scheduleId: number, success: boolean = 
   await db
     .update(reminderSchedules)
     .set({
-      sentAt: new Date(),
+      sentAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
       status: success ? "sent" : "failed",
     })
     .where(eq(reminderSchedules.id, scheduleId));
@@ -2511,7 +2513,7 @@ export async function cleanupOldReminders() {
   const db = await getDb();
   if (!db) return 0;
 
-  const ninetyDaysAgo = new Date();
+  const ninetyDaysAgo = new Date().toISOString().slice(0, 19).replace('T', ' ');
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
   await db
@@ -2863,7 +2865,7 @@ export async function archiveThesisRequest(thesisRequestId: number) {
       .update(thesisRequests)
       .set({
         status: "ARCHIVED" as any,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
       })
       .where(eq(thesisRequests.id, thesisRequestId));
 
@@ -3032,7 +3034,7 @@ export async function logRoleSwitchAction(
         type: "role_switch",
         timestamp: new Date().toISOString(),
       } as any,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     });
 
     return true;
@@ -3292,7 +3294,7 @@ export async function updateUserStatus(
       toStatus: isActive ? "active" : "inactive",
       reason: `User status changed to ${isActive ? "active" : "inactive"}`,
       metadata: { userId, isActive } as any,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     });
 
     return true;

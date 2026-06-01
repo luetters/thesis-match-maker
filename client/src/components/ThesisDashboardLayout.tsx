@@ -383,6 +383,7 @@ export function ThesisDashboardLayout({
 }) {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
