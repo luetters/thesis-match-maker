@@ -28,6 +28,7 @@ import { useNotificationPoller } from "./hooks/useNotificationPoller";
 import SelectRole from "./pages/SelectRole";
 import RolePending from "./pages/RolePending";
 import Profile from "./pages/Profile";
+import PublicProfile from "./pages/PublicProfile";
 
 function Router() {
   return (
@@ -48,6 +49,8 @@ function Router() {
 
       {/* Persönliche Profilseite (alle Rollen) */}
       <Route path="/profile" component={Profile} />
+      {/* Öffentliche Profilseite (rollenbasierte Zugriffskontrolle) */}
+      <Route path="/profile/:userId" component={PublicProfile} />
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />

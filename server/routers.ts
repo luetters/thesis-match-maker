@@ -139,6 +139,7 @@ import {
   setCommissionPreferences,
   setWantedSecondExaminer,
   getFilteredSecondExaminers,
+  hasSharedThesisRequest,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -811,12 +812,54 @@ export const appRouter = router({
 
     // Öffentlich: Einzelnes Prüfer-Profil abrufen (für Profilseite)
     getPublicProfile: publicProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
-        const rows = await getAllExaminers();
-        const found = rows.find((r) => r.user.id === input.userId);
-        if (!found) throw new TRPCError({ code: "NOT_FOUND", message: "Prüfer:in nicht gefunden" });
-        return found;
+      .input(z.object({ userId: z.number(), viewerToken: z.string().optional() }))
+      .query(async ({ input, ctx }) => {
+        const user = await getUserById(input.userId);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Nutzer:in nicht gefunden" });
+        const isExaminerRole = user.role === "examiner" || user.role === "second_examiner";
+        const isStudentRole = user.role === "student";
+        // Prüfer:innen-Profile sind vollständig öffentlich
+        // Studierenden-Profile nur sichtbar wenn:
+        //   a) Betrachter:in ist die Prüfer:in einer Anfrage des Studierenden, ODER
+        //   b) Betrachter:in ist der/die Studierende selbst, ODER
+        //   c) Betrachter:in ist Admin/Superadmin
+        if (isStudentRole) {
+          const viewer = ctx.user;
+          if (!viewer) throw new TRPCError({ code: "UNAUTHORIZED", message: "Anmeldung erforderlich." });
+          const isSelf = viewer.id === input.userId;
+          const isAdmin = viewer.role === "admin" || viewer.role === "superadmin";
+          const isExaminerOfStudent = (viewer.role === "examiner" || viewer.role === "second_examiner")
+            && await hasSharedThesisRequest(viewer.id, input.userId);
+          if (!isSelf && !isAdmin && !isExaminerOfStudent) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Zugriff nicht erlaubt." });
+          }
+        }
+        const examinerProfile = isExaminerRole ? await getExaminerProfileByUserId(input.userId) : null;
+        // Nur öffentliche Felder zurückgeben
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          department: user.department,
+          bio: user.bio,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+          website: user.website,
+          linkedIn: user.linkedIn,
+          researchGate: user.researchGate,
+          htwProfileUrl: user.htwProfileUrl,
+          miscLink: user.miscLink,
+          bookingUrl: user.bookingUrl,
+          createdAt: user.createdAt,
+          // Prüfer:in-spezifische Felder
+          academicTitle: examinerProfile?.title ?? null,
+          officeHours: examinerProfile?.officeHours ?? null,
+          researchFocus: examinerProfile?.researchFocus ?? null,
+          researchTags: examinerProfile?.tags ? (Array.isArray(examinerProfile.tags) ? (examinerProfile.tags as string[]).join(", ") : String(examinerProfile.tags)) : null,
+          photoUrl: examinerProfile?.photoUrl ?? null,
+          websiteUrl: examinerProfile?.websiteUrl ?? null,
+        };
       }),
     // Prüfer: Erweiterte Profil-Felder aktualisieren
     updateProfileExtended: anyExaminerProcedure

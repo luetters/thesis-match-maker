@@ -3611,6 +3611,18 @@ export async function updateProfileAvatar(userId: number, avatarUrl: string, ava
     await db.execute(
       `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE email = (SELECT email FROM (SELECT email FROM users WHERE id = ${userId}) AS sub) AND id != ${userId}`
     );
+    // examiner_profiles.photoUrl synchronisieren (für öffentliche Profilseite)
+    const existing = await db
+      .select({ id: examinerProfiles.userId })
+      .from(examinerProfiles)
+      .where(eq(examinerProfiles.userId, userId))
+      .limit(1);
+    if (existing.length > 0) {
+      await db
+        .update(examinerProfiles)
+        .set({ photoUrl: avatarUrl, photoKey: avatarKey })
+        .where(eq(examinerProfiles.userId, userId));
+    }
     return true;
   } catch (error) {
     console.error("[Profile] Fehler beim Avatar-Update:", error);
@@ -4023,4 +4035,34 @@ export async function resetAdminOverride(examinerId: number, semester: string) {
         eq(examinerSemesterCapacities.semester, semester),
       ),
     );
+}
+
+// ─── Öffentliche Profilzugriffs-Prüfung ──────────────────────────────────────
+
+/**
+ * Prüft ob zwischen viewerId und targetStudentId eine gemeinsame Anfrage existiert.
+ * Wird für die rollenbasierte Zugriffskontrolle auf Studierenden-Profile benötigt.
+ * Gibt true zurück wenn:
+ * - viewerId ist die Prüfer:in einer Anfrage des targetStudentId, ODER
+ * - viewerId ist selbst targetStudentId (eigenes Profil), ODER
+ * - viewerId ist Admin/Superadmin
+ */
+export async function hasSharedThesisRequest(viewerId: number, targetStudentId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  // Prüfen ob eine gemeinsame Anfrage existiert (Prüfer:in schaut Studierenden-Profil an)
+  const rows = await db
+    .select({ id: thesisRequests.id })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.studentId, targetStudentId),
+        or(
+          eq(thesisRequests.examinerId, viewerId),
+          eq(thesisRequests.secondExaminerId, viewerId),
+        ),
+      )
+    )
+    .limit(1);
+  return rows.length > 0;
 }

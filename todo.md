@@ -672,6 +672,17 @@
 - [x] Tests grün (55/55), Checkpoint gespeichert
 
 
+## Feature: My Profile – i18n, Profilphoto-Upload und öffentliche Profilseite
+
+- [x] i18n: Profile.tsx vollständig auf useLanguage() umstellen (alle DE-Hardcodes ersetzen)
+- [x] i18n: DE + EN Keys für alle Profile.tsx-Texte in LanguageContext.tsx ergänzen
+- [x] Profilphoto-Upload: updateProfileAvatar() synchronisiert auch examiner_profiles.photoUrl
+- [x] Öffentliche Profilseite /profile/:userId: Prüfer:innen vollständig öffentlich
+- [x] Öffentliche Profilseite /profile/:userId: Studierende nur sichtbar bei aktiver Anfrage an die anfragende Prüfer:in
+- [x] getPublicProfile-Backend: Rollenbasierte Zugriffskontrolle (publicProcedure für Prüfer:in, protectedProcedure mit Anfrage-Check für Studierende)
+- [x] Route /profile/:userId in App.tsx registrieren
+- [x] Profil-Link in MyRequests-Karte (Prüfer:in-Name verlinkt auf öffentliches Profil)
+
 ## Feature: Anfrage zurückziehen ✅ KOMPLETT
 
 - [x] Backend: withdrawThesisRequest(thesisRequestId, studentId) – Status auf WITHDRAWN setzen, Eigentümer- und Status-Prüfung

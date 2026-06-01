@@ -3,7 +3,7 @@ import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   AlertDialog,
@@ -1036,6 +1036,20 @@ function MyRequests() {
               )}
             </div>
           </div>
+          {/* Prüfer:in-Link */}
+          {req.examinerId && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <Link
+                href={`/profile/${req.examinerId}`}
+                className="text-xs text-[#2563eb] hover:underline font-medium"
+              >
+                {(req as any).examinerName ?? `Prüfer:in #${req.examinerId}`}
+              </Link>
+            </div>
+          )}
           <p className="text-sm text-gray-600 line-clamp-2 mb-3">{req.description}</p>
           <div className="flex flex-wrap gap-3 text-xs text-gray-500">
             {req.targetSemester && (

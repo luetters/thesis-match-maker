@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, KeyboardEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -31,7 +32,7 @@ const ROLE_STATUS_CONFIG: Record<string, { label: string; color: string; bg: str
 
 // ─── URL-Validierung ──────────────────────────────────────────────────────────
 function isValidUrl(value: string): boolean {
-  if (!value) return true; // Leer ist erlaubt (optional)
+  if (!value) return true;
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "http:";
@@ -41,9 +42,9 @@ function isValidUrl(value: string): boolean {
 }
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
-function formatDate(date: Date | string | null | undefined): string {
+function formatDate(date: Date | string | null | undefined, lang: string): string {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString("de-DE", {
+  return new Date(date).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", {
     day: "2-digit", month: "long", year: "numeric",
   });
 }
@@ -62,12 +63,12 @@ function getDepartmentLabel(value: string | null | undefined): string | null {
 }
 
 // ─── Feld-Komponenten ─────────────────────────────────────────────────────────
-function FieldView({ label, value }: { label: string; value: string | null | undefined }) {
+function FieldView({ label, value, notSpecified }: { label: string; value: string | null | undefined; notSpecified: string }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
       <p className="text-sm text-gray-800">
-        {value ? value : <span className="text-gray-400 italic">Nicht angegeben</span>}
+        {value ? value : <span className="text-gray-400 italic">{notSpecified}</span>}
       </p>
     </div>
   );
@@ -95,9 +96,9 @@ function FieldInput({
 
 // ─── URL-Eingabe mit Echtzeit-Validierung ─────────────────────────────────────
 function UrlInput({
-  label, value, onChange, placeholder,
+  label, value, onChange, placeholder, errorMsg,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; errorMsg: string;
 }) {
   const [touched, setTouched] = useState(false);
   const isValid = isValidUrl(value);
@@ -121,7 +122,6 @@ function UrlInput({
               : "border-gray-200 focus:ring-[#76b900]/30 focus:border-[#76b900]"
           }`}
         />
-        {/* Validierungs-Icon */}
         {value.length > 0 && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
             {isValid ? (
@@ -141,7 +141,7 @@ function UrlInput({
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Bitte eine gültige Webadresse eingeben (z.B. https://beispiel.de)
+          {errorMsg}
         </p>
       )}
     </div>
@@ -150,10 +150,9 @@ function UrlInput({
 
 // ─── Tag-Liste-Komponente ─────────────────────────────────────────────────────
 function TagInput({
-  label, tags, onChange,
-  placeholder = "Tag eingeben und Enter drücken…",
+  label, tags, onChange, placeholder, hint,
 }: {
-  label: string; tags: string[]; onChange: (tags: string[]) => void; placeholder?: string;
+  label: string; tags: string[]; onChange: (tags: string[]) => void; placeholder?: string; hint?: string;
 }) {
   const [input, setInput] = useState("");
   const addTag = useCallback(() => {
@@ -174,22 +173,22 @@ function TagInput({
         {tags.map((tag, i) => (
           <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
             {tag}
-            <button type="button" onClick={() => onChange(tags.filter((_, j) => j !== i))} className="ml-0.5 hover:text-red-500 transition-colors" aria-label={tag + " entfernen"}>
+            <button type="button" onClick={() => onChange(tags.filter((_, j) => j !== i))} className="ml-0.5 hover:text-red-500 transition-colors">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </span>
         ))}
         <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onBlur={addTag}
-          placeholder={tags.length === 0 ? placeholder : "Weiteren Tag hinzufügen…"}
+          placeholder={tags.length === 0 ? placeholder : undefined}
           className="flex-1 min-w-[120px] text-sm outline-none bg-transparent" />
       </div>
-      <p className="text-xs text-gray-400 mt-1">Enter oder Komma zum Hinzufügen · Backspace zum Löschen des letzten Tags</p>
+      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
     </div>
   );
 }
 
 // ─── Kopier-Button ────────────────────────────────────────────────────────────
-function CopyButton({ url }: { url: string }) {
+function CopyButton({ url, copiedMsg, failMsg }: { url: string; copiedMsg: string; failMsg: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -202,13 +201,13 @@ function CopyButton({ url }: { url: string }) {
           <svg className="w-4 h-4 text-[#76b900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
-          <span>Link in Zwischenablage kopiert</span>
+          <span>{copiedMsg}</span>
         </div>,
         { duration: 2000 }
       );
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {
-      toast.error("Kopieren fehlgeschlagen");
+      toast.error(failMsg);
     });
   };
 
@@ -216,7 +215,6 @@ function CopyButton({ url }: { url: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      title="Link kopieren"
       className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${
         copied
           ? "border-[#76b900] bg-[#f0fdf4] text-[#76b900]"
@@ -239,10 +237,11 @@ function CopyButton({ url }: { url: string }) {
 // ─── Link-Anzeige-Komponente mit Kopier-Button ────────────────────────────────
 function LinkDisplay({
   href, label, iconBg, iconColor, iconContent,
-  hoverBorderColor, hoverBgColor, textColor,
+  hoverBorderColor, hoverBgColor, textColor, copiedMsg, failMsg,
 }: {
   href: string; label: string; iconBg: string; iconColor?: string;
   iconContent: React.ReactNode; hoverBorderColor: string; hoverBgColor: string; textColor: string;
+  copiedMsg: string; failMsg: string;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -252,10 +251,7 @@ function LinkDisplay({
         rel="noopener noreferrer"
         className={`flex-1 inline-flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 transition-all group min-w-0 ${hoverBorderColor} ${hoverBgColor}`}
       >
-        <span
-          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ background: iconBg, color: iconColor }}
-        >
+        <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: iconBg, color: iconColor }}>
           {iconContent}
         </span>
         <span className={`text-sm group-hover:underline truncate ${textColor}`}>{label}</span>
@@ -263,7 +259,7 @@ function LinkDisplay({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       </a>
-      <CopyButton url={href} />
+      <CopyButton url={href} copiedMsg={copiedMsg} failMsg={failMsg} />
     </div>
   );
 }
@@ -271,6 +267,8 @@ function LinkDisplay({
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
   const { user } = useAuth();
+  const { t, lang } = useLanguage();
+  const p = t.myProfilePage;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery();
   const utils = trpc.useUtils();
@@ -286,18 +284,17 @@ export default function Profile() {
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAvatarPreviewModal, setShowAvatarPreviewModal] = useState(false);
 
-  // URL-Felder die validiert werden
   const urlFields = ["website", "linkedIn", "researchGate", "htwProfileUrl", "miscLink", "bookingUrl"] as const;
   const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
 
   const updateMutation = trpc.profile.update.useMutation({
-    onSuccess: () => { toast.success("Profil gespeichert"); setEditMode(false); refetch(); },
+    onSuccess: () => { toast.success(p.profileSaved); setEditMode(false); refetch(); },
     onError: (e) => toast.error(e.message),
   });
-  const [deletingAvatar, setDeletingAvatar] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showAvatarPreviewModal, setShowAvatarPreviewModal] = useState(false);
 
   const deleteAvatarMutation = trpc.profile.deleteAvatar.useMutation({
     onSuccess: () => {
@@ -305,31 +302,22 @@ export default function Profile() {
       setShowDeleteConfirm(false);
       utils.profile.get.invalidate();
       setTimeout(() => refetch(), 300);
-      toast.success("Profilfoto wurde zurückgesetzt");
+      toast.success(p.avatarDeleted);
     },
-    onError: (e) => toast.error(`Fehler: ${e.message}`),
+    onError: (e) => toast.error(`${p.avatarDeleteTitle}: ${e.message}`),
     onSettled: () => setDeletingAvatar(false),
   });
 
-  const handleDeleteAvatar = () => {
-    setDeletingAvatar(true);
-    deleteAvatarMutation.mutate();
-  };
-
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
-      // Sofortige Vorschau setzen
       setAvatarPreview(data.avatarUrl);
-      toast.success("Profilfoto erfolgreich aktualisiert");
-      // Profil neu laden damit avatarUrl aus DB aktualisiert wird
+      toast.success(p.avatarSuccess);
       utils.profile.get.invalidate().then(() => {
-        // Preview nach Reload aus DB entfernen (DB-Wert wird nun direkt verwendet)
         setAvatarPreview(null);
       });
     },
     onError: (e) => {
-      console.error("[Avatar Upload] Error:", e);
-      toast.error(`Fehler beim Upload: ${e.message}`);
+      toast.error(p.avatarUploadError.replace("{msg}", e.message));
       setUploadingAvatar(false);
     },
     onSettled: () => setUploadingAvatar(false),
@@ -352,7 +340,7 @@ export default function Profile() {
 
   const handleSave = () => {
     if (hasUrlErrors) {
-      toast.error("Bitte korrigieren Sie die ungültigen Webadressen vor dem Speichern.");
+      toast.error(p.urlSaveBlocked);
       return;
     }
     updateMutation.mutate({
@@ -371,19 +359,19 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    if (file.size > 5 * 1024 * 1024) { toast.error("Datei zu groß – bitte max. 5 MB."); return; }
-    if (!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)) { toast.error("Ungültiges Format – erlaubt sind JPEG, PNG, WebP und GIF."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(p.avatarTooLarge); return; }
+    if (!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)) { toast.error(p.avatarInvalidFormat); return; }
     setUploadingAvatar(true);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      if (!dataUrl) { setUploadingAvatar(false); toast.error("Datei konnte nicht gelesen werden."); return; }
+      if (!dataUrl) { setUploadingAvatar(false); toast.error(p.avatarReadError); return; }
       setAvatarPreview(dataUrl);
       const base64 = dataUrl.split(",")[1];
-      if (!base64) { setUploadingAvatar(false); toast.error("Datei konnte nicht kodiert werden."); return; }
+      if (!base64) { setUploadingAvatar(false); toast.error(p.avatarEncodeError); return; }
       uploadAvatarMutation.mutate({ base64, mimeType: file.type as "image/jpeg"|"image/png"|"image/webp"|"image/gif", fileName: file.name });
     };
-    reader.onerror = () => { setUploadingAvatar(false); toast.error("Fehler beim Lesen der Datei."); };
+    reader.onerror = () => { setUploadingAvatar(false); toast.error(p.avatarReadFailed); };
     reader.readAsDataURL(file);
   };
 
@@ -394,28 +382,30 @@ export default function Profile() {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
-        <span className="text-sm text-gray-500">Profil wird geladen…</span>
+        <span className="text-sm text-gray-500">{p.profileLoading}</span>
       </div>
     </div>
   );
   if (!profile) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
-        <p className="text-gray-500 mb-4">Profil konnte nicht geladen werden.</p>
-        <Link href="/" className="text-[#76b900] hover:underline text-sm">Zur Startseite</Link>
+        <p className="text-gray-500 mb-4">{p.profileLoadError}</p>
+        <Link href="/" className="text-[#76b900] hover:underline text-sm">{p.backHome}</Link>
       </div>
     </div>
   );
 
   const roleConf = ROLE_CONFIG[profile.role] ?? { label: profile.role, color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" };
-  const statusConf = ROLE_STATUS_CONFIG[profile.roleStatus] ?? { label: profile.roleStatus, color: "#6b7280", bg: "#f9fafb" };
   const avatarSrc = avatarPreview ?? profile.avatarUrl;
   const initials = getInitials(profile.name, profile.email);
   const backLink = profile.role === "student" ? "/student" : profile.role === "examiner" ? "/examiner" : (profile.role === "admin" || profile.role === "superadmin") ? "/admin" : "/";
   const isStudent  = profile.role === "student";
-  const isExaminer = profile.role === "examiner";
+  const isExaminer = profile.role === "examiner" || profile.role === "second_examiner";
   const isAdmin    = ["admin","pav","dean","vice_dean"].includes(profile.role);
   const displayTags = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+
+  // Öffentlicher Profil-Link
+  const publicProfileUrl = `${window.location.origin}/profile/${profile.id}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -424,28 +414,28 @@ export default function Profile() {
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href={backLink} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            Zurück
+            {p.back}
           </Link>
-          <span className="text-sm font-semibold text-gray-700">Mein Profil</span>
+          <span className="text-sm font-semibold text-gray-700">{p.title}</span>
           {!editMode ? (
             <button onClick={handleEditStart} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#76b900] hover:text-[#76b900] transition-colors">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              Bearbeiten
+              {p.edit}
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              <button onClick={() => setEditMode(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors">Abbrechen</button>
+              <button onClick={() => setEditMode(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors">{p.cancel}</button>
               <button
                 onClick={handleSave}
                 disabled={updateMutation.isPending || hasUrlErrors}
-                title={hasUrlErrors ? "Bitte zuerst ungültige Webadressen korrigieren" : undefined}
+                title={hasUrlErrors ? p.urlSaveBlocked : undefined}
                 className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: "#76b900" }}
               >
                 {updateMutation.isPending
                   ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                   : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
-                Speichern
+                {p.save}
               </button>
             </div>
           )}
@@ -456,7 +446,7 @@ export default function Profile() {
             <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-xs text-red-600">Einige Webadressen sind ungültig. Bitte korrigieren Sie diese, bevor Sie speichern.</p>
+            <p className="text-xs text-red-600">{p.urlErrorBanner}</p>
           </div>
         )}
       </div>
@@ -470,31 +460,31 @@ export default function Profile() {
           <div className="px-6 pb-6">
             <div className="flex items-end gap-4 -mt-12 mb-4">
               <div className="relative flex-shrink-0">
-                {/* Avatar-Bild (klickbar für Vorschau-Modal) */}
+                {/* Avatar-Bild */}
                 <div
                   className="w-24 h-24 rounded-2xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden cursor-pointer"
                   style={{ background: avatarSrc ? "transparent" : roleConf.bg }}
                   onClick={() => avatarSrc && !uploadingAvatar && setShowAvatarPreviewModal(true)}
-                  title={avatarSrc ? "Vorschau vergrößern" : undefined}
+                  title={avatarSrc ? p.avatarPreview : undefined}
                 >
                   {avatarSrc
-                    ? <img src={avatarSrc} alt="Profilfoto" className="w-full h-full object-cover" />
+                    ? <img src={avatarSrc} alt={p.avatarPreview} className="w-full h-full object-cover" />
                     : <span className="text-2xl font-bold" style={{ color: roleConf.color }}>{initials}</span>}
                   {uploadingAvatar && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center rounded-2xl gap-2">
                       <svg className="w-8 h-8 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      <span className="text-xs text-white font-medium">Wird hochgeladen…</span>
+                      <span className="text-xs text-white font-medium">{p.avatarUploading}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Kamera-Button: neues Foto hochladen */}
+                {/* Kamera-Button */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
                   className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-[#76b900] hover:bg-[#76b900]/5 transition-all disabled:opacity-50 cursor-pointer group"
-                  title={uploadingAvatar ? "Wird hochgeladen…" : "Neues Profilfoto hochladen"}
+                  title={uploadingAvatar ? p.avatarUploading : p.avatarUploadTitle}
                 >
                   {uploadingAvatar ? (
                     <svg className="w-5 h-5 animate-spin text-[#76b900]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -506,17 +496,16 @@ export default function Profile() {
                   )}
                 </button>
 
-                {/* Verstecktes Datei-Input */}
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileChange} />
 
-                {/* Löschen-Button: nur wenn Foto vorhanden */}
+                {/* Löschen-Button */}
                 {avatarSrc && (
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={deletingAvatar || uploadingAvatar}
                     className="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-white border-2 border-gray-200 shadow flex items-center justify-center hover:border-red-400 hover:bg-red-50 transition-all disabled:opacity-50 cursor-pointer group"
-                    title="Profilfoto löschen"
+                    title={p.avatarDeleteTitle}
                   >
                     {deletingAvatar ? (
                       <svg className="w-3.5 h-3.5 animate-spin text-red-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -533,13 +522,21 @@ export default function Profile() {
                 <p className="text-sm text-gray-500 truncate">{profile.email}</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border" style={{ color: roleConf.color, background: roleConf.bg, borderColor: roleConf.border }}>{roleConf.label}</span>
               {profile.department && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
                   {getDepartmentLabel(profile.department) ?? profile.department}
                 </span>
               )}
+            </div>
+            {/* Öffentlicher Profil-Link */}
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">{p.profileLink}</span>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <Link href={`/profile/${profile.id}`} className="text-xs text-[#76b900] hover:underline truncate">{publicProfileUrl}</Link>
+                <CopyButton url={publicProfileUrl} copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed} />
+              </div>
             </div>
           </div>
         </div>
@@ -548,25 +545,26 @@ export default function Profile() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-            Persönliche Daten
+            {p.sectionPersonal}
           </h2>
           <div className="space-y-4">
-            {editMode ? <FieldInput label="Vollständiger Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder="Vor- und Nachname" /> : <FieldView label="Vollständiger Name" value={profile.name} />}
+            {editMode
+              ? <FieldInput label={p.fieldFullName} value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder={p.fieldNamePlaceholder} />
+              : <FieldView label={p.fieldFullName} value={profile.name} notSpecified={p.notSpecified} />}
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">E-Mail-Adresse</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldEmail}</label>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-800">{profile.email ?? "—"}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Nicht änderbar</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">{p.notChangeable}</span>
               </div>
             </div>
             {editMode ? (
-              <FieldInput label="Zweite E-Mail-Adresse" value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} placeholder="alternative@beispiel.de" type="email" />
+              <FieldInput label={p.fieldSecondEmail} value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} placeholder={p.fieldSecondEmailPlaceholder} type="email" />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Zweite E-Mail-Adresse</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldSecondEmail}</label>
                 {profile.secondEmail ? (
-                  <a href={`mailto:${profile.secondEmail}`}
-                    className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-[#76b900] transition-colors group">
+                  <a href={`mailto:${profile.secondEmail}`} className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-[#76b900] transition-colors group">
                     <span className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#f3f4f6" }}>
                       <svg className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -574,30 +572,32 @@ export default function Profile() {
                     </span>
                     <span className="group-hover:underline">{profile.secondEmail}</span>
                   </a>
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-            {editMode ? <FieldInput label="Telefonnummer" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder="+49 30 12345678" type="tel" /> : <FieldView label="Telefonnummer" value={profile.phone} />}
+            {editMode
+              ? <FieldInput label={p.fieldPhone} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder={p.fieldPhonePlaceholder} type="tel" />
+              : <FieldView label={p.fieldPhone} value={profile.phone} notSpecified={p.notSpecified} />}
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Fachbereich</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldDepartment}</label>
               {editMode ? (
                 <select value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white">
-                  <option value="">Bitte wählen…</option>
+                  <option value="">{p.fieldDepartmentPlaceholder}</option>
                   {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
               ) : (
-                <p className="text-sm text-gray-800">{profile.department ? getDepartmentLabel(profile.department) : <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+                <p className="text-sm text-gray-800">{profile.department ? getDepartmentLabel(profile.department) : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Über mich</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldBio}</label>
               {editMode ? (
                 <>
-                  <textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} placeholder="Kurze Beschreibung Ihrer Person, Interessen oder Schwerpunkte…" rows={4} maxLength={1000} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none" />
-                  <p className="text-xs text-gray-400 mt-1 text-right">{form.bio.length}/1000 Zeichen</p>
+                  <textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} placeholder={p.fieldBioPlaceholder} rows={4} maxLength={1000} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none" />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{p.fieldBioChars.replace("{n}", String(form.bio.length))}</p>
                 </>
               ) : (
-                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{profile.bio ? profile.bio : <span className="text-gray-400 italic">Keine Beschreibung angegeben</span>}</p>
+                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{profile.bio ? profile.bio : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
               )}
             </div>
           </div>
@@ -607,136 +607,93 @@ export default function Profile() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-            Online-Präsenz
+            {p.sectionOnline}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-            {/* Website */}
             {editMode ? (
-              <UrlInput label="Website" value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder="https://www.beispiel.de" />
+              <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Website</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
                 {profile.website ? (
-                  <LinkDisplay
-                    href={profile.website}
-                    label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                    iconBg="#f0fdf4" iconColor="#76b900"
-                    hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
-                    iconContent={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
-                      </svg>
-                    }
+                  <LinkDisplay href={profile.website} label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                    iconBg="#f0fdf4" iconColor="#76b900" hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                    iconContent={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
-            {/* LinkedIn */}
             {editMode ? (
-              <UrlInput label="LinkedIn-Profil" value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder="https://www.linkedin.com/in/…" />
+              <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">LinkedIn-Profil</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
                 {profile.linkedIn ? (
-                  <LinkDisplay
-                    href={profile.linkedIn}
-                    label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
-                    iconBg="#0a66c2"
-                    hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
-                    iconContent={
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                      </svg>
-                    }
+                  <LinkDisplay href={profile.linkedIn} label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
+                    iconBg="#0a66c2" hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                    iconContent={<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
-            {/* ResearchGate */}
             {editMode ? (
-              <UrlInput label="ResearchGate-Profil" value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder="https://www.researchgate.net/profile/…" />
+              <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">ResearchGate-Profil</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
                 {profile.researchGate ? (
-                  <LinkDisplay
-                    href={profile.researchGate}
-                    label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
-                    iconBg="#00d0af"
-                    hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
+                  <LinkDisplay href={profile.researchGate} label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
+                    iconBg="#00d0af" hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
                     iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
-            {/* HTW Berlin Profil */}
             {editMode ? (
-              <UrlInput label="HTW Berlin Profil" value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder="https://www.htw-berlin.de/hochschule/personen/…" />
+              <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">HTW Berlin Profil</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
                 {profile.htwProfileUrl ? (
-                  <LinkDisplay
-                    href={profile.htwProfileUrl}
-                    label="HTW Berlin"
-                    iconBg="#1a5490"
-                    hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
+                  <LinkDisplay href={profile.htwProfileUrl} label="HTW Berlin"
+                    iconBg="#1a5490" hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
                     iconContent={<span className="text-white font-bold text-xs">HTW</span>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
-            {/* Weiterer Link (miscLink) – mit Ketten-Symbol */}
             {editMode ? (
-              <UrlInput label="Weiterer Link" value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder="https://…" />
+              <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Weiterer Link</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
                 {profile.miscLink ? (
-                  <LinkDisplay
-                    href={profile.miscLink}
-                    label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                    iconBg="#f3f4f6" iconColor="#6b7280"
-                    hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
-                    iconContent={
-                      /* Ketten-/Link-Symbol */
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                    }
+                  <LinkDisplay href={profile.miscLink} label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                    iconBg="#f3f4f6" iconColor="#6b7280" hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                    iconContent={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
-            {/* Terminbuchung (bookingUrl) – mit Kalender-Symbol */}
             {editMode ? (
-              <UrlInput label="Terminbuchungs-Link" value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder="https://calendly.com/… oder ähnlich" />
+              <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Terminbuchung</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
                 {profile.bookingUrl ? (
-                  <LinkDisplay
-                    href={profile.bookingUrl}
-                    label="Termin buchen"
-                    iconBg="#faf5ff" iconColor="#7c3aed"
-                    hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
-                    iconContent={
-                      /* Kalender-Symbol */
-                      <svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    }
+                  <LinkDisplay href={profile.bookingUrl} label={p.fieldBookingLabel}
+                    iconBg="#faf5ff" iconColor="#7c3aed" hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
+                    copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                    iconContent={<svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                   />
-                ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-
           </div>
         </div>
 
@@ -748,24 +705,30 @@ export default function Profile() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 13c0 6.075-4.925 11-11 11S-1 19.075-1 13c0-.832.086-1.644.25-2.43L12 14z" />
               </svg>
-              <span style={{ color: "#16a34a" }}>Studierenden-Informationen</span>
+              <span style={{ color: "#16a34a" }}>{p.sectionStudent}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {editMode ? <FieldInput label="Matrikelnummer" value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder="z.B. 567890" /> : <FieldView label="Matrikelnummer" value={profile.matrikelNr} />}
+              {editMode
+                ? <FieldInput label={p.fieldMatrikelNr} value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder={p.fieldMatrikelNrPlaceholder} />
+                : <FieldView label={p.fieldMatrikelNr} value={profile.matrikelNr} notSpecified={p.notSpecified} />}
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Angestrebter Abschluss</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldThesisType}</label>
                 {editMode ? (
                   <select value={form.thesisType} onChange={(e) => setForm((f) => ({ ...f, thesisType: e.target.value as "" | "bachelor" | "master" }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white">
-                    <option value="">Bitte wählen…</option>
+                    <option value="">{p.fieldDepartmentPlaceholder}</option>
                     <option value="bachelor">Bachelor</option>
                     <option value="master">Master</option>
                   </select>
                 ) : (
-                  <p className="text-sm text-gray-800">{profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+                  <p className="text-sm text-gray-800">{profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
                 )}
               </div>
-              {editMode ? <FieldInput label="Immatrikulationssemester" value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} placeholder="z.B. WiSe 2022/23" /> : <FieldView label="Immatrikulationssemester" value={profile.enrollmentSemester} />}
-              {editMode ? <FieldInput label="Zielsemester (Abschluss)" value={form.targetSemester} onChange={(v) => setForm((f) => ({ ...f, targetSemester: v }))} placeholder="z.B. SoSe 2025" /> : <FieldView label="Zielsemester (Abschluss)" value={profile.targetSemester} />}
+              {editMode
+                ? <FieldInput label={p.fieldEnrollmentSemester} value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} placeholder={p.fieldEnrollmentSemesterPlaceholder} />
+                : <FieldView label={p.fieldEnrollmentSemester} value={profile.enrollmentSemester} notSpecified={p.notSpecified} />}
+              {editMode
+                ? <FieldInput label={p.fieldTargetSemester} value={form.targetSemester} onChange={(v) => setForm((f) => ({ ...f, targetSemester: v }))} placeholder={p.fieldTargetSemesterPlaceholder} />
+                : <FieldView label={p.fieldTargetSemester} value={profile.targetSemester} notSpecified={p.notSpecified} />}
             </div>
           </div>
         )}
@@ -775,36 +738,36 @@ export default function Profile() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-              <span style={{ color: "#2563eb" }}>Prüfer:innen-Informationen</span>
+              <span style={{ color: "#2563eb" }}>{p.sectionExaminer}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {editMode ? <FieldInput label="Akademischer Titel" value={form.academicTitle} onChange={(v) => setForm((f) => ({ ...f, academicTitle: v }))} placeholder="z.B. Prof. Dr." /> : <FieldView label="Akademischer Titel" value={profile.academicTitle} />}
-              {editMode ? <FieldInput label="Büro / Raum" value={form.officeRoom} onChange={(v) => setForm((f) => ({ ...f, officeRoom: v }))} placeholder="z.B. Gebäude C, Raum 307" /> : <FieldView label="Büro / Raum" value={profile.officeRoom} />}
-            </div>
-            <div className="mt-4">
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Sprechzeiten</label>
-              {editMode ? (
-                <>
-                  <textarea value={form.officeHours} onChange={(e) => setForm((f) => ({ ...f, officeHours: e.target.value }))} placeholder="z.B. Dienstag 10–12 Uhr, Donnerstag 14–16 Uhr (nach Vereinbarung)" rows={3} maxLength={500} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none" />
-                  <p className="text-xs text-gray-400 mt-1 text-right">{form.officeHours.length}/500 Zeichen</p>
-                </>
-              ) : (
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">{profile.officeHours ? profile.officeHours : <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
-              )}
-            </div>
-            <div className="mt-4">
-              {editMode ? (
-                <TagInput label="Forschungsschwerpunkte" tags={researchTagList} onChange={setResearchTagList} placeholder="z.B. Machine Learning, Nachhaltigkeit…" />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Forschungsschwerpunkte</label>
-                  {displayTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {displayTags.map((tag, i) => <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{tag}</span>)}
-                    </div>
-                  ) : <span className="text-sm text-gray-400 italic">Nicht angegeben</span>}
-                </div>
-              )}
+              {editMode
+                ? <FieldInput label={p.fieldAcademicTitle} value={form.academicTitle} onChange={(v) => setForm((f) => ({ ...f, academicTitle: v }))} placeholder={p.fieldAcademicTitlePlaceholder} />
+                : <FieldView label={p.fieldAcademicTitle} value={profile.academicTitle} notSpecified={p.notSpecified} />}
+              {editMode
+                ? <FieldInput label={p.fieldOfficeRoom} value={form.officeRoom} onChange={(v) => setForm((f) => ({ ...f, officeRoom: v }))} placeholder={p.fieldOfficeRoomPlaceholder} />
+                : <FieldView label={p.fieldOfficeRoom} value={profile.officeRoom} notSpecified={p.notSpecified} />}
+              <div className="sm:col-span-2">
+                {editMode
+                  ? <FieldInput label={p.fieldOfficeHours} value={form.officeHours} onChange={(v) => setForm((f) => ({ ...f, officeHours: v }))} placeholder={p.fieldOfficeHoursPlaceholder} />
+                  : <FieldView label={p.fieldOfficeHours} value={profile.officeHours} notSpecified={p.notSpecified} />}
+              </div>
+              <div className="sm:col-span-2">
+                {editMode ? (
+                  <TagInput label={p.fieldResearchTags} tags={researchTagList} onChange={setResearchTagList} placeholder={p.fieldResearchTagsPlaceholder} hint={p.fieldResearchTagsHint} />
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldResearchTags}</label>
+                    {displayTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {displayTags.map((tag, i) => (
+                          <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{tag}</span>
+                        ))}
+                      </div>
+                    ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -814,12 +777,20 @@ export default function Profile() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-              <span style={{ color: "#7c3aed" }}>Verwaltungs-Informationen</span>
+              <span style={{ color: "#7c3aed" }}>{p.sectionAdmin}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {editMode ? <FieldInput label="Personalnummer" value={form.staffId} onChange={(v) => setForm((f) => ({ ...f, staffId: v }))} placeholder="z.B. P-12345" /> : <FieldView label="Personalnummer" value={profile.staffId} />}
-              {editMode ? <FieldInput label="Zuständigkeitsbereich" value={form.responsibilityArea} onChange={(v) => setForm((f) => ({ ...f, responsibilityArea: v }))} placeholder="z.B. Prüfungsamt FB 3" /> : <FieldView label="Zuständigkeitsbereich" value={profile.responsibilityArea} />}
-              {editMode ? <FieldInput label="Bürostandort" value={form.officeLocation} onChange={(v) => setForm((f) => ({ ...f, officeLocation: v }))} placeholder="z.B. Gebäude A, Raum 101" /> : <FieldView label="Bürostandort" value={profile.officeLocation} />}
+              {editMode
+                ? <FieldInput label={p.fieldStaffId} value={form.staffId} onChange={(v) => setForm((f) => ({ ...f, staffId: v }))} />
+                : <FieldView label={p.fieldStaffId} value={profile.staffId} notSpecified={p.notSpecified} />}
+              {editMode
+                ? <FieldInput label={p.fieldOfficeLocation} value={form.officeLocation} onChange={(v) => setForm((f) => ({ ...f, officeLocation: v }))} />
+                : <FieldView label={p.fieldOfficeLocation} value={profile.officeLocation} notSpecified={p.notSpecified} />}
+              <div className="sm:col-span-2">
+                {editMode
+                  ? <FieldInput label={p.fieldResponsibilityArea} value={form.responsibilityArea} onChange={(v) => setForm((f) => ({ ...f, responsibilityArea: v }))} />
+                  : <FieldView label={p.fieldResponsibilityArea} value={profile.responsibilityArea} notSpecified={p.notSpecified} />}
+              </div>
             </div>
           </div>
         )}
@@ -828,129 +799,43 @@ export default function Profile() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-            Konto-Informationen
+            {p.sectionAccount}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Rolle</label>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border" style={{ color: roleConf.color, background: roleConf.bg, borderColor: roleConf.border }}>{roleConf.label}</span>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium" style={{ color: statusConf.color, background: statusConf.bg }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: statusConf.color }} />
-                {statusConf.label}
-              </span>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Registriert am</label>
-              <p className="text-sm text-gray-800">{formatDate(profile.createdAt)}</p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Zuletzt angemeldet</label>
-              <p className="text-sm text-gray-800">{formatDate(profile.lastSignedIn)}</p>
-            </div>
+            <FieldView label={p.memberSince} value={formatDate(profile.createdAt, lang)} notSpecified="—" />
+            <FieldView label={p.lastLogin} value={formatDate(profile.lastSignedIn, lang)} notSpecified="—" />
           </div>
         </div>
 
-        {/* ── Hinweis ── */}
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <p className="text-sm text-blue-700">Klicken Sie auf das Profilfoto, um eine Vorschau zu öffnen. Über das Kamera-Symbol können Sie ein neues Bild hochladen (JPEG, PNG, WebP, GIF, max. 5 MB). Das X-Symbol oben links am Foto öffnet den Löschen-Dialog.</p>
-        </div>
       </div>
 
-      {/* ── Vorschau-Modal ── */}
+      {/* ── Avatar-Vorschau-Modal ── */}
       {showAvatarPreviewModal && avatarSrc && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          onClick={() => setShowAvatarPreviewModal(false)}
-        >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-sm w-full mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700">Profilfoto</span>
-              <button
-                type="button"
-                onClick={() => setShowAvatarPreviewModal(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <img src={avatarSrc} alt="Profilfoto Vorschau" className="w-full rounded-xl object-cover max-h-80" />
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setShowAvatarPreviewModal(false); fileInputRef.current?.click(); }}
-                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-[#76b900]/10 text-[#76b900] hover:bg-[#76b900]/20 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Neues Foto hochladen
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowAvatarPreviewModal(false); setShowDeleteConfirm(true); }}
-                className="py-2 px-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Löschen
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAvatarPreviewModal(false)}>
+          <div className="relative max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <img src={avatarSrc} alt={p.avatarPreview} className="w-full rounded-2xl shadow-2xl object-cover" />
+            <button onClick={() => setShowAvatarPreviewModal(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
           </div>
         </div>
       )}
 
-      {/* ── Löschen-Bestätigungs-Dialog ── */}
+      {/* ── Avatar-Löschen-Bestätigung ── */}
       {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => !deletingAvatar && setShowDeleteConfirm(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">Profilfoto löschen?</h3>
-                <p className="text-sm text-gray-500 mt-1">Das aktuelle Profilfoto wird gelöscht und durch Ihre Initialen ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">{p.avatarDeleteConfirmTitle}</h3>
+            <p className="text-sm text-gray-500 mb-6">{p.avatarDeleteConfirmDesc}</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">{p.cancel}</button>
               <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setDeletingAvatar(true); deleteAvatarMutation.mutate(); }}
                 disabled={deletingAvatar}
-                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center gap-2"
               >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAvatar}
-                disabled={deletingAvatar}
-                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                {deletingAvatar ? (
-                  <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Wird gelöscht…</>
-                ) : (
-                  "Foto löschen"
-                )}
+                {deletingAvatar && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
+                {p.avatarDeleteConfirmBtn}
               </button>
             </div>
           </div>
