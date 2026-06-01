@@ -791,3 +791,10 @@
 - [x] Tooltip in ProgrammeCard (ProgrammeSelector.tsx) – vollständiger Name bei Hover
 - [x] Tooltip in ProgrammeTile (ExaminerOnboarding.tsx) – vollständiger Name bei Hover
 - [x] shadcn/ui Tooltip-Komponente verwenden (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent)
+
+## Feature: Piktogramme in Studiengangs-Dropdowns ✅ KOMPLETT
+
+- [x] Wiederverwendbare ProgrammeSelect-Komponente (ersetzt natives select mit Bild-Support)
+- [x] StudentDashboard: Antragsformular-Dropdown mit Piktogramm
+- [x] StudentDashboard: Readonly-Feld mit Piktogramm (wenn Studiengang aus Profil)
+- [x] ExaminerDirectory: Filter-Dropdown mit Piktogramm

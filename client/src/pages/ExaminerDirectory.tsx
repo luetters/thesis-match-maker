@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
+import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -336,23 +337,20 @@ export default function ExaminerDirectory() {
 
           {/* Studiengang Filter */}
           {(programmes ?? []).length > 0 && (
-            <select
+            <ProgrammeSelect
+              options={(programmes ?? []).map((p) => ({
+                id: p.id,
+                name: p.name,
+                abbreviation: p.abbreviation ?? p.name.slice(0, 4),
+                level: p.level,
+                pictogramUrl: (p as any).pictogramUrl,
+              }))}
               value={filterProgramme}
-              onChange={(e) => setFilterProgramme(e.target.value === "" ? "" : Number(e.target.value))}
-              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-            >
-              <option value="">{D.allProgrammesOpt}</option>
-              <optgroup label="Bachelor">
-                {bachelorProgrammes.map((p) => (
-                  <option key={p.id} value={p.id}>{p.abbreviation} – {p.name}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Master">
-                {masterProgrammes.map((p) => (
-                  <option key={p.id} value={p.id}>{p.abbreviation} – {p.name}</option>
-                ))}
-              </optgroup>
-            </select>
+              onChange={(id) => setFilterProgramme(id)}
+              placeholder={D.allProgrammesOpt}
+              grouped
+              className="w-56"
+            />
           )}
 
           {/* Rollenfilter */}

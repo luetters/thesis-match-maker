@@ -1,5 +1,6 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
+import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useEffect, useRef, useState } from "react";
@@ -633,37 +634,49 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             </label>
             {myProgramme ? (
               <>
-                <input
-                  type="text"
-                  readOnly
-                  value={myProgramme.name}
-                  className="w-full px-3.5 py-2.5 border border-[#76B900]/30 bg-[#76B900]/5 text-[#76B900] font-medium rounded-xl text-sm cursor-not-allowed"
-                  title="Studiengang ist Ihrem Profil fest zugeordnet"
-                />
+                {/* Readonly-Anzeige mit Piktogramm wenn Studiengang aus Profil */}
+                <div className="w-full flex items-center gap-2.5 px-3.5 py-2.5 border border-[#76B900]/30 bg-[#76B900]/5 rounded-xl cursor-not-allowed"
+                  title="Studiengang ist Ihrem Profil fest zugeordnet">
+                  {(myProgramme as any).pictogramUrl && (
+                    <img
+                      src={(myProgramme as any).pictogramUrl}
+                      alt={(myProgramme as any).abbreviation ?? myProgramme.name}
+                      className="w-5 h-5 object-contain flex-shrink-0"
+                    />
+                  )}
+                  <span className="text-[#76B900] font-medium text-sm">
+                    {(myProgramme as any).abbreviation && (
+                      <span className="mr-1.5">{(myProgramme as any).abbreviation}</span>
+                    )}
+                    {myProgramme.name}
+                  </span>
+                </div>
                 <p className="mt-1 text-xs text-gray-400">{t.student.semesterFromProfile}</p>
               </>
             ) : (() => {
               const filtered = allProgrammes.filter(
                 (p: any) => p.level === form.degreeType && (p.fachbereich ?? 'FB3') === form.fachbereich
               );
+              const selectedProg = filtered.find((p: any) => p.name === form.department);
               return (
                 <>
-                  <select
+                  <ProgrammeSelect
+                    options={filtered.map((p: any) => ({
+                      id: p.id,
+                      name: p.name,
+                      abbreviation: p.abbreviation ?? p.name.slice(0, 4),
+                      level: p.level,
+                      pictogramUrl: p.pictogramUrl,
+                    }))}
+                    value={selectedProg?.id ?? ""}
+                    onChange={(id) => {
+                      const prog = filtered.find((p: any) => p.id === id);
+                      setForm((f) => ({ ...f, department: prog?.name ?? "" }));
+                    }}
+                    placeholder={t.student.pleaseSelect}
                     required
-                    value={form.department}
-                    onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                    className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
-                      errors.department ? 'border-red-400' : 'border-gray-200'
-                    }`}
-                  >
-                    <option value="">{t.student.pleaseSelect}</option>
-                    {filtered.length > 0 ? (
-                      filtered.map((p: any) => (
-                        <option key={p.id} value={p.name}>{p.name}</option>
-                      ))
-                    ) : (
-                      <option disabled value="">{t.student.noProgForSelection}</option>                  )}
-                  </select>
+                    error={!!errors.department}
+                  />
                   {filtered.length === 0 && (
                     <p className="mt-1 text-xs text-amber-600">{t.student.noFbProgrammes.replace('{fb}', form.fachbereich).replace('{type}', form.degreeType === 'master' ? 'Master-' : 'Bachelor-')}</p>
                   )}
