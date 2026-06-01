@@ -670,3 +670,14 @@
 - [x] Backend register-Prozedur: E-Mail-Domain-Validierung ergänzt (student: @student.htw-berlin.de; examiner/admin: @htw-berlin.de; second_examiner: beliebig)
 - [x] @htw-berlin.com wird bei Registrierung nicht mehr akzeptiert (nur @htw-berlin.de für HTW-Mitarbeitende)
 - [x] Tests grün (55/55), Checkpoint gespeichert
+
+
+## Feature: Anfrage zurückziehen ✅ KOMPLETT
+
+- [x] Backend: withdrawThesisRequest(thesisRequestId, studentId) – Status auf WITHDRAWN setzen, Eigentümer- und Status-Prüfung
+- [x] tRPC: thesisPhase27.withdraw – Mutation mit TRPCError-Handling (NOT_FOUND, FORBIDDEN, BAD_REQUEST)
+- [x] Frontend: "Anfrage zurückziehen"-Button in MyRequests-Komponente (nur bei PENDING/PENDING_FIRST_EXAMINER/PENDING_SECOND_EXAMINER)
+- [x] Frontend: AlertDialog-Bestätigungsdialog (shadcn/ui)
+- [x] i18n: withdrawRequest, withdrawConfirmTitle, withdrawConfirmDesc, withdrawBtn, withdrawSuccess, withdrawError (DE + EN)
+- [x] Audit-Log-Eintrag: THESIS_WITHDRAWN mit toStatus: WITHDRAWN
+- [x] Tests: 55/55 grün

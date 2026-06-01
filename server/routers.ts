@@ -1943,15 +1943,28 @@ export const appRouter = router({
     withdraw: studentProcedure
       .input(z.object({ thesisRequestId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        
-        await withdrawThesisRequest(input.thesisRequestId);
+        try {
+          await withdrawThesisRequest(input.thesisRequestId, ctx.user.id);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg === "Anfrage nicht gefunden") {
+            throw new TRPCError({ code: "NOT_FOUND", message: msg });
+          }
+          if (msg === "Keine Berechtigung") {
+            throw new TRPCError({ code: "FORBIDDEN", message: msg });
+          }
+          if (msg === "Anfrage kann nicht mehr zurückgezogen werden") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+        }
         await createAuditLogEntry({
           thesisRequestId: input.thesisRequestId,
           actorId: ctx.user.id,
           actorRole: ctx.user.role,
           action: "THESIS_WITHDRAWN",
+          toStatus: "WITHDRAWN",
         });
-
         return { success: true };
       }),
 

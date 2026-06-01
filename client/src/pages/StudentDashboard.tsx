@@ -5,6 +5,17 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -968,10 +979,20 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
 }
 
 // ─── My Requests ────────────────────────────────────────────────────────────────
+const WITHDRAWABLE_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"];
+
 function MyRequests() {
   const { t } = useLanguage();
   const utils = trpc.useUtils();
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
+
+  const withdrawMutation = trpc.thesisPhase27.withdraw.useMutation({
+    onSuccess: () => {
+      toast.success(t.student.withdrawSuccess);
+      utils.thesis.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message ?? t.student.withdrawError),
+  });
 
   if (isLoading) {
     return (
@@ -1071,12 +1092,44 @@ function MyRequests() {
               wantedSecondExaminerId={(req as any).wantedSecondExaminerId}
             />
           )}
-          <div className="mt-3 pt-3 border-t border-gray-50">
+          <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col gap-3">
             <ExposeUploadButton
               thesisId={req.id}
               currentUrl={(req as { exposeUrl?: string | null }).exposeUrl}
               onSuccess={() => utils.thesis.myRequests.invalidate()}
             />
+            {/* Anfrage zurückziehen – nur bei noch nicht beantworteten Anfragen */}
+            {WITHDRAWABLE_STATUSES.includes(req.status) && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    disabled={withdrawMutation.isPending}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {t.student.withdrawRequest}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t.student.withdrawConfirmTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>{t.student.withdrawConfirmDesc}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t.student.cancel}</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => withdrawMutation.mutate({ thesisRequestId: req.id })}
+                    >
+                      {t.student.withdrawBtn}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       ))}

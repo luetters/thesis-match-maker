@@ -1709,15 +1709,39 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
 }
 
 /**
- * Ziehe eine Anfrage zurück
+ * Ziehe eine Anfrage zurück (nur wenn noch nicht beantwortet)
  */
-export async function withdrawThesisRequest(thesisRequestId: number) {
+export async function withdrawThesisRequest(thesisRequestId: number, studentId: number) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
-  
+
+  // Anfrage laden und Eigentümer + Status prüfen
+  const [request] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+
+  if (!request) {
+    throw new Error("Anfrage nicht gefunden");
+  }
+  if (request.studentId !== studentId) {
+    throw new Error("Keine Berechtigung");
+  }
+
+  // Nur zurückziehen, wenn noch nicht beantwortet
+  const withdrawableStatuses = [
+    "PENDING",
+    "PENDING_FIRST_EXAMINER",
+    "PENDING_SECOND_EXAMINER",
+  ];
+  if (!withdrawableStatuses.includes(request.status)) {
+    throw new Error("Anfrage kann nicht mehr zurückgezogen werden");
+  }
+
   await db.update(thesisRequests)
     .set({
-      withdrawnAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      status: "WITHDRAWN",
       updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));

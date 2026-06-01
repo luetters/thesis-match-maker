@@ -261,6 +261,13 @@ const translations = {
       passwordTooShort2: "Das neue Passwort muss mindestens 8 Zeichen lang sein.",
       // Formular & Übersetzungen
       loading: "Wird geladen…",
+      // Anfrage zurückziehen
+      withdrawRequest: "Anfrage zurückziehen",
+      withdrawConfirmTitle: "Anfrage zurückziehen?",
+      withdrawConfirmDesc: "Diese Anfrage wird unwiderruflich zurückgezogen. Die Prüfer:in wird nicht mehr benachrichtigt.",
+      withdrawBtn: "Zurückziehen",
+      withdrawSuccess: "Anfrage wurde zurückgezogen.",
+      withdrawError: "Anfrage konnte nicht zurückgezogen werden.",
     },
     // Examiner Dashboard
     examiner: {
@@ -892,8 +899,13 @@ const translations = {
       previewTitle: "Preview Your Request",
       previewSubtitle: "Please review your details before final submission.",
       editBack: "Back to editing",
-
-
+      // Withdraw request
+      withdrawRequest: "Withdraw Request",
+      withdrawConfirmTitle: "Withdraw Request?",
+      withdrawConfirmDesc: "This request will be permanently withdrawn. The examiner will no longer be notified.",
+      withdrawBtn: "Withdraw",
+      withdrawSuccess: "Request has been withdrawn.",
+      withdrawError: "The request could not be withdrawn.",
     },
     // Examiner Dashboard
     examiner: {
