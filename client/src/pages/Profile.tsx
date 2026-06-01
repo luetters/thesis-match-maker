@@ -272,6 +272,8 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery(undefined, {
     placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
   const utils = trpc.useUtils();
   const [editMode, setEditMode] = useState(false);
@@ -339,8 +341,6 @@ export default function Profile() {
       // Sofortiger Cache-Update ohne Netzwerkwartzeit (verhindert Flash of old content)
       utils.profile.get.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
       utils.auth.me.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
-      // Im Hintergrund neu laden (best-effort, kein await)
-      refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
