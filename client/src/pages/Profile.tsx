@@ -330,18 +330,19 @@ export default function Profile() {
       if (!resp.ok || !json.success) {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
-      // Vorschau auf S3-URL umstellen
+      // Vorschau auf S3-URL (aus S3) umstellen – Blob-URL wird nicht mehr benötigt
+      URL.revokeObjectURL(localPreview);
       setAvatarPreview(json.avatarUrl);
       toast.success(p.avatarSuccess);
-      await utils.profile.get.invalidate();
-      setAvatarPreview(null);
+      // Profil neu laden – nach Abschluss übernimmt profile.avatarUrl die Anzeige
+      utils.profile.get.invalidate();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
+      URL.revokeObjectURL(localPreview);
       setAvatarPreview(null);
     } finally {
       setUploadingAvatar(false);
-      URL.revokeObjectURL(localPreview);
     }
   };
 
