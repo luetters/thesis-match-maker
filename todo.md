@@ -692,3 +692,24 @@
 - [x] i18n: withdrawRequest, withdrawConfirmTitle, withdrawConfirmDesc, withdrawBtn, withdrawSuccess, withdrawError (DE + EN)
 - [x] Audit-Log-Eintrag: THESIS_WITHDRAWN mit toStatus: WITHDRAWN
 - [x] Tests: 55/55 grün
+
+## Feature: Prüfer:innen – Study-Programme-Präferenzen (Links-nach-Rechts-Auswahlliste)
+
+- [ ] DB-Schema: examiner_programme_preferences-Tabelle prüfen / anlegen (examinerId, programmeId)
+- [ ] Backend: getExaminerProgrammePreferences(examinerId) in db.ts
+- [ ] Backend: setExaminerProgrammePreferences(examinerId, programmeIds[]) in db.ts
+- [ ] tRPC: examiner.getProgrammePreferences und examiner.setProgrammePreferences
+- [ ] Frontend: DualListBox-Komponente (Links-nach-Rechts) im Prüfer:innen-Dashboard (Profil-Tab)
+- [ ] i18n: DE + EN Keys für Programm-Präferenzen-UI
+
+## Feature: Prüfer:innen – Study-Programme-Auswahl (Dual-List-Box) ✅ KOMPLETT
+- [x] DB-Schema: examiner_programmes-Tabelle bereits vorhanden (examinerId, programmeId)
+- [x] Backend: getExaminerProgrammes(userId) und setExaminerProgrammes(userId, programmeIds[]) in db.ts vorhanden
+- [x] tRPC: programmes.getExaminerProgrammes und programmes.setExaminerProgrammes vorhanden
+- [x] Frontend: ExaminerProgrammeSelector durch Dual-List-Box (Links-nach-Rechts) mit dnd-kit ersetzt
+- [x] Drag-and-Drop: Studiengänge zwischen linker (verfügbar) und rechter (ausgewählt) Liste ziehbar
+- [x] Klick-Interaktion: Klick auf Studiengang fügt ihn hinzu oder entfernt ihn
+- [x] "Alle hinzufügen" / "Alle entfernen"-Buttons
+- [x] Drag-Overlay für visuelles Feedback beim Ziehen
+- [x] Speichern-Button mit Lade-Zustand
+- [x] Tests: 55/55 grün
