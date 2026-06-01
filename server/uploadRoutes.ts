@@ -1,9 +1,29 @@
 import type { Express, Request, Response } from "express";
 import multer from "multer";
-import { sdk } from "./_core/sdk";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto } from "./db";
+import { jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, getUserByOpenId } from "./db";
 import { generateDeadlineIcs } from "./icsHelper";
 import { storagePut } from "./storage";
+import { COOKIE_NAME } from "@shared/const";
+
+/** Authentifiziert einen Request anhand des Session-Cookies ohne upsertUser-Seiteneffekte */
+async function getUserFromRequest(req: Request) {
+  try {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) return null;
+    const cookies = parseCookieHeader(cookieHeader);
+    const token = cookies[COOKIE_NAME];
+    if (!token) return null;
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
+    const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
+    const openId = payload.openId as string | undefined;
+    if (!openId) return null;
+    return await getUserByOpenId(openId) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // In-memory storage: Datei wird direkt zu S3 weitergeleitet
 const upload = multer({
@@ -44,8 +64,7 @@ export function registerUploadRoutes(app: Express) {
     }),
     async (req: Request, res: Response) => {
       try {
-        let user = null;
-        try { user = await sdk.authenticateRequest(req); } catch { user = null; }
+        const user = await getUserFromRequest(req);
         if (!user) {
           res.status(401).json({ error: "Nicht angemeldet." });
           return;
@@ -76,8 +95,7 @@ export function registerUploadRoutes(app: Express) {
     async (req: Request, res: Response) => {
       try {
         // Auth prüfen
-        let user = null;
-        try { user = await sdk.authenticateRequest(req); } catch { user = null; }
+        const user = await getUserFromRequest(req);
         if (!user) {
           res.status(401).json({ error: "Nicht angemeldet." });
           return;
@@ -138,20 +156,28 @@ export function registerUploadRoutes(app: Express) {
   // --- Foto-Upload für Prüfer:innen-Profil ---
   app.post(
     "/api/upload/photo",
-    multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => { if (!file.mimetype.startsWith("image/")) cb(new Error("Nur Bilddateien erlaubt")); else cb(null, true); } }).single("photo"),
+    (req, res, next) => upload.single("photo")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu groß. Bitte laden Sie ein Bild mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ungültige Datei." });
+      }
+      next();
+    }),
     async (req: Request, res: Response) => {
       try {
-        let user = null;
-        try { user = await sdk.authenticateRequest(req); } catch { user = null; }
+        const user = await getUserFromRequest(req);
         if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
         if (!req.file) { res.status(400).json({ error: "Kein Foto übermittelt." }); return; }
-        const ext = req.file.mimetype.split("/")[1] ?? "jpg";
+        const ext = req.file.mimetype.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
         const fileName = `photo-${user.id}-${Date.now()}.${ext}`;
         const { key, url } = await storagePut(`photos/${fileName}`, req.file.buffer, req.file.mimetype);
         await updateExaminerPhoto(user.id, url, key);
         res.json({ success: true, url, key });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Foto-Upload fehlgeschlagen.";
+        console.error("[Upload/photo] Fehler:", err);
         res.status(500).json({ error: message });
       }
     }

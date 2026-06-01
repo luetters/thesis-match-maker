@@ -250,8 +250,11 @@ function Step3Photo({
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const res = await fetch("/api/upload/photo", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload fehlgeschlagen");
+      const res = await fetch("/api/upload/photo", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error ?? "Upload fehlgeschlagen");
+      }
       toast.success("Foto erfolgreich hochgeladen.");
     } catch {
       toast.error("Foto-Upload fehlgeschlagen. Sie können es später im Profil nachholen.");

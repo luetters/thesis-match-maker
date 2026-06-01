@@ -59,8 +59,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   if (user.lastSignedIn !== undefined) {
-    values.lastSignedIn = user.lastSignedIn;
-    updateSet.lastSignedIn = user.lastSignedIn;
+    const lsi = user.lastSignedIn instanceof Date ? user.lastSignedIn.toISOString().slice(0, 19).replace('T', ' ') : user.lastSignedIn;
+    values.lastSignedIn = lsi;
+    updateSet.lastSignedIn = lsi;
   }
   if (user.role !== undefined) {
     values.role = user.role;
@@ -70,8 +71,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet.role = "admin";
   }
 
-  if (!values.lastSignedIn) values.lastSignedIn = new Date();
-  if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
+  const nowStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  if (!values.lastSignedIn) values.lastSignedIn = nowStr;
+  if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = nowStr;
 
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
