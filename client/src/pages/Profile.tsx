@@ -331,15 +331,11 @@ export default function Profile() {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
       const newAvatarUrl: string = json.avatarUrl;
-      // 1. Vorschau sofort auf S3-URL setzen (Blob-URL noch NICHT freigeben)
-      setAvatarPreview(newAvatarUrl);
-      // 2. tRPC-Cache direkt mit neuer URL aktualisieren – kein Warten auf Netzwerk
-      utils.profile.get.setData(undefined, (old) =>
-        old ? { ...old, avatarUrl: newAvatarUrl } : old
-      );
+      // Blob-URL freigeben
+      URL.revokeObjectURL(localPreview);
       toast.success(p.avatarSuccess);
-      // 3. Blob-URL erst nach nächstem Render freigeben
-      setTimeout(() => URL.revokeObjectURL(localPreview), 100);
+      // Seite neu laden – garantiert dass das neue Bild angezeigt wird
+      setTimeout(() => window.location.reload(), 800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);

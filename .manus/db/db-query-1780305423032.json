@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, email, avatarUrl FROM users WHERE id = 4050049 OR email = (SELECT email FROM users WHERE id = 4050049) LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, email, avatarUrl FROM users WHERE id = 4050049 OR email = (SELECT email FROM users WHERE id = 4050049) LIMIT 10;",
+  "rows": [
+    {
+      "id": "690079",
+      "name": "Prof. Dr. Holger Lütters",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png"
+    },
+    {
+      "id": "4050049",
+      "name": "Holger Lütters",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png"
+    },
+    {
+      "id": "4080481",
+      "name": "holger",
+      "email": "holger@luetters.net",
+      "avatarUrl": "/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tavatarUrl\n690079\tProf. Dr. Holger Lütters\tholger@luetters.net\t/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png\n4050049\tHolger Lütters\tholger@luetters.net\t/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png\n4080481\tholger\tholger@luetters.net\t/manus-storage/avatars/user-4050049-1780303577682_20e9b0e4.png\n",
+  "stderr": "",
+  "execution_time_ms": 306
+}
