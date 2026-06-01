@@ -310,6 +310,24 @@ export const examinerSemesterCapacities = mysqlTable("examiner_semester_capaciti
   index("uq_esc").on(table.examinerId, table.semester),
 ]);
 
+// ─── Prüfer:innen E-Mail-Templates ──────────────────────────────────────────
+export const examinerEmailTemplates = mysqlTable("examiner_email_templates", {
+  id: int().autoincrement().notNull(),
+  examinerId: int("examiner_id").notNull(),
+  templateType: mysqlEnum("template_type", [
+    "requirements",
+    "acceptance",
+    "rejection",
+    "fully_booked",
+  ]).notNull(),
+  subject: varchar({ length: 255 }).notNull().default(""),
+  body: text().notNull().default(""),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+  index("idx_examiner_email_tpl").on(table.examinerId, table.templateType),
+]);
+
 // ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────
 import { InferInsertModel } from "drizzle-orm";
 

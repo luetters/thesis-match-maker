@@ -752,3 +752,29 @@
 - [x] UserAvatar in PublicProfile eingebaut
 - [x] UserAvatar in ExaminerDashboard (Kandidaten-Liste) eingebaut
 - [x] UserAvatar in ExaminerDirectory eingebaut
+
+- [ ] E-Mail-Templates: DB-Tabelle email_templates (4 Typen pro Prüfer:in)
+- [ ] E-Mail-Templates: tRPC CRUD-Prozeduren (getTemplates, saveTemplate)
+- [ ] E-Mail-Templates: Template-Editor im Prüfer:innen-Profil (4 Tabs + Variablen-Hilfe)
+- [ ] E-Mail-Templates: Variablen {{name}}, {{thema}}, {{semester}}, {{studiengang}} ersetzen
+- [ ] E-Mail-Templates: Bei Zusage/Absage Template automatisch vorausfüllen
+
+## Feature: Prüfer:innen – Persönliche E-Mail-Templates ✅ KOMPLETT
+
+- [x] DB-Schema: examiner_email_templates-Tabelle (examinerId, templateType, subject, body, updatedAt)
+- [x] DB-Funktion: getExaminerEmailTemplates(examinerId) – alle 4 Templates laden (mit Defaults)
+- [x] DB-Funktion: saveExaminerEmailTemplate(examinerId, templateType, subject, body)
+- [x] DB-Funktion: resolveEmailTemplate(template, vars) – Variablen ersetzen ({{name}}, {{thema}}, {{semester}}, {{studiengang}})
+- [x] DB-Funktion: getThesisRequestsByExaminer() – erweitert um studentName und studentEmail via JOIN
+- [x] tRPC: examinerEmailTemplates.getAll – alle 4 Templates des eingeloggten Prüfers laden
+- [x] tRPC: examinerEmailTemplates.save – Template speichern
+- [x] tRPC: examinerEmailTemplates.resolve – Template mit konkreten Anfragedaten auflösen
+- [x] tRPC: examinerEmailTemplates.sendResponse – Antwort-E-Mail an Studierende:n senden
+- [x] Frontend: EmailTemplateEditor.tsx – 4-Tab-Editor mit Variablen-Hilfe und Vorschau
+- [x] Frontend: Profile.tsx – EmailTemplateEditor-Sektion (nur für Prüfer:innen)
+- [x] Frontend: ExaminerDashboard.tsx – E-Mail-Vorschau-Dialog bei Annehmen/Ablehnen
+- [x] Frontend: Vorausgefülltes Template mit Studierenden-Daten (Name, Thema, Semester, Studiengang)
+- [x] Frontend: Bearbeitbarer Betreff und E-Mail-Text im Dialog
+- [x] Frontend: Checkbox "Antwort-E-Mail senden" (optional)
+- [x] Frontend: Ablehnungsgrund-Feld im Ablehnen-Dialog
+- [x] Tests: 61/61 grün (6 neue Tests für resolveEmailTemplate + EmailTemplateType)

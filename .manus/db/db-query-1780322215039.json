@@ -1,0 +1,17 @@
+{
+  "query": "SELECT * FROM examiner_email_templates LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT * FROM examiner_email_templates LIMIT 5;",
+  "rows": [],
+  "messages": [
+    "1\t690081\trequirements\tIhre Anfrage zur Betreuung Ihrer Abschlussarbeit – Anforderungen\tSehr geehrte/r {{name}},",
+    "vielen Dank für Ihr Interesse an einer Betreuung Ihrer Abschlussarbeit zum Thema „{{thema}}\" im {{semester}}.",
+    "Für eine Betreuung im Studiengang {{studiengang}} gelten folgende Voraussetzungen:",
+    "1. Alle Pflichtmodule müssen abgeschlossen sein.",
+    "2. Das Thema muss einen Bezug zu meinen Forschungsschwerpunkten aufweisen.",
+    "3. Bitte senden Sie mir ein einseitiges Exposé zu.",
+    "Mit freundlichen Grüßen\t2026-06-01 13:56:33"
+  ],
+  "stdout": "id\texaminer_id\ttemplate_type\tsubject\tbody\tupdated_at\n1\t690081\trequirements\tIhre Anfrage zur Betreuung Ihrer Abschlussarbeit – Anforderungen\tSehr geehrte/r {{name}},\n\nvielen Dank für Ihr Interesse an einer Betreuung Ihrer Abschlussarbeit zum Thema „{{thema}}\" im {{semester}}.\n\nFür eine Betreuung im Studiengang {{studiengang}} gelten folgende Voraussetzungen:\n\n1. Alle Pflichtmodule müssen abgeschlossen sein.\n2. Das Thema muss einen Bezug zu meinen Forschungsschwerpunkten aufweisen.\n3. Bitte senden Sie mir ein einseitiges Exposé zu.\n\nMit freundlichen Grüßen\t2026-06-01 13:56:33\n",
+  "stderr": "",
+  "execution_time_ms": 523
+}

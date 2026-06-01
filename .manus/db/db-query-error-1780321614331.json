@@ -1,0 +1,8 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `examiner_email_templates` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `examiner_id` int NOT NULL,\n  `template_type` enum('requirements','acceptance','rejection','fully_booked') NOT NULL,\n  `subject` varchar(255) NOT NULL DEFAULT '',\n  `body` text NOT NULL DEFAULT '',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  CONSTRAINT `examiner_email_templates_id` PRIMARY KEY(`id`),\n  INDEX `idx_examiner_email_tpl`(`examiner_id`, `template_type`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute CREATE TABLE IF NOT EXISTS `examiner_email_templates` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `examiner_id` int NOT NULL,\n  `template_type` enum('requirements','acceptance','rejection','fully_booked') NOT NULL,\n  `subject` varchar(255) NOT NULL DEFAULT '',\n  `body` text NOT NULL DEFAULT '',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  CONSTRAINT `examiner_email_templates_id` PRIMARY KEY(`id`),\n  INDEX `idx_examiner_email_tpl`(`examiner_id`, `template_type`)\n);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'body' can't have a default value"
+  ]
+}

@@ -107,11 +107,15 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [emailDialog, setEmailDialog] = useState<{ action: "accept" | "reject" | "fully_booked"; subject: string; body: string } | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [sendEmailAfter, setSendEmailAfter] = useState(true);
   const utils = trpc.useUtils();
 
   const examinerRespond = trpc.thesis.examinerRespond.useMutation({
@@ -122,6 +126,59 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const sendResponseEmail = trpc.examinerEmailTemplates.sendResponse.useMutation({
+    onError: (err) => toast.error("E-Mail konnte nicht gesendet werden: " + err.message),
+  });
+
+  // Template für Aktion laden und Dialog öffnen
+  const { data: examinerTemplates } = trpc.examinerEmailTemplates.getAll.useQuery();
+
+  function openEmailDialog(action: "accept" | "reject" | "fully_booked") {
+    const typeMap = { accept: "acceptance", reject: "rejection", fully_booked: "fully_booked" } as const;
+    const tplType = typeMap[action];
+    const tpl = examinerTemplates?.[tplType];
+    const vars = {
+      name: req.studentName ?? "",
+      thema: req.title ?? "",
+      semester: req.targetSemester ?? "",
+      studiengang: req.department ?? "",
+    };
+    const resolve = (text: string) =>
+      text
+        .replace(/\{\{name\}\}/g, vars.name)
+        .replace(/\{\{thema\}\}/g, vars.thema)
+        .replace(/\{\{semester\}\}/g, vars.semester)
+        .replace(/\{\{studiengang\}\}/g, vars.studiengang);
+    const subject = tpl?.subject ? resolve(tpl.subject) : "";
+    const body = tpl?.body ? resolve(tpl.body) : "";
+    setEmailSubject(subject);
+    setEmailBody(body);
+    setEmailDialog({ action, subject, body });
+  }
+
+  async function handleConfirmAction() {
+    if (!emailDialog) return;
+    const action = emailDialog.action === "accept" ? "accept" : "reject";
+    // Erst Status setzen
+    examinerRespond.mutate(
+      { id: req.id, action, rejectionReason: action === "reject" ? rejectionReason : undefined },
+      {
+        onSuccess: async () => {
+          // Dann E-Mail senden (optional)
+          if (sendEmailAfter && emailSubject && emailBody) {
+            await sendResponseEmail.mutateAsync({
+              thesisRequestId: req.id,
+              subject: emailSubject,
+              body: emailBody,
+            });
+            toast.success("Antwort-E-Mail wurde versendet.");
+          }
+          setEmailDialog(null);
+        },
+      }
+    );
+  }
 
   const isPending = req.status === "PENDING";
 
@@ -173,55 +230,143 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
       {isPending && (
         <div className="space-y-3">
-          {showRejectForm ? (
-            <div className="space-y-3">
-              <textarea
-                rows={2}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Ablehnungsgrund (optional)..."
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 resize-none"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => examinerRespond.mutate({ id: req.id, action: "reject", rejectionReason })}
-                  disabled={examinerRespond.isPending}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
-                >
-                  Ablehnen bestätigen
-                </button>
-                <button
-                  onClick={() => setShowRejectForm(false)}
-                  className="px-4 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  Abbrechen
-                </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openEmailDialog("accept")}
+              disabled={examinerRespond.isPending}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: "#76B900" }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Annehmen
+            </button>
+            <button
+              onClick={() => openEmailDialog("reject")}
+              disabled={examinerRespond.isPending}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Ablehnen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* E-Mail-Vorschau-Dialog */}
+      {emailDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEmailDialog(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col"
+            style={{ maxHeight: "90vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${emailDialog.action === "accept" ? "bg-green-500" : "bg-red-500"}`} />
+                <span className="font-semibold text-gray-900">
+                  {emailDialog.action === "accept" ? "Anfrage annehmen" : "Anfrage ablehnen"}
+                </span>
               </div>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={() => examinerRespond.mutate({ id: req.id, action: "accept" })}
-                  disabled={examinerRespond.isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: "#76B900" }}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Annehmen
-              </button>
-              <button
-                onClick={() => setShowRejectForm(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={() => setEmailDialog(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                Ablehnen
               </button>
             </div>
-          )}
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* Empfänger */}
+              <div className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
+                <span className="font-medium">An:</span> {req.studentName ?? "Studierende:r"}
+                {req.studentEmail && <span className="ml-1 text-gray-400">&lt;{req.studentEmail}&gt;</span>}
+              </div>
+
+              {/* Ablehnungsgrund (nur bei Ablehnen) */}
+              {emailDialog.action === "reject" && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Ablehnungsgrund (optional)</label>
+                  <textarea
+                    rows={2}
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Kurze Begründung für die Ablehnung..."
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* E-Mail-Betreff */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Betreff</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Betreff der E-Mail..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2"
+                />
+              </div>
+
+              {/* E-Mail-Text */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
+                <textarea
+                  rows={7}
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder="Ihr persönlicher Text an die/den Studierenden..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 resize-none font-mono"
+                />
+                {!emailSubject && !emailBody && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Kein Template hinterlegt. Sie können den Text manuell eingeben oder zuerst ein Template im Profil anlegen.
+                  </p>
+                )}
+              </div>
+
+              {/* E-Mail senden Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sendEmailAfter}
+                  onChange={(e) => setSendEmailAfter(e.target.checked)}
+                  className="w-4 h-4 rounded accent-green-600"
+                />
+                <span className="text-sm text-gray-700">Antwort-E-Mail an Studierende:n senden</span>
+              </label>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+              <button
+                onClick={() => setEmailDialog(null)}
+                className="flex-1 px-4 py-2 rounded-xl text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={examinerRespond.isPending || sendResponseEmail.isPending}
+                className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 ${
+                  emailDialog.action === "accept"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-red-500 hover:bg-red-600"
+                }`}
+              >
+                {examinerRespond.isPending || sendResponseEmail.isPending
+                  ? "Wird verarbeitet..."
+                  : emailDialog.action === "accept"
+                  ? "Annehmen & senden"
+                  : "Ablehnen & senden"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

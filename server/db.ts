@@ -204,8 +204,26 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
   return db
-    .select()
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      department: thesisRequests.department,
+      status: thesisRequests.status,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      exposeUrl: thesisRequests.exposeUrl,
+      rejectionReason: thesisRequests.rejectionReason,
+      createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      studentId: thesisRequests.studentId,
+      studentName: users.name,
+      studentEmail: users.email,
+    })
     .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
     .where(
       or(
         eq(thesisRequests.examinerId, examinerId),
@@ -4087,4 +4105,86 @@ export async function hasSharedThesisRequest(viewerId: number, targetStudentId: 
     )
     .limit(1);
   return rows.length > 0;
+}
+
+// ─── Prüfer:innen E-Mail-Templates ────────────────────────────────────────────
+import { examinerEmailTemplates } from "../drizzle/schema";
+
+export type EmailTemplateType = "requirements" | "acceptance" | "rejection" | "fully_booked";
+
+export interface ExaminerEmailTemplate {
+  id: number;
+  examinerId: number;
+  templateType: EmailTemplateType;
+  subject: string;
+  body: string;
+  updatedAt: string;
+}
+
+/** Alle 4 Templates eines Prüfers laden (fehlende werden als leere Objekte zurückgegeben) */
+export async function getExaminerEmailTemplates(examinerId: number): Promise<Record<EmailTemplateType, { subject: string; body: string }>> {
+  const db = await getDb();
+  const defaults: Record<EmailTemplateType, { subject: string; body: string }> = {
+    requirements: { subject: "", body: "" },
+    acceptance: { subject: "", body: "" },
+    rejection: { subject: "", body: "" },
+    fully_booked: { subject: "", body: "" },
+  };
+  if (!db) return defaults;
+  const rows = await db
+    .select()
+    .from(examinerEmailTemplates)
+    .where(eq(examinerEmailTemplates.examinerId, examinerId));
+  for (const row of rows) {
+    defaults[row.templateType as EmailTemplateType] = { subject: row.subject, body: row.body };
+  }
+  return defaults;
+}
+
+/** Ein einzelnes Template speichern (upsert) */
+export async function saveExaminerEmailTemplate(
+  examinerId: number,
+  templateType: EmailTemplateType,
+  subject: string,
+  body: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select({ id: examinerEmailTemplates.id })
+    .from(examinerEmailTemplates)
+    .where(
+      and(
+        eq(examinerEmailTemplates.examinerId, examinerId),
+        eq(examinerEmailTemplates.templateType, templateType)
+      )
+    )
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(examinerEmailTemplates)
+      .set({ subject, body })
+      .where(
+        and(
+          eq(examinerEmailTemplates.examinerId, examinerId),
+          eq(examinerEmailTemplates.templateType, templateType)
+        )
+      );
+  } else {
+    await db.insert(examinerEmailTemplates).values({ examinerId, templateType, subject, body });
+  }
+}
+
+/** Variablen in einem Template ersetzen */
+export function resolveEmailTemplate(
+  template: { subject: string; body: string },
+  vars: { name?: string; thema?: string; semester?: string; studiengang?: string }
+): { subject: string; body: string } {
+  const replace = (text: string) =>
+    text
+      .replace(/\{\{name\}\}/g, vars.name ?? "")
+      .replace(/\{\{thema\}\}/g, vars.thema ?? "")
+      .replace(/\{\{semester\}\}/g, vars.semester ?? "")
+      .replace(/\{\{studiengang\}\}/g, vars.studiengang ?? "");
+  return { subject: replace(template.subject), body: replace(template.body) };
 }

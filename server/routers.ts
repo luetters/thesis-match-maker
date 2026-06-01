@@ -2489,6 +2489,77 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ─── E-Mail-Templates ─────────────────────────────────────────────────────────────────────────────────
+  examinerEmailTemplates: router({
+    /** Alle 4 Templates des eingeloggten Prüfers laden */
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      const { getExaminerEmailTemplates } = await import("./db");
+      return getExaminerEmailTemplates(ctx.user.id);
+    }),
+
+    /** Ein Template speichern */
+    save: protectedProcedure
+      .input(z.object({
+        templateType: z.enum(["requirements", "acceptance", "rejection", "fully_booked"]),
+        subject: z.string().max(255),
+        body: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { saveExaminerEmailTemplate } = await import("./db");
+        await saveExaminerEmailTemplate(ctx.user.id, input.templateType, input.subject, input.body);
+        return { success: true };
+      }),
+
+    /** Template mit Variablen aufgelöst für eine konkrete Anfrage laden */
+    resolve: protectedProcedure
+      .input(z.object({
+        examinerId: z.number().int().positive(),
+        templateType: z.enum(["requirements", "acceptance", "rejection", "fully_booked"]),
+        thesisRequestId: z.number().int().positive().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getExaminerEmailTemplates, resolveEmailTemplate } = await import("./db");
+        const templates = await getExaminerEmailTemplates(input.examinerId);
+        const tpl = templates[input.templateType];
+        let vars: { name?: string; thema?: string; semester?: string; studiengang?: string } = {};
+        if (input.thesisRequestId) {
+          const { getThesisRequestById: getTR, getUserById: getU } = await import("./db");
+          const req = await getTR(input.thesisRequestId);
+          if (req) {
+            const student = await getU(req.studentId);
+            vars = {
+              name: student?.name ?? "",
+              thema: req.title ?? "",
+              semester: req.targetSemester ?? "",
+              studiengang: req.department ?? "",
+            };
+          }
+        }
+        return resolveEmailTemplate(tpl, vars);
+      }),
+    /** Antwort-E-Mail an Studierenden senden (nach Zusage/Absage) */
+    sendResponse: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        subject: z.string().min(1).max(255),
+        body: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        if (req.examinerId !== ctx.user.id && req.secondExaminerId !== ctx.user.id)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
+        const student = await getUserById(req.studentId);
+        if (!student?.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse des Prüflings gefunden." });
+        await sendEmail({
+          to: student.email,
+          subject: input.subject,
+          html: input.body.replace(/\n/g, "<br>"),
+        });
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
