@@ -331,11 +331,11 @@ export default function Profile() {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
       const newAvatarUrl: string = json.avatarUrl;
-      // Bild direkt als Vorschau setzen (S3-URL) – Blob-URL nicht freigeben vor Reload
+      // S3-URL als Vorschau setzen – bleibt dauerhaft (kein Reset)
       setAvatarPreview(newAvatarUrl);
       toast.success(p.avatarSuccess);
-      // Seite sofort neu laden – kein Delay, kein Flackern
-      window.location.reload();
+      // Profil-Query im Hintergrund aktualisieren
+      refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
