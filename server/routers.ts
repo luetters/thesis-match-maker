@@ -428,7 +428,7 @@ export const appRouter = router({
           roleStatus: "pending" as any,
           loginMethod: "password",
           passwordHash,
-          lastSignedIn: new Date(),
+          lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
           ...(input.matrikelNr ? { matrikelNr: input.matrikelNr.trim() } : {}),
         } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
