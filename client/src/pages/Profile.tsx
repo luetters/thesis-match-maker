@@ -336,7 +336,10 @@ export default function Profile() {
       // S3-URL als Vorschau setzen – bleibt dauerhaft (kein Reset)
       setAvatarPreview(newAvatarUrl);
       toast.success(p.avatarSuccess);
-      // Profil-Query im Hintergrund aktualisieren
+      // Sofortiger Cache-Update ohne Netzwerkwartzeit (verhindert Flash of old content)
+      utils.profile.get.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
+      utils.auth.me.setData(undefined, (old) => old ? { ...old, avatarUrl: newAvatarUrl } : old);
+      // Im Hintergrund neu laden (best-effort, kein await)
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -429,7 +432,7 @@ export default function Profile() {
   );
 
   const roleConf = ROLE_CONFIG[profile.role] ?? { label: profile.role, color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" };
-  const avatarSrc = avatarPreview ?? profile.avatarUrl;
+  const avatarSrc = avatarPreview ?? profile.avatarUrl ?? user?.avatarUrl;
   const initials = getInitials(profile.name, profile.email);
   const backLink = profile.role === "student" ? "/student" : profile.role === "examiner" ? "/examiner" : (profile.role === "admin" || profile.role === "superadmin") ? "/admin" : "/";
   const isStudent  = profile.role === "student";
