@@ -315,7 +315,7 @@ export default function Profile() {
   // Profilbild-Upload via multipart/form-data (kein Base64 – robuster und schneller)
   const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
-    // Sofortige lokale Vorschau
+    // Sofortige lokale Vorschau (Blob-URL)
     const localPreview = URL.createObjectURL(file);
     setAvatarPreview(localPreview);
     try {
@@ -330,12 +330,16 @@ export default function Profile() {
       if (!resp.ok || !json.success) {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
-      // Vorschau auf S3-URL (aus S3) umstellen – Blob-URL wird nicht mehr benötigt
-      URL.revokeObjectURL(localPreview);
-      setAvatarPreview(json.avatarUrl);
+      const newAvatarUrl: string = json.avatarUrl;
+      // 1. Vorschau sofort auf S3-URL setzen (Blob-URL noch NICHT freigeben)
+      setAvatarPreview(newAvatarUrl);
+      // 2. tRPC-Cache direkt mit neuer URL aktualisieren – kein Warten auf Netzwerk
+      utils.profile.get.setData(undefined, (old) =>
+        old ? { ...old, avatarUrl: newAvatarUrl } : old
+      );
       toast.success(p.avatarSuccess);
-      // Profil neu laden – nach Abschluss übernimmt profile.avatarUrl die Anzeige
-      utils.profile.get.invalidate();
+      // 3. Blob-URL erst nach nächstem Render freigeben
+      setTimeout(() => URL.revokeObjectURL(localPreview), 100);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
