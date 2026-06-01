@@ -312,20 +312,38 @@ export default function Profile() {
     onSettled: () => setDeletingAvatar(false),
   });
 
-  const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
-    onSuccess: (data) => {
-      setAvatarPreview(data.avatarUrl);
-      toast.success(p.avatarSuccess);
-      utils.profile.get.invalidate().then(() => {
-        setAvatarPreview(null);
+  // Profilbild-Upload via multipart/form-data (kein Base64 – robuster und schneller)
+  const uploadAvatar = async (file: File) => {
+    setUploadingAvatar(true);
+    // Sofortige lokale Vorschau
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const resp = await fetch("/api/upload/avatar", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
       });
-    },
-    onError: (e) => {
-      toast.error(p.avatarUploadError.replace("{msg}", e.message));
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json.success) {
+        throw new Error(json.error ?? `HTTP ${resp.status}`);
+      }
+      // Vorschau auf S3-URL umstellen
+      setAvatarPreview(json.avatarUrl);
+      toast.success(p.avatarSuccess);
+      await utils.profile.get.invalidate();
+      setAvatarPreview(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
+      setAvatarPreview(null);
+    } finally {
       setUploadingAvatar(false);
-    },
-    onSettled: () => setUploadingAvatar(false),
-  });
+      URL.revokeObjectURL(localPreview);
+    }
+  };
 
   const handleEditStart = () => {
     if (!profile) return;
@@ -384,18 +402,7 @@ export default function Profile() {
     e.target.value = "";
     if (file.size > 5 * 1024 * 1024) { toast.error(p.avatarTooLarge); return; }
     if (!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)) { toast.error(p.avatarInvalidFormat); return; }
-    setUploadingAvatar(true);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      if (!dataUrl) { setUploadingAvatar(false); toast.error(p.avatarReadError); return; }
-      setAvatarPreview(dataUrl);
-      const base64 = dataUrl.split(",")[1];
-      if (!base64) { setUploadingAvatar(false); toast.error(p.avatarEncodeError); return; }
-      uploadAvatarMutation.mutate({ base64, mimeType: file.type as "image/jpeg"|"image/png"|"image/webp"|"image/gif", fileName: file.name });
-    };
-    reader.onerror = () => { setUploadingAvatar(false); toast.error(p.avatarReadFailed); };
-    reader.readAsDataURL(file);
+    uploadAvatar(file);
   };
 
   if (isLoading) return (

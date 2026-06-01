@@ -725,3 +725,15 @@
 - [x] Frontend: Studiengänge – Checkbox-Liste aller Studiengänge (Default: alle aktiviert = null)
 - [x] Frontend: Schlagworte – Tag-Input mit Hinzufügen/Entfernen
 - [x] Tests: 55/55 grün
+
+## Feature: Profilbild-Upload – Komplette Neuimplementierung ✅ KOMPLETT
+- [x] Diagnose: aktuellen Upload-Code analysiert (Base64 über tRPC war fehleranfällig)
+- [x] Backend: Express multipart/form-data Endpunkt POST /api/upload/avatar
+- [x] Backend: multer für Datei-Parsing (memoryStorage, 5 MB Limit, nur Bilder)
+- [x] Backend: S3-Upload via storagePut() mit korrektem Content-Type
+- [x] Backend: avatarUrl in users-Tabelle gespeichert via updateProfileAvatar()
+- [x] Backend: examiner_profiles.photoUrl synchronisiert
+- [x] Frontend: fetch() mit FormData statt tRPC-Mutation für Upload
+- [x] Frontend: Sofortige lokale Vorschau via URL.createObjectURL()
+- [x] Frontend: Fehlerbehandlung mit Toast-Meldungen
+- [x] Tests: 55/55 grün

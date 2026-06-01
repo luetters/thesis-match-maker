@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, getUserByOpenId } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId } from "./db";
 import { generateDeadlineIcs } from "./icsHelper";
 import { storagePut } from "./storage";
 import { COOKIE_NAME } from "@shared/const";
@@ -178,6 +178,42 @@ export function registerUploadRoutes(app: Express) {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Foto-Upload fehlgeschlagen.";
         console.error("[Upload/photo] Fehler:", err);
+        res.status(500).json({ error: message });
+      }
+    }
+  );
+
+  // --- Profilbild-Upload für alle Nutzer:innen ---
+  app.post(
+    "/api/upload/avatar",
+    (req, res, next) => upload.single("avatar")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu groß. Bitte laden Sie ein Bild mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ungültige Datei." });
+      }
+      next();
+    }),
+    async (req: Request, res: Response) => {
+      try {
+        const user = await getUserFromRequest(req);
+        if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
+        if (!req.file) { res.status(400).json({ error: "Kein Bild übermittelt." }); return; }
+        const mimeType = req.file.mimetype;
+        if (!['image/jpeg','image/png','image/webp','image/gif'].includes(mimeType)) {
+          res.status(400).json({ error: "Nur JPEG, PNG, WebP oder GIF sind erlaubt." }); return;
+        }
+        const ext = mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1];
+        const storageKey = `avatars/user-${user.id}-${Date.now()}.${ext}`;
+        const { key: savedKey, url } = await storagePut(storageKey, req.file.buffer, mimeType);
+        const ok = await updateProfileAvatar(user.id, url, savedKey);
+        if (!ok) { res.status(500).json({ error: "Profilbild konnte nicht gespeichert werden." }); return; }
+        console.log(`[Upload/avatar] Nutzer ${user.id} (${user.email}) hat Avatar hochgeladen: ${url}`);
+        res.json({ success: true, avatarUrl: url, key: savedKey });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Avatar-Upload fehlgeschlagen.";
+        console.error("[Upload/avatar] Fehler:", err);
         res.status(500).json({ error: message });
       }
     }
