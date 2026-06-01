@@ -270,7 +270,9 @@ export default function Profile() {
   const { t, lang } = useLanguage();
   const p = t.myProfilePage;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery();
+  const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery(undefined, {
+    placeholderData: (prev) => prev,
+  });
   const utils = trpc.useUtils();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({
