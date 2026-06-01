@@ -1,0 +1,15 @@
+{
+  "query": "\nSELECT \n  COUNT(*) AS total_examiners,\n  SUM(is_fictitious_example) AS fictitious_examples,\n  SUM(CASE WHEN is_fictitious_example = 0 THEN 1 ELSE 0 END) AS real_accounts\nFROM users WHERE role = 'examiner';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nSELECT \n  COUNT(*) AS total_examiners,\n  SUM(is_fictitious_example) AS fictitious_examples,\n  SUM(CASE WHEN is_fictitious_example = 0 THEN 1 ELSE 0 END) AS real_accounts\nFROM users WHERE role = 'examiner';\n",
+  "rows": [
+    {
+      "total_examiners": "63",
+      "fictitious_examples": "60",
+      "real_accounts": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_examiners\tfictitious_examples\treal_accounts\n63\t60\t3\n",
+  "stderr": "",
+  "execution_time_ms": 265
+}

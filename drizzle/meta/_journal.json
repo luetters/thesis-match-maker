@@ -295,6 +295,13 @@
       "when": 1780339885797,
       "tag": "0041_broad_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "5",
+      "when": 1780340589875,
+      "tag": "0042_magenta_rage",
+      "breakpoints": true
     }
   ]
 }

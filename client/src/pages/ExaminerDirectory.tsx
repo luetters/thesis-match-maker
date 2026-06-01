@@ -15,6 +15,7 @@ type ExaminerListItem = {
     name: string | null;
     email: string | null;
     role: string;
+    isFictitiousExample?: number | null;
   };
   profile: {
     id: number;
@@ -44,11 +45,20 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
   const programmes = examiner.programmes ?? [];
   const isSecondExaminer = (profile as { isSecondExaminer?: number } | null | undefined)?.isSecondExaminer === 1;
   const activeSupervisions = (examiner as any).activeSupervisions as number | undefined;
+  const isFictitious = (examiner.user as any)?.isFictitiousExample === 1;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Header */}
       <div className="p-5 pb-4">
+        {isFictitious && (
+          <div className="mb-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 w-fit">
+            <svg className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs font-medium text-amber-700">{D.fictitiousExample}</span>
+          </div>
+        )}
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className="flex-shrink-0">

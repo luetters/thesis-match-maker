@@ -266,6 +266,7 @@ export const users = mysqlTable("users", {
   htwProfileUrl: varchar("htw_profile_url", { length: 512 }),
   miscLink: varchar("misc_link", { length: 512 }),
   bookingUrl: varchar("booking_url", { length: 512 }),
+  isFictitiousExample: tinyint("is_fictitious_example").notNull().default(0),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

@@ -1,0 +1,13 @@
+{
+  "query": "\nSELECT COUNT(*) AS total_examiners FROM users WHERE role = 'examiner';\nSHOW COLUMNS FROM users LIKE '%demo%';\nSHOW COLUMNS FROM users LIKE '%fictitious%';\nSHOW COLUMNS FROM users LIKE '%example%';\nSHOW COLUMNS FROM users LIKE '%fake%';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nSELECT COUNT(*) AS total_examiners FROM users WHERE role = 'examiner';\nSHOW COLUMNS FROM users LIKE '%demo%';\nSHOW COLUMNS FROM users LIKE '%fictitious%';\nSHOW COLUMNS FROM users LIKE '%example%';\nSHOW COLUMNS FROM users LIKE '%fake%';\n",
+  "rows": [
+    {
+      "total_examiners": "356"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_examiners\n356\n",
+  "stderr": "",
+  "execution_time_ms": 294
+}

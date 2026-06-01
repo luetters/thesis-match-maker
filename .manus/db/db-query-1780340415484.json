@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT id, openId, name, email, loginMethod FROM users WHERE role = 'examiner' LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nSELECT id, openId, name, email, loginMethod FROM users WHERE role = 'examiner' LIMIT 10;\n",
+  "rows": [
+    {
+      "id": "690081",
+      "openId": "pw_firstsupervisor_htw_berlin_com",
+      "name": "Prof. Dr. Anna Schmidt (Erstprüferin)",
+      "email": "firstsupervisor@htw-berlin.com",
+      "loginMethod": "password"
+    },
+    {
+      "id": "690082",
+      "openId": "pw_secondsupervisor_htw_berlin_com",
+      "name": "Dr. Klaus Weber (Zweitprüfer)",
+      "email": "secondsupervisor@htw-berlin.com",
+      "loginMethod": "password"
+    },
+    {
+      "id": "1530001",
+      "openId": "bda89924-4574-11f1-b933-d62613dc686a",
+      "name": "Prof. Dr. Niklas Engel",
+      "email": "niklas.engel@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560003",
+      "openId": "a0e9eb8a-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Erika Winkler",
+      "email": "erika.winkler@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560005",
+      "openId": "bfc8b550-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Dr. Clara Walter",
+      "email": "clara.walter@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560008",
+      "openId": "db977184-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Dr. Markus Vogel",
+      "email": "markus.vogel@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560009",
+      "openId": "db9f348e-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Dr. Peter Kühn",
+      "email": "peter.kuehn@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560010",
+      "openId": "dba5f1ee-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Helga Schumacher",
+      "email": "helga.schumacher@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560011",
+      "openId": "dbac2e3c-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Dr. Philipp Voigt",
+      "email": "philipp.voigt@htw-berlin.de",
+      "loginMethod": "NULL"
+    },
+    {
+      "id": "1560012",
+      "openId": "dbb2c541-4575-11f1-8790-6a579f16ca68",
+      "name": "Prof. Birgit Brandt",
+      "email": "birgit.brandt@htw-berlin.de",
+      "loginMethod": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\n690081\tpw_firstsupervisor_htw_berlin_com\tProf. Dr. Anna Schmidt (Erstprüferin)\tfirstsupervisor@htw-berlin.com\tpassword\n690082\tpw_secondsupervisor_htw_berlin_com\tDr. Klaus Weber (Zweitprüfer)\tsecondsupervisor@htw-berlin.com\tpassword\n1530001\tbda89924-4574-11f1-b933-d62613dc686a\tProf. Dr. Niklas Engel\tniklas.engel@htw-berlin.de\tNULL\n1560003\ta0e9eb8a-4575-11f1-8790-6a579f16ca68\tProf. Erika Winkler\terika.winkler@htw-berlin.de\tNULL\n1560005\tbfc8b550-4575-11f1-8790-6a579f16ca68\tProf. Dr. Clara Walter\tclara.walter@htw-berlin.de\tNULL\n1560008\tdb977184-4575-11f1-8790-6a579f16ca68\tProf. Dr. Markus Vogel\tmarkus.vogel@htw-berlin.de\tNULL\n1560009\tdb9f348e-4575-11f1-8790-6a579f16ca68\tProf. Dr. Peter Kühn\tpeter.kuehn@htw-berlin.de\tNULL\n1560010\tdba5f1ee-4575-11f1-8790-6a579f16ca68\tProf. Helga Schumacher\thelga.schumacher@htw-berlin.de\tNULL\n1560011\tdbac2e3c-4575-11f1-8790-6a579f16ca68\tProf. Dr. Philipp Voigt\tphilipp.voigt@htw-berlin.de\tNULL\n1560012\tdbb2c541-4575-11f1-8790-6a579f16ca68\tProf. Birgit Brandt\tbirgit.brandt@htw-berlin.de\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 268
+}

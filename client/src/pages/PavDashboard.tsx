@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
-type ActiveTab = "unassigned" | "proposals" | "programmes" | "enrollment" | "defense";
+type ActiveTab = "unassigned" | "proposals" | "programmes" | "enrollment" | "defense" | "history";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 function formatDate(d: Date | string | null | undefined) {
@@ -391,6 +391,97 @@ function DirectAssignDialog({
   );
 }
 
+// ─── DecisionHistoryTab ─────────────────────────────────────────────────────
+function DecisionHistoryTab() {
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [searchId, setSearchId] = useState("");
+
+  const { data: history, isLoading } = trpc.pav.getDecisionHistory.useQuery(
+    { thesisRequestId: selectedRequestId! },
+    { enabled: selectedRequestId !== null }
+  );
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const id = parseInt(searchId.trim(), 10);
+    if (!isNaN(id) && id > 0) setSelectedRequestId(id);
+  }
+
+  const decisionLabel: Record<string, { label: string; cls: string }> = {
+    approved: { label: "Freigegeben", cls: "bg-green-50 text-green-700 border-green-200" },
+    rejected: { label: "Abgelehnt",   cls: "bg-red-50 text-red-700 border-red-200" },
+    blocked:  { label: "Blockiert",   cls: "bg-red-50 text-red-700 border-red-200" },
+  };
+  const typeLabel: Record<string, string> = {
+    enrollment_eligibility: "Anmeldefs\u00e4higkeit",
+    defense_eligibility:    "Pr\u00fcfungsf\u00e4higkeit",
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700">
+        Geben Sie die Antrags-ID ein, um die Entscheidungshistorie eines Antrags einzusehen.
+      </div>
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <input
+          type="number"
+          min="1"
+          value={searchId}
+          onChange={(e) => setSearchId(e.target.value)}
+          placeholder="Antrags-ID eingeben"
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
+        >
+          Suchen
+        </button>
+      </form>
+
+      {selectedRequestId !== null && (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-400">Antrag #{selectedRequestId}</p>
+          {isLoading ? (
+            <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />)}</div>
+          ) : (history ?? []).length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p>Keine Entscheidungen f\u00fcr diesen Antrag gefunden.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(history ?? []).map((entry) => {
+                const d = decisionLabel[entry.decision] ?? { label: entry.decision, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+                return (
+                  <div key={entry.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-sm font-medium text-gray-800">{typeLabel[entry.decisionType] ?? entry.decisionType}</span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${d.cls}`}>{d.label}</span>
+                        </div>
+                        {entry.note && (
+                          <p className="text-xs text-gray-500 mt-1">Begr\u00fcndung: {entry.note}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">
+                          Entschieden von: {entry.decidedByName ?? entry.decidedByEmail ?? "Unbekannt"}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400 whitespace-nowrap">
+                        {new Date(entry.decidedAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PavDashboard() {
   const { user, loading } = useAuth();
@@ -438,8 +529,9 @@ export default function PavDashboard() {
   const tabs: { id: ActiveTab; label: string; badge?: number }[] = [
     { id: "unassigned",  label: t.pav.unassigned },
     { id: "proposals",   label: "Vorschläge", badge: pendingCount },
-    { id: "enrollment",  label: "Anmeldefähigkeit", badge: enrollmentCount },
+    { id: "enrollment",  label: "Anmeldefsähigkeit", badge: enrollmentCount },
     { id: "defense",     label: "Prüfungsfähigkeit", badge: defenseCount },
+    { id: "history",     label: "Entscheidungshistorie" },
     { id: "programmes",  label: t.pav.myProgrammes },
   ];
 
@@ -674,6 +766,9 @@ export default function PavDashboard() {
             )}
           </div>
         )}
+
+        {/* Tab: Entscheidungshistorie */}
+        {activeTab === "history" && <DecisionHistoryTab />}
 
         {/* Tab: Meine Studiengänge */}
         {activeTab === "programmes" && (

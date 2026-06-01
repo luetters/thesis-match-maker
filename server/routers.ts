@@ -144,6 +144,7 @@ import {
   getRequestsPendingDefenseEligibility,
   setEnrollmentEligibility,
   setDefenseEligibility,
+  getAdminDecisionHistory,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1859,6 +1860,13 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+    /** Entscheidungshistorie für einen Antrag abrufen */
+    getDecisionHistory: pavProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getAdminDecisionHistory(input.thesisRequestId);
+      }),
+
     /** PAV weist Prüfer:in direkt zu (ohne Rückfrage-E-Mail) */
     directAssignExaminer: pavProcedure
       .input(

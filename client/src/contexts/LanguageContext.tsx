@@ -516,6 +516,7 @@ const translations = {
       viewProfile: "Profil ansehen →",
       researchFocusLabel: "Forschungsschwerpunkt:",
       unknownName: "Unbekannt",
+      fictitiousExample: "Fiktives Beispiel",
     },
     // Login Page
     login: {
@@ -1258,6 +1259,7 @@ const translations = {
       viewProfile: "View profile →",
       researchFocusLabel: "Research focus:",
       unknownName: "Unknown",
+      fictitiousExample: "Fictitious Example",
     },
     // Login Page
     login: {

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT COUNT(*) AS requests_count FROM thesis_requests tr\nJOIN users u ON u.id = tr.examiner_id\nWHERE u.role = 'examiner' \nAND (u.loginMethod IS NULL OR u.loginMethod = 'NULL')\nAND u.openId REGEXP '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{2}';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nSELECT COUNT(*) AS requests_count FROM thesis_requests tr\nJOIN users u ON u.id = tr.examiner_id\nWHERE u.role = 'examiner' \nAND (u.loginMethod IS NULL OR u.loginMethod = 'NULL')\nAND u.openId REGEXP '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{2}';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'tr.examiner_id' in 'on clause'"
+  ]
+}

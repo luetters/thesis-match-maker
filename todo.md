@@ -836,3 +836,18 @@
 - [x] PAV-Dashboard: Bestätigungsdialog bei Blockierung der Verteidigungsfähigkeit (Pflichtfeld Begründung)
 - [x] Dialog: Speichern-Button deaktiviert solange Begründungsfeld leer ist
 - [x] Dialog: Abbrechen-Button schließt ohne Aktion
+
+### Feature: Administrative Entscheidungshistorie pro Studierendem
+- [x] DB: Tabelle `admin_decision_log` (id, thesis_request_id, decision_type, decision, note, decided_by, decided_at)
+- [x] DB: Migration per SQL ausgeführt
+- [x] Backend: Bei setEnrollmentEligibility → Eintrag in admin_decision_log schreiben
+- [x] Backend: Bei setDefenseEligibility → Eintrag in admin_decision_log schreiben
+- [x] Backend: pav.getDecisionHistory(thesisRequestId) – Alle Einträge für einen Antrag
+- [x] Frontend: PAV-Dashboard – Entscheidungshistorie-Tab mit Antrags-ID-Suche
+- [x] Frontend: Zeitstempel, Entscheidungstyp, Entscheidung, Begründung, PAV-Person anzeigen
+## Feature: Fiktive Beispiel-Prüfer:innen
+- [x] DB: Feld `is_fictitious_example` (tinyint, default 0) zur users-Tabelle hinzugefügt
+- [x] DB: Migration 0042_magenta_rage.sql ausgeführt
+- [x] DB: 60 fiktive Prüfer:innen mit is_fictitious_example=1 markiert (300 gelöscht)
+- [x] Frontend: ExaminerDirectory – Badge "Fiktives Beispiel" bei fiktiven Prüfer:innen
+- [x] Übersetzungen: DE "Fiktives Beispiel" / EN "Fictitious Example" in LanguageContext

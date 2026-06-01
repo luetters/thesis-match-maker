@@ -1,0 +1,42 @@
+{
+  "query": "\nSHOW COLUMNS FROM thesis_requests LIKE '%examiner%';\nSHOW COLUMNS FROM thesis_requests LIKE '%user%';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute \nSHOW COLUMNS FROM thesis_requests LIKE '%examiner%';\nSHOW COLUMNS FROM thesis_requests LIKE '%user%';\n",
+  "rows": [
+    {
+      "Field": "examinerId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "secondExaminerId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "wantedExaminerId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "wanted_second_examiner_id",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nexaminerId\tint\tYES\t\tNULL\t\nsecondExaminerId\tint\tYES\t\tNULL\t\nwantedExaminerId\tint\tYES\t\tNULL\t\nwanted_second_examiner_id\tint\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 272
+}

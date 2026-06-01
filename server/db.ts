@@ -164,9 +164,27 @@ export async function getAllExaminers() {
     if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
   }
 
+  // Studiengänge pro Prüfer:in laden
+  const programmeRows = await db
+    .select({
+      examinerId: examinerProgrammes.examinerId,
+      id: programmes.id,
+      name: programmes.name,
+      abbreviation: programmes.abbreviation,
+      level: programmes.level,
+    })
+    .from(examinerProgrammes)
+    .innerJoin(programmes, eq(examinerProgrammes.programmeId, programmes.id));
+  const programmesMap = new Map<number, Array<{ id: number; name: string; abbreviation: string; level: string }>>();
+  for (const p of programmeRows) {
+    if (!programmesMap.has(p.examinerId)) programmesMap.set(p.examinerId, []);
+    programmesMap.get(p.examinerId)!.push({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? p.name.slice(0, 4), level: p.level });
+  }
+
   return result.map((r) => ({
     ...r,
     activeSupervisions: activeCountMap.get(r.user.id) ?? 0,
+    programmes: programmesMap.get(r.user.id) ?? [],
   }));
 }
 
@@ -4251,6 +4269,7 @@ export async function setEnrollmentEligibility(
     enrollmentEligibilityCheckedBy: checkedBy,
     enrollmentEligibilityCheckedAt: now,
   }).where(eq(thesisRequests.id, thesisRequestId));
+  await logAdminDecision(db, thesisRequestId, "enrollment_eligibility", eligibility, checkedBy, note);
 }
 
 /** Verteidigungsfähigkeit eines Antrags setzen */
@@ -4269,6 +4288,46 @@ export async function setDefenseEligibility(
     defenseEligibilityCheckedBy: checkedBy,
     defenseEligibilityCheckedAt: now,
   }).where(eq(thesisRequests.id, thesisRequestId));
+  await logAdminDecision(db, thesisRequestId, "defense_eligibility", eligibility, checkedBy, note);
+}
+
+/** Entscheidung in admin_decision_log protokollieren */
+async function logAdminDecision(
+  db: Awaited<ReturnType<typeof getDb>>,
+  thesisRequestId: number,
+  decisionType: "enrollment_eligibility" | "defense_eligibility",
+  decision: "approved" | "rejected" | "blocked",
+  decidedBy: number,
+  note?: string
+) {
+  if (!db) return;
+  await db.execute(
+    sql`INSERT INTO admin_decision_log (thesis_request_id, decision_type, decision, note, decided_by, decided_at)
+        VALUES (${thesisRequestId}, ${decisionType}, ${decision}, ${note ?? null}, ${decidedBy}, ${Date.now()})`
+  );
+}
+
+/** Entscheidungshistorie für einen Antrag abrufen */
+export async function getAdminDecisionHistory(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT l.id, l.decision_type, l.decision, l.note, l.decided_at,
+               u.name AS decided_by_name, u.email AS decided_by_email
+        FROM admin_decision_log l
+        LEFT JOIN users u ON u.id = l.decided_by
+        WHERE l.thesis_request_id = ${thesisRequestId}
+        ORDER BY l.decided_at DESC`
+  );
+  return (rows as any[]).map((r: any) => ({
+    id: r.id as number,
+    decisionType: r.decision_type as string,
+    decision: r.decision as string,
+    note: r.note as string | null,
+    decidedAt: r.decided_at as number,
+    decidedByName: r.decided_by_name as string | null,
+    decidedByEmail: r.decided_by_email as string | null,
+  }));
 }
 
 /** Verteidigungsfähigkeit auf "pending" setzen (wenn Thesis abgegeben wird) */
