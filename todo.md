@@ -778,3 +778,10 @@
 - [x] Frontend: Checkbox "Antwort-E-Mail senden" (optional)
 - [x] Frontend: Ablehnungsgrund-Feld im Ablehnen-Dialog
 - [x] Tests: 61/61 grün (6 neue Tests für resolveEmailTemplate + EmailTemplateType)
+
+## Feature: Skeleton-Loader für Studiengangs-Icons
+
+- [x] Skeleton-Loader in ProgrammeCard (ProgrammeSelector.tsx) – Platzhalter mit animate-pulse
+- [x] Skeleton-Loader in ExaminerOnboarding Schritt 4 – gleiche Größe wie Bild (w-14 h-14)
+- [x] onLoad-Handler: Skeleton ausblenden sobald Bild geladen ist
+- [x] Layout-Stabilität: Platzhalter hält exakt dieselbe Größe wie das geladene Bild

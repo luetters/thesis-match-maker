@@ -4,7 +4,7 @@
  * in den Prüfer:innen-Einstellungen (mehrfach wählbar) verwendet.
  */
 import { trpc } from "@/lib/trpc";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
 import {
@@ -49,6 +49,9 @@ function ProgrammeCard({
   onClick: () => void;
   disabled?: boolean;
 }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
   return (
     <button
       type="button"
@@ -70,17 +73,30 @@ function ProgrammeCard({
           </svg>
         </div>
       )}
-      {programme.pictogramUrl ? (
-        <img
-          src={programme.pictogramUrl}
-          alt={programme.name}
-          className="w-16 h-16 object-contain"
-        />
-      ) : (
-        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
-          {programme.abbreviation}
-        </div>
-      )}
+      {/* Feste Größe w-16 h-16 hält das Layout stabil, egal ob Bild geladen oder nicht */}
+      <div className="relative w-16 h-16 flex-shrink-0">
+        {programme.pictogramUrl && !imgError ? (
+          <>
+            {/* Skeleton-Platzhalter – sichtbar solange Bild noch lädt */}
+            {!imgLoaded && (
+              <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+            )}
+            <img
+              src={programme.pictogramUrl}
+              alt={programme.name}
+              className={`w-16 h-16 object-contain transition-opacity duration-300 ${
+                imgLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          </>
+        ) : (
+          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+            {programme.abbreviation}
+          </div>
+        )}
+      </div>
       <div>
         <div className="text-xs font-bold text-[#76B900]">{programme.abbreviation}</div>
         <div className="text-xs text-gray-600 leading-tight mt-0.5">{programme.name}</div>

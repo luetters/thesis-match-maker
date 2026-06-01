@@ -321,6 +321,63 @@ function Step3Photo({
 }
 
 // ─── Schritt 4: Studiengänge ──────────────────────────────────────────────────
+
+/** Einzelne Kachel mit Skeleton-Loader für das Piktogramm */
+function ProgrammeTile({
+  p,
+  isSelected,
+  onToggle,
+}: {
+  p: { id: number; name: string; abbreviation: string; pictogramUrl: string | null };
+  isSelected: boolean;
+  onToggle: () => void;
+}) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center
+        ${isSelected ? "border-[#76B900] bg-[#76B900]/5" : "border-gray-200 hover:border-[#76B900]/40"}`}
+    >
+      {isSelected && (
+        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#76B900] flex items-center justify-center">
+          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      )}
+      {/* Feste Größe w-14 h-14 hält das Layout stabil */}
+      <div className="relative w-14 h-14 flex-shrink-0">
+        {p.pictogramUrl && !imgError ? (
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+            )}
+            <img
+              src={p.pictogramUrl}
+              alt={p.name}
+              className={`w-14 h-14 object-contain transition-opacity duration-300 ${
+                imgLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          </>
+        ) : (
+          <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+            {p.abbreviation}
+          </div>
+        )}
+      </div>
+      <div className="text-xs font-bold text-[#76B900]">{p.abbreviation}</div>
+      <div className="text-xs text-gray-500 leading-tight">{p.name}</div>
+    </button>
+  );
+}
+
 function Step4Programmes({
   selected,
   onChange,
@@ -351,7 +408,23 @@ function Step4Programmes({
         </p>
       </div>
       {isLoading ? (
-        <div className="text-center py-8 text-gray-400">Lade Studiengänge…</div>
+        /* Skeleton-Grid während die Liste vom Server geladen wird */
+        <div className="space-y-5">
+          {["Bachelor", "Master"].map((label) => (
+            <div key={label}>
+              <div className="h-3 w-16 bg-gray-200 rounded animate-pulse mb-3" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 border-gray-100">
+                    <div className="w-14 h-14 rounded-lg bg-gray-200 animate-pulse" />
+                    <div className="h-3 w-10 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-2.5 w-16 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-5 max-h-80 overflow-y-auto pr-1">
           {[{ label: "Bachelor", items: bachelor }, { label: "Master", items: master }].map(({ label, items }) => (
@@ -359,30 +432,12 @@ function Step4Programmes({
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{label}</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {items.map((p) => (
-                  <button
+                  <ProgrammeTile
                     key={p.id}
-                    type="button"
-                    onClick={() => toggle(p.id)}
-                    className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center
-                      ${selected.includes(p.id) ? "border-[#76B900] bg-[#76B900]/5" : "border-gray-200 hover:border-[#76B900]/40"}`}
-                  >
-                    {selected.includes(p.id) && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#76B900] flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    {p.pictogramUrl ? (
-                      <img src={p.pictogramUrl} alt={p.name} className="w-14 h-14 object-contain" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
-                        {p.abbreviation}
-                      </div>
-                    )}
-                    <div className="text-xs font-bold text-[#76B900]">{p.abbreviation}</div>
-                    <div className="text-xs text-gray-500 leading-tight">{p.name}</div>
-                  </button>
+                    p={p}
+                    isSelected={selected.includes(p.id)}
+                    onToggle={() => toggle(p.id)}
+                  />
                 ))}
               </div>
             </div>
