@@ -75,7 +75,6 @@ function ProgrammeCard({
           src={programme.pictogramUrl}
           alt={programme.name}
           className="w-16 h-16 object-contain"
-          loading="lazy"
         />
       ) : (
         <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">

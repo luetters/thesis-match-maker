@@ -374,9 +374,9 @@ function Step4Programmes({
                       </div>
                     )}
                     {p.pictogramUrl ? (
-                      <img src={p.pictogramUrl} alt={p.name} className="w-10 h-10 object-contain" loading="lazy" />
+                      <img src={p.pictogramUrl} alt={p.name} className="w-14 h-14 object-contain" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+                      <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
                         {p.abbreviation}
                       </div>
                     )}

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, email, role, programme_id FROM users WHERE email = 'student@htw-berlin.com';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, email, role, programme_id FROM users WHERE email = 'student@htw-berlin.com';",
+  "rows": [
+    {
+      "id": "690080",
+      "email": "student@htw-berlin.com",
+      "role": "student",
+      "programme_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\trole\tprogramme_id\n690080\tstudent@htw-berlin.com\tstudent\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 267
+}

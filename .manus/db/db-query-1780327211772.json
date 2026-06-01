@@ -1,0 +1,143 @@
+{
+  "query": "SELECT id, name, abbreviation, level, pictogram_url FROM programmes ORDER BY level, name LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, abbreviation, level, pictogram_url FROM programmes ORDER BY level, name LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Betriebswirtschaftslehre",
+      "abbreviation": "BWL",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/BWL_0108f3cc.jpg"
+    },
+    {
+      "id": "2",
+      "name": "Betriebswirtschaftslehre (Fernstudium)",
+      "abbreviation": "BWLfern",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/BWL_0108f3cc.jpg"
+    },
+    {
+      "id": "3",
+      "name": "Immobilienwirtschaft",
+      "abbreviation": "IW",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/IW_02bce515.jpg"
+    },
+    {
+      "id": "4",
+      "name": "International Business",
+      "abbreviation": "IB",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/IB_596e5078.jpg"
+    },
+    {
+      "id": "5",
+      "name": "Public und Nonprofit-Management",
+      "abbreviation": "PuMa",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/PuMa_9c2a74f7.jpg"
+    },
+    {
+      "id": "6",
+      "name": "Wirtschaft und Politik",
+      "abbreviation": "WiPo",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/WiPo_62d1c80e.jpg"
+    },
+    {
+      "id": "7",
+      "name": "Wirtschaftsrecht",
+      "abbreviation": "WiRe",
+      "level": "bachelor",
+      "pictogram_url": "/manus-storage/WiRe_fbe9ac44.jpg"
+    },
+    {
+      "id": "8",
+      "name": "Arbeits- und Personalmanagement",
+      "abbreviation": "MAP",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MAP_a1cb2668.jpg"
+    },
+    {
+      "id": "9",
+      "name": "Europäische Wirtschaftspolitik",
+      "abbreviation": "EWP",
+      "level": "master",
+      "pictogram_url": "/manus-storage/EWP_468c74bf.jpg"
+    },
+    {
+      "id": "10",
+      "name": "Finance, Accounting, Corporate Law and Taxation",
+      "abbreviation": "FACT",
+      "level": "master",
+      "pictogram_url": "/manus-storage/FACT_ef499f3d.jpg"
+    },
+    {
+      "id": "11",
+      "name": "General Management (Fernstudium)",
+      "abbreviation": "GEM",
+      "level": "master",
+      "pictogram_url": "/manus-storage/GEM_c93808d4.jpg"
+    },
+    {
+      "id": "12",
+      "name": "Industrial Sales and Innovation Management",
+      "abbreviation": "MISIM",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MISIM_25289558.jpg"
+    },
+    {
+      "id": "13",
+      "name": "International and Development Economics",
+      "abbreviation": "MIDE",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MIDE_76546a18.jpg"
+    },
+    {
+      "id": "14",
+      "name": "International Business",
+      "abbreviation": "MIB",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MIB_b18a1e4d.jpg"
+    },
+    {
+      "id": "15",
+      "name": "Nonprofit-Management & Public Governance",
+      "abbreviation": "Mango",
+      "level": "master",
+      "pictogram_url": "/manus-storage/Mango_70d4c2f9.jpg"
+    },
+    {
+      "id": "16",
+      "name": "Project Management and Data Science",
+      "abbreviation": "MPMD",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MPMD_f2631665.jpg"
+    },
+    {
+      "id": "19",
+      "name": "Real Estate Management (MBA)",
+      "abbreviation": "REM",
+      "level": "master",
+      "pictogram_url": "/manus-storage/REM_3d29f803.jpg"
+    },
+    {
+      "id": "17",
+      "name": "Unternehmenssteuerrecht",
+      "abbreviation": "USR",
+      "level": "master",
+      "pictogram_url": "/manus-storage/USR_b1b1792e.jpg"
+    },
+    {
+      "id": "18",
+      "name": "Wirtschaftsrecht",
+      "abbreviation": "MWR",
+      "level": "master",
+      "pictogram_url": "/manus-storage/MWR_dff95cc1.jpg"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tabbreviation\tlevel\tpictogram_url\n1\tBetriebswirtschaftslehre\tBWL\tbachelor\t/manus-storage/BWL_0108f3cc.jpg\n2\tBetriebswirtschaftslehre (Fernstudium)\tBWLfern\tbachelor\t/manus-storage/BWL_0108f3cc.jpg\n3\tImmobilienwirtschaft\tIW\tbachelor\t/manus-storage/IW_02bce515.jpg\n4\tInternational Business\tIB\tbachelor\t/manus-storage/IB_596e5078.jpg\n5\tPublic und Nonprofit-Management\tPuMa\tbachelor\t/manus-storage/PuMa_9c2a74f7.jpg\n6\tWirtschaft und Politik\tWiPo\tbachelor\t/manus-storage/WiPo_62d1c80e.jpg\n7\tWirtschaftsrecht\tWiRe\tbachelor\t/manus-storage/WiRe_fbe9ac44.jpg\n8\tArbeits- und Personalmanagement\tMAP\tmaster\t/manus-storage/MAP_a1cb2668.jpg\n9\tEuropäische Wirtschaftspolitik\tEWP\tmaster\t/manus-storage/EWP_468c74bf.jpg\n10\tFinance, Accounting, Corporate Law and Taxation\tFACT\tmaster\t/manus-storage/FACT_ef499f3d.jpg\n11\tGeneral Management (Fernstudium)\tGEM\tmaster\t/manus-storage/GEM_c93808d4.jpg\n12\tIndustrial Sales and Innovation Management\tMISIM\tmaster\t/manus-storage/MISIM_25289558.jpg\n13\tInternational and Development Economics\tMIDE\tmaster\t/manus-storage/MIDE_76546a18.jpg\n14\tInternational Business\tMIB\tmaster\t/manus-storage/MIB_b18a1e4d.jpg\n15\tNonprofit-Management & Public Governance\tMango\tmaster\t/manus-storage/Mango_70d4c2f9.jpg\n16\tProject Management and Data Science\tMPMD\tmaster\t/manus-storage/MPMD_f2631665.jpg\n19\tReal Estate Management (MBA)\tREM\tmaster\t/manus-storage/REM_3d29f803.jpg\n17\tUnternehmenssteuerrecht\tUSR\tmaster\t/manus-storage/USR_b1b1792e.jpg\n18\tWirtschaftsrecht\tMWR\tmaster\t/manus-storage/MWR_dff95cc1.jpg\n",
+  "stderr": "",
+  "execution_time_ms": 414
+}
