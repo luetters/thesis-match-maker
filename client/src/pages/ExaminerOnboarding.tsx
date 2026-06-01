@@ -7,6 +7,12 @@ import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 interface Programme {
@@ -336,45 +342,54 @@ function ProgrammeTile({
   const [imgError, setImgError] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center
-        ${isSelected ? "border-[#76B900] bg-[#76B900]/5" : "border-gray-200 hover:border-[#76B900]/40"}`}
-    >
-      {isSelected && (
-        <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#76B900] flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      )}
-      {/* Feste Größe w-14 h-14 hält das Layout stabil */}
-      <div className="relative w-14 h-14 flex-shrink-0">
-        {p.pictogramUrl && !imgError ? (
-          <>
-            {!imgLoaded && (
-              <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onToggle}
+            className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center
+              ${isSelected ? "border-[#76B900] bg-[#76B900]/5" : "border-gray-200 hover:border-[#76B900]/40"}`}
+          >
+            {isSelected && (
+              <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#76B900] flex items-center justify-center">
+                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
             )}
-            <img
-              src={p.pictogramUrl}
-              alt={p.name}
-              className={`w-14 h-14 object-contain transition-opacity duration-300 ${
-                imgLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-            />
-          </>
-        ) : (
-          <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
-            {p.abbreviation}
-          </div>
-        )}
-      </div>
-      <div className="text-xs font-bold text-[#76B900]">{p.abbreviation}</div>
-      <div className="text-xs text-gray-500 leading-tight">{p.name}</div>
-    </button>
+            {/* Feste Größe w-14 h-14 hält das Layout stabil */}
+            <div className="relative w-14 h-14 flex-shrink-0">
+              {p.pictogramUrl && !imgError ? (
+                <>
+                  {!imgLoaded && (
+                    <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+                  )}
+                  <img
+                    src={p.pictogramUrl}
+                    alt={p.name}
+                    className={`w-14 h-14 object-contain transition-opacity duration-300 ${
+                      imgLoaded ? "opacity-100" : "opacity-0"
+                    }`}
+                    onLoad={() => setImgLoaded(true)}
+                    onError={() => setImgError(true)}
+                  />
+                </>
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+                  {p.abbreviation}
+                </div>
+              )}
+            </div>
+            <div className="text-xs font-bold text-[#76B900]">{p.abbreviation}</div>
+            <div className="text-xs text-gray-500 leading-tight">{p.name}</div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-center text-sm font-medium">
+          {p.name}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

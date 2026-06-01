@@ -8,6 +8,12 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DndContext,
   DragOverlay,
   PointerSensor,
@@ -53,55 +59,64 @@ function ProgrammeCard({
   const [imgError, setImgError] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center
-        ${selected
-          ? "border-[#76B900] bg-[#76B900]/5 shadow-sm"
-          : "border-gray-200 bg-white hover:border-[#76B900]/40 hover:bg-gray-50"
-        }
-        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-      `}
-    >
-      {selected && (
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#76B900] flex items-center justify-center">
-          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      )}
-      {/* Feste Größe w-16 h-16 hält das Layout stabil, egal ob Bild geladen oder nicht */}
-      <div className="relative w-16 h-16 flex-shrink-0">
-        {programme.pictogramUrl && !imgError ? (
-          <>
-            {/* Skeleton-Platzhalter – sichtbar solange Bild noch lädt */}
-            {!imgLoaded && (
-              <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={`
+              relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center
+              ${selected
+                ? "border-[#76B900] bg-[#76B900]/5 shadow-sm"
+                : "border-gray-200 bg-white hover:border-[#76B900]/40 hover:bg-gray-50"
+              }
+              ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+            `}
+          >
+            {selected && (
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#76B900] flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
             )}
-            <img
-              src={programme.pictogramUrl}
-              alt={programme.name}
-              className={`w-16 h-16 object-contain transition-opacity duration-300 ${
-                imgLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImgLoaded(true)}
-              onError={() => setImgError(true)}
-            />
-          </>
-        ) : (
-          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
-            {programme.abbreviation}
-          </div>
-        )}
-      </div>
-      <div>
-        <div className="text-xs font-bold text-[#76B900]">{programme.abbreviation}</div>
-        <div className="text-xs text-gray-600 leading-tight mt-0.5">{programme.name}</div>
-      </div>
-    </button>
+            {/* Feste Größe w-16 h-16 hält das Layout stabil, egal ob Bild geladen oder nicht */}
+            <div className="relative w-16 h-16 flex-shrink-0">
+              {programme.pictogramUrl && !imgError ? (
+                <>
+                  {/* Skeleton-Platzhalter – sichtbar solange Bild noch lädt */}
+                  {!imgLoaded && (
+                    <div className="absolute inset-0 rounded-lg bg-gray-200 animate-pulse" />
+                  )}
+                  <img
+                    src={programme.pictogramUrl}
+                    alt={programme.name}
+                    className={`w-16 h-16 object-contain transition-opacity duration-300 ${
+                      imgLoaded ? "opacity-100" : "opacity-0"
+                    }`}
+                    onLoad={() => setImgLoaded(true)}
+                    onError={() => setImgError(true)}
+                  />
+                </>
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+                  {programme.abbreviation}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs font-bold text-[#76B900]">{programme.abbreviation}</div>
+              <div className="text-xs text-gray-600 leading-tight mt-0.5">{programme.name}</div>
+            </div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-center text-sm font-medium">
+          {programme.name}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

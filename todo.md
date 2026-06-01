@@ -785,3 +785,9 @@
 - [x] Skeleton-Loader in ExaminerOnboarding Schritt 4 – gleiche Größe wie Bild (w-14 h-14)
 - [x] onLoad-Handler: Skeleton ausblenden sobald Bild geladen ist
 - [x] Layout-Stabilität: Platzhalter hält exakt dieselbe Größe wie das geladene Bild
+
+## Feature: Tooltip für Studiengangs-Kacheln ✅ KOMPLETT
+
+- [x] Tooltip in ProgrammeCard (ProgrammeSelector.tsx) – vollständiger Name bei Hover
+- [x] Tooltip in ProgrammeTile (ExaminerOnboarding.tsx) – vollständiger Name bei Hover
+- [x] shadcn/ui Tooltip-Komponente verwenden (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent)
