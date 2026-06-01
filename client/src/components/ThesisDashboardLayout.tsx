@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // ─── Passwort-ändern-Dialog ─────────────────────────────────────────────────
 function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
@@ -255,6 +256,7 @@ function Sidebar({
   navItems,
   role,
   userName,
+  userAvatarUrl,
   onLogout,
   mobileOpen,
   onMobileClose,
@@ -262,6 +264,7 @@ function Sidebar({
   navItems: NavEntry[];
   role: string;
   userName: string;
+  userAvatarUrl?: string | null;
   onLogout: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
@@ -336,12 +339,7 @@ function Sidebar({
         {/* User + Logout */}
         <div className="px-4 py-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: "#76B900" }}
-            >
-              {userName.slice(0, 2).toUpperCase()}
-            </div>
+            <UserAvatar name={userName} avatarUrl={userAvatarUrl} size="md" />
             <div className="min-w-0">
               <div className="text-sm font-medium text-gray-900 truncate">{userName}</div>
               <div className="text-xs text-gray-400">{roleLabel[role] ?? role}</div>
@@ -425,6 +423,7 @@ export function ThesisDashboardLayout({
         navItems={navItems}
         role={user?.role ?? "user"}
         userName={user?.name ?? user?.email ?? "Nutzer:in"}
+        userAvatarUrl={user?.avatarUrl}
         onLogout={() => logoutMutation.mutate()}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
@@ -463,9 +462,7 @@ export function ThesisDashboardLayout({
                 onClick={() => setShowProfileMenu((v) => !v)}
                 className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: "#76B900" }}>
-                  {(user?.name ?? user?.email ?? "?").slice(0, 2).toUpperCase()}
-                </div>
+                <UserAvatar name={user?.name} email={user?.email} avatarUrl={user?.avatarUrl} size="sm" />
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

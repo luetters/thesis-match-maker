@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // ─── Examiner Card ────────────────────────────────────────────────────────────
 type ExaminerListItem = {
@@ -50,20 +51,13 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className="flex-shrink-0">
-            {profile?.photoUrl ? (
-              <img
-                src={profile.photoUrl}
-                alt={examiner.user?.name ?? D.unknownName}
-                className="w-14 h-14 rounded-xl object-cover"
-              />
-            ) : (
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold"
-                style={{ backgroundColor: "#76B900" }}
-              >
-                {(examiner.user?.name ?? "?")[0]?.toUpperCase()}
-              </div>
-            )}
+            <UserAvatar
+              name={examiner.user?.name}
+              email={examiner.user?.email}
+              avatarUrl={profile?.photoUrl ?? (examiner.user as any)?.avatarUrl}
+              size="xl"
+              rounded="lg"
+            />
           </div>
 
           <div className="min-w-0 flex-1">

@@ -2,6 +2,7 @@ import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboard
 import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -96,14 +97,7 @@ function AssignExaminerModal({
                 }`}
                 style={selectedExaminer === user.id ? { backgroundColor: "#76B900" } : undefined}
               >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                    selectedExaminer === user.id ? "bg-white/20 text-white" : "text-white"
-                  }`}
-                  style={selectedExaminer !== user.id ? { backgroundColor: "#76B900" } : undefined}
-                >
-                  {(user.name ?? "?").slice(0, 2).toUpperCase()}
-                </div>
+                <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="md" />
                 <div className="min-w-0">
                   <div className={`text-sm font-medium truncate ${selectedExaminer === user.id ? "text-white" : "text-gray-900"}`}>
                     {profile?.title ? `${profile.title} ` : ""}{user.name}
@@ -761,12 +755,7 @@ function UserManagement() {
                 <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
-                      >
-                        {(user.name ?? "?").slice(0, 2).toUpperCase()}
-                      </div>
+                      <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="md" />
                       <div>
                         <span className="text-sm font-medium text-gray-900">{user.name ?? "—"}</span>
                         {profile?.department && <div className="text-xs text-gray-400">{profile.department}</div>}

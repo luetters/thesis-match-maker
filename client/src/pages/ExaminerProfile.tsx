@@ -4,18 +4,7 @@ import { toast } from "sonner";
 import { useState, useRef } from "react";
 import { Link, useParams } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
-
-function getInitials(name?: string | null): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { UserAvatar } from "@/components/UserAvatar";
 
 function TagBadge({ label }: { label: string }) {
   return (
@@ -307,11 +296,15 @@ export default function ExaminerProfile() {
     );
   }
 
-  const { user, profile } = data;
-  const photoUrl = localPhotoUrl ?? profile?.photoUrl;
-  const tags = (profile?.tags as string[] | null | undefined) ?? [];
-  const languages = (profile?.languages as string[] | null | undefined) ?? [];
-  const studyPrograms = (profile?.studyPrograms as string[] | null | undefined) ?? [];
+  // getPublicProfile gibt ein flaches Objekt zurück (kein user/profile-Wrapper)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = data as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile = data as any;
+  const photoUrl = localPhotoUrl ?? (data as any).photoUrl;
+  const tags = ((data as any).tags as string[] | null | undefined) ?? [];
+  const languages = ((data as any).languages as string[] | null | undefined) ?? [];
+  const studyPrograms = ((data as any).studyPrograms as string[] | null | undefined) ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -370,14 +363,8 @@ export default function ExaminerProfile() {
                   }}
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-md flex-shrink-0">
-                  {photoUrl ? (
-                    <img src={photoUrl} alt={user.name ?? ""} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white" style={{ backgroundColor: "#76B900" }}>
-                      {getInitials(user.name)}
-                    </div>
-                  )}
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md flex-shrink-0">
+                  <UserAvatar name={user.name} email={user.email} avatarUrl={photoUrl ?? user.avatarUrl} size="xl" className="w-full h-full" />
                 </div>
               )}
               <div className="pb-1 flex-1 min-w-0">

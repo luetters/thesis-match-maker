@@ -744,3 +744,11 @@
 - [x] AvatarCropModal Komponente erstellen (quadratisches 1:1 Crop, Zoom-Slider)
 - [x] In Profile.tsx integrieren (Modal öffnet sich nach Dateiauswahl)
 - [x] Canvas-basiertes Cropping vor dem Upload anwenden
+- [x] UserAvatar-Komponente erstellen (zeigt Profilbild oder Initialen als Fallback)
+- [x] UserAvatar in ThesisDashboardLayout (Sidebar + Header) eingebaut
+- [x] UserAvatar in StudentDashboard (Prüfer:innen-Karten) eingebaut
+- [x] UserAvatar in AdminDashboard eingebaut
+- [x] UserAvatar in ExaminerProfile eingebaut
+- [x] UserAvatar in PublicProfile eingebaut
+- [x] UserAvatar in ExaminerDashboard (Kandidaten-Liste) eingebaut
+- [x] UserAvatar in ExaminerDirectory eingebaut

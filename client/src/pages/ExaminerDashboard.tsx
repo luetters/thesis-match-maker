@@ -1,6 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
+import { UserAvatar } from "@/components/UserAvatar";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -968,13 +969,7 @@ function CandidateTooltip({ candidate }: { candidate: any }) {
 
       {/* Kopfzeile */}
       <div className="flex items-center gap-3 mb-3">
-        {candidate.photoUrl ? (
-          <img src={candidate.photoUrl} alt={candidate.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
-            {(candidate.name ?? "").charAt(0).toUpperCase()}
-          </div>
-        )}
+        <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="lg" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">{candidate.name}</p>
           {candidate.title && <p className="text-xs text-gray-500 truncate">{candidate.title}</p>}
@@ -1075,9 +1070,7 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 group-hover:bg-[#76B900]/20">
-        {(candidate.name ?? "").charAt(0).toUpperCase()}
-      </div>
+      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
         {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
@@ -1143,9 +1136,7 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      <div className="w-8 h-8 rounded-full bg-[#76B900]/20 flex items-center justify-center text-xs font-bold text-[#76B900] flex-shrink-0">
-        {(candidate.name ?? "").charAt(0).toUpperCase()}
-      </div>
+      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
         {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
@@ -1451,11 +1442,7 @@ function CommissionPreferences() {
                 ? "bg-white border-gray-200"
                 : "bg-[#76B900]/10 border-[#76B900]/40"
             }`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                activeType === "available" ? "bg-gray-100 text-gray-500" : "bg-[#76B900]/20 text-[#76B900]"
-              }`}>
-                {(activeCandidate.name ?? "").charAt(0).toUpperCase()}
-              </div>
+              <UserAvatar name={activeCandidate.name} email={activeCandidate.email} avatarUrl={activeCandidate.photoUrl ?? activeCandidate.avatarUrl} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 truncate">{activeCandidate.name}</p>
                 {activeCandidate.title && <p className="text-xs text-gray-400 truncate">{activeCandidate.title}</p>}

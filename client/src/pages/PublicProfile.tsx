@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; labelEn: string; color: string; bg: string; border: string }> = {
@@ -125,7 +126,6 @@ export default function PublicProfile() {
   const roleConf = ROLE_CONFIG[profile.role] ?? { label: profile.role, labelEn: profile.role, color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" };
   const roleLabel = isDE ? roleConf.label : roleConf.labelEn;
   const avatarSrc = profile.photoUrl ?? profile.avatarUrl;
-  const initials = getInitials(profile.name, profile.email);
   const isExaminer = profile.role === "examiner" || profile.role === "second_examiner";
   const departmentLabel = profile.department ? (DEPARTMENTS[profile.department] ?? profile.department) : null;
   const researchTagList = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
@@ -158,13 +158,8 @@ export default function PublicProfile() {
           <div className="px-6 pb-6">
             <div className="flex items-end gap-4 -mt-14 mb-4">
               {/* Avatar */}
-              <div
-                className="w-24 h-24 rounded-2xl border-4 border-white shadow-md flex items-center justify-center overflow-hidden flex-shrink-0"
-                style={{ background: avatarSrc ? "transparent" : roleConf.bg }}
-              >
-                {avatarSrc
-                  ? <img src={avatarSrc} alt={profile.name ?? ""} className="w-full h-full object-cover" />
-                  : <span className="text-2xl font-bold" style={{ color: roleConf.color }}>{initials}</span>}
+              <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden flex-shrink-0">
+                <UserAvatar name={profile.name} email={profile.email} avatarUrl={avatarSrc} size="xl" className="w-full h-full rounded-2xl" />
               </div>
               <div className="flex-1 min-w-0 pb-1">
                 <h1 className="text-xl font-bold text-gray-900 truncate">{profile.name ?? (isDE ? "Unbekannt" : "Unknown")}</h1>

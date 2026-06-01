@@ -1,6 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, Link } from "wouter";
@@ -1198,12 +1199,7 @@ function ExaminerList() {
           {filtered.map(({ user, profile }) => (
             <div key={user.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                  style={{ backgroundColor: "#76B900" }}
-                >
-                  {(user.name ?? "?").slice(0, 2).toUpperCase()}
-                </div>
+                <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="lg" />
                 <div className="min-w-0">
                   <div className="font-semibold text-gray-900 text-sm">
                     {profile?.title ? `${profile.title} ` : ""}{user.name}
