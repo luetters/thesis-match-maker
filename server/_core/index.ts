@@ -45,7 +45,13 @@ async function startServer() {
   registerMagicLinkRoutes(app);
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)
   app.use(maintenanceMiddleware());
-  // tRPC API
+  // tRPC API – kein Caching (verhindert veraltete Profil-/Auth-Daten nach Updates)
+  app.use("/api/trpc", (_req, res, next) => {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    next();
+  });
   app.use(
     "/api/trpc",
     createExpressMiddleware({
