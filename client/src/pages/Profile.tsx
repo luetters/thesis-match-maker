@@ -331,11 +331,11 @@ export default function Profile() {
         throw new Error(json.error ?? `HTTP ${resp.status}`);
       }
       const newAvatarUrl: string = json.avatarUrl;
-      // Blob-URL freigeben
-      URL.revokeObjectURL(localPreview);
+      // Bild direkt als Vorschau setzen (S3-URL) – Blob-URL nicht freigeben vor Reload
+      setAvatarPreview(newAvatarUrl);
       toast.success(p.avatarSuccess);
-      // Seite neu laden – garantiert dass das neue Bild angezeigt wird
-      setTimeout(() => window.location.reload(), 800);
+      // Seite sofort neu laden – kein Delay, kein Flackern
+      window.location.reload();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(p.avatarUploadError ? p.avatarUploadError.replace("{msg}", msg) : msg);
