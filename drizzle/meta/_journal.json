@@ -281,6 +281,13 @@
       "when": 1780321590682,
       "tag": "0039_high_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1780337638558,
+      "tag": "0040_round_carnage",
+      "breakpoints": true
     }
   ]
 }

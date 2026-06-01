@@ -805,3 +805,10 @@
 - [x] Bei "Anmelden": direkt zum Login-Formular (keine Rollenauswahl nötig)
 - [x] Bei "Registrieren": Rolle wählen, dann Formular
 - [x] Zurück-Navigation anpassen
+
+## Fix: Kolloquium im Singular (kein Plural) ✅ KOMPLETT
+
+- [x] DE: "Kolloquien" → "Kolloquium" in LanguageContext (Sidebar-Labels, Beschreibungstexte)
+- [x] EN: "Colloquiums" → "Colloquium" in LanguageContext (Sidebar-Labels, Feature-Listen, Beschreibungstexte)
+- [x] DB: Felder `is_repeat_colloquium` und `repeat_reason` in colloquiums-Tabelle für Wiederholungs-Kolloquium vorbereitet
+- [x] Schema-Migration per SQL ausgeführt

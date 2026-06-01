@@ -23,6 +23,9 @@ export const colloquiums = mysqlTable("colloquiums", {
 	room: varchar({ length: 256 }),
 	notes: text(),
 	status: mysqlEnum(['SCHEDULED','CANCELLED','COMPLETED']).default('SCHEDULED').notNull(),
+	// Wiederholungs-Kolloquium (z. B. nach nicht bestandenem ersten Kolloquium)
+	isRepeatColloquium: tinyint("is_repeat_colloquium").default(0).notNull(),
+	repeatReason: varchar("repeat_reason", { length: 512 }),
 	createdById: int("created_by_id"),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
