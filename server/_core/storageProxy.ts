@@ -38,8 +38,19 @@ export function registerStorageProxy(app: Express) {
         return;
       }
 
-      res.set("Cache-Control", "no-store");
-      res.redirect(307, url);
+      // Direkt streamen statt Redirect – verhindert 404-Probleme im Browser
+      // durch signierte CloudFront-URLs die im Browser nicht korrekt aufgelöst werden
+      const imgResp = await fetch(url);
+      if (!imgResp.ok) {
+        console.error(`[StorageProxy] upstream error: ${imgResp.status}`);
+        res.status(imgResp.status).send("Upstream error");
+        return;
+      }
+      const contentType = imgResp.headers.get("content-type") ?? "application/octet-stream";
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=3600");
+      const buf = await imgResp.arrayBuffer();
+      res.send(Buffer.from(buf));
     } catch (err) {
       console.error("[StorageProxy] failed:", err);
       res.status(502).send("Storage proxy error");
