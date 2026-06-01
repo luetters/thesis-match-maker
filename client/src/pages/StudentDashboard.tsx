@@ -223,7 +223,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     }
     
     createMutation.mutate({ 
-      ...form, 
+      ...form,
+      // Wenn kein eigenes Thema: Platzhalter damit Zod-Validierung (min(1)) besteht
+      title: hasOwnTopic ? form.title : (form.title.trim() || "Thema wird noch festgelegt"),
+      description: hasOwnTopic ? form.description : (form.description.trim() || "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in."),
       exposeUrl,
       exposeKey,
     });
