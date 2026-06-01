@@ -713,3 +713,15 @@
 - [x] Drag-Overlay für visuelles Feedback beim Ziehen
 - [x] Speichern-Button mit Lade-Zustand
 - [x] Tests: 55/55 grün
+
+## Feature: My Profile – Prüfer:innen-Sektion (Sprachen, Studiengänge, Keywords) ✅ KOMPLETT
+- [x] DB-Schema: examiner_profiles.languages (JSON) und examiner_profiles.tags (JSON) bereits vorhanden
+- [x] DB-Schema: examiner_programmes-Tabelle bereits vorhanden – für Studiengänge genutzt
+- [x] Backend: getProfile() gibt examinerLanguages, examinerKeywords, examinerProgrammeIds zurück
+- [x] Backend: profile.update-Prozedur um examinerLanguages, examinerKeywords, examinerProgrammeIds erweitert
+- [x] Backend: upsertExaminerProfile() für Sprachen und Keywords, setExaminerProgrammes() für Studiengänge
+- [x] Frontend: Neue Sektion in Profile.tsx (nur für Prüfer:innen)
+- [x] Frontend: Prüfungssprachen – Checkboxen Deutsch / Englisch
+- [x] Frontend: Studiengänge – Checkbox-Liste aller Studiengänge (Default: alle aktiviert = null)
+- [x] Frontend: Schlagworte – Tag-Input mit Hinzufügen/Entfernen
+- [x] Tests: 55/55 grün

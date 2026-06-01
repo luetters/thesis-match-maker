@@ -3513,6 +3513,23 @@ export async function getProfile(userId: number) {
     );
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return null;
+    // Prüfer:innen-Profil-Felder (languages, tags) und Studiengänge laden
+    let examinerLanguages: string[] = [];
+    let examinerKeywords: string[] = [];
+    let examinerProgrammeIds: number[] = [];
+    const isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
+    if (isExaminerRole) {
+      try {
+        const epRows = await db.execute(`SELECT languages, tags FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
+        const ep = (epRows[0] as unknown as any[])[0];
+        if (ep) {
+          try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages) : []; } catch { examinerLanguages = []; }
+          try { examinerKeywords = ep.tags ? (typeof ep.tags === 'string' ? JSON.parse(ep.tags) : ep.tags) : []; } catch { examinerKeywords = []; }
+        }
+        const progRows = await db.execute(`SELECT programme_id AS programmeId FROM examiner_programmes WHERE examiner_id = ${userId}`);
+        examinerProgrammeIds = (progRows[0] as unknown as any[]).map((r: any) => r.programmeId as number);
+      } catch { /* ignore */ }
+    }
     return {
       id: user.id as number,
       name: user.name as string | null,
@@ -3544,6 +3561,10 @@ export async function getProfile(userId: number) {
       bookingUrl: user.bookingUrl as string | null,
       createdAt: user.createdAt as Date,
       lastSignedIn: user.lastSignedIn as Date,
+      // Prüfer:innen-spezifische Felder
+      examinerLanguages: isExaminerRole ? examinerLanguages : null,
+      examinerKeywords: isExaminerRole ? examinerKeywords : null,
+      examinerProgrammeIds: isExaminerRole ? examinerProgrammeIds : null,
     };
   } catch (error) {
     console.error("[Profile] Fehler beim Abrufen:", error);

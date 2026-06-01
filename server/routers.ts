@@ -238,6 +238,9 @@ const profileRouterDef = router({
       officeRoom: z.string().max(64).optional(),
       officeHours: z.string().max(500).optional(),
       researchTags: z.string().max(500).optional(),
+      examinerLanguages: z.array(z.string()).optional(),
+      examinerKeywords: z.array(z.string().max(64)).max(30).optional(),
+      examinerProgrammeIds: z.array(z.number().int().positive()).optional(),
       // Verwaltung
       staffId: z.string().max(32).optional(),
       responsibilityArea: z.string().max(255).optional(),
@@ -254,6 +257,19 @@ const profileRouterDef = router({
     .mutation(async ({ ctx, input }) => {
       const ok = await updateProfile(ctx.user.id, input);
       if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Profil konnte nicht aktualisiert werden." });
+      // Prüfer:innen-spezifische Felder in examiner_profiles speichern
+      const isExaminer = ctx.user.role === 'examiner' || ctx.user.role === 'second_examiner';
+      if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined)) {
+        await upsertExaminerProfile({
+          userId: ctx.user.id,
+          ...(input.examinerLanguages !== undefined ? { languages: input.examinerLanguages } : {}),
+          ...(input.examinerKeywords !== undefined ? { tags: input.examinerKeywords } : {}),
+        });
+      }
+      // Studiengänge speichern
+      if (isExaminer && input.examinerProgrammeIds !== undefined) {
+        await setExaminerProgrammes(ctx.user.id, input.examinerProgrammeIds);
+      }
       return { success: true };
     }),
   deleteAvatar: protectedProcedure

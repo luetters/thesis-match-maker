@@ -282,6 +282,10 @@ export default function Profile() {
     htwProfileUrl: "", miscLink: "", bookingUrl: "",
   });
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
+  const [examinerLanguages, setExaminerLanguages] = useState<string[]>([]);
+  const [examinerKeywords, setExaminerKeywords] = useState<string[]>([]);
+  const [examinerProgrammeIds, setExaminerProgrammeIds] = useState<number[] | null>(null); // null = alle
+  const { data: allProgrammes } = trpc.programmes.list.useQuery(undefined, { enabled: !!profile && (profile.role === 'examiner' || profile.role === 'second_examiner') });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -326,6 +330,15 @@ export default function Profile() {
   const handleEditStart = () => {
     if (!profile) return;
     setResearchTagList(profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : []);
+    // Prüfer:innen-spezifische Felder initialisieren
+    if (profile.role === 'examiner' || profile.role === 'second_examiner') {
+      setExaminerLanguages(Array.isArray(profile.examinerLanguages) ? profile.examinerLanguages : []);
+      setExaminerKeywords(Array.isArray(profile.examinerKeywords) ? profile.examinerKeywords : []);
+      // null = alle Studiengänge (Default), leeres Array = keine
+      setExaminerProgrammeIds(Array.isArray(profile.examinerProgrammeIds) && profile.examinerProgrammeIds.length > 0
+        ? profile.examinerProgrammeIds
+        : null);
+    }
     setForm({
       name: profile.name ?? "", bio: profile.bio ?? "", phone: profile.phone ?? "", department: profile.department ?? "",
       matrikelNr: profile.matrikelNr ?? "", thesisType: (profile.thesisType as "" | "bachelor" | "master") ?? "",
@@ -338,17 +351,27 @@ export default function Profile() {
     setEditMode(true);
   };
 
+  const isExaminerRole = profile?.role === 'examiner' || profile?.role === 'second_examiner';
   const handleSave = () => {
     if (hasUrlErrors) {
       toast.error(p.urlSaveBlocked);
       return;
     }
+    // Studiengänge: null = alle (leeres Array an Backend), sonst die ausgewählten IDs
+    const programmeIdsToSave = isExaminerRole
+      ? (examinerProgrammeIds === null ? [] : examinerProgrammeIds)
+      : undefined;
     updateMutation.mutate({
       name: form.name || undefined, bio: form.bio || undefined, phone: form.phone || undefined, department: form.department || undefined,
       matrikelNr: form.matrikelNr || undefined, thesisType: (form.thesisType as "bachelor" | "master") || undefined,
       enrollmentSemester: form.enrollmentSemester || undefined, targetSemester: form.targetSemester || undefined,
       academicTitle: form.academicTitle || undefined, officeRoom: form.officeRoom || undefined, officeHours: form.officeHours || undefined,
       researchTags: researchTagList.join(", ") || undefined,
+      ...(isExaminerRole ? {
+        examinerLanguages,
+        examinerKeywords,
+        examinerProgrammeIds: programmeIdsToSave,
+      } : {}),
       staffId: form.staffId || undefined, responsibilityArea: form.responsibilityArea || undefined, officeLocation: form.officeLocation || undefined,
       secondEmail: form.secondEmail || undefined, website: form.website || undefined, linkedIn: form.linkedIn || undefined, researchGate: form.researchGate || undefined,
       htwProfileUrl: form.htwProfileUrl || undefined, miscLink: form.miscLink || undefined, bookingUrl: form.bookingUrl || undefined,
@@ -765,6 +788,130 @@ export default function Profile() {
                         ))}
                       </div>
                     ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Prüfungssprachen ── */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  {lang === 'de' ? 'Prüfungssprachen' : 'Examination Languages'}
+                </label>
+                {editMode ? (
+                  <div className="flex gap-4">
+                    {(['Deutsch', 'English'] as const).map((lang_) => (
+                      <label key={lang_} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={examinerLanguages.includes(lang_)}
+                          onChange={(e) => {
+                            if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
+                            else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
+                        />
+                        <span className="text-sm text-gray-700">{lang_}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(Array.isArray(profile.examinerLanguages) && profile.examinerLanguages.length > 0)
+                      ? profile.examinerLanguages.map((l, i) => (
+                          <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{l}</span>
+                        ))
+                      : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Schlagworte für Interessen/Themen ── */}
+              <div className="sm:col-span-2">
+                {editMode ? (
+                  <TagInput
+                    label={lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
+                    tags={examinerKeywords}
+                    onChange={setExaminerKeywords}
+                    placeholder={lang === 'de' ? 'Schlagwort eingeben und Enter drücken…' : 'Enter keyword and press Enter…'}
+                    hint={lang === 'de' ? 'Themen, die Sie bei Abschlussarbeiten betreuen möchten' : 'Topics you are willing to supervise in theses'}
+                  />
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                      {lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
+                    </label>
+                    {(Array.isArray(profile.examinerKeywords) && profile.examinerKeywords.length > 0)
+                      ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {profile.examinerKeywords.map((kw, i) => (
+                            <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{kw}</span>
+                          ))}
+                        </div>
+                      )
+                      : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Studiengänge in denen geprüft wird ── */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  {lang === 'de' ? 'Studiengänge (Prüfungsberechtigung)' : 'Study Programmes (Examination Eligibility)'}
+                </label>
+                {editMode ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={examinerProgrammeIds === null}
+                          onChange={(e) => {
+                            if (e.target.checked) setExaminerProgrammeIds(null);
+                            else setExaminerProgrammeIds([]);
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                          {lang === 'de' ? 'Alle Studiengänge (Standard)' : 'All study programmes (default)'}
+                        </span>
+                      </label>
+                    </div>
+                    {examinerProgrammeIds !== null && (
+                      <div className="grid grid-cols-1 gap-1.5 max-h-64 overflow-y-auto border border-gray-200 rounded-xl p-3 bg-gray-50">
+                        {(allProgrammes ?? []).map(prog => (
+                          <label key={prog.id} className="flex items-center gap-2.5 cursor-pointer select-none py-1 hover:bg-white rounded-lg px-2 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={examinerProgrammeIds.includes(prog.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setExaminerProgrammeIds(prev => prev ? [...prev, prog.id] : [prog.id]);
+                                else setExaminerProgrammeIds(prev => prev ? prev.filter(id => id !== prog.id) : []);
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 accent-[#2563eb] flex-shrink-0"
+                            />
+                            <span className="text-xs font-semibold text-[#2563eb] w-16 flex-shrink-0">{prog.abbreviation}</span>
+                            <span className="text-sm text-gray-700 truncate">{prog.name}</span>
+                            <span className="text-xs text-gray-400 flex-shrink-0 capitalize">{prog.level}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    {(Array.isArray(profile.examinerProgrammeIds) && profile.examinerProgrammeIds.length > 0) ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {(allProgrammes ?? []).filter(p => profile.examinerProgrammeIds!.includes(p.id)).map((prog, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
+                            <span className="font-bold">{prog.abbreviation}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        {lang === 'de' ? 'Alle Studiengänge' : 'All study programmes'}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

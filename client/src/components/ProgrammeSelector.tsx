@@ -542,7 +542,8 @@ export function ExaminerProgrammeSelector() {
             <svg className="w-6 h-6 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-xs text-gray-400 text-center">Ziehen oder<br />Klicken</span>          </div>
+            <span className="text-xs text-gray-400 text-center">Ziehen oder<br/>Klicken</span>
+          </div>
 
           {/* Rechte Liste: Ausgewählte Studiengänge */}
           <div className={`rounded-2xl border overflow-hidden transition-colors ${
