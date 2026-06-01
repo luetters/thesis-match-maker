@@ -25,6 +25,13 @@ import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 
+/**
+ * Login-Flow:
+ *  Schritt 1 "action"  → Anmelden oder Registrieren wählen
+ *  Schritt 2a "login"  → E-Mail/Passwort-Formular (direkt, keine Rolle nötig)
+ *  Schritt 2b "role"   → Rolle wählen (nur bei Registrierung)
+ *  Schritt 3  "register" → Registrierungsformular
+ */
 export default function Login() {
   const { t } = useLanguage();
   const L = t.login;
@@ -71,8 +78,8 @@ export default function Login() {
     },
   ];
 
-  // Schritte: "role" → "action" → "login" oder "register"
-  const [step, setStep] = useState<"role" | "action" | "login" | "register">("role");
+  // Schritte: "action" → "login" | ("role" → "register")
+  const [step, setStep] = useState<"action" | "login" | "role" | "register">("action");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   // Login-State
@@ -186,8 +193,8 @@ export default function Login() {
 
   const selectedRoleOption = ROLE_OPTIONS.find((r) => r.id === selectedRole);
 
-  function resetToRole() {
-    setStep("role");
+  function resetToAction() {
+    setStep("action");
     setSelectedRole(null);
     setLoginEmail("");
     setLoginPassword("");
@@ -236,12 +243,235 @@ export default function Login() {
           </div>
         )}
 
-        {/* ── SCHRITT 1: Rollenauswahl ── */}
-        {step === "role" && (
+        {/* ── SCHRITT 1: Anmelden oder Registrieren ── */}
+        {step === "action" && (
           <div>
             <div className="text-center mb-6">
               <h2 className="text-xl font-semibold text-white mb-1">{L.welcomeTitle}</h2>
               <p className="text-white/50 text-sm">{L.welcomeSubtitle}</p>
+            </div>
+            <div className="space-y-3">
+              {/* Anmelden */}
+              <button
+                type="button"
+                onClick={() => setStep("login")}
+                className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "rgba(118,185,0,0.08)";
+                  el.style.borderColor = "#76b900";
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "rgba(255,255,255,0.04)";
+                  el.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                <div
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(118,185,0,0.08)", color: "#76b900" }}
+                >
+                  <LogIn className="w-7 h-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white text-sm">{L.signInBtn}</div>
+                  <div className="text-white/50 text-xs mt-0.5 leading-relaxed">
+                    {L.alreadyHaveAccount ?? "Sie haben bereits ein Konto"}
+                  </div>
+                </div>
+              </button>
+
+              {/* Registrieren */}
+              <button
+                type="button"
+                onClick={() => setStep("role")}
+                className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "rgba(59,130,246,0.08)";
+                  el.style.borderColor = "#3b82f6";
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "rgba(255,255,255,0.04)";
+                  el.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                <div
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(59,130,246,0.08)", color: "#3b82f6" }}
+                >
+                  <UserPlus className="w-7 h-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white text-sm">{L.createAccount}</div>
+                  <div className="text-white/50 text-xs mt-0.5 leading-relaxed">
+                    {L.noAccountYet ?? "Noch kein Konto? Jetzt registrieren"}
+                  </div>
+                </div>
+              </button>
+            </div>
+            <p className="text-center text-white/25 text-xs mt-8">{L.footer}</p>
+          </div>
+        )}
+
+        {/* ── SCHRITT 2a: Login-Formular (direkt, ohne Rollenauswahl) ── */}
+        {step === "login" && (
+          <>
+            <button
+              type="button"
+              onClick={resetToAction}
+              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {L.back}
+            </button>
+
+            <Card
+              className="border-0 shadow-2xl"
+              style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
+            >
+              <CardHeader className="pb-4">
+                <CardTitle className="text-white text-xl">{L.signInTitle ?? "Anmelden"}</CardTitle>
+                <CardDescription className="text-white/50">{L.signInDesc ?? "Melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse an."}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-white/70 text-sm">{L.emailLabel}</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <Input
+                        type="email"
+                        placeholder={L.emailPlaceholderLogin ?? "ihre@htw-berlin.de"}
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        autoFocus
+                        className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!loginEmail.trim()) {
+                            toast.error(L.enterEmailFirst ?? "Bitte geben Sie zuerst Ihre E-Mail-Adresse ein.");
+                            return;
+                          }
+                          requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
+                        }}
+                        className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                      >
+                        {L.forgotPassword}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <Input
+                        type={showLoginPw ? "text" : "password"}
+                        placeholder={L.passwordPlaceholder ?? "Passwort"}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                        autoComplete="current-password"
+                        className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPw(!showLoginPw)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {loginStatus === "pending" && (
+                    <div
+                      className="p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.35)", color: "#eab308" }}
+                    >
+                      <p className="font-semibold mb-1">{L.pendingTitle}</p>
+                      <p style={{ color: "rgba(234,179,8,0.75)" }}>{L.pendingText}</p>
+                    </div>
+                  )}
+
+                  {loginStatus === "rejected" && (
+                    <div
+                      className="p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.35)" }}
+                    >
+                      <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>{L.rejectedTitle}</p>
+                      <p style={{ color: "rgba(239,68,68,0.75)" }}>{L.rejectedText}</p>
+                    </div>
+                  )}
+
+                  {resetSent && (
+                    <div
+                      className="p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(118,185,0,0.1)", border: "1px solid rgba(118,185,0,0.3)", color: "#76b900" }}
+                    >
+                      {L.resetSent}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={loginMutation.isPending || !loginEmail.trim() || !loginPassword}
+                    className="w-full font-semibold h-11"
+                    style={{ background: "#76b900", color: "white" }}
+                  >
+                    {loginMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{L.signingIn}</>
+                    ) : (
+                      L.signInBtn
+                    )}
+                  </Button>
+                  <p className="text-white/30 text-xs text-center leading-relaxed">{L.privacyConsent}</p>
+
+                  {/* Wechsel zu Registrierung */}
+                  <p className="text-center text-white/40 text-xs">
+                    {L.noAccountYet ?? "Noch kein Konto?"}{" "}
+                    <button
+                      type="button"
+                      onClick={() => setStep("role")}
+                      className="text-[#76b900] hover:underline"
+                    >
+                      {L.createAccount}
+                    </button>
+                  </p>
+                </form>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* ── SCHRITT 2b: Rollenauswahl (nur bei Registrierung) ── */}
+        {step === "role" && (
+          <div>
+            <button
+              type="button"
+              onClick={resetToAction}
+              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {L.back}
+            </button>
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-white mb-1">
+                {L.selectRoleTitle ?? "Welche Rolle trifft auf Sie zu?"}
+              </h2>
+              <p className="text-white/50 text-sm">
+                {L.selectRoleSubtitle ?? "Wählen Sie Ihre Rolle, um fortzufahren."}
+              </p>
             </div>
             <div className="space-y-3">
               {ROLE_OPTIONS.map((option) => (
@@ -250,13 +480,10 @@ export default function Login() {
                   type="button"
                   onClick={() => {
                     setSelectedRole(option.id);
-                    setStep("action");
+                    setStep("register");
                   }}
                   className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    borderColor: "rgba(255,255,255,0.1)",
-                  }}
+                  style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget as HTMLButtonElement;
                     el.style.background = option.bgColor;
@@ -285,283 +512,19 @@ export default function Login() {
           </div>
         )}
 
-        {/* ── SCHRITT 2: Anmelden oder Registrieren ── */}
-        {step === "action" && selectedRoleOption && (
-          <div>
-            <button
-              type="button"
-              onClick={resetToRole}
-              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {L.changeRole}
-            </button>
-
-            {/* Rollen-Badge */}
-            <div
-              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
-              style={{
-                background: selectedRoleOption.bgColor,
-                border: `1px solid ${selectedRoleOption.accentColor}40`,
-              }}
-            >
-              <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
-              <div>
-                <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                <div className="text-white/50 text-xs">{L.selectedRole}</div>
-              </div>
-            </div>
-
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-white mb-1">{L.whatToDo}</h2>
-              <p className="text-white/50 text-sm">{L.whatToDoSub}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setStep("login")}
-                className="rounded-xl border p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:scale-[1.02]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  borderColor: "rgba(255,255,255,0.1)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(118,185,0,0.08)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#76b900";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)";
-                }}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(118,185,0,0.12)", color: "#76b900" }}>
-                  <LogIn className="w-6 h-6" />
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-white text-sm">{L.signIn}</div>
-                  <div className="text-white/40 text-xs mt-0.5">{L.signInSub}</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep("register")}
-                className="rounded-xl border p-5 flex flex-col items-center gap-3 transition-all duration-200 hover:scale-[1.02]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  borderColor: "rgba(255,255,255,0.1)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(59,130,246,0.08)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)";
-                }}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6" }}>
-                  <UserPlus className="w-6 h-6" />
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-white text-sm">{L.register}</div>
-                  <div className="text-white/40 text-xs mt-0.5">{L.registerSub}</div>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── SCHRITT 3a: Anmelden ── */}
-        {step === "login" && selectedRoleOption && (
-          <>
-            <button
-              type="button"
-              onClick={() => setStep("action")}
-              className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {L.back}
-            </button>
-
-            <div
-              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
-              style={{
-                background: selectedRoleOption.bgColor,
-                border: `1px solid ${selectedRoleOption.accentColor}40`,
-              }}
-            >
-              <div style={{ color: selectedRoleOption.accentColor }}>{selectedRoleOption.icon}</div>
-              <div>
-                <div className="text-white text-sm font-semibold">{selectedRoleOption.label}</div>
-                <div className="text-white/50 text-xs">{L.selectedRole}</div>
-              </div>
-            </div>
-
-            <Card
-              className="border-0 shadow-2xl"
-              style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
-            >
-              <CardHeader className="pb-4">
-                <CardTitle className="text-white text-xl">{L.signIn}</CardTitle>
-                <CardDescription className="text-white/50">{L.signInDesc}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLoginSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label className="text-white/70 text-sm">{L.emailLabel}</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                      <Input
-                        type="email"
-                        placeholder={L.emailPlaceholderLogin}
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                        autoComplete="email"
-                        className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
-                      {!resetSent && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!loginEmail.includes("@")) {
-                              toast.error(L.enterEmailFirst);
-                              return;
-                            }
-                            requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
-                          }}
-                          disabled={requestReset.isPending}
-                          className="text-xs text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 transition-colors font-medium"
-                        >
-                          {requestReset.isPending ? L.sendingReset : L.forgotPassword}
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                      <Input
-                        type={showLoginPw ? "text" : "password"}
-                        placeholder={L.passwordPlaceholder}
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                        autoComplete="current-password"
-                        className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPw(!showLoginPw)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Persistente Statusmeldung: Konto ausstehend */}
-                  {loginStatus === "pending" && (
-                    <div
-                      className="p-4 rounded-xl text-sm leading-relaxed"
-                      style={{
-                        background: "rgba(251,191,36,0.08)",
-                        border: "1px solid rgba(251,191,36,0.35)",
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
-                          style={{ background: "rgba(251,191,36,0.15)" }}
-                        >
-                          <svg className="w-4 h-4" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-semibold mb-1" style={{ color: "#f59e0b" }}>{L.pendingTitle}</p>
-                          <p style={{ color: "rgba(251,191,36,0.75)" }}>{L.pendingText}</p>
-                          <p className="mt-2 text-xs" style={{ color: "rgba(251,191,36,0.5)" }}>{L.pendingNote}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Persistente Statusmeldung: Konto abgelehnt */}
-                  {loginStatus === "rejected" && (
-                    <div
-                      className="p-4 rounded-xl text-sm leading-relaxed"
-                      style={{
-                        background: "rgba(239,68,68,0.08)",
-                        border: "1px solid rgba(239,68,68,0.35)",
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5"
-                          style={{ background: "rgba(239,68,68,0.15)" }}
-                        >
-                          <svg className="w-4 h-4" style={{ color: "#ef4444" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>{L.rejectedTitle}</p>
-                          <p style={{ color: "rgba(239,68,68,0.75)" }}>{L.rejectedText}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {resetSent && (
-                    <div
-                      className="p-3 rounded-lg text-sm"
-                      style={{ background: "rgba(118,185,0,0.1)", border: "1px solid rgba(118,185,0,0.3)", color: "#76b900" }}
-                    >
-                      {L.resetSent}
-                    </div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={loginMutation.isPending || !loginEmail.trim() || !loginPassword}
-                    className="w-full font-semibold h-11"
-                    style={{ background: "#76b900", color: "white" }}
-                  >
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {L.signingIn}
-                      </>
-                    ) : (
-                      L.signInBtn
-                    )}
-                  </Button>
-                  <p className="text-white/30 text-xs text-center leading-relaxed">{L.privacyConsent}</p>
-                </form>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* ── SCHRITT 3b: Registrieren ── */}
+        {/* ── SCHRITT 3: Registrierungsformular ── */}
         {step === "register" && selectedRoleOption && (
           <>
             <button
               type="button"
-              onClick={() => setStep("action")}
+              onClick={() => setStep("role")}
               className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-5"
             >
               <ArrowLeft className="w-4 h-4" />
               {L.back}
             </button>
 
+            {/* Gewählte Rolle anzeigen */}
             <div
               className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
               style={{
@@ -592,7 +555,7 @@ export default function Login() {
                   <p className="text-white/50 text-sm leading-relaxed mb-6">{L.registrationSubmittedDesc}</p>
                   <Button
                     variant="outline"
-                    onClick={() => setStep("login")}
+                    onClick={() => { setRegistered(false); setStep("login"); }}
                     className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
                   >
                     {L.toLogin}
@@ -642,6 +605,7 @@ export default function Login() {
                           onChange={(e) => setRegName(e.target.value)}
                           required
                           autoComplete="name"
+                          autoFocus
                           className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
                         />
                       </div>
@@ -732,15 +696,24 @@ export default function Login() {
                       style={{ background: "#3b82f6", color: "white" }}
                     >
                       {registerMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {L.registering}
-                        </>
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{L.registering}</>
                       ) : (
                         L.createAccount
                       )}
                     </Button>
                     <p className="text-white/30 text-xs text-center leading-relaxed">{L.registerPrivacyConsent}</p>
+
+                    {/* Wechsel zu Login */}
+                    <p className="text-center text-white/40 text-xs">
+                      {L.alreadyHaveAccount ?? "Bereits registriert?"}{" "}
+                      <button
+                        type="button"
+                        onClick={() => setStep("login")}
+                        className="text-[#76b900] hover:underline"
+                      >
+                        {L.signInBtn}
+                      </button>
+                    </p>
                   </form>
                 </CardContent>
               </Card>

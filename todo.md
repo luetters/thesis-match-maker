@@ -798,3 +798,10 @@
 - [x] StudentDashboard: Antragsformular-Dropdown mit Piktogramm
 - [x] StudentDashboard: Readonly-Feld mit Piktogramm (wenn Studiengang aus Profil)
 - [x] ExaminerDirectory: Filter-Dropdown mit Piktogramm
+
+## Fix: Login-Flow-Reihenfolge ✅ KOMPLETT
+
+- [x] Schritt 1: Anmelden / Registrieren wählen (nicht mehr Rolle)
+- [x] Bei "Anmelden": direkt zum Login-Formular (keine Rollenauswahl nötig)
+- [x] Bei "Registrieren": Rolle wählen, dann Formular
+- [x] Zurück-Navigation anpassen
