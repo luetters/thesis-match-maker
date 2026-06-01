@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, KeyboardEvent } from "react";
+import { AvatarCropModal } from "@/components/AvatarCropModal";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -295,6 +296,8 @@ export default function Profile() {
   const [deletingAvatar, setDeletingAvatar] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAvatarPreviewModal, setShowAvatarPreviewModal] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
 
   const urlFields = ["website", "linkedIn", "researchGate", "htwProfileUrl", "miscLink", "bookingUrl"] as const;
   const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
@@ -408,8 +411,22 @@ export default function Profile() {
     e.target.value = "";
     if (file.size > 5 * 1024 * 1024) { toast.error(p.avatarTooLarge); return; }
     if (!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)) { toast.error(p.avatarInvalidFormat); return; }
-    uploadAvatar(file);
+    // Crop-Modal öffnen statt direkt hochladen
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    setShowCropModal(true);
   };
+  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
+    setShowCropModal(false);
+    if (cropSrc) { URL.revokeObjectURL(cropSrc); setCropSrc(null); }
+    const croppedFile = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" });
+    await uploadAvatar(croppedFile);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cropSrc]);
+  const handleCropClose = useCallback(() => {
+    setShowCropModal(false);
+    if (cropSrc) { URL.revokeObjectURL(cropSrc); setCropSrc(null); }
+  }, [cropSrc]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -968,6 +985,14 @@ export default function Profile() {
         </div>
 
       </div>
+
+      {/* ── Crop-Modal ── */}
+      <AvatarCropModal
+        open={showCropModal}
+        imageSrc={cropSrc}
+        onClose={handleCropClose}
+        onCropComplete={handleCropComplete}
+      />
 
       {/* ── Avatar-Vorschau-Modal ── */}
       {showAvatarPreviewModal && avatarSrc && (

@@ -737,3 +737,10 @@
 - [x] Frontend: Sofortige lokale Vorschau via URL.createObjectURL()
 - [x] Frontend: Fehlerbehandlung mit Toast-Meldungen
 - [x] Tests: 55/55 grün
+
+## Profilbild-Zuschnitt (Crop-Feature)
+
+- [x] react-image-crop installieren
+- [x] AvatarCropModal Komponente erstellen (quadratisches 1:1 Crop, Zoom-Slider)
+- [x] In Profile.tsx integrieren (Modal öffnet sich nach Dateiauswahl)
+- [x] Canvas-basiertes Cropping vor dem Upload anwenden
