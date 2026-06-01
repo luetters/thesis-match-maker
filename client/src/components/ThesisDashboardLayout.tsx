@@ -1,11 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { LanguageSwitcher } from "@/contexts/LanguageContext";
+import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 // ─── Passwort-ändern-Dialog ─────────────────────────────────────────────────
 function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
+  const L = t.student;
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -17,14 +19,14 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   });
   const handleSubmit = () => {
     setError("");
-    if (newPassword !== confirm) { setError("Die neuen Passwörter stimmen nicht überein."); return; }
-    if (newPassword.length < 8) { setError("Das neue Passwort muss mindestens 8 Zeichen lang sein."); return; }
+    if (newPassword !== confirm) { setError(L.passwordMismatch2); return; }
+    if (newPassword.length < 8) { setError(L.passwordTooShort2); return; }
     changePassword.mutate({ currentPassword, newPassword });
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold text-gray-900 mb-5">Passwort ändern</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-5">{L.changePasswordTitle}</h2>
         {success ? (
           <div className="text-center py-4">
             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#F1F8E9" }}>
@@ -32,23 +34,23 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-gray-700 font-medium mb-4">Passwort erfolgreich geändert.</p>
-            <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">Schließen</button>
+            <p className="text-gray-700 font-medium mb-4">{L.passwordChangedSuccess}</p>
+            <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">{L.close}</button>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aktuelles Passwort</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{L.currentPasswordLabel}</label>
               <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{L.newPasswordLabel}</label>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort bestätigen</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{L.confirmNewPasswordLabel}</label>
               <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
@@ -57,9 +59,9 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
             <button onClick={handleSubmit} disabled={changePassword.isPending}
               className="w-full py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: "#76B900" }}>
-              {changePassword.isPending ? "Wird gespeichert..." : "Passwort ändern"}
+              {changePassword.isPending ? L.passwordSaving : L.changePasswordTitle}
             </button>
-            <button onClick={onClose} className="w-full text-sm text-gray-500 hover:text-gray-700">Abbrechen</button>
+            <button onClick={onClose} className="w-full text-sm text-gray-500 hover:text-gray-700">{L.cancel}</button>
           </div>
         )}
       </div>
@@ -85,6 +87,7 @@ export function StatusBadge({ status }: { status: string }) {
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
 function NotificationBell() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
@@ -129,7 +132,7 @@ function NotificationBell() {
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        aria-label="Benachrichtigungen"
+        aria-label={t.nav.notifications}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -148,14 +151,14 @@ function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 text-sm">Benachrichtigungen</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">{t.nav.notifications}</h3>
             {unread > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
                 className="text-xs font-medium transition-colors hover:opacity-70"
                 style={{ color: "#76B900" }}
               >
-                Alle als gelesen markieren
+                {t.nav.markAllRead}
               </button>
             )}
           </div>
@@ -167,7 +170,7 @@ function NotificationBell() {
                 <svg className="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                Keine Benachrichtigungen
+                {t.nav.noNotifications}
               </div>
             ) : (
               notifications.map((n) => (
@@ -265,11 +268,12 @@ function Sidebar({
 }) {
   const [location, navigate] = useLocation();
 
+  const { t } = useLanguage();
   const roleLabel: Record<string, string> = {
-    student: "Studierende:r",
-    examiner: "Prüfer:in",
-    admin: "Verwaltung",
-    user: "Nutzer:in",
+    student: t.nav.student,
+    examiner: t.nav.examiner,
+    admin: t.nav.admin,
+    user: t.nav.student,
   };
 
   return (
@@ -291,7 +295,7 @@ function Sidebar({
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
           <img
-            src="/manus-storage/IconMaleMale_c7af7f10.webp"
+            src="/manus-storage/IconMaleMale_cce44535.webp"
             alt="Thesis Match Maker Logo"
             className="w-8 h-8 object-contain flex-shrink-0"
           />
@@ -350,7 +354,7 @@ function Sidebar({
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Mein Profil
+            {t.nav.myProfile}
           </a>
           <button
             onClick={onLogout}
@@ -359,7 +363,7 @@ function Sidebar({
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Abmelden
+            {t.nav.logout}
           </button>
         </div>
       </aside>
@@ -403,7 +407,7 @@ export function ThesisDashboardLayout({
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-gray-200 border-t-primary rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm">Lade...</p>
+          <p className="text-gray-400 text-sm">{t.nav.loading}</p>
         </div>
       </div>
     );
@@ -432,7 +436,7 @@ export function ThesisDashboardLayout({
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            aria-label="Navigation öffnen"
+            aria-label={t.nav.openNav}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -449,7 +453,7 @@ export function ThesisDashboardLayout({
               onClick={() => navigate("/")}
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
             >
-              Startseite
+              {t.nav.home}
             </button>
             <div className="w-px h-5 bg-gray-200" />
             {/* Profil-Dropdown */}
@@ -479,7 +483,7 @@ export function ThesisDashboardLayout({
                     <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Mein Profil
+                    {t.nav.myProfile}
                   </a>
                   {user?.loginMethod === "password" && (
                     <button
@@ -489,7 +493,7 @@ export function ThesisDashboardLayout({
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                       </svg>
-                      Passwort ändern
+                      {t.nav.changePassword}
                     </button>
                   )}
                   <button
@@ -499,7 +503,7 @@ export function ThesisDashboardLayout({
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Abmelden
+                    {t.nav.logout}
                   </button>
                 </div>
               )}

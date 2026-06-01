@@ -152,7 +152,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   const createMutation = trpc.thesisPhase27.createWithWantedExaminer.useMutation({
     onSuccess: () => {
-      toast.success("Anfrage erfolgreich eingereicht!");
+      toast.success(t.student.requestSubmitted);
       localStorage.removeItem(DRAFT_KEY);
       setForm({ title: "", description: "", department: myProgramme?.name ?? "", fachbereich: "FB3", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
       setExposeFile(null);
@@ -165,13 +165,13 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (hasOwnTopic) {
-      if (!form.title.trim()) newErrors.title = "Bitte geben Sie einen Titel ein.";
-      else if (form.title.trim().length < 10) newErrors.title = "Der Titel sollte mindestens 10 Zeichen lang sein.";
-      if (!form.description.trim()) newErrors.description = "Bitte beschreiben Sie Ihr Thema.";
-      else if (form.description.trim().length < 30) newErrors.description = "Die Beschreibung sollte mindestens 30 Zeichen lang sein.";
+      if (!form.title.trim()) newErrors.title = t.student.validationTitle;
+      else if (form.title.trim().length < 10) newErrors.title = t.student.validationTitleShort;
+      if (!form.description.trim()) newErrors.description = t.student.validationDesc;
+      else if (form.description.trim().length < 30) newErrors.description = t.student.validationDescShort;
     }
-    if (!form.targetSemester) newErrors.targetSemester = "Bitte wählen Sie ein Zielsemester aus.";
-    if (!form.wantedExaminerId) newErrors.wantedExaminerId = "Bitte wählen Sie eine Wunschgutachter:in aus.";
+    if (!form.targetSemester) newErrors.targetSemester = t.student.validationSemester;
+    if (!form.wantedExaminerId) newErrors.wantedExaminerId = t.student.validationExaminer;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -179,7 +179,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const handleShowPreview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error("Bitte korrigieren Sie die markierten Felder.");
+      toast.error(t.student.validationFix);
       return;
     }
     setShowPreview(true);
@@ -200,11 +200,11 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           body: formData,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Upload fehlgeschlagen");
+        if (!res.ok) throw new Error(data.error ?? t.student.exposeUploadFailed);
         exposeUrl = data.url;
         exposeKey = data.key;
       } catch (err: unknown) {
-        toast.error(`Exposé-Upload fehlgeschlagen: ${err instanceof Error ? err.message : "Unbekannter Fehler"}`);
+        toast.error(`${t.student.uploadFailed}: ${err instanceof Error ? err.message : t.student.exposeUploadFailed}`);
         return;
       }
     }
@@ -225,14 +225,14 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         {/* Druckkopf – nur im Druck sichtbar */}
         <div className="hidden print:block mb-6 pb-4 border-b-2 border-gray-800">
           <h1 className="text-xl font-bold text-gray-900">HTW Berlin – Thesis Match Maker</h1>
-          <p className="text-sm text-gray-600 mt-1">Betreuungsanfrage – Zusammenfassung</p>
+          <p className="text-sm text-gray-600 mt-1">{t.student.printHeader}</p>
           <p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
         </div>
         {/* Header */}
         <div className="flex items-center justify-between no-print">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Vorschau Ihrer Anfrage</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Bitte überprüfen Sie Ihre Angaben vor dem endgültigen Einreichen.</p>
+            <h2 className="text-lg font-bold text-gray-900">{t.student.previewTitle}</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{t.student.previewSubtitle}</p>
           </div>
           <button
             type="button"
@@ -242,21 +242,21 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Zurück bearbeiten
+            {t.student.editBack}
           </button>
         </div>
 
         {/* Themenart */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Themenauswahl</h3>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{t.student.topicSelection}</h3>
           <div className="flex items-center gap-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
               hasOwnTopic ? "bg-[#76B900]/10 text-[#76B900]" : "bg-blue-50 text-blue-700"
             }`}>
               {hasOwnTopic ? (
-                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>Eigener Vorschlag</>
+                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>{t.student.ownTopicLabel}</>
               ) : (
-                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>Themenzuteilung gewünscht</>
+                <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>{t.student.assignedTopicLabel}</>
               )}
             </span>
           </div>
@@ -265,24 +265,24 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         {/* Thema (nur bei eigenem Vorschlag) */}
         {hasOwnTopic && (
           <div className="rounded-2xl border border-[#76B900]/20 bg-[#76B900]/5 p-5 shadow-sm space-y-4">
-            <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Thema</h3>
+            <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">{t.student.topicSection}</h3>
             <div>
-              <p className="text-xs text-gray-500 mb-1">Titel der Abschlussarbeit</p>
-              <p className="text-sm font-semibold text-gray-900">{form.title || <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+              <p className="text-xs text-gray-500 mb-1">{t.student.thesisTitle}</p>
+              <p className="text-sm font-semibold text-gray-900">{form.title || <span className="text-gray-400 italic">{t.student.notSpecified}</span>}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 mb-1">Beschreibung</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.description || <span className="text-gray-400 italic">Nicht angegeben</span>}</p>
+              <p className="text-xs text-gray-500 mb-1">{t.student.description}</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.description || <span className="text-gray-400 italic">{t.student.notSpecified}</span>}</p>
             </div>
             {form.abstract && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Abstract</p>
+                <p className="text-xs text-gray-500 mb-1">{t.student.abstractLabel}</p>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.abstract}</p>
               </div>
             )}
             {exposeFile && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Exposé</p>
+                <p className="text-xs text-gray-500 mb-1">{t.student.exposeLabel}</p>
                 <div className="flex items-center gap-2 text-sm text-gray-700">
                   <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
                   {exposeFile.name} <span className="text-gray-400">({(exposeFile.size / 1024).toFixed(0)} KB)</span>
@@ -294,29 +294,29 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
         {/* Rahmenbedingungen */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Rahmenbedingungen</h3>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">{t.student.conditionsSection}</h3>
           <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
             <div>
-              <dt className="text-xs text-gray-500">Fachbereich / Studiengang</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.department || <span className="text-gray-400 italic">Nicht angegeben</span>}</dd>
+              <dt className="text-xs text-gray-500">{t.student.departmentField}</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.department || <span className="text-gray-400 italic">{t.student.notSpecified}</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">Zielsemester</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{semesterLabel || <span className="text-gray-400 italic">Nicht angegeben</span>}</dd>
+              <dt className="text-xs text-gray-500">{t.student.targetSemesterField}</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{semesterLabel || <span className="text-gray-400 italic">{t.student.notSpecified}</span>}</dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-xs text-gray-500">Wunschgutachter:in</dt>
+              <dt className="text-xs text-gray-500">{t.student.preferredExaminer}</dt>
               <dd className="text-sm font-medium text-gray-900 mt-0.5">
-                {selectedExaminer ? `${selectedExaminer.name} (${selectedExaminer.title})` : <span className="text-gray-400 italic">Nicht ausgewählt</span>}
+                {selectedExaminer ? `${selectedExaminer.name} (${selectedExaminer.title})` : <span className="text-gray-400 italic">{t.student.notSelected}</span>}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">Abschlussart</dt>
+              <dt className="text-xs text-gray-500">{t.student.degreeField}</dt>
               <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.degreeType === "master" ? "Master" : "Bachelor"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">Sprache</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.language === "en" ? "Englisch" : "Deutsch"}</dd>
+              <dt className="text-xs text-gray-500">{t.student.languageField}</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.language === "en" ? t.student.thesisLangEn : t.student.thesisLangDe}</dd>
             </div>
           </dl>
         </div>
@@ -331,7 +331,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Bearbeiten
+            {t.student.editBtn}
           </button>
           <button
             type="button"
@@ -341,7 +341,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            Als PDF speichern / Drucken
+            {t.student.printBtn}
           </button>
           <button
             type="button"
@@ -351,9 +351,9 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             style={{ backgroundColor: "#76B900" }}
           >
             {createMutation.isPending ? (
-              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Wird eingereicht...</>
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{t.student.submitting}</>
             ) : (
-              <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Jetzt einreichen</>
+              <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>{t.student.submitNow}</>
             )}
           </button>
         </div>
@@ -369,19 +369,19 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           <svg className="w-5 h-5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="flex-1 text-amber-800 font-medium">Sie haben einen unvollständigen Entwurf. Möchten Sie ihn wiederherstellen?</span>
+          <span className="flex-1 text-amber-800 font-medium">{t.student.draftRestore}</span>
           <button type="button" onClick={restoreDraft} className="px-3 py-1 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors">
-            Wiederherstellen
+            {t.student.draftRestoreBtn}
           </button>
           <button type="button" onClick={discardDraft} className="px-3 py-1 rounded-lg bg-white border border-amber-200 text-amber-700 text-xs font-medium hover:bg-amber-50 transition-colors">
-            Verwerfen
+            {t.student.draftDiscardBtn}
           </button>
         </div>
       )}
 
       {/* Themenauswahl – zwei Karten */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">Wie möchten Sie Ihr Thema erhalten? <span className="text-red-500">*</span></p>
+        <p className="text-sm font-medium text-gray-700 mb-3">{t.student.topicQuestion} <span className="text-red-500">*</span></p>
         <div className="grid sm:grid-cols-2 gap-3">
           {/* Karte: Eigener Vorschlag */}
           <button
@@ -404,10 +404,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div>
               <p className={`font-semibold text-sm ${hasOwnTopic ? "text-[#4a7a00]" : "text-gray-700"}`}>
-                Ich habe einen eigenen Vorschlag
+                {t.student.ownTopic}
               </p>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Sie bringen ein konkretes Thema mit. Titel, Beschreibung und Exposé werden abgefragt.
+                {t.student.ownTopicDesc}
               </p>
             </div>
           </button>
@@ -433,10 +433,10 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div>
               <p className={`font-semibold text-sm ${!hasOwnTopic ? "text-[#4a7a00]" : "text-gray-700"}`}>
-                Ich möchte ein Thema zugeteilt bekommen
+                {t.student.assignedTopic}
               </p>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                Die Prüfer:in schlägt ein passendes Thema vor. Nur Pflichtfelder werden abgefragt.
+                {t.student.assignedTopicDesc}
               </p>
             </div>
           </button>
@@ -446,11 +446,11 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
       {/* ── Abschnitt 1: Thema ──────────────────────────────────────────── */}
       {hasOwnTopic && (
         <div className="rounded-2xl border border-[#76B900]/20 bg-[#f9ffe8] p-5 space-y-4">
-          <h3 className="text-xs font-semibold text-[#4a7a00] uppercase tracking-widest">Thema</h3>
+          <h3 className="text-xs font-semibold text-[#4a7a00] uppercase tracking-widest">{t.student.topicSection}</h3>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Titel der Abschlussarbeit <span className="text-red-500">*</span>
+              {t.student.thesisTitle} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -468,7 +468,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Beschreibung <span className="text-red-500">*</span>
+              {t.student.description} <span className="text-red-500">*</span>
             </label>
             <textarea
               required
@@ -485,13 +485,13 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Abstract (optional)
+              {t.student.abstractOptional}
               <span className="relative group cursor-default">
                 <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
-                  Ein Abstract fasst Ihre geplante Arbeit in 150–250 Wörtern zusammen: Problemstellung, Zielsetzung, Methodik und erwartete Ergebnisse. Er hilft Prüfer:innen, das Thema schnell einzuschätzen.
+                  {t.student.abstractTooltip}
                   <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />
                 </span>
               </span>
@@ -507,13 +507,13 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Exposé <span className="text-gray-400 font-normal">(PDF, optional, max. 5 MB)</span>
+              {t.student.exposeLabel} <span className="text-gray-400 font-normal">(PDF, optional, max. 5 MB)</span>
               <span className="relative group cursor-default">
                 <svg className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
-                  Das Exposé ist ein ca. 2-seitiges Dokument, das Ihr Thema, die Problemstellung und den geplanten Ansatz kurz zusammenfasst. Es ist keine Pflichtangabe, erhöht aber Ihre Chancen auf eine Zusage.
+                  {t.student.exposeHint}
                   <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900" />
                 </span>
               </span>
@@ -526,11 +526,11 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                   const file = e.target.files?.[0];
                   if (file) {
                     if (file.type !== "application/pdf") {
-                      toast.error("Nur PDF-Dateien sind erlaubt.");
+                      toast.error(t.student.exposePdfOnly);
                       return;
                     }
                     if (file.size > 5 * 1024 * 1024) {
-                      toast.error("Die Datei ist zu groß. Bitte laden Sie eine PDF-Datei mit maximal 5 MB hoch.");
+                      toast.error(t.student.fileTooLarge);
                       e.target.value = "";
                       return;
                     }
@@ -544,15 +544,15 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 htmlFor="expose-upload"
                 className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-gray-400 transition-all text-sm font-medium text-gray-600 bg-white"
               >
-                {exposeFile ? `✓ ${exposeFile.name}` : "PDF auswählen..."}
+                {exposeFile ? `✓ ${exposeFile.name}` : t.student.pdfSelect}
               </label>
-              {exposeFile && (
+                {exposeFile && (
                 <button
                   type="button"
                   onClick={() => setExposeFile(null)}
                   className="text-xs text-red-500 hover:text-red-700 font-medium"
                 >
-                  Entfernen
+                  {t.student.remove}
                 </button>
               )}
             </div>
@@ -562,11 +562,11 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
       {/* ── Abschnitt 2: Rahmenbedingungen ──────────────────────────────── */}
       <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Rahmenbedingungen</h3>
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t.student.conditionsSection}</h3>
 
         {/* Abschlussart als Toggle-Schalter */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Abschlussart <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t.student.degreeSection} <span className="text-red-500">*</span></label>
           <div className="flex gap-2">
             {(["bachelor", "master"] as const).map((type) => (
               <button
@@ -591,14 +591,14 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
             ))}
           </div>
           {myProgramme && (
-            <p className="mt-1 text-xs text-gray-400">Abschlussart aus Ihrem Profil übernommen – nicht änderbar.</p>
+            <p className="mt-1 text-xs text-gray-400">{t.student.degreeFromProfile}</p>
           )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Fachbereich */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Fachbereich <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.student.fachbereichLabel} <span className="text-red-500">*</span></label>
             <select
               value={form.fachbereich}
               onChange={(e) => setForm((f) => ({ ...f, fachbereich: e.target.value, department: "" }))}
@@ -613,7 +613,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           {/* Studiengang – dynamisches Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Studiengang <span className="text-red-500">*</span>
+              {t.student.studyProgramLabel} <span className="text-red-500">*</span>
             </label>
             {myProgramme ? (
               <>
@@ -624,7 +624,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                   className="w-full px-3.5 py-2.5 border border-[#76B900]/30 bg-[#76B900]/5 text-[#76B900] font-medium rounded-xl text-sm cursor-not-allowed"
                   title="Studiengang ist Ihrem Profil fest zugeordnet"
                 />
-                <p className="mt-1 text-xs text-gray-400">Automatisch aus Ihrem Profil übernommen – nicht änderbar.</p>
+                <p className="mt-1 text-xs text-gray-400">{t.student.semesterFromProfile}</p>
               </>
             ) : (() => {
               const filtered = allProgrammes.filter(
@@ -640,17 +640,16 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                       errors.department ? 'border-red-400' : 'border-gray-200'
                     }`}
                   >
-                    <option value="">-- Bitte wählen --</option>
+                    <option value="">{t.student.pleaseSelect}</option>
                     {filtered.length > 0 ? (
                       filtered.map((p: any) => (
                         <option key={p.id} value={p.name}>{p.name}</option>
                       ))
                     ) : (
-                      <option disabled value="">Keine Studiengänge für diese Auswahl verfügbar</option>
-                    )}
+                      <option disabled value="">{t.student.noProgForSelection}</option>                  )}
                   </select>
                   {filtered.length === 0 && (
-                    <p className="mt-1 text-xs text-amber-600">Für {form.fachbereich} sind noch keine {form.degreeType === 'master' ? 'Master-' : 'Bachelor-'}Studiengänge hinterlegt.</p>
+                    <p className="mt-1 text-xs text-amber-600">{t.student.noFbProgrammes.replace('{fb}', form.fachbereich).replace('{type}', form.degreeType === 'master' ? 'Master-' : 'Bachelor-')}</p>
                   )}
                 </>
               );
@@ -659,7 +658,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           {/* Geplantes Semester der Thesis */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Geplantes Semester der Thesis <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.student.semesterLabel} <span className="text-red-500">*</span></label>
             <select
               required
               value={form.targetSemester}
@@ -668,7 +667,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
               }`}
               onChange={(e) => { setForm((f) => ({ ...f, targetSemester: e.target.value })); if (errors.targetSemester) setErrors((er) => ({ ...er, targetSemester: "" })); }}
             >
-              <option value="">-- Bitte wählen --</option>
+              <option value="">{t.student.pleaseSelect}</option>
               {getNextSemesters().map((sem) => (
                 <option key={sem.value} value={sem.value}>
                   {sem.label}
@@ -680,14 +679,14 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
           {/* Sprache der Thesis */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprache der Thesis</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.student.thesisLanguageLabel}</label>
             <select
               value={form.language}
               onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as "de" | "en" }))}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
             >
-              <option value="de">Deutsch</option>
-              <option value="en">Englisch</option>
+              <option value="de">{t.student.thesisLangDe}</option>
+              <option value="en">{t.student.thesisLangEn}</option>
             </select>
           </div>
         </div>
@@ -696,11 +695,11 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="space-y-4 rounded-2xl border border-[#76B900]/20 bg-[#76B900]/5 p-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-[#76B900] text-white flex items-center justify-center text-xs font-bold">1</div>
-            <h4 className="text-sm font-semibold text-gray-800">Erstgutachter:in auswählen</h4>
+            <h4 className="text-sm font-semibold text-gray-800">{t.student.firstExaminer}</h4>
           </div>
-          <p className="text-xs text-gray-500 -mt-2">Wählen Sie Ihre Wunsch-Erstgutachter:in. Diese Person wird per E-Mail kontaktiert und muss zustimmen.</p>
+          <p className="text-xs text-gray-500 -mt-2">{t.student.firstExaminerDesc}</p>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Erstgutachter:in <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.student.firstExaminerLabel} <span className="text-red-500">*</span></label>
             <select
               required
               value={form.wantedExaminerId}
@@ -713,7 +712,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
               }`}
             >
-              <option value={0}>-- Bitte wählen --</option>
+              <option value={0}>{t.student.pleaseSelect}</option>
               {(() => {
                 // Alphabetisch nach Nachname sortieren und Buchstabentrenner einfügen
                 const sorted = [...(firstExaminers as any[])].sort((a: any, b: any) => {
@@ -734,9 +733,9 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
                   const max = (examiner as any).maxSupervisions as number | undefined;
                   const statusHint = max != null
                     ? active != null && active >= max
-                      ? " \u2014 Ausgelastet"
-                      : active != null && active / max >= 0.8
-                        ? " \u2014 Fast ausgelastet"
+                        ? ` \u2014 ${t.student.capacityFull}`
+                        : active != null && active / max >= 0.8
+                          ? ` \u2014 ${t.student.capacityAlmost}`
                         : ""
                     : "";
                   result.push(
@@ -760,21 +759,21 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           <div className="pt-3 border-t border-[#76B900]/20">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">2</div>
-              <h4 className="text-sm font-semibold text-gray-500">Zweitgutachter:in (nach Zusage)</h4>
+              <h4 className="text-sm font-semibold text-gray-500">{t.student.selectSecondExaminer}</h4>
             </div>
-            <p className="text-xs text-gray-400 mb-3">Die Auswahl der Zweitgutachter:in ist erst möglich, nachdem die Erstgutachter:in zugesagt hat.</p>
+            <p className="text-xs text-gray-400 mb-3">{t.student.secondExaminerNote}</p>
             <div className="relative">
               <select
                 disabled
                 value={0}
                 className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
               >
-                <option value={0}>Keine Präferenz – Zweitgutachter:in kann zugeteilt werden</option>
+                <option value={0}>{t.student.noPreference}</option>
               </select>
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50/60 rounded-xl">
                 <span className="text-xs text-gray-400 flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                  Verfügbar nach Erstgutachter-Zusage
+                  {t.student.availableAfterFirst}
                 </span>
               </div>
             </div>
@@ -790,7 +789,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        Vorschau &amp; Einreichen
+        {t.student.previewSubmit}
       </button>
     </form>
   );
@@ -803,11 +802,11 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== "application/pdf") {
-      toast.error("Nur PDF-Dateien sind erlaubt.");
+      toast.error(t.student.exposePdfOnly);
       return;
     }
     if (file.size > 16 * 1024 * 1024) {
-      toast.error("Datei ist zu groß (max. 16 MB).");
+      toast.error(t.student.exposeFileTooLarge);
       return;
     }
     setUploading(true);
@@ -819,11 +818,11 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload fehlgeschlagen");
-      toast.success("Exposé erfolgreich hochgeladen!");
+      if (!res.ok) throw new Error(data.error ?? t.student.exposeUploadFailed);
+      toast.success(t.student.exposeUploadSuccess);
       onSuccess();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Upload fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t.student.exposeUploadFailed);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -845,7 +844,7 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Exposé ansehen
+            {t.student.exposeView}
           </a>
           <button
             onClick={() => fileRef.current?.click()}
@@ -853,7 +852,7 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-50"
           >
             {uploading ? <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
-            Ersetzen
+            {t.student.exposeReplace}
           </button>
         </div>
       ) : (
@@ -863,7 +862,7 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-primary hover:text-primary transition-all disabled:opacity-50"
         >
           {uploading ? <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" /> : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
-          Exposé hochladen
+          {t.student.exposeUploadBtn}
         </button>
       )}
     </div>
@@ -884,7 +883,7 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
 
   const setMutation = trpc.thesisPhase27.setWantedSecondExaminer.useMutation({
     onSuccess: () => {
-      toast.success("Zweitgutachter:in-Präferenz gespeichert.");
+      toast.success(t.student.secondPrefSaved);
       utils.thesis.myRequests.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -901,17 +900,17 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-          <span className="text-xs font-semibold text-blue-800">Zweitgutachter:in auswählen</span>
-          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Erstgutachter:in hat zugesagt</span>
+          <span className="text-xs font-semibold text-blue-800">{t.student.secondExaminerTitle}</span>
+          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{t.student.firstExaminerAccepted}</span>
         </div>
-        <p className="text-xs text-blue-600 mb-2">Sie können jetzt Ihre Präferenz für die Zweitgutachter:in angeben.</p>
+        <p className="text-xs text-blue-600 mb-2">{t.student.secondExaminerAvailable}</p>
         <div className="flex gap-2">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(parseInt(e.target.value))}
             className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
-            <option value={0}>Keine Präferenz – Zweitgutachter:in kann zugeteilt werden</option>
+            <option value={0}>{t.student.noPreference}</option>
             {(() => {
               const sorted = [...(secondExaminers as any[])]
                 .filter((e: any) => e.id !== wantedExaminerId)
@@ -933,9 +932,9 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
                 const eMax = (e as any).maxSupervisions as number | undefined;
                 const eHint = eMax != null
                   ? eActive != null && eActive >= eMax
-                    ? " \u2014 Ausgelastet"
-                    : eActive != null && eMax > 0 && eActive / eMax >= 0.8
-                      ? " \u2014 Fast ausgelastet"
+                       ? ` \u2014 ${t.student.capacityFull}`
+                      : eActive != null && eMax > 0 && eActive / eMax >= 0.8
+                        ? ` \u2014 ${t.student.capacityAlmost}`
                       : ""
                   : "";
                 result.push(
@@ -952,12 +951,12 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
             disabled={saving}
             className="px-3 py-2 rounded-lg text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
-            {saving ? "..." : "Speichern"}
+            {saving ? "..." : t.student.save}
           </button>
         </div>
         {wantedSecondExaminerId && wantedSecondExaminerId > 0 && (
           <p className="mt-1.5 text-xs text-blue-700">
-            Aktuelle Präferenz: {(secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId)?.name ?? `ID ${wantedSecondExaminerId}`}
+            {t.student.currentPref}: {(secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId)?.name ?? `ID ${wantedSecondExaminerId}`}
           </p>
         )}
       </div>
@@ -988,8 +987,8 @@ function MyRequests() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <h3 className="text-gray-900 font-semibold mb-1">Noch keine Anfragen</h3>
-        <p className="text-gray-500 text-sm">Reiche deine erste Themenidee ein, um loszulegen.</p>
+        <h3 className="text-gray-900 font-semibold mb-1">{t.student.noRequestsTitle}</h3>
+        <p className="text-gray-500 text-sm">{t.student.noRequestsDesc}</p>
       </div>
     );
   }
@@ -1212,7 +1211,7 @@ function Overview() {
         )}
       </div>
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="font-semibold text-gray-900 mb-4">Mein Studiengang</h2>
+        <h2 className="font-semibold text-gray-900 mb-4">{t.student.myProgramme}</h2>
         <StudentProgrammeSelector />
       </div>
 
@@ -1220,11 +1219,8 @@ function Overview() {
         className="rounded-2xl p-6 border border-white/10"
         style={{ backgroundColor: "#0e2a06" }}
       >
-        <h3 className="font-semibold text-white mb-2">Nächste Schritte</h3>
-        <p className="text-white/60 text-sm">
-          Reiche deine Themenidee ein und finde passende Prüfer:innen für deine Abschlussarbeit.
-          Das System benachrichtigt dich per E-Mail über alle Statusänderungen.
-        </p>
+        <h3 className="font-semibold text-white mb-2">{t.student.nextSteps}</h3>
+        <p className="text-white/60 text-sm">{t.student.nextStepsDesc}</p>
       </div>
     </div>
   );
@@ -1233,14 +1229,15 @@ function Overview() {
 // ─── My Colloquiums ───────────────────────────────────────────────────────────
 function MyColloquiums() {
   const { data: colloquiums, isLoading } = trpc.colloquium.myStudentColloquiums.useQuery();
-  if (isLoading) return <div className="text-sm text-gray-500">Wird geladen...</div>;
+  const { t } = useLanguage();
+  if (isLoading) return <div className="text-sm text-gray-500">{t.student.loading}</div>;
   if (!colloquiums?.length) return (
     <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
       <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
         <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
       </div>
-      <p className="text-sm font-medium text-gray-700">Kein Kolloquium geplant</p>
-      <p className="text-xs text-gray-500 mt-1">Sobald ein Termin festgelegt wird, erscheint er hier.</p>
+      <p className="text-sm font-medium text-gray-700">{t.student.noColloquiums}</p>
+      <p className="text-xs text-gray-500 mt-1">{t.student.noColloquiumsDesc}</p>
     </div>
   );
   return (
@@ -1264,7 +1261,7 @@ function MyColloquiums() {
               col.status === "SCHEDULED" ? "bg-blue-50 text-blue-700" :
               col.status === "COMPLETED" ? "bg-primary/5 text-primary" :
               "bg-red-50 text-red-700"
-            }`}>{col.status === "SCHEDULED" ? "Geplant" : col.status === "COMPLETED" ? "Abgeschlossen" : "Abgesagt"}</span>
+            }`}>{col.status === "SCHEDULED" ? t.student.colloquiumScheduled : col.status === "COMPLETED" ? t.student.colloquiumCompleted : t.student.colloquiumCancelled}</span>
           </div>
           <a
             href={`/api/ics/colloquium/${col.id}`}
@@ -1272,7 +1269,7 @@ function MyColloquiums() {
             style={{ color: "#76B900" }}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            Zum Kalender hinzufügen (.ics)
+            {t.student.addToCalendar}
           </a>
         </div>
       ))}
@@ -1288,32 +1285,33 @@ function StatusHistory() {
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
   );
-  if (isLoading) return <div className="text-sm text-gray-500">Wird geladen...</div>;
+  const { t } = useLanguage();
+  if (isLoading) return <div className="text-sm text-gray-500">{t.student.loading}</div>;
   if (!requests?.length) return (
     <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
-      <p className="text-sm text-gray-500">Keine Anfragen vorhanden.</p>
+      <p className="text-sm text-gray-500">{t.student.noRequestsTitle}</p>
     </div>
   );
   const actionLabel: Record<string, string> = {
-    THESIS_CREATED: "Anfrage eingereicht",
-    STATUS_CHANGED: "Status geändert",
-    EXAMINER_ACCEPTED: "Prüfer:in hat angenommen",
-    EXAMINER_REJECTED: "Prüfer:in hat abgelehnt",
-    FIRST_EXAMINER_ASSIGNED: "Erstprüfer:in zugewiesen",
-    SECOND_EXAMINER_ASSIGNED: "Zweitprüfer:in zugewiesen",
-    COLLOQUIUM_CREATED: "Kolloquium angelegt",
-    DEADLINE_SET: "Abgabefrist gesetzt",
+    THESIS_CREATED: t.student.auditThesisCreated,
+    STATUS_CHANGED: t.student.auditStatusChanged,
+    EXAMINER_ACCEPTED: t.student.auditExaminerAccepted,
+    EXAMINER_REJECTED: t.student.auditExaminerRejected,
+    FIRST_EXAMINER_ASSIGNED: t.student.auditFirstExaminerAssigned,
+    SECOND_EXAMINER_ASSIGNED: t.student.auditSecondExaminerAssigned,
+    COLLOQUIUM_CREATED: t.student.auditColloquiumCreated,
+    DEADLINE_SET: t.student.auditDeadlineSet,
   };
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Anfrage auswählen</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t.student.historySelectRequest}</label>
         <select
           value={selectedId ?? ""}
           onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
           className="w-full max-w-md px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
         >
-          <option value="">-- Bitte wählen --</option>
+          <option value="">{t.student.historyPlease}</option>
           {requests.map((r) => (
             <option key={r.id} value={r.id}>{r.title}</option>
           ))}
@@ -1321,9 +1319,9 @@ function StatusHistory() {
       </div>
       {selectedId && (
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-5">Verlauf</h3>
+          <h3 className="font-semibold text-gray-900 mb-5">{t.student.historyTitle}</h3>
           {!logs?.length ? (
-            <p className="text-sm text-gray-500">Noch keine Einträge.</p>
+            <p className="text-sm text-gray-500">{t.student.historyNoEntries}</p>
           ) : (
             <ol className="relative border-l-2" style={{ borderColor: "#76B900" }}>
               {logs.map((log, i) => (
@@ -1339,7 +1337,7 @@ function StatusHistory() {
                     {log.fromStatus && log.toStatus && (
                       <p className="text-xs text-gray-500">{log.fromStatus} → {log.toStatus}</p>
                     )}
-                    {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">Begründung: {log.reason}</p>}
+                    {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">{t.student.historyReason}: {log.reason}</p>}
                     <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
                   </div>
                 </li>
@@ -1376,12 +1374,13 @@ export default function StudentDashboard() {
     },
   }));
 
+  const { t } = useLanguage();
   const titles: Record<string, string> = {
-    requests: "Meine Anfragen",
-    new: "Neue Anfrage einreichen",
-    examiners: "Prüfer:innen finden",
-    colloquiums: "Mein Kolloquium",
-    history: "Statushistorie",
+    requests: t.student.tabRequests,
+    new: t.student.tabNew,
+    examiners: t.student.tabExaminers,
+    colloquiums: t.student.tabColloquiums,
+    history: t.student.tabHistory,
   };
 
   return (
@@ -1389,10 +1388,8 @@ export default function StudentDashboard() {
       {activeTab === "new" && (
         <div className="max-w-2xl">
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h2 className="font-semibold text-gray-900 mb-1">Themenidee einreichen</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Beschreibe deine Themenidee. Admins und Prüfer:innen werden benachrichtigt.
-            </p>
+            <h2 className="font-semibold text-gray-900 mb-1">{t.student.submitIdea}</h2>
+            <p className="text-sm text-gray-500 mb-6">{t.student.submitIdeaDesc}</p>
             <NewRequestForm onSuccess={() => {
               utils.thesis.myRequests.invalidate();
               setActiveTab("requests");
@@ -1404,10 +1401,8 @@ export default function StudentDashboard() {
       {activeTab === "examiners" && (
         <div>
           <div className="mb-5">
-            <h2 className="font-semibold text-gray-900">Verfügbare Prüfer:innen</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Durchsuche Profile und finde passende Betreuer:innen für deine Arbeit.
-            </p>
+            <h2 className="font-semibold text-gray-900">{t.student.browseExaminers}</h2>
+            <p className="text-sm text-gray-500 mt-1">{t.student.browseExaminersDesc}</p>
           </div>
           <ExaminerList />
         </div>
