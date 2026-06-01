@@ -83,8 +83,13 @@ function EligibilityActionDialog({
 
   const isPending = setEnrollment.isPending || setDefense.isPending;
 
+  // Pflichtfeld: Begründung bei Ablehnung/Blockierung
+  const requiresNote = action === "reject";
+  const noteIsEmpty = note.trim().length === 0;
+  const canSubmit = action !== null && !(requiresNote && noteIsEmpty);
+
   function handleSubmit() {
-    if (!action) return;
+    if (!action || !canSubmit) return;
     if (type === "enrollment") {
       setEnrollment.mutate({
         thesisRequestId,
@@ -151,17 +156,33 @@ function EligibilityActionDialog({
         {/* Begründung */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Begründung {action === "reject" ? "(empfohlen)" : "(optional)"}
+            Begründung
+            {action === "reject" ? (
+              <span className="ml-1 text-red-600 font-semibold">*</span>
+            ) : (
+              <span className="ml-1 text-gray-400 font-normal">(optional)</span>
+            )}
           </label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             maxLength={512}
-            placeholder="Begründung für die Entscheidung…"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+            placeholder={action === "reject" ? "Pflichtfeld: Bitte geben Sie eine Begründung für die Ablehnung an…" : "Begründung für die Entscheidung (optional)…"}
+            className={`w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${
+              action === "reject" && noteIsEmpty
+                ? "border-red-300 focus:ring-red-200 bg-red-50/30"
+                : "border-gray-200 focus:ring-primary/20"
+            }`}
           />
-          <p className="text-xs text-gray-400 mt-1 text-right">{note.length}/512</p>
+          <div className="flex items-center justify-between mt-1">
+            {action === "reject" && noteIsEmpty ? (
+              <p className="text-xs text-red-600">Eine Begründung ist bei Ablehnung erforderlich.</p>
+            ) : (
+              <span />
+            )}
+            <p className="text-xs text-gray-400">{note.length}/512</p>
+          </div>
         </div>
 
         <div className="flex gap-3">
@@ -172,9 +193,10 @@ function EligibilityActionDialog({
             Abbrechen
           </button>
           <button
-            disabled={!action || isPending}
+            disabled={!canSubmit || isPending}
             onClick={handleSubmit}
-            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+            title={requiresNote && noteIsEmpty ? "Bitte geben Sie zuerst eine Begründung ein." : undefined}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               action === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
             }`}
           >

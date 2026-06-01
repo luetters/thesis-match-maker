@@ -829,3 +829,10 @@
 - [x] Frontend: Status-Badges in Antragsübersicht (Anmeldefähigkeit, Verteidigungsfähigkeit)
 - [x] Frontend: Studierenden-Dashboard – Hinweis wenn Anmeldefähigkeit/Verteidigungsfähigkeit ausstehend oder abgelehnt
 - [x] Benachrichtigung an Studierende bei Statusänderung
+
+## Fix: Bestätigungsdialog mit Pflichtbegründung bei Ablehnung/Blockierung (PAV)
+
+- [x] PAV-Dashboard: Bestätigungsdialog bei Ablehnung der Anmeldefähigkeit (Pflichtfeld Begründung)
+- [x] PAV-Dashboard: Bestätigungsdialog bei Blockierung der Verteidigungsfähigkeit (Pflichtfeld Begründung)
+- [x] Dialog: Speichern-Button deaktiviert solange Begründungsfeld leer ist
+- [x] Dialog: Abbrechen-Button schließt ohne Aktion
