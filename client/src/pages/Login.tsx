@@ -97,6 +97,11 @@ export default function Login() {
   const [regMatrikelNr, setRegMatrikelNr] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
+  // Studiengang-Auswahl bei Registrierung (nur Studierende)
+  const [regDegreeType, setRegDegreeType] = useState<"bachelor" | "master">("bachelor");
+  const [regFachbereich, setRegFachbereich] = useState("FB3");
+  const [regProgrammeId, setRegProgrammeId] = useState<number | null>(null);
+  const programmesQuery = trpc.programmes.list.useQuery(undefined, { enabled: step === "register" && selectedRole === "student" });
 
   const [, setLocation] = useLocation();
   const params = new URLSearchParams(window.location.search);
@@ -161,6 +166,10 @@ export default function Login() {
       toast.error(L.matrikelNrRequired);
       return;
     }
+    if ((selectedRole ?? "student") === "student" && !regProgrammeId) {
+      toast.error("Bitte wählen Sie Ihren Studiengang aus.");
+      return;
+    }
     if (regPassword !== regPasswordConfirm) {
       toast.error(L.passwordMismatch);
       return;
@@ -182,13 +191,15 @@ export default function Login() {
         return;
       }
     }
-    registerMutation.mutate({
+    const regPayload: Parameters<typeof registerMutation.mutate>[0] = {
       name: regName.trim(),
       email: regEmail.trim(),
       password: regPassword,
       role: selectedRole ?? "student",
       matrikelNr: regMatrikelNr.trim() || undefined,
-    });
+      programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
+    };
+    registerMutation.mutate(regPayload);
   }
 
   const selectedRoleOption = ROLE_OPTIONS.find((r) => r.id === selectedRole);
@@ -574,25 +585,80 @@ export default function Login() {
                 <CardContent>
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     {(selectedRole ?? "student") === "student" && (
-                      <div className="space-y-2">
-                        <Label className="text-white/70 text-sm">
-                          {L.matrikelNr} <span className="text-red-400">*</span>
-                        </Label>
-                        <div className="relative">
-                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                          </svg>
-                          <Input
-                            type="text"
-                            placeholder={L.matrikelNrPlaceholder}
-                            value={regMatrikelNr}
-                            onChange={(e) => setRegMatrikelNr(e.target.value)}
-                            required
-                            autoComplete="off"
-                            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
-                          />
+                      <>
+                        {/* Matrikelnummer */}
+                        <div className="space-y-2">
+                          <Label className="text-white/70 text-sm">
+                            {L.matrikelNr} <span className="text-red-400">*</span>
+                          </Label>
+                          <div className="relative">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                            </svg>
+                            <Input
+                              type="text"
+                              placeholder={L.matrikelNrPlaceholder}
+                              value={regMatrikelNr}
+                              onChange={(e) => setRegMatrikelNr(e.target.value)}
+                              required
+                              autoComplete="off"
+                              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                            />
+                          </div>
                         </div>
-                      </div>
+
+                        {/* Studiengang-Auswahl */}
+                        <div className="space-y-3">
+                          <Label className="text-white/70 text-sm">
+                            Studiengang <span className="text-red-400">*</span>
+                          </Label>
+                          {/* Abschlussart */}
+                          <div className="flex gap-2">
+                            {(["bachelor", "master"] as const).map((type) => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => { setRegDegreeType(type); setRegProgrammeId(null); }}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
+                                  regDegreeType === type
+                                    ? "border-[#76b900] bg-[#76b900]/20 text-[#76b900]"
+                                    : "border-white/10 text-white/40 hover:border-white/30 hover:text-white/60"
+                                }`}
+                              >
+                                {type === "bachelor" ? "🎓 Bachelor" : "🎖️ Master"}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Fachbereich */}
+                          <select
+                            value={regFachbereich}
+                            onChange={(e) => { setRegFachbereich(e.target.value); setRegProgrammeId(null); }}
+                            className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
+                          >
+                            {["FB1","FB2","FB3","FB4","FB5"].map(fb => (
+                              <option key={fb} value={fb} className="bg-gray-900">{fb}</option>
+                            ))}
+                          </select>
+                          {/* Studiengang-Dropdown */}
+                          {programmesQuery.isLoading ? (
+                            <div className="text-white/30 text-xs py-2">Lade Studiengänge...</div>
+                          ) : (
+                            <select
+                              value={regProgrammeId ?? ""}
+                              onChange={(e) => setRegProgrammeId(e.target.value ? Number(e.target.value) : null)}
+                              required
+                              className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
+                            >
+                              <option value="" className="bg-gray-900">-- Studiengang wählen --</option>
+                              {(programmesQuery.data ?? []).filter((p: any) => p.level === regDegreeType && (p.fachbereich ?? 'FB3') === regFachbereich).map((p: any) => (
+                                <option key={p.id} value={p.id} className="bg-gray-900">
+                                  {p.abbreviation ? `${p.abbreviation} – ${p.name}` : p.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </>
                     )}
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">{L.fullName}</Label>
@@ -690,7 +756,8 @@ export default function Login() {
                         !regEmail.trim() ||
                         !regPassword ||
                         !regPasswordConfirm ||
-                        ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim())
+                        ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) ||
+                        ((selectedRole ?? "student") === "student" && !regProgrammeId)
                       }
                       className="w-full font-semibold h-11"
                       style={{ background: "#3b82f6", color: "white" }}

@@ -405,12 +405,17 @@ export const appRouter = router({
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
+          programmeId: z.number().int().positive().optional(),
         })
       )
       .mutation(async ({ input }) => {
         // Matrikelnummer ist Pflicht für Studierende
         if (input.role === "student" && (!input.matrikelNr || !input.matrikelNr.trim())) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Studierende müssen eine Matrikelnummer angeben." });
+        }
+        // Studiengang ist Pflicht für Studierende
+        if (input.role === "student" && !input.programmeId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Studierende müssen einen Studiengang auswählen." });
         }
         // E-Mail-Domain-Validierung bei Registrierung
         const emailLowerReg = input.email.toLowerCase();
@@ -455,6 +460,13 @@ export const appRouter = router({
         } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
+        // Studiengang direkt bei Registrierung setzen (für Studierende)
+        if (input.role === "student" && input.programmeId) {
+          const mysql2 = await import('mysql2/promise');
+          const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
+          await conn.execute('UPDATE users SET programme_id = ? WHERE open_id = ?', [input.programmeId, openId]);
+          await conn.end();
+        }
         await createAuditLogEntry({
           action: "USER_REGISTERED",
           actorId: 0,

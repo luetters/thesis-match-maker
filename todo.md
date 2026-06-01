@@ -845,6 +845,13 @@
 - [x] Backend: pav.getDecisionHistory(thesisRequestId) – Alle Einträge für einen Antrag
 - [x] Frontend: PAV-Dashboard – Entscheidungshistorie-Tab mit Antrags-ID-Suche
 - [x] Frontend: Zeitstempel, Entscheidungstyp, Entscheidung, Begründung, PAV-Person anzeigen
+## Feature: Studiengang/Fachbereich/Abschlussart aus Profil im Antragsformular
+- [x] Antragsformular: Fachbereich, Studiengang, Abschlussart als read-only Info-Block (aus Profil)
+- [x] Antragsformular: Wenn kein Studiengang im Profil → Amber-Hinweis-Banner
+- [x] Antragsformular: Nur Semester und Sprache bleiben editierbar
+- [x] Registrierungsformular: Studiengang-Auswahl (Abschlussart + Fachbereich + Studiengang) bei Registrierung als Studierende:r
+- [x] Backend: register-Prozedur nimmt programmeId entgegen und setzt programme_id direkt bei Registrierung
+
 ## Fix: PDF-Upload Exposé JSON.parse-Fehler
 - [x] Fehlerursache: `/api/upload/expose/:thesisId` verwendete Bild-Middleware statt PDF-Middleware
 - [x] Fix: `upload.single("file")` durch `pdfUpload.single("file")` mit Fehlerbehandlung ersetzt

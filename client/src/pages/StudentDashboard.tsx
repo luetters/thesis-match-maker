@@ -581,110 +581,58 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t.student.conditionsSection}</h3>
 
-        {/* Abschlussart als Toggle-Schalter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t.student.degreeSection} <span className="text-red-500">*</span></label>
-          <div className="flex gap-2">
-            {(["bachelor", "master"] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  if (!myProgramme) {
-                    setForm((f) => ({ ...f, degreeType: type, department: "" }));
-                  }
-                }}
-                disabled={!!myProgramme}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold border-2 transition-all ${
-                  form.degreeType === type
-                    ? "border-[#76B900] bg-[#76B900] text-white"
-                    : myProgramme
-                      ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
-                      : "border-gray-200 text-gray-600 hover:border-[#76B900]/50 hover:bg-[#76B900]/5"
-                }`}
-              >
-                {type === "bachelor" ? "🎓 Bachelor" : "🎖️ Master"}
-              </button>
-            ))}
+        {/* Profil-Info-Block: Fachbereich, Studiengang, Abschlussart – unveränderlich aus Profil */}
+        {myProgramme ? (
+          <div className="rounded-xl border border-[#76B900]/25 bg-[#76B900]/5 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-4 h-4 text-[#76B900] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs font-semibold text-[#4a7a00] uppercase tracking-wide">{t.student.profileDataLabel}</span>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {/* Fachbereich */}
+              <div className="bg-white rounded-lg px-3 py-2.5 border border-[#76B900]/20">
+                <div className="text-xs text-gray-400 mb-0.5">{t.student.fachbereichLabel}</div>
+                <div className="text-sm font-semibold text-gray-800">
+                  {FACHBEREICHE.find(fb => fb.value === ((myProgramme as any).fachbereich ?? 'FB3'))?.label ?? ((myProgramme as any).fachbereich ?? 'FB3')}
+                </div>
+              </div>
+              {/* Studiengang */}
+              <div className="bg-white rounded-lg px-3 py-2.5 border border-[#76B900]/20 flex items-center gap-2">
+                {(myProgramme as any).pictogramUrl && (
+                  <img src={(myProgramme as any).pictogramUrl} alt={(myProgramme as any).abbreviation ?? myProgramme.name} className="w-6 h-6 object-contain shrink-0" />
+                )}
+                <div>
+                  <div className="text-xs text-gray-400 mb-0.5">{t.student.studyProgramLabel}</div>
+                  <div className="text-sm font-semibold text-[#76B900]">
+                    {(myProgramme as any).abbreviation ? `${(myProgramme as any).abbreviation}` : myProgramme.name}
+                  </div>
+                </div>
+              </div>
+              {/* Abschlussart */}
+              <div className="bg-white rounded-lg px-3 py-2.5 border border-[#76B900]/20">
+                <div className="text-xs text-gray-400 mb-0.5">{t.student.degreeSection}</div>
+                <div className="text-sm font-semibold text-gray-800">
+                  {form.degreeType === "master" ? "🎖️ Master" : "🎓 Bachelor"}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">{t.student.profileDataHint}</p>
           </div>
-          {myProgramme && (
-            <p className="mt-1 text-xs text-gray-400">{t.student.degreeFromProfile}</p>
-          )}
-        </div>
+        ) : (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">{t.student.noProgrammeTitle}</p>
+              <p className="text-xs text-amber-700 mt-0.5">{t.student.noProgrammeDesc}</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid sm:grid-cols-2 gap-4">
-          {/* Fachbereich */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.student.fachbereichLabel} <span className="text-red-500">*</span></label>
-            <select
-              value={form.fachbereich}
-              onChange={(e) => setForm((f) => ({ ...f, fachbereich: e.target.value, department: "" }))}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
-            >
-              {FACHBEREICHE.map((fb) => (
-                <option key={fb.value} value={fb.value}>{fb.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Studiengang – dynamisches Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              {t.student.studyProgramLabel} <span className="text-red-500">*</span>
-            </label>
-            {myProgramme ? (
-              <>
-                {/* Readonly-Anzeige mit Piktogramm wenn Studiengang aus Profil */}
-                <div className="w-full flex items-center gap-2.5 px-3.5 py-2.5 border border-[#76B900]/30 bg-[#76B900]/5 rounded-xl cursor-not-allowed"
-                  title="Studiengang ist Ihrem Profil fest zugeordnet">
-                  {(myProgramme as any).pictogramUrl && (
-                    <img
-                      src={(myProgramme as any).pictogramUrl}
-                      alt={(myProgramme as any).abbreviation ?? myProgramme.name}
-                      className="w-5 h-5 object-contain flex-shrink-0"
-                    />
-                  )}
-                  <span className="text-[#76B900] font-medium text-sm">
-                    {(myProgramme as any).abbreviation && (
-                      <span className="mr-1.5">{(myProgramme as any).abbreviation}</span>
-                    )}
-                    {myProgramme.name}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-gray-400">{t.student.semesterFromProfile}</p>
-              </>
-            ) : (() => {
-              const filtered = allProgrammes.filter(
-                (p: any) => p.level === form.degreeType && (p.fachbereich ?? 'FB3') === form.fachbereich
-              );
-              const selectedProg = filtered.find((p: any) => p.name === form.department);
-              return (
-                <>
-                  <ProgrammeSelect
-                    options={filtered.map((p: any) => ({
-                      id: p.id,
-                      name: p.name,
-                      abbreviation: p.abbreviation ?? p.name.slice(0, 4),
-                      level: p.level,
-                      pictogramUrl: p.pictogramUrl,
-                    }))}
-                    value={selectedProg?.id ?? ""}
-                    onChange={(id) => {
-                      const prog = filtered.find((p: any) => p.id === id);
-                      setForm((f) => ({ ...f, department: prog?.name ?? "" }));
-                    }}
-                    placeholder={t.student.pleaseSelect}
-                    required
-                    error={!!errors.department}
-                  />
-                  {filtered.length === 0 && (
-                    <p className="mt-1 text-xs text-amber-600">{t.student.noFbProgrammes.replace('{fb}', form.fachbereich).replace('{type}', form.degreeType === 'master' ? 'Master-' : 'Bachelor-')}</p>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-
           {/* Geplantes Semester der Thesis */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.student.semesterLabel} <span className="text-red-500">*</span></label>
