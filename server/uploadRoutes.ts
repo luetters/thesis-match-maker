@@ -91,7 +91,15 @@ export function registerUploadRoutes(app: Express) {
   // POST /api/upload/expose/:thesisId
   app.post(
     "/api/upload/expose/:thesisId",
-    upload.single("file"),
+    (req, res, next) => pdfUpload.single("file")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu gro\u00df. Bitte laden Sie eine PDF-Datei mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ung\u00fcltige Datei." });
+      }
+      next();
+    }),
     async (req: Request, res: Response) => {
       try {
         // Auth prüfen

@@ -845,6 +845,11 @@
 - [x] Backend: pav.getDecisionHistory(thesisRequestId) – Alle Einträge für einen Antrag
 - [x] Frontend: PAV-Dashboard – Entscheidungshistorie-Tab mit Antrags-ID-Suche
 - [x] Frontend: Zeitstempel, Entscheidungstyp, Entscheidung, Begründung, PAV-Person anzeigen
+## Fix: PDF-Upload Exposé JSON.parse-Fehler
+- [x] Fehlerursache: `/api/upload/expose/:thesisId` verwendete Bild-Middleware statt PDF-Middleware
+- [x] Fix: `upload.single("file")` durch `pdfUpload.single("file")` mit Fehlerbehandlung ersetzt
+- [x] Beide Endpunkte (`/expose` und `/expose/:thesisId`) geben jetzt immer JSON zurück
+
 ## Feature: Fiktive Beispiel-Prüfer:innen
 - [x] DB: Feld `is_fictitious_example` (tinyint, default 0) zur users-Tabelle hinzugefügt
 - [x] DB: Migration 0042_magenta_rage.sql ausgeführt
