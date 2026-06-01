@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useState, useRef } from "react";
 import { Link, useParams } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
@@ -33,6 +34,8 @@ function PhotoUploadButton({
   currentPhotoUrl?: string | null;
   onUploaded: (url: string) => void;
 }) {
+  const { t } = useLanguage();
+  const E = t.examiner;
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -40,11 +43,11 @@ function PhotoUploadButton({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Nur Bilddateien sind erlaubt.");
+      toast.error(E.toastOnlyImages);
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Maximale Dateigröße: 5 MB.");
+      toast.error(E.toastFileTooLarge);
       return;
     }
     setUploading(true);
@@ -58,13 +61,13 @@ function PhotoUploadButton({
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Upload fehlgeschlagen");
+        throw new Error(err.error ?? E.toastUploadFailed);
       }
       const data = await res.json();
       onUploaded(data.url);
-      toast.success("Profilfoto erfolgreich hochgeladen.");
+      toast.success(E.toastPhotoUploaded);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : E.toastUploadFailed);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -78,7 +81,7 @@ function PhotoUploadButton({
         onClick={() => fileRef.current?.click()}
       >
         {currentPhotoUrl ? (
-          <img src={currentPhotoUrl} alt="Profilfoto" className="w-full h-full object-cover" />
+          <img src={currentPhotoUrl} alt={E.photoAlt} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,6 +131,8 @@ function EditProfileModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useLanguage();
+  const E = t.examiner;
   const [form, setForm] = useState({
     title: profile.title ?? "",
     department: profile.department ?? "",
@@ -145,7 +150,7 @@ function EditProfileModal({
   const utils = trpc.useUtils();
   const updateMutation = trpc.examiner.updateProfileExtended.useMutation({
     onSuccess: () => {
-      toast.success("Profil gespeichert.");
+      toast.success(E.toastProfileSaved);
       utils.examiner.getPublicProfile.invalidate();
       utils.examiner.myProfile.invalidate();
       onSaved();
@@ -178,7 +183,7 @@ function EditProfileModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Profil bearbeiten</h2>
+          <h2 className="text-lg font-bold text-gray-900">{E.editProfileTitle}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -192,21 +197,21 @@ function EditProfileModal({
               <input className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Prof. Dr." />
             </div>
             <div>
-              <label className={labelClass}>Fachbereich</label>
+              <label className={labelClass}>{E.fieldDepartment}</label>
               <input className={inputClass} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Informatik und Medien" />
             </div>
           </div>
           <div>
-            <label className={labelClass}>Kurzbiografie</label>
-            <textarea className={inputClass} rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Beschreiben Sie Ihre Forschungsschwerpunkte..." />
+            <label className={labelClass}>{E.fieldBio}</label>
+            <textarea className={inputClass} rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder={E.fieldBioPlaceholder} />
           </div>
           <div>
-            <label className={labelClass}>Forschungsschwerpunkte</label>
+            <label className={labelClass}>{E.fieldResearch}</label>
             <textarea className={inputClass} rows={2} value={form.researchFocus} onChange={(e) => setForm({ ...form, researchFocus: e.target.value })} placeholder="Machine Learning, Datenbanken, ..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Sprechzeiten</label>
+              <label className={labelClass}>{E.fieldOfficeHours}</label>
               <input className={inputClass} value={form.officeHours} onChange={(e) => setForm({ ...form, officeHours: e.target.value })} placeholder="Di 14-16 Uhr, Raum 4.23" />
             </div>
             <div>
@@ -215,16 +220,16 @@ function EditProfileModal({
             </div>
           </div>
           <div>
-            <label className={labelClass}>Website / Profilseite</label>
+            <label className={labelClass}>{E.fieldWebsite}</label>
             <input className={inputClass} value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} placeholder="https://..." />
           </div>
           <div>
-            <label className={labelClass}>Themen-Tags (kommagetrennt)</label>
+            <label className={labelClass}>{E.fieldTags}</label>
             <input className={inputClass} value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="KI, Datenbanken, Web-Technologien" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Sprachen (kommagetrennt)</label>
+              <label className={labelClass}>{E.fieldLanguages}</label>
               <input className={inputClass} value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} placeholder="Deutsch, Englisch" />
             </div>
             <div>
@@ -233,12 +238,12 @@ function EditProfileModal({
             </div>
           </div>
           <div>
-            <label className={labelClass}>Max. Betreuungen</label>
+            <label className={labelClass}>{E.fieldMaxSupervisions}</label>
             <input type="number" min={0} max={20} className={inputClass} value={form.maxSupervisions} onChange={(e) => setForm({ ...form, maxSupervisions: parseInt(e.target.value) || 0 })} />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-              Abbrechen
+              {E.cancelBtn}
             </button>
             <button
               type="submit"
@@ -246,7 +251,7 @@ function EditProfileModal({
               className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: "#76B900" }}
             >
-              {updateMutation.isPending ? "Wird gespeichert..." : "Speichern"}
+              {updateMutation.isPending ? E.savingBtn : E.saveBtn}
             </button>
           </div>
         </form>
@@ -258,6 +263,8 @@ function EditProfileModal({
 // ─── Hauptseite ───────────────────────────────────────────────────────────────
 
 export default function ExaminerProfile() {
+  const { t } = useLanguage();
+  const E = t.examiner;
   const params = useParams<{ id: string }>();
   const userId = parseInt(params.id ?? "0", 10);
   const { user: currentUser } = useAuth();
@@ -277,7 +284,7 @@ export default function ExaminerProfile() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Profil wird geladen...</p>
+          <p className="text-sm text-gray-500">{E.profileLoading}</p>
         </div>
       </div>
     );
@@ -292,9 +299,9 @@ export default function ExaminerProfile() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-1">Profil nicht gefunden</h2>
-          <p className="text-sm text-gray-500 mb-4">Diese Prüfer:in existiert nicht oder hat noch kein Profil angelegt.</p>
-          <Link href="/" className="text-sm font-medium" style={{ color: "#76B900" }}>← Zurück zur Startseite</Link>
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">{E.profileNotFound}</h2>
+          <p className="text-sm text-gray-500 mb-4">{E.profileNotFoundDesc}</p>
+          <Link href="/" className="text-sm font-medium" style={{ color: "#76B900" }}>{E.backHome}</Link>
         </div>
       </div>
     );
@@ -329,7 +336,7 @@ export default function ExaminerProfile() {
               </Link>
             ) : (
               <Link href="/login" className="text-sm font-medium px-3 py-1.5 rounded-lg text-white transition-colors hover:opacity-90" style={{ backgroundColor: "#76B900" }}>
-                Anmelden
+                {E.loginBtn}
               </Link>
             )}
           </div>
@@ -376,10 +383,10 @@ export default function ExaminerProfile() {
               <div className="pb-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-xl font-bold text-gray-900">
-                    {profile?.title ? `${profile.title} ` : ""}{user.name ?? "Unbekannt"}
+                    {profile?.title ? `${profile.title} ` : ""}{user.name ?? E.unknownName}
                   </h1>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/5 text-primary border border-primary/15">
-                    Prüfer:in
+                    {E.examinerLabel}
                   </span>
                 </div>
                 {profile?.department && (
@@ -394,7 +401,7 @@ export default function ExaminerProfile() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Bearbeiten
+                  {E.editProfile}
                 </button>
               )}
             </div>
@@ -417,7 +424,7 @@ export default function ExaminerProfile() {
                   <span className={`text-xs font-semibold ${
                     (profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "text-blue-700" : "text-primary"
                   }`}>
-                    {(profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? "Zweitprüfer:in" : "Erstprüfer:in"}
+                    {(profile as { isSecondExaminer?: number }).isSecondExaminer === 1 ? E.secondExaminerLabel : E.firstExaminerLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
@@ -425,7 +432,7 @@ export default function ExaminerProfile() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span className="text-xs font-medium text-gray-600">
-                    Bis zu <strong>{profile.maxSupervisions}</strong> Betreuungen
+                    {E.supervisionCapacity.replace("{n}", String(profile.maxSupervisions))}
                   </span>
                 </div>
                 {profile.officeHours && (
@@ -453,7 +460,7 @@ export default function ExaminerProfile() {
           <div className="space-y-4">
             {/* Kontakt */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Kontakt</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">{t.common.contact ?? "Kontakt"}</h3>
               <div className="space-y-2.5">
                 {user.email && (
                   <a href={`mailto:${user.email}`} className="flex items-center gap-2.5 text-sm text-gray-600 hover:text-primary transition-colors group">
@@ -491,7 +498,7 @@ export default function ExaminerProfile() {
             {/* Sprachen */}
             {languages.length > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Betreuungssprachen</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">{E.supervisionLanguages}</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {languages.map((lang) => (
                     <span key={lang} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">
@@ -505,7 +512,7 @@ export default function ExaminerProfile() {
             {/* Studiengänge */}
             {studyPrograms.length > 0 && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Studiengänge</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">{E.programmes}</h3>
                 <div className="space-y-1.5">
                   {studyPrograms.map((sp) => (
                     <div key={sp} className="flex items-center gap-2 text-sm text-gray-600">
@@ -522,14 +529,14 @@ export default function ExaminerProfile() {
           <div className="md:col-span-2 space-y-4">
             {profile?.bio && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Über mich</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">{t.common.aboutMe ?? "Über mich"}</h3>
                 <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{profile.bio}</p>
               </div>
             )}
 
             {profile?.researchFocus && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Forschungsschwerpunkte</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">{E.researchFocusSection}</h3>
                 <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{profile.researchFocus}</p>
               </div>
             )}
@@ -537,9 +544,9 @@ export default function ExaminerProfile() {
             {/* Anfrage stellen CTA (nur für Studierende) */}
             {currentUser?.role === "student" && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Betreuungsanfrage stellen</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{E.supervisionRequest}</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Reichen Sie Ihre Themenidee ein und wählen Sie {profile?.title ? `${profile.title} ` : ""}{user.name} als Prüfer:in.
+                  {E.supervisionRequestDesc.replace("{name}", `${profile?.title ? `${profile.title} ` : ""}${user.name}`)}
                 </p>
                 <Link
                   href="/student"
@@ -549,7 +556,7 @@ export default function ExaminerProfile() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Neue Anfrage einreichen
+                  {E.submitRequest}
                 </Link>
               </div>
             )}
@@ -561,7 +568,7 @@ export default function ExaminerProfile() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-500">Dieses Profil wurde noch nicht vollständig ausgefüllt.</p>
+                <p className="text-sm text-gray-500">{E.incompleteProfile}</p>
               </div>
             )}
           </div>

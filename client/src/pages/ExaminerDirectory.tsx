@@ -4,6 +4,7 @@ import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─── Examiner Card ────────────────────────────────────────────────────────────
 type ExaminerListItem = {
@@ -33,6 +34,8 @@ type ExaminerListItem = {
 };
 
 function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
+  const { t } = useLanguage();
+  const D = t.directory;
   const profile = examiner.profile;
   const tags = Array.isArray(profile?.tags) ? profile.tags as string[] : [];
   const languages = Array.isArray(profile?.languages) ? profile.languages as string[] : [];
@@ -50,7 +53,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
             {profile?.photoUrl ? (
               <img
                 src={profile.photoUrl}
-                alt={examiner.user?.name ?? "Prüfer:in"}
+                alt={examiner.user?.name ?? D.unknownName}
                 className="w-14 h-14 rounded-xl object-cover"
               />
             ) : (
@@ -67,7 +70,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="font-semibold text-gray-900 leading-tight">
-                  {profile?.title ? `${profile.title} ` : ""}{examiner.user?.name ?? "Unbekannt"}
+                  {profile?.title ? `${profile.title} ` : ""}{examiner.user?.name ?? D.unknownName}
                 </h3>
                 {profile?.department && (
                   <p className="text-sm text-gray-500 mt-0.5">{profile.department}</p>
@@ -84,7 +87,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
                     ? "bg-blue-50 text-blue-600 border border-blue-100"
                     : "bg-gray-50 text-gray-500 border border-gray-100"
                 }`}>
-                  {isSecondExaminer ? "Zweitprüfer:in" : "Erstprüfer:in"}
+                  {isSecondExaminer ? D.roleSecond : D.roleFirst}
                 </span>
               </div>
             </div>
@@ -99,7 +102,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
         {/* Research Focus */}
         {profile?.researchFocus && (
           <p className="text-xs text-gray-500 mt-2 italic line-clamp-1">
-            Forschungsschwerpunkt: {profile.researchFocus}
+            {D.researchFocusLabel} {profile.researchFocus}
           </p>
         )}
       </div>
@@ -158,7 +161,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
               className="hover:text-gray-600 transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
-              Website ↗
+              {D.website} ↗
             </a>
           )}
         </div>
@@ -167,7 +170,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
           className="text-xs font-semibold transition-opacity hover:opacity-80"
           style={{ color: "#76B900" }}
         >
-          Profil ansehen →
+          {D.viewProfile}
         </Link>
       </div>
     </div>
@@ -176,6 +179,8 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
 
 // ─── Login Gate ───────────────────────────────────────────────────────────────
 function LoginGate() {
+  const { t } = useLanguage();
+  const D = t.directory;
   const loginUrl = getLoginUrl();
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -188,19 +193,17 @@ function LoginGate() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Anmeldung erforderlich</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          Das Prüfer:innen-Verzeichnis ist nur für angemeldete Nutzer:innen der HTW Berlin zugänglich.
-        </p>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">{D.loginRequired}</h2>
+        <p className="text-sm text-gray-500 mb-6">{D.loginRequiredDesc}</p>
         <a
           href={loginUrl}
           className="inline-block w-full py-3 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
           style={{ backgroundColor: "#76B900" }}
         >
-          Jetzt anmelden
+          {D.loginBtn}
         </a>
         <Link href="/" className="block mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors">
-          ← Zurück zur Startseite
+          {D.backHome}
         </Link>
       </div>
     </div>
@@ -209,6 +212,8 @@ function LoginGate() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ExaminerDirectory() {
+  const { t } = useLanguage();
+  const D = t.directory;
   const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState("");
   const [filterProgramme, setFilterProgramme] = useState<number | "">("");
@@ -222,7 +227,6 @@ export default function ExaminerDirectory() {
     enabled: !!user,
   });
 
-  // Warte auf Auth-Check
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -231,7 +235,6 @@ export default function ExaminerDirectory() {
     );
   }
 
-  // Nicht eingeloggt → Login-Gate anzeigen
   if (!user) {
     return <LoginGate />;
   }
@@ -283,25 +286,25 @@ export default function ExaminerDirectory() {
                 alt="HTW Berlin Thesis Match Maker"
                 className="w-8 h-8 rounded-lg object-contain"
                 onError={(e) => {
-                  const t = e.currentTarget;
-                  t.style.display = "none";
+                  const target = e.currentTarget;
+                  target.style.display = "none";
                   const fb = document.createElement("div");
                   fb.className = "w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm";
                   fb.style.backgroundColor = "#76B900";
                   fb.textContent = "H";
-                  t.parentNode?.insertBefore(fb, t);
+                  target.parentNode?.insertBefore(fb, target);
                 }}
               />
               <span className="font-semibold text-gray-900 hidden sm:block">HTW Berlin Thesis Match Maker</span>
             </Link>
             <span className="text-gray-300">|</span>
-            <h1 className="text-sm font-semibold text-gray-700">Prüfer:innen-Verzeichnis</h1>
+            <h1 className="text-sm font-semibold text-gray-700">{D.directoryTitle}</h1>
           </div>
           <Link
             href="/"
             className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
           >
-            ← Zurück
+            {D.back}
           </Link>
         </div>
       </div>
@@ -309,12 +312,10 @@ export default function ExaminerDirectory() {
       {/* Hero Banner */}
       <div className="text-white py-10 px-4" style={{ backgroundColor: "#76B900" }}>
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold mb-1">Prüfer:innen-Verzeichnis</h2>
-          <p className="text-white/80 text-sm">
-            Finden Sie die passende Betreuung für Ihre Abschlussarbeit an der HTW Berlin.
-          </p>
+          <h2 className="text-2xl font-bold mb-1">{D.directoryTitle}</h2>
+          <p className="text-white/80 text-sm">{D.directorySubtitle}</p>
           <p className="text-white/60 text-xs mt-1">
-            {examiners?.length ?? 0} Prüfer:innen registriert
+            {examiners?.length ?? 0} {D.registered}
           </p>
         </div>
       </div>
@@ -334,7 +335,7 @@ export default function ExaminerDirectory() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name, Fachbereich, Thema suchen..."
+              placeholder={D.searchPlaceholder}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
@@ -346,7 +347,7 @@ export default function ExaminerDirectory() {
               onChange={(e) => setFilterProgramme(e.target.value === "" ? "" : Number(e.target.value))}
               className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
             >
-              <option value="">Alle Studiengänge</option>
+              <option value="">{D.allProgrammesOpt}</option>
               <optgroup label="Bachelor">
                 {bachelorProgrammes.map((p) => (
                   <option key={p.id} value={p.id}>{p.abbreviation} – {p.name}</option>
@@ -372,7 +373,7 @@ export default function ExaminerDirectory() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {r === "all" ? "Alle" : r === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}
+                {r === "all" ? D.roleAll : r === "first" ? D.roleFirst : D.roleSecond}
               </button>
             ))}
           </div>
@@ -380,10 +381,10 @@ export default function ExaminerDirectory() {
           {/* Kapazitäts-Filter */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
             {([
-              { value: "all", label: "Alle Kapazitäten" },
-              { value: "available", label: "Freie Kapazität" },
-              { value: "partial", label: "Teilweise belegt" },
-            ] as const).map((opt) => (
+              { value: "all" as const, label: D.allCapacities },
+              { value: "available" as const, label: D.freeCapacity },
+              { value: "partial" as const, label: D.partialCapacity },
+            ]).map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setFilterCapacity(opt.value)}
@@ -397,10 +398,7 @@ export default function ExaminerDirectory() {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {opt.value === "available" && (
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
-                )}
-                {opt.value === "partial" && (
+                {(opt.value === "available" || opt.value === "partial") && (
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
                 )}
                 {opt.label}
@@ -410,7 +408,7 @@ export default function ExaminerDirectory() {
 
           {/* Result count */}
           <span className="text-sm text-gray-400 ml-auto">
-            {filtered.length} Ergebnis{filtered.length !== 1 ? "se" : ""}
+            {filtered.length} {filtered.length !== 1 ? D.resultsPlural : D.results}
           </span>
         </div>
       </div>
@@ -430,11 +428,11 @@ export default function ExaminerDirectory() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-1">Keine Prüfer:innen gefunden</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{D.noExaminers}</h3>
             <p className="text-sm text-gray-500">
               {search || filterProgramme || filterCapacity !== "all" || filterRole !== "all"
-                ? "Versuchen Sie es mit anderen Suchbegriffen oder Filtern."
-                : "Noch keine Prüfer:innen registriert."}
+                ? D.noExaminersFiltered
+                : D.noExaminersEmpty}
             </p>
             {(search || filterProgramme || filterCapacity !== "all") && (
               <button
@@ -442,7 +440,7 @@ export default function ExaminerDirectory() {
                 className="mt-4 text-sm font-medium transition-opacity hover:opacity-80"
                 style={{ color: "#76B900" }}
               >
-                Filter zurücksetzen
+                {D.resetFilters}
               </button>
             )}
           </div>
