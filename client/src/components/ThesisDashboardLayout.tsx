@@ -345,15 +345,18 @@ function Sidebar({
               <div className="text-xs text-gray-400">{roleLabel[role] ?? role}</div>
             </div>
           </div>
-          <a
-            href="/profile"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:text-[#76B900] hover:bg-primary/5 transition-all mb-1"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            {t.nav.myProfile}
-          </a>
+          {/* Profil-Link: für Prüfer:innen direkt zum Dashboard-Tab, für andere Rollen zur /profile-Seite */}
+          {role !== "examiner" && role !== "second_examiner" && (
+            <a
+              href="/profile"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:text-[#76B900] hover:bg-primary/5 transition-all mb-1"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              {t.nav.myProfile}
+            </a>
+          )}
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all"
@@ -473,8 +476,9 @@ export function ThesisDashboardLayout({
                     <p className="text-sm font-medium text-gray-900 truncate">{user?.name ?? "Nutzer:in"}</p>
                     <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
                   </div>
+                  {/* Profil-Link: für Prüfer:innen zum Dashboard-Tab, für andere zur /profile-Seite */}
                   <a
-                    href="/profile"
+                    href={user?.role === "examiner" || user?.role === "second_examiner" ? "/examiner/profile" : "/profile"}
                     onClick={() => setShowProfileMenu(false)}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >

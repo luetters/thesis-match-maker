@@ -1623,8 +1623,18 @@ function CommissionPreferences() {
 
 // ─── Main Component ────────────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes" | "commission">("overview");
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  // URL-basierte Tab-Initialisierung: /examiner/profile öffnet direkt den Profil-Tab
+  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "programmes" | "commission" => {
+    if (location === "/examiner/profile") return "profile";
+    if (location === "/examiner/requests") return "requests";
+    if (location === "/examiner/colloquiums") return "colloquiums";
+    if (location === "/examiner/history") return "history";
+    if (location === "/examiner/programmes") return "programmes";
+    if (location === "/examiner/commission") return "commission";
+    return "overview";
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const { t } = useLanguage();
   const { user } = useAuth();
 

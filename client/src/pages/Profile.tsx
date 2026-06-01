@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -269,8 +269,15 @@ function LinkDisplay({
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const { t, lang } = useLanguage();
   const p = t.myProfilePage;
+
+  // Prüfer:innen werden direkt zum Dashboard-Profil-Tab weitergeleitet
+  if (user && (user.role === "examiner" || user.role === "second_examiner")) {
+    navigate("/examiner/profile");
+    return null;
+  }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery(undefined, {
     placeholderData: (prev) => prev,

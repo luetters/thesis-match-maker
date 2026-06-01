@@ -61,13 +61,15 @@ function Router() {
 
       {/* Prüfer:innen-Dashboard */}
       <Route path="/examiner" component={ExaminerDashboard} />
+
+      {/* Öffentliche Prüfer:innen-Profilseite (muss vor /examiner/:tab stehen) */}
+      <Route path="/examiner/profile/:id" component={ExaminerProfile} />
+
+      {/* Prüfer:innen-Dashboard Tabs */}
       <Route path="/examiner/:tab" component={ExaminerDashboard} />
 
       {/* Öffentliches Prüfer:innen-Verzeichnis */}
       <Route path="/examiners" component={ExaminerDirectory} />
-
-      {/* Öffentliche Prüfer:innen-Profilseite */}
-      <Route path="/examiner/profile/:id" component={ExaminerProfile} />
 
       {/* JWT-gesicherte CTA-Seite für Prüfer:innen (Login-frei) */}
       <Route path="/examiner/respond" component={ExaminerAction} />

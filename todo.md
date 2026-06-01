@@ -852,6 +852,13 @@
 - [x] Registrierungsformular: Studiengang-Auswahl (Abschlussart + Fachbereich + Studiengang) bei Registrierung als Studierende:r
 - [x] Backend: register-Prozedur nimmt programmeId entgegen und setzt programme_id direkt bei Registrierung
 
+## Feature: Profil-Menüpunkt für Prüfer:innen konsolidieren
+- [x] ThesisDashboardLayout: Sidebar-Link "Mein Profil" für Prüfer:innen ausgeblendet (role examiner/second_examiner)
+- [x] ThesisDashboardLayout: Header-Dropdown-Profil-Link für Prüfer:innen leitet auf /examiner/profile um
+- [x] Profile.tsx: Redirect für Prüfer:innen auf /examiner/profile (falls direkt aufgerufen)
+- [x] ExaminerDashboard: URL-basierte Tab-Initialisierung (/examiner/profile öffnet Profil-Tab)
+- [x] App.tsx: Routen-Reihenfolge korrigiert (/examiner/profile/:id vor /examiner/:tab)
+
 ## Fix: PDF-Upload Exposé JSON.parse-Fehler
 - [x] Fehlerursache: `/api/upload/expose/:thesisId` verwendete Bild-Middleware statt PDF-Middleware
 - [x] Fix: `upload.single("file")` durch `pdfUpload.single("file")` mit Fehlerbehandlung ersetzt
