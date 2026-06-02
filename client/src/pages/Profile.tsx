@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { EmailTemplateEditor } from "@/components/EmailTemplateEditor";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -882,23 +883,14 @@ export default function Profile() {
                   {lang === 'de' ? 'Kurzbiografie' : 'Short Biography'}
                 </label>
                 {editMode ? (
-                  <>
-                    <textarea
-                      value={form.examinerBio}
-                      onChange={(e) => setForm((f) => ({ ...f, examinerBio: e.target.value }))}
-                      placeholder={lang === 'de' ? 'Kurze Vorstellung Ihrer Person und Ihres akademischen Werdegangs…' : 'Brief introduction of yourself and your academic background…'}
-                      rows={4}
-                      maxLength={2000}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] transition-all resize-none"
-                    />
-                    <p className="text-xs text-gray-400 mt-1 text-right">{form.examinerBio.length}/2000</p>
-                  </>
+                  <RichTextEditor
+                    value={form.examinerBio}
+                    onChange={(html) => setForm((f) => ({ ...f, examinerBio: html }))}
+                  />
                 ) : (
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                    {(profile as any).examinerBio
-                      ? (profile as any).examinerBio
-                      : <span className="text-gray-400 italic">{p.notSpecified}</span>}
-                  </p>
+                  (profile as any).examinerBio
+                    ? <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: (profile as any).examinerBio }} />
+                    : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>
                 )}
               </div>
 
@@ -908,23 +900,14 @@ export default function Profile() {
                   {lang === 'de' ? 'Forschungsschwerpunkte' : 'Research Focus'}
                 </label>
                 {editMode ? (
-                  <>
-                    <textarea
-                      value={form.examinerResearchFocus}
-                      onChange={(e) => setForm((f) => ({ ...f, examinerResearchFocus: e.target.value }))}
-                      placeholder={lang === 'de' ? 'Beschreiben Sie Ihre Forschungsschwerpunkte und thematischen Interessen…' : 'Describe your research focus and thematic interests…'}
-                      rows={4}
-                      maxLength={2000}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] transition-all resize-none"
-                    />
-                    <p className="text-xs text-gray-400 mt-1 text-right">{form.examinerResearchFocus.length}/2000</p>
-                  </>
+                  <RichTextEditor
+                    value={form.examinerResearchFocus}
+                    onChange={(html) => setForm((f) => ({ ...f, examinerResearchFocus: html }))}
+                  />
                 ) : (
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                    {(profile as any).examinerResearchFocus
-                      ? (profile as any).examinerResearchFocus
-                      : <span className="text-gray-400 italic">{p.notSpecified}</span>}
-                  </p>
+                  (profile as any).examinerResearchFocus
+                    ? <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: (profile as any).examinerResearchFocus }} />
+                    : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>
                 )}
               </div>
 
