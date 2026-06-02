@@ -294,6 +294,7 @@ export default function Profile() {
     staffId: "", responsibilityArea: "", officeLocation: "",
     secondEmail: "", website: "", linkedIn: "", researchGate: "",
     htwProfileUrl: "", miscLink: "", bookingUrl: "",
+    preferredLanguage: "de" as "de" | "en",
   });
   const [researchTagList, setResearchTagList] = useState<string[]>([]);
   const [examinerLanguages, setExaminerLanguages] = useState<string[]>([]);
@@ -387,6 +388,7 @@ export default function Profile() {
       staffId: profile.staffId ?? "", responsibilityArea: profile.responsibilityArea ?? "", officeLocation: profile.officeLocation ?? "",
       secondEmail: profile.secondEmail ?? "", website: profile.website ?? "", linkedIn: profile.linkedIn ?? "", researchGate: profile.researchGate ?? "",
       htwProfileUrl: profile.htwProfileUrl ?? "", miscLink: profile.miscLink ?? "", bookingUrl: profile.bookingUrl ?? "",
+      preferredLanguage: ((profile as any).preferredLanguage as "de" | "en") ?? "de",
     });
     setEditMode(true);
   };
@@ -415,6 +417,7 @@ export default function Profile() {
       staffId: form.staffId || undefined, responsibilityArea: form.responsibilityArea || undefined, officeLocation: form.officeLocation || undefined,
       secondEmail: form.secondEmail || undefined, website: form.website || undefined, linkedIn: form.linkedIn || undefined, researchGate: form.researchGate || undefined,
       htwProfileUrl: form.htwProfileUrl || undefined, miscLink: form.miscLink || undefined, bookingUrl: form.bookingUrl || undefined,
+      preferredLanguage: form.preferredLanguage || undefined,
     });
   };
 
@@ -641,9 +644,58 @@ export default function Profile() {
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-            {editMode
-              ? <FieldInput label={p.fieldPhone} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder={p.fieldPhonePlaceholder} type="tel" />
-              : <FieldView label={p.fieldPhone} value={profile.phone} notSpecified={p.notSpecified} />}
+            {editMode ? (
+              <FieldInput label={p.fieldPhone} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder={p.fieldPhonePlaceholder} type="tel" />
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldPhone}</label>
+                {profile.phone ? (
+                  <a href={`tel:${profile.phone}`} className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-[#76b900] transition-colors group">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#f3f4f6" }}>
+                      <svg className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </span>
+                    <span className="group-hover:underline">{profile.phone}</span>
+                  </a>
+                ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+              </div>
+            )}
+            {/* Bevorzugte Sprache */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Bevorzugte Sprache</label>
+              {editMode ? (
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, preferredLanguage: "de" }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                      form.preferredLanguage === "de"
+                        ? "border-[#76b900] bg-[#f6ffe0] text-[#4a7a00]"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="text-base">🇩🇪</span> Deutsch
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, preferredLanguage: "en" }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                      form.preferredLanguage === "en"
+                        ? "border-[#76b900] bg-[#f6ffe0] text-[#4a7a00]"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="text-base">🇬🇧</span> English
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{((profile as any).preferredLanguage ?? "de") === "en" ? "🇬🇧" : "🇩🇪"}</span>
+                  <span className="text-sm text-gray-800">{((profile as any).preferredLanguage ?? "de") === "en" ? "English" : "Deutsch"}</span>
+                </div>
+              )}
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldDepartment}</label>
               {editMode ? (

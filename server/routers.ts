@@ -261,6 +261,8 @@ const profileRouterDef = router({
       staffId: z.string().max(32).optional(),
       responsibilityArea: z.string().max(255).optional(),
       officeLocation: z.string().max(255).optional(),
+      // Persönliche Einstellungen
+      preferredLanguage: z.enum(['de', 'en']).optional(),
       // Kontakt & Online-Präsenz
       secondEmail: z.string().email().max(320).optional().or(z.literal('')),
       website: z.string().max(512).optional(),
@@ -273,8 +275,13 @@ const profileRouterDef = router({
     .mutation(async ({ ctx, input }) => {
       const ok = await updateProfile(ctx.user.id, input);
       if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Profil konnte nicht aktualisiert werden." });
+      // Bevorzugte Sprache separat speichern (eigene Spalte)
+      if (input.preferredLanguage) {
+        const { setPreferredLanguage } = await import('./db');
+        await setPreferredLanguage(ctx.user.id, input.preferredLanguage);
+      }
       // Prüfer:innen-spezifische Felder in examiner_profiles speichern
-      const isExaminer = ctx.user.role === 'examiner' || ctx.user.role === 'second_examiner';
+      const isExaminer = ctx.user.roles?.includes('examiner') || ctx.user.roles?.includes('second_examiner') || ctx.user.role === 'examiner' || ctx.user.role === 'second_examiner';
       if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined)) {
         await upsertExaminerProfile({
           userId: ctx.user.id,

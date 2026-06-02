@@ -974,3 +974,11 @@
 - [x] Admin-Dashboard: Tab „Ausstehende Freischaltungen" mit Nutzer-Liste
 - [x] Admin-Dashboard: Freischalten- und Ablehnen-Buttons pro Nutzer
 - [x] Admin-Dashboard: Badge-Zähler für ausstehende Freischaltungen im Tab-Header
+
+## Feature: Profilseite – Selbstbearbeitung persönlicher Daten
+- [x] Backend: profile.update-Prozedur um preferredLanguage erweitern
+- [x] Backend: getProfile() in db.ts liefert preferredLanguage
+- [x] Frontend: Sprach-Auswahl (Deutsch/Englisch) im Bearbeitungs-Formular (Toggle-Buttons)
+- [x] Frontend: Sprach-Präferenz in Ansicht anzeigen (Flagge + Label)
+- [x] Frontend: preferredLanguage wird beim Speichern an Backend übermittelt
+- [x] Frontend: Telefonnummer in Ansicht mit Klick-to-call verbessert (tel:-Link)
