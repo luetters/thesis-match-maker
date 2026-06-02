@@ -606,7 +606,7 @@ export const appRouter = router({
         z.object({
           title: z.string().min(1).max(512),
           description: z.string().min(1),
-          department: z.string().min(2),
+          department: z.string().max(255).optional(),
           abstract: z.string().optional(),
           targetSemester: z.string().optional(),
           language: z.enum(["de", "en"]).default("de"),
@@ -2192,13 +2192,13 @@ export const appRouter = router({
     createWithWantedExaminer: studentProcedure
       .input(z.object({
         title: z.string().min(1).max(512),
-        description: z.string().min(1),
-        department: z.string().min(2),
-        abstract: z.string().optional(),
-        targetSemester: z.string(),
-        language: z.enum(["de", "en"]).default("de"),
-        degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
-        wantedExaminerId: z.number().int().positive(),
+          description: z.string().min(1),
+          department: z.string().max(255).optional(),
+          abstract: z.string().optional(),
+          targetSemester: z.string(),
+          language: z.enum(["de", "en"]).default("de"),
+          degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
+          wantedExaminerId: z.number().int().positive(),
         exposeUrl: z.string().optional(),
         exposeKey: z.string().optional(),
       }))
