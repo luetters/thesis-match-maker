@@ -484,7 +484,7 @@ function DecisionHistoryTab() {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PavDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ActiveTab>("unassigned");
   const [proposeFor, setProposeFor] = useState<{ id: number; title: string } | null>(null);
@@ -511,7 +511,7 @@ export default function PavDashboard() {
     );
   }
 
-  if (!user || !["pav", "admin", "superadmin"].includes(user.role ?? "")) {
+  if (!user || (!hasRole("pav") && !hasRole("admin") && !hasRole("superadmin"))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

@@ -1,4 +1,4 @@
-import { alias, and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -22,6 +22,7 @@ import {
   reminderTemplates,
   savedFilters,
   examinerSemesterCapacities,
+  userRoles,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -212,7 +213,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
   // Alias für den LEFT JOIN auf den Erstbetreuer
-  const wantedExaminerAlias = alias(users, "wanted_examiner");
+  const wantedExaminerAlias = aliasedTable(users, "wanted_examiner");
   return db
     .select({
       id: thesisRequests.id,
@@ -4359,4 +4360,73 @@ export async function triggerDefenseEligibilityCheck(thesisRequestId: number) {
   await db.update(thesisRequests).set({ defenseEligibility: "pending" }).where(
     and(eq(thesisRequests.id, thesisRequestId), eq(thesisRequests.defenseEligibility, "not_applicable"))
   );
+}
+
+// ─── Multi-Rollen-Hilfsfunktionen ────────────────────────────────────────────
+
+export type AppRole = "user" | "admin" | "student" | "examiner" | "second_examiner" | "superadmin" | "pav" | "dean" | "vice_dean";
+
+/** Alle Rollen eines Nutzers aus user_roles abrufen */
+export async function getUserRoles(userId: number): Promise<AppRole[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ role: userRoles.role })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId));
+  return rows.map((r) => r.role as AppRole);
+}
+
+/** Prüfen ob ein Nutzer eine bestimmte Rolle hat */
+export async function hasRole(userId: number, role: AppRole): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db
+    .select({ id: userRoles.id })
+    .from(userRoles)
+    .where(and(eq(userRoles.userId, userId), eq(userRoles.role, role)))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/** Rolle zu einem Nutzer hinzufügen (idempotent) */
+export async function addUserRole(userId: number, role: AppRole, assignedBy?: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // INSERT IGNORE verhindert Duplikate (unique index auf user_id + role)
+  await db.execute(
+    sql`INSERT IGNORE INTO user_roles (user_id, role, assigned_by, assigned_at)
+        VALUES (${userId}, ${role}, ${assignedBy ?? null}, NOW())`
+  );
+  // users.role synchron halten (Haupt-Rolle = Priorität: student > examiner > pav > dean > admin > superadmin)
+  await syncPrimaryRole(userId);
+}
+
+/** Rolle von einem Nutzer entfernen */
+export async function removeUserRole(userId: number, role: AppRole): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .delete(userRoles)
+    .where(and(eq(userRoles.userId, userId), eq(userRoles.role, role)));
+  // users.role synchron halten
+  await syncPrimaryRole(userId);
+}
+
+/**
+ * Haupt-Rolle in users.role synchron halten.
+ * Priorität: student > examiner > second_examiner > pav > dean > vice_dean > admin > superadmin > user
+ */
+const ROLE_PRIORITY: AppRole[] = [
+  "student", "examiner", "second_examiner", "pav", "dean", "vice_dean", "admin", "superadmin", "user"
+];
+
+async function syncPrimaryRole(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const roles = await getUserRoles(userId);
+  if (roles.length === 0) return;
+  // Erste Rolle nach Priorität wählen
+  const primary = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? roles[0];
+  await db.update(users).set({ role: primary }).where(eq(users.id, userId));
 }

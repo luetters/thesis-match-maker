@@ -145,6 +145,10 @@ import {
   setEnrollmentEligibility,
   setDefenseEligibility,
   getAdminDecisionHistory,
+  getUserRoles,
+  addUserRole,
+  removeUserRole,
+  AppRole,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -167,9 +171,17 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
 // --- Role guards --------------------------------------------------------------
+// Hilfsfunktion: prüft ob user.roles (Multi-Rollen) eine bestimmte Rolle enthält
+// Fällt auf user.role (Legacy-Feld) zurück wenn roles[] nicht verfügbar
+function userHasRole(user: { role: string; roles?: string[] }, role: string): boolean {
+  if (user.roles && user.roles.length > 0) {
+    return user.roles.includes(role);
+  }
+  return user.role === role;
+}
 
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "student" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "student") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Studierende haben Zugriff." });
   }
   return next({ ctx });
@@ -177,7 +189,7 @@ const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 // Erstprüfer:innen-Prozedur: nur Rolle 'examiner' (+ Admin)
 const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "examiner") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen mit Erstprüfer-Berechtigung haben Zugriff." });
   }
   return next({ ctx });
@@ -185,36 +197,35 @@ const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 // Zweitprüfer:innen-Prozedur: Rolle 'examiner' ODER 'second_examiner' (+ Admin)
 const anyExaminerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "examiner" && ctx.user.role !== "second_examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "examiner") && !userHasRole(ctx.user, "second_examiner") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Admins haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const pavProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "pav" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+  if (!userHasRole(ctx.user, "pav") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur PAV haben Zugriff." });
   }
   return next({ ctx });
 });
 
 const deanProcedure = protectedProcedure.use(({ ctx, next }) => {
-  const allowed = ["dean", "vice_dean", "superadmin", "admin"];
-  if (!allowed.includes(ctx.user.role)) {
+  if (!userHasRole(ctx.user, "dean") && !userHasRole(ctx.user, "vice_dean") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Dekanat hat Zugriff." });
   }
   return next({ ctx });
@@ -467,6 +478,12 @@ export const appRouter = router({
           await conn.execute('UPDATE users SET programme_id = ? WHERE open_id = ?', [input.programmeId, openId]);
           await conn.end();
         }
+        // Eintrag in user_roles anlegen (Multi-Rollen-Modell)
+        // Erst Nutzer-ID ermitteln, dann Rolle eintragen
+        const newUser = await getUserByEmail(input.email);
+        if (newUser) {
+          await addUserRole(newUser.id, input.role as AppRole);
+        }
         await createAuditLogEntry({
           action: "USER_REGISTERED",
           actorId: 0,
@@ -523,7 +540,13 @@ export const appRouter = router({
           .sign(secret);
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-        return { success: true, role: user.role };
+        // Multi-Rollen: roles[] aus user_roles laden
+        const userRolesArr = await getUserRoles(user.id);
+        if (userRolesArr.length === 0 && user.role && user.role !== 'user') {
+          await addUserRole(user.id, user.role as AppRole);
+          userRolesArr.push(user.role as AppRole);
+        }
+        return { success: true, role: user.role, roles: userRolesArr };
       }),
   }),
 
@@ -1118,6 +1141,46 @@ export const appRouter = router({
     users: adminProcedure.query(async () => {
       return getAllUsersWithProfiles();
     }),
+    // Multi-Rollen: Alle Rollen eines Nutzers abrufen
+    getUserRoles: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return getUserRoles(input.userId);
+      }),
+    // Multi-Rollen: Rolle hinzufügen
+    addUserRole: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await addUserRole(input.userId, input.role as AppRole, ctx.user.id);
+        await createAuditLogEntry({
+          action: "ROLE_ADDED",
+          actorId: ctx.user.id,
+          metadata: { userId: input.userId, addedRole: input.role },
+        });
+        return { success: true };
+      }),
+    // Multi-Rollen: Rolle entfernen
+    removeUserRole: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const currentRoles = await getUserRoles(input.userId);
+        if (currentRoles.length <= 1) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Die letzte Rolle kann nicht entfernt werden." });
+        }
+        await removeUserRole(input.userId, input.role as AppRole);
+        await createAuditLogEntry({
+          action: "ROLE_REMOVED",
+          actorId: ctx.user.id,
+          metadata: { userId: input.userId, removedRole: input.role },
+        });
+        return { success: true };
+      }),
     updateUserRole: superadminProcedure
       .input(
         z.object({

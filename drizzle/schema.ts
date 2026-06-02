@@ -342,6 +342,19 @@ export const examinerEmailTemplates = mysqlTable("examiner_email_templates", {
   index("idx_examiner_email_tpl").on(table.examinerId, table.templateType),
 ]);
 
+// ─── Multi-Rollen-Tabelle ────────────────────────────────────────────────────
+// Jeder Nutzer kann mehrere Rollen gleichzeitig haben (z.B. Prüfer:in + Dekan + PAV)
+export const userRoles = mysqlTable("user_roles", {
+  id: int().autoincrement().notNull(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: mysqlEnum("role", ["user", "admin", "student", "examiner", "second_examiner", "superadmin", "pav", "dean", "vice_dean"]).notNull(),
+  assignedBy: int("assigned_by"),
+  assignedAt: timestamp("assigned_at", { mode: "string" }).defaultNow().notNull(),
+},
+(table) => [
+  index("uq_user_role").on(table.userId, table.role),
+]);
+
 // ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────
 import { InferInsertModel } from "drizzle-orm";
 

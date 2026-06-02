@@ -454,7 +454,7 @@ export default function ExaminerProfile() {
   const E = t.examiner;
   const params = useParams<{ id: string }>();
   const userId = parseInt(params.id ?? "0", 10);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
   const [showEdit, setShowEdit] = useState(false);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
 
@@ -512,7 +512,7 @@ export default function ExaminerProfile() {
     (data as any).semesterCapacities ?? [];
   const activeFirstCount: number = (data as any).activeFirstCount ?? 0;
   const activeSecondCount: number = (data as any).activeSecondCount ?? 0;
-  const isSecondExaminer = profile?.isSecondExaminer === 1 || user.role === "second_examiner";
+  const isSecondExaminer = profile?.isSecondExaminer === 1 || hasRole("second_examiner");
 
   return (
     <div className="min-h-screen bg-gray-50">

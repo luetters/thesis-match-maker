@@ -111,13 +111,16 @@ export default function Login() {
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
       setLoginStatus(null);
-      const role = data.role;
+      // Multi-Rollen: Routing nach Priorität (roles[] hat Vorrang vor role)
+      const roles: string[] = (data as any).roles?.length ? (data as any).roles : [data.role];
+      const hasR = (r: string) => roles.includes(r);
       let target = returnTo;
       if (target === "/" || target === "") {
-        if (role === "student") target = "/student";
-        else if (role === "examiner") target = "/examiner";
-        else if (role === "admin" || role === "pav" || role === "dean" || role === "vice_dean") target = "/admin";
-        else if (role === "superadmin") target = "/superadmin";
+        if (hasR("superadmin")) target = "/superadmin";
+        else if (hasR("admin")) target = "/admin";
+        else if (hasR("student")) target = "/student";
+        else if (hasR("examiner") || hasR("second_examiner")) target = "/examiner";
+        else if (hasR("pav") || hasR("dean") || hasR("vice_dean")) target = "/admin";
         else target = "/";
       }
       setLocation(target);

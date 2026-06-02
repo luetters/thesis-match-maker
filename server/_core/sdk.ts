@@ -297,7 +297,14 @@ class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    // Multi-Rollen: roles[] aus user_roles laden und an User-Objekt hängen
+    const roles = await db.getUserRoles(user.id);
+    // Falls noch kein Eintrag in user_roles (Legacy-Nutzer), Fallback auf users.role
+    if (roles.length === 0 && user.role && user.role !== 'user') {
+      await db.addUserRole(user.id, user.role as import('../db').AppRole);
+      roles.push(user.role as import('../db').AppRole);
+    }
+    return { ...user, roles } as User & { roles: string[] };
   }
 }
 

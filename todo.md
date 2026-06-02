@@ -894,3 +894,55 @@
 - [x] Anfragen-Historie: Kontaktierter Erstbetreuer anzeigen
 - [x] Anfragen-Historie: Thema, Beschreibung und Abstract anzeigen
 - [x] Anfragen-Historie: Anhang (Exposé-PDF) anzeigen
+
+## Feature: Multi-Rollen-Modell (Doppelrollen)
+
+### Architektur
+- [x] Neue Tabelle `user_roles` (id, user_id, role, assigned_by, assigned_at) anlegen
+- [x] `users.role` bleibt als Legacy-Feld erhalten (Abwärtskompatibilität), wird aber nicht mehr primär ausgewertet
+- [x] Migration per `pnpm db:push` ausführen
+- [x] `getUserRoles(userId)` – alle Rollen eines Nutzers aus user_roles lesen
+- [x] `addUserRole(userId, role, assignedBy)` – Rolle hinzufügen
+- [x] `removeUserRole(userId, role)` – Rolle entfernen
+- [x] `hasRole(userId, role)` – prüfen ob Nutzer eine bestimmte Rolle hat
+- [x] `getPrimaryRole(userId)` – Haupt-Rolle für Routing/Anzeige (Priorität: student > examiner > pav > dean > admin > superadmin)
+
+### Backend – Auth-Flow
+- [x] `loginWithPassword` gibt `roles: string[]` (Array) zurück statt nur `role: string`
+- [x] `register` legt Eintrag in `user_roles` an (zusätzlich zu `users.role`)
+- [x] `auth.me` gibt `roles: string[]` zurück
+- [x] JWT/Session-Cookie trägt `roles[]` (oder wird bei jedem Request aus DB geladen)
+
+### Backend – Prozedur-Guards
+- [x] `studentProcedure` prüft `roles.includes("student")`
+- [x] `examinerProcedure` prüft `roles.includes("examiner")`
+- [x] `anyExaminerProcedure` prüft `roles.includes("examiner") || roles.includes("second_examiner")`
+- [x] `pavProcedure` prüft `roles.includes("pav")`
+- [x] `deanProcedure` prüft `roles.includes("dean") || roles.includes("vice_dean")`
+- [x] `adminProcedure` prüft `roles.includes("admin")`
+- [x] `superadminProcedure` prüft `roles.includes("superadmin")`
+- [x] Context (`TrpcContext`) trägt `user.roles: string[]` zusätzlich zu `user.role`
+
+### Frontend – useAuth / Routing
+- [x] `useAuth()` liefert `roles: string[]` und Hilfsfunktion `hasRole(role: string): boolean`
+- [x] Login-Weiterleitung nach Priorität: student → /student, examiner → /examiner, pav/dean/admin → /admin
+- [x] Navigation/Sidebar zeigt alle relevanten Bereiche wenn Nutzer mehrere Rollen hat
+- [x] Alle `user.role === "..."` Checks durch `hasRole("...")` ersetzen (30 Stellen Frontend)
+- [x] `ThesisDashboardLayout`: Sidebar-Links für alle aktiven Rollen anzeigen
+- [x] `ExaminerDashboard`: zugänglich wenn `hasRole("examiner") || hasRole("second_examiner")`
+- [x] `PavDashboard`: zugänglich wenn `hasRole("pav")`
+- [x] `DeanDashboard`: zugänglich wenn `hasRole("dean") || hasRole("vice_dean")`
+- [x] `AdminDashboard`: zugänglich wenn `hasRole("admin")`
+
+### Admin-Dashboard – Rollen-Verwaltung
+- [x] Nutzer-Detail-Ansicht zeigt alle aktiven Rollen als Badges
+- [x] "Rolle hinzufügen" Button mit Dropdown (alle verfügbaren Rollen)
+- [x] "Rolle entfernen" Button pro Rolle (mit Bestätigungsdialog)
+- [x] `admin.getUserRoles` Prozedur
+- [x] `admin.addUserRole` Mutation
+- [x] `admin.removeUserRole` Mutation
+- [x] Warnung wenn letzte Rolle entfernt werden soll
+
+### Migration / Datenkonsistenz
+- [x] Bestehende Nutzer: `users.role` → Eintrag in `user_roles` migrieren (SQL-Skript)
+- [x] `users.role` weiterhin synchron halten (Haupt-Rolle = erste/primäre Rolle)

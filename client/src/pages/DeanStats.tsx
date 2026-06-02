@@ -68,7 +68,7 @@ function LoadBar({ current, max, name }: { current: number; max: number; name: s
 
 // ─── Hauptkomponente ─────────────────────────────────────────────────────────
 export default function DeanStats() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const { t, lang } = useLanguage();
   const STATUS_LABELS = lang === "en" ? { PENDING: "Pending", MATCHED: "Matched", ACCEPTED: "Accepted", REJECTED: "Rejected" } : STATUS_LABELS_DE;
   const { data: stats, isLoading } = trpc.dean.stats.useQuery(undefined, { enabled: !!user });
@@ -81,8 +81,7 @@ export default function DeanStats() {
     );
   }
 
-  const allowedRoles = ["dean", "vice_dean", "admin", "superadmin"];
-  if (!user || !allowedRoles.includes(user.role ?? "")) {
+  if (!user || (!hasRole("dean") && !hasRole("vice_dean") && !hasRole("admin") && !hasRole("superadmin"))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

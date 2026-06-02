@@ -43,15 +43,29 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    const userData = meQuery.data ?? null;
+    // Multi-Rollen: roles[] aus dem User-Objekt lesen (vom Backend mitgeliefert)
+    // Fallback: roles aus user.role ableiten (Legacy)
+    const roles: string[] = (userData as any)?.roles?.length
+      ? (userData as any).roles
+      : userData?.role && userData.role !== "user"
+        ? [userData.role]
+        : [];
+
+    // Hilfsfunktion: prüft ob der Nutzer eine bestimmte Rolle hat
+    const hasRole = (role: string): boolean => roles.includes(role);
+
     localStorage.setItem(
       "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
+      JSON.stringify(userData)
     );
     return {
-      user: meQuery.data ?? null,
+      user: userData,
+      roles,
+      hasRole,
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
+      isAuthenticated: Boolean(userData),
     };
   }, [
     meQuery.data,

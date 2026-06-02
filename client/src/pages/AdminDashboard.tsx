@@ -626,6 +626,22 @@ function UserManagement() {
     onError: (err) => toast.error(err.message),
   });
 
+  const addRole = trpc.admin.addUserRole.useMutation({
+    onSuccess: () => {
+      toast.success("Rolle hinzugefügt!");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const removeRole = trpc.admin.removeUserRole.useMutation({
+    onSuccess: () => {
+      toast.success("Rolle entfernt!");
+      utils.admin.users.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const roleLabels: Record<string, string> = {
     student: "Studierende:r",
     examiner: "Prüfer:in",
@@ -645,6 +661,7 @@ function UserManagement() {
   const studentRoles = ["student"];
   const query = searchQuery.trim().toLowerCase();
   const filteredUsers = users?.filter(({ user }) => {
+    // Multi-Rollen: Tab-Filter nutzt user.role (Legacy-Feld) als Haupt-Rolle
     const matchesTab = userTab === "examiners" ? examinerRoles.includes(user.role) : studentRoles.includes(user.role);
     if (!matchesTab) return false;
     if (!query) return true;
@@ -766,13 +783,50 @@ function UserManagement() {
                     <span className="text-sm text-gray-600">{user.email ?? "—"}</span>
                   </td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                      {roleLabels[user.role] ?? user.role}
-                    </span>
+                    {/* Multi-Rollen: alle Rollen als Badges anzeigen */}
+                    <div className="flex flex-wrap gap-1">
+                      {((user as any).roles?.length ? (user as any).roles : [user.role]).map((r: string) => (
+                        <span key={r} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                          {roleLabels[r] ?? r}
+                          {((user as any).roles?.length ?? 0) > 1 && (
+                            <button
+                              type="button"
+                              title={`Rolle "${roleLabels[r] ?? r}" entfernen`}
+                              onClick={() => removeRole.mutate({ userId: user.id, role: r as any })}
+                              className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors leading-none"
+                            >×</button>
+                          )}
+                        </span>
+                      ))}
+                      {/* Rolle hinzufügen */}
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const r = e.target.value;
+                          if (!r) return;
+                          const existingRoles: string[] = (user as any).roles?.length ? (user as any).roles : [user.role];
+                          if (existingRoles.includes(r)) { toast.error("Diese Rolle ist bereits zugewiesen."); return; }
+                          addRole.mutate({ userId: user.id, role: r as any });
+                        }}
+                        className="px-2 py-0.5 rounded-full text-xs border border-dashed border-gray-300 text-gray-400 bg-white focus:outline-none cursor-pointer hover:border-primary hover:text-primary transition-colors"
+                        title="Weitere Rolle hinzufügen"
+                      >
+                        <option value="">+ Rolle</option>
+                        <option value="student">Studierende:r</option>
+                        <option value="examiner">Prüfer:in</option>
+                        <option value="second_examiner">Zweitprüfer:in</option>
+                        <option value="pav">PA-Vorsitzende:r</option>
+                        <option value="dean">Dekan:in</option>
+                        <option value="vice_dean">Prodekan:in</option>
+                        <option value="admin">Admin</option>
+                        <option value="user">Nutzer:in</option>
+                      </select>
+                    </div>
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {user.role === "examiner" && (
+                      {/* Multi-Rollen: Onboarding-Reset nur wenn examiner in Rollen */}
+                      {((user as any).roles?.length ? (user as any).roles : [user.role]).includes("examiner") && (
                         <button
                           type="button"
                           title="Onboarding zurücksetzen (Prüfer:in wird beim nächsten Login erneut befragt)"
@@ -782,7 +836,7 @@ function UserManagement() {
                           Onboarding ↺
                         </button>
                       )}
-                      {user.role === "examiner" && (
+                      {((user as any).roles?.length ? (user as any).roles : [user.role]).includes("examiner") && (
                         <button
                           type="button"
                           title={(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "Zweitprüfer:in (klicken zum Deaktivieren)" : "Erstprüfer:in (klicken für Zweitprüfer:in)"}
@@ -796,30 +850,6 @@ function UserManagement() {
                           {(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "2º Prüfer:in" : "1º Prüfer:in"}
                         </button>
                       )}
-                      <select
-                        value={user.role}
-                        onChange={(e) => {
-                          const newRole = e.target.value;
-                          if (newRole === user.role) return;
-                          // Warnung nötig?
-                          const needsWarning = !!ROLE_CHANGE_WARNINGS[user.role]?.[newRole];
-                          if (needsWarning) {
-                            setPendingRoleChange({ userId: user.id, userName: user.name ?? user.email ?? "?", fromRole: user.role, toRole: newRole });
-                          } else {
-                            updateRole.mutate({ userId: user.id, role: newRole as "student" | "examiner" | "second_examiner" | "admin" | "user" | "pav" | "dean" | "vice_dean" });
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
-                      >
-                        <option value="user">Nutzer:in</option>
-                        <option value="student">Studierende:r</option>
-                        <option value="examiner">Prüfer:in (Erstprüfer:in)</option>
-                        <option value="second_examiner">Zweitprüfer:in</option>
-                        <option value="pav">PA-Vorsitzende:r</option>
-                        <option value="dean">Dekan:in</option>
-                        <option value="vice_dean">Prodekan:in</option>
-                        <option value="admin">Admin</option>
-                      </select>
                       <button
                         onClick={() => {
                           if (confirm(`Nutzer:in "${user.name}" wirklich löschen?`)) {
@@ -937,6 +967,7 @@ function Overview() {
   const rejected = requests?.filter((r) => r.status === "REJECTED").length ?? 0;
   const pendingRoleCount = (pendingRoles ?? []).filter(u => u.roleStatus === "pending").length;
   const totalUsers = users?.length ?? 0;
+  // Multi-Rollen: Nutzer zählen anhand user.role (Legacy-Feld, wird synchron gehalten)
   const studentCount = users?.filter(u => u.user.role === "student").length ?? 0;
   const examinerCount = users?.filter(u => u.user.role === "examiner").length ?? 0;
 
@@ -1257,11 +1288,11 @@ function StatisticsView() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
   
   // Zugriffskontrolle: Nur Admins und Superadmins
-  if (user && user.role !== "admin" && user.role !== "superadmin") {
+  if (user && !hasRole("admin") && !hasRole("superadmin")) {
     setLocation("/");
     return null;
   }

@@ -204,7 +204,7 @@ function RequestDetailSheet({
 
 // --- Main ---
 export default function DeanDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -246,8 +246,7 @@ export default function DeanDashboard() {
     );
   }
 
-  const allowedRoles = ["dean", "vice_dean", "admin", "superadmin"];
-  if (!user || !allowedRoles.includes(user.role ?? "")) {
+  if (!user || (!hasRole("dean") && !hasRole("vice_dean") && !hasRole("admin") && !hasRole("superadmin"))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -258,7 +257,7 @@ export default function DeanDashboard() {
     );
   }
 
-  const roleLabel = user.role === "dean" ? t.dean.dean : user.role === "vice_dean" ? t.dean.viceDean : "Admin";
+  const roleLabel = hasRole("dean") ? t.dean.dean : hasRole("vice_dean") ? t.dean.viceDean : "Admin";
 
   const filtered = (requests ?? []).filter(({ request, student }) => {
     const q = search.toLowerCase();

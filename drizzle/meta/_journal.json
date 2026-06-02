@@ -302,6 +302,20 @@
       "when": 1780340589875,
       "tag": "0042_magenta_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "5",
+      "when": 1780383467063,
+      "tag": "0043_thick_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1780383500297,
+      "tag": "0044_perfect_the_twelve",
+      "breakpoints": true
     }
   ]
 }

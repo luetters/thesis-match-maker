@@ -65,7 +65,7 @@ function LoadBar({ current, max, name }: { current: number; max: number; name: s
 
 // ─── Hauptkomponente ─────────────────────────────────────────────────────────
 export default function ReportingDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const { t, lang } = useLanguage();
   
   const [startDate, setStartDate] = useState(() => {
@@ -121,8 +121,7 @@ export default function ReportingDashboard() {
     );
   }
 
-  const allowedRoles = ["admin", "superadmin", "pav", "dean", "vice_dean"];
-  if (!user || !allowedRoles.includes(user.role ?? "")) {
+  if (!user || (!hasRole("admin") && !hasRole("superadmin") && !hasRole("pav") && !hasRole("dean") && !hasRole("vice_dean"))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

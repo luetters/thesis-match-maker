@@ -540,6 +540,8 @@ export default function ExaminerManagement() {
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
   const { data: user } = trpc.auth.me.useQuery();
+  const userRoles: string[] = (user as any)?.roles?.length ? (user as any).roles : (user?.role ? [user.role] : []);
+  const hasRole = (r: string) => userRoles.includes(r);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -554,7 +556,7 @@ export default function ExaminerManagement() {
   });
 
   // Redirect if not superadmin or admin
-  if (user && user.role !== "admin" && user.role !== "superadmin") {
+  if (user && !hasRole("admin") && !hasRole("superadmin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-6 text-center">

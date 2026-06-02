@@ -268,13 +268,12 @@ function LinkDisplay({
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [, navigate] = useLocation();
-  const { t, lang } = useLanguage();
   const p = t.myProfilePage;
 
   // Prüfer:innen werden direkt zum Dashboard-Profil-Tab weitergeleitet
-  if (user && (user.role === "examiner" || user.role === "second_examiner")) {
+  if (user && (hasRole("examiner") || hasRole("second_examiner"))) {
     navigate("/examiner/profile");
     return null;
   }

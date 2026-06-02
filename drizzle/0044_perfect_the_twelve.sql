@@ -1,0 +1,1 @@
+ALTER TABLE `user_roles` MODIFY COLUMN `assigned_at` timestamp NOT NULL DEFAULT (now());
