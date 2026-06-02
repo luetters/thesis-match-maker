@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM users WHERE Field LIKE '%lang%' OR Field LIKE '%Language%' OR Field LIKE '%language%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SHOW COLUMNS FROM users WHERE Field LIKE '%lang%' OR Field LIKE '%Language%' OR Field LIKE '%language%';",
+  "rows": [
+    {
+      "Field": "preferredLanguage",
+      "Type": "enum('de','en')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "de",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\npreferredLanguage\tenum('de','en')\tNO\t\tde\t\n",
+  "stderr": "",
+  "execution_time_ms": 259
+}

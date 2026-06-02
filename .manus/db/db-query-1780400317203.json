@@ -1,0 +1,31 @@
+{
+  "query": "SHOW TABLES LIKE '%programme%'; SHOW TABLES LIKE '%studiengang%'; SHOW TABLES LIKE '%program%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SHOW TABLES LIKE '%programme%'; SHOW TABLES LIKE '%studiengang%'; SHOW TABLES LIKE '%program%';",
+  "rows": [
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "examiner_programmes"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "pav_programmes"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "programmes"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%program%)"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "examiner_programmes"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "pav_programmes"
+    },
+    {
+      "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)": "programmes"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_S6SJ5g57xxsBDi3ueaEfs9 (%programme%)\nexaminer_programmes\npav_programmes\nprogrammes\nTables_in_S6SJ5g57xxsBDi3ueaEfs9 (%program%)\nexaminer_programmes\npav_programmes\nprogrammes\n",
+  "stderr": "",
+  "execution_time_ms": 423
+}

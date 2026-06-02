@@ -1,0 +1,30 @@
+{
+  "query": "SELECT ur.user_id, ur.role, u.name FROM user_roles ur JOIN users u ON u.id = ur.user_id WHERE u.role = 'student' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT ur.user_id, ur.role, u.name FROM user_roles ur JOIN users u ON u.id = ur.user_id WHERE u.role = 'student' LIMIT 5;",
+  "rows": [
+    {
+      "user_id": "210001",
+      "role": "student",
+      "name": "Team pangea labs"
+    },
+    {
+      "user_id": "270001",
+      "role": "student",
+      "name": "Holger Lütters"
+    },
+    {
+      "user_id": "690080",
+      "role": "student",
+      "name": "Max Mustermann (Student)"
+    },
+    {
+      "user_id": "1440001",
+      "role": "student",
+      "name": "luetters"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_id\trole\tname\n210001\tstudent\tTeam pangea labs\n270001\tstudent\tHolger Lütters\n690080\tstudent\tMax Mustermann (Student)\n1440001\tstudent\tluetters\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}
