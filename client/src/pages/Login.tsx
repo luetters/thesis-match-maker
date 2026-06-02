@@ -22,6 +22,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 
@@ -82,9 +83,14 @@ export default function Login() {
   const [step, setStep] = useState<"action" | "login" | "role" | "register">("action");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
+  // "Angemeldet bleiben" – E-Mail aus localStorage vorausfüllen
+  const REMEMBER_KEY = "tmm_remember_email";
+  const savedEmail = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) ?? "" : "";
+
   // Login-State
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState(savedEmail);
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(savedEmail !== "");
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | null>(null);
@@ -159,6 +165,12 @@ export default function Login() {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword) return;
     setLoginStatus(null);
+    // E-Mail bei Bedarf im localStorage speichern oder löschen
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_KEY, loginEmail.trim());
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
     loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
   }
 
@@ -435,6 +447,22 @@ export default function Login() {
                       {L.resetSent}
                     </div>
                   )}
+
+                  {/* Angemeldet bleiben */}
+                  <div className="flex items-center gap-2.5 py-1">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      className="border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      className="text-sm text-white/60 cursor-pointer select-none leading-none"
+                    >
+                      {L.rememberMe}
+                    </label>
+                  </div>
 
                   <Button
                     type="submit"

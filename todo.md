@@ -1028,3 +1028,6 @@
 - [x] Bug: Startseite – kein Hero-Bild rechts angezeigt
 - [x] Bug: Nach Login keine automatische Weiterleitung zur Dashboard-Seite (alle Rollen)
 - [x] Bug: Registrierungsseite – "HTW Berlin – University of Applied Sciences" doppelt am unteren Rand
+
+## Feature: Angemeldet bl- [x] Login.tsx: „Angemeldet bleiben“-Checkbox im Login-Formular ergänzenänzen
+- [x] localStorage: E-Mail bei aktivierter Checkbox speichern und beim nächsten Besuch voraus- [x] Übersetzungen: DE/EN für „Angemeldet bleiben“ in LanguageContext hinzufügenzufügen
