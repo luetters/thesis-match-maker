@@ -2724,6 +2724,36 @@ export const appRouter = router({
         if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Ablehnen." });
         return { success: true };
       }),
+
+    // Gewünschte Rolle eines wartenden Nutzers vor Freischaltung anpassen
+    updateRequestedRole: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        newRole: z.enum(["student", "examiner", "second_examiner", "admin", "pav", "dean", "vice_dean"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        const { getDb: getDbInner } = await import("./db");
+        const db = await getDbInner();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbankfehler." });
+        // Prüfen ob Nutzer tatsächlich pending ist
+        const rows = await db.execute(`SELECT id, roleStatus FROM users WHERE id = ${input.userId}`);
+        const user = (rows[0] as unknown as any[])[0];
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Nutzer nicht gefunden." });
+        if (user.roleStatus !== "pending") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Nur ausstehende Anfragen können geändert werden." });
+        }
+        await db.execute(`UPDATE users SET requestedRole = '${input.newRole}' WHERE id = ${input.userId}`);
+        // Audit-Log
+        const metaJson = JSON.stringify({ userId: input.userId, newRole: input.newRole }).replace(/'/g, "\\'");
+        await db.execute(
+          `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${ctx.user.id}, '${ctx.user.role}', 'REQUESTED_ROLE_CHANGED', '${input.newRole}', '${metaJson}', NOW())`
+        );
+        return { success: true };
+      }),
   }),
 
   // ─── E-Mail-Templates ─────────────────────────────────────────────────────────────────────────────────

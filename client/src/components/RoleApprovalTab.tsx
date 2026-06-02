@@ -1,21 +1,36 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Studierende:r",
-  examiner: "Prüfer:in",
+  examiner: "Prüfer:in (Erstprüfer:in)",
+  second_examiner: "Zweitprüfer:in",
   admin: "Verwaltung",
+  pav: "PA-Vorsitz",
+  dean: "Dekan:in",
+  vice_dean: "Prodekan:in",
   superadmin: "Superadmin",
   user: "Unbekannt",
 };
+
+const ALL_ASSIGNABLE_ROLES = [
+  "student",
+  "examiner",
+  "second_examiner",
+  "admin",
+  "pav",
+  "dean",
+  "vice_dean",
+] as const;
 
 type PendingUser = {
   id: number;
@@ -34,12 +49,25 @@ type RejectDialogState = {
   reason: string;
 };
 
+type EditRoleDialogState = {
+  open: boolean;
+  user: PendingUser | null;
+  selectedRole: string;
+};
+
 export default function RoleApprovalTab({ canApproveAll = false }: { canApproveAll?: boolean }) {
   const utils = trpc.useUtils();
+
   const [rejectDialog, setRejectDialog] = useState<RejectDialogState>({
     open: false,
     user: null,
     reason: "",
+  });
+
+  const [editRoleDialog, setEditRoleDialog] = useState<EditRoleDialogState>({
+    open: false,
+    user: null,
+    selectedRole: "",
   });
 
   const pendingQuery = trpc.roleApproval.getPending.useQuery(undefined, {
@@ -47,12 +75,12 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
   });
 
   const approveMutation = trpc.roleApproval.approve.useMutation({
-    onSuccess: async (_, vars) => {
+    onSuccess: async () => {
       await utils.roleApproval.getPending.invalidate();
-      toast.success("Rollenanfrage wurde bestätigt.");
+      toast.success("Nutzer:in wurde freigeschaltet.");
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler beim Bestätigen der Rollenanfrage.");
+      toast.error(err.message ?? "Fehler beim Freischalten.");
     },
   });
 
@@ -60,16 +88,25 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     onSuccess: async () => {
       await utils.roleApproval.getPending.invalidate();
       setRejectDialog({ open: false, user: null, reason: "" });
-      toast.success("Rollenanfrage wurde abgelehnt.");
+      toast.success("Registrierung wurde abgelehnt.");
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler beim Ablehnen der Rollenanfrage.");
+      toast.error(err.message ?? "Fehler beim Ablehnen.");
+    },
+  });
+
+  const updateRoleMutation = trpc.roleApproval.updateRequestedRole.useMutation({
+    onSuccess: async () => {
+      await utils.roleApproval.getPending.invalidate();
+      setEditRoleDialog({ open: false, user: null, selectedRole: "" });
+      toast.success("Gewünschte Rolle wurde angepasst.");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Fehler beim Anpassen der Rolle.");
     },
   });
 
   const pending = pendingQuery.data ?? [];
-
-  // Admin sieht alle ausstehenden Registrierungen
   const visiblePending = pending;
 
   const handleApprove = (userId: number) => {
@@ -85,6 +122,22 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     rejectMutation.mutate({
       userId: rejectDialog.user.id,
       reason: rejectDialog.reason || undefined,
+    });
+  };
+
+  const handleEditRoleOpen = (user: PendingUser) => {
+    setEditRoleDialog({
+      open: true,
+      user,
+      selectedRole: user.requestedRole ?? "student",
+    });
+  };
+
+  const handleEditRoleConfirm = () => {
+    if (!editRoleDialog.user || !editRoleDialog.selectedRole) return;
+    updateRoleMutation.mutate({
+      userId: editRoleDialog.user.id,
+      newRole: editRoleDialog.selectedRole as any,
     });
   };
 
@@ -121,7 +174,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <CheckCircle className="w-12 h-12 text-primary/60 mb-3" />
-            <p className="font-medium text-gray-700">Keine ausstehenden Rollenanfragen</p>
+            <p className="font-medium text-gray-700">Keine ausstehenden Registrierungen</p>
             <p className="text-sm text-gray-400 mt-1">Alle Anfragen wurden bearbeitet.</p>
           </CardContent>
         </Card>
@@ -132,9 +185,9 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         <div className="space-y-3">
           {visiblePending.map((user) => (
             <Card key={user.id} className="border border-amber-200 bg-amber-50/30">
-              <CardContent className="flex items-center gap-4 p-4">
+              <CardContent className="flex items-start gap-4 p-4">
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <User className="w-5 h-5 text-amber-600" />
                 </div>
 
@@ -150,12 +203,21 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                     </Badge>
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                    <span>
-                      Beantragt: <strong className="text-gray-700">{ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole}</strong>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      Gewünschte Rolle:
+                      <strong className="text-gray-700 ml-1">
+                        {ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–"}
+                      </strong>
+                      <button
+                        type="button"
+                        title="Rolle anpassen"
+                        onClick={() => handleEditRoleOpen(user)}
+                        className="ml-1 text-blue-500 hover:text-blue-700 transition-colors"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
                     </span>
-                    <span>·</span>
-                    <span>Anmeldung: {user.loginMethod ?? "–"}</span>
                     <span>·</span>
                     <span>
                       {new Date(user.createdAt).toLocaleDateString("de-DE", {
@@ -164,6 +226,12 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                         year: "numeric",
                       })}
                     </span>
+                    {user.loginMethod && (
+                      <>
+                        <span>·</span>
+                        <span>{user.loginMethod}</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -171,12 +239,12 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     size="sm"
-                    className="bg-[#76B900] hover:bg-[var(--primary)] text-white gap-1"
+                    className="bg-[#76B900] hover:bg-[#5a8c00] text-white gap-1"
                     onClick={() => handleApprove(user.id)}
                     disabled={approveMutation.isPending}
                   >
                     <CheckCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Bestätigen</span>
+                    <span className="hidden sm:inline">Freischalten</span>
                   </Button>
                   <Button
                     size="sm"
@@ -195,29 +263,81 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         </div>
       )}
 
-      {/* Hinweis: E-Mail-Benachrichtigung */}
+      {/* Hinweis */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
         <p>
           Bei jeder neuen Registrierung erhalten Sie automatisch eine E-Mail-Benachrichtigung.
-          Nach der Freischaltung wird die Person per E-Mail informiert und kann sich anmelden.
+          Die gewünschte Rolle kann vor der Freischaltung über das Stift-Symbol angepasst werden.
+          Nach der Freischaltung wird die Person per E-Mail informiert.
         </p>
       </div>
 
-      {/* Ablehnen-Dialog */}
+      {/* Rolle anpassen – Dialog */}
+      <Dialog
+        open={editRoleDialog.open}
+        onOpenChange={(open) => setEditRoleDialog((s) => ({ ...s, open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gewünschte Rolle anpassen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-gray-600">
+              Passen Sie die Rolle für{" "}
+              <strong>{editRoleDialog.user?.name ?? editRoleDialog.user?.email}</strong> vor der
+              endgültigen Freischaltung an.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-role-select">Neue Rolle</Label>
+              <Select
+                value={editRoleDialog.selectedRole}
+                onValueChange={(val) => setEditRoleDialog((s) => ({ ...s, selectedRole: val }))}
+              >
+                <SelectTrigger id="edit-role-select">
+                  <SelectValue placeholder="Rolle wählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_ASSIGNABLE_ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setEditRoleDialog({ open: false, user: null, selectedRole: "" })}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleEditRoleConfirm}
+              disabled={updateRoleMutation.isPending || !editRoleDialog.selectedRole}
+            >
+              Rolle speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ablehnen – Dialog */}
       <Dialog
         open={rejectDialog.open}
         onOpenChange={(open) => setRejectDialog((s) => ({ ...s, open }))}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rollenanfrage ablehnen</DialogTitle>
+            <DialogTitle>Registrierung ablehnen</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
-              Möchten Sie die Rollenanfrage von{" "}
-              <strong>{rejectDialog.user?.name ?? rejectDialog.user?.email}</strong> für die Rolle{" "}
-              <strong>{ROLE_LABELS[rejectDialog.user?.requestedRole ?? ""] ?? rejectDialog.user?.requestedRole}</strong> ablehnen?
+              Möchten Sie die Registrierung von{" "}
+              <strong>{rejectDialog.user?.name ?? rejectDialog.user?.email}</strong> ablehnen?
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="reject-reason">Begründung (optional)</Label>
