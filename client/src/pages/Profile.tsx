@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
 import { EmailTemplateEditor } from "@/components/EmailTemplateEditor";
 import { trpc } from "@/lib/trpc";
@@ -268,16 +268,18 @@ function LinkDisplay({
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, loading } = useAuth();
   const [, navigate] = useLocation();
+  const { t, lang } = useLanguage();
   const p = t.myProfilePage;
-
-  // Prüfer:innen werden direkt zum Dashboard-Profil-Tab weitergeleitet
-  if (user && (hasRole("examiner") || hasRole("second_examiner"))) {
-    navigate("/examiner/profile");
-    return null;
-  }
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Prüfer:innen werden nach Auth-Load zum Dashboard-Profil-Tab weitergeleitet
+  useEffect(() => {
+    if (!loading && user && (hasRole("examiner") || hasRole("second_examiner"))) {
+      navigate("/examiner/profile");
+    }
+  }, [loading, user, hasRole, navigate]);
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery(undefined, {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
