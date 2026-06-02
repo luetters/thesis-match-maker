@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center gap-3 mb-6">
           <img
-            src="/manus-storage/IconMaleMale_c7af7f10.webp"
+            src="/manus-storage/logo-icon_b7dba00c.webp"
             alt="Thesis Match Maker Logo"
             className="w-10 h-10 object-contain"
           />
@@ -295,11 +295,24 @@ function RoleCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const { t } = useLanguage();
   const [showLogin, setShowLogin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [, navigate] = useLocation();
+
+  // Auto-Redirect: Eingeloggte Nutzer:innen direkt zum Dashboard weiterleiten
+  useEffect(() => {
+    if (loading) return;
+    if (!isAuthenticated || !user) return;
+    const role = (user as any).role as string;
+    const roles: string[] = (user as any).roles ?? (role ? [role] : []);
+    const hasR = (r: string) => roles.includes(r);
+    if (hasR("superadmin")) navigate("/superadmin");
+    else if (hasR("admin") || hasR("pav") || hasR("dean") || hasR("vice_dean")) navigate("/admin");
+    else if (hasR("student")) navigate("/student");
+    else if (hasR("examiner") || hasR("second_examiner")) navigate("/examiner");
+  }, [isAuthenticated, loading, user, navigate]);
 
   const handleRoleNavigate = (path: string) => {
     setMobileMenuOpen(false);
@@ -320,7 +333,7 @@ export default function Home() {
             className="flex items-center gap-3 text-gray-900 hover:opacity-80 transition-opacity"
           >
             <img
-              src="/manus-storage/IconMaleMale_c7af7f10.webp"
+              src="/manus-storage/logo-icon_b7dba00c.webp"
               alt="Thesis Match Maker Logo"
               className="w-9 h-9 object-contain rounded-lg"
             />
@@ -500,7 +513,7 @@ export default function Home() {
               {/* HTW-Foto */}
               <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200 mb-4">
                 <img
-                  src="/manus-storage/htw-banner_493070b6.jpg"
+                  src="/manus-storage/htw-banner_7aece4c8.jpg"
                   alt="HTW Berlin Campus"
                   className="w-full h-48 object-cover"
                 />
@@ -569,21 +582,21 @@ export default function Home() {
               title={t.landing.roles.student}
               description={t.landing.roles.studentFeatures.join(", ")}
               features={[...t.landing.roles.studentFeatures]}
-              icon="/manus-storage/IconFemaleFemale_210f65cb.webp"
+              icon="/manus-storage/icon-female_612c1055.webp"
               onClick={() => handleRoleNavigate("/student")}
             />
             <RoleCard
               title={t.landing.roles.examiner}
               description={t.landing.roles.examinerFeatures.join(", ")}
               features={[...t.landing.roles.examinerFeatures]}
-              icon="/manus-storage/IconMaleMale_76ef2e5e.webp"
+              icon="/manus-storage/icon-male2_9e670c3a.webp"
               onClick={() => handleRoleNavigate("/examiner")}
             />
             <RoleCard
               title={t.landing.roles.admin}
               description={t.landing.roles.adminFeatures.join(", ")}
               features={[...t.landing.roles.adminFeatures]}
-              icon="/manus-storage/Iconallgender_aaebc30a.webp"
+              icon="/manus-storage/icon-allgender_64b60a63.webp"
               onClick={() => handleRoleNavigate("/admin")}
             />
           </div>
@@ -655,7 +668,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src="/manus-storage/IconFemaleFemale_210f65cb.webp"
+                  src="/manus-storage/icon-female_612c1055.webp"
                   alt="Thesis Match Maker Logo"
                   className="w-9 h-9 object-contain rounded-lg"
                 />

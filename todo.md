@@ -1021,3 +1021,10 @@
 - [x] Backend: profile.getAssignedExaminers tRPC-Prozedur (protectedProcedure)
 - [x] Frontend: Prüfer:innen-Übersicht-Karte auf Studenten-Profilseite (Name, Foto, Fachbereich, E-Mail, Telefon, Sprechstunden, Rolle)
 - [x] Frontend: Übersetzungen für Prüfer:innen-Übersicht (DE/EN)
+
+## Bugfix-Session: UI-Probleme
+
+- [x] Bug: Logo oben links in einigen Login-Seiten defekt (kaputte Bild-URL oder falscher Pfad)
+- [x] Bug: Startseite – kein Hero-Bild rechts angezeigt
+- [x] Bug: Nach Login keine automatische Weiterleitung zur Dashboard-Seite (alle Rollen)
+- [x] Bug: Registrierungsseite – "HTW Berlin – University of Applied Sciences" doppelt am unteren Rand

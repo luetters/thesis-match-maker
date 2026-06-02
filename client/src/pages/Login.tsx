@@ -327,7 +327,6 @@ export default function Login() {
                 </div>
               </button>
             </div>
-            <p className="text-center text-white/25 text-xs mt-8">{L.footer}</p>
           </div>
         )}
 
@@ -522,7 +521,6 @@ export default function Login() {
                 </button>
               ))}
             </div>
-            <p className="text-center text-white/25 text-xs mt-8">{L.footer}</p>
           </div>
         )}
 

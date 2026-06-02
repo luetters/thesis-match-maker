@@ -298,7 +298,7 @@ function Sidebar({
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
           <img
-            src="/manus-storage/IconMaleMale_cce44535.webp"
+            src="/manus-storage/logo-sidebar_8dd3989f.webp"
             alt="Thesis Match Maker Logo"
             className="w-8 h-8 object-contain flex-shrink-0"
           />

@@ -73,7 +73,7 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
     <div className="space-y-6">
       <div className="text-center space-y-3">
         <div className="w-20 h-20 mx-auto rounded-2xl bg-[#76B900]/10 flex items-center justify-center">
-          <img src="/manus-storage/IconFemaleFemale_210f65cb.webp" alt="HTW Berlin" className="w-14 h-14 object-contain" />
+          <img src="/manus-storage/icon-female_612c1055.webp" alt="HTW Berlin" className="w-14 h-14 object-contain" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Willkommen beim Thesis Match Maker</h2>
         <p className="text-gray-500 max-w-md mx-auto">
@@ -644,7 +644,7 @@ export default function ExaminerOnboarding() {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <img src="/manus-storage/IconFemaleFemale_210f65cb.webp" alt="HTW Berlin" className="w-8 h-8 object-contain" />
+            <img src="/manus-storage/icon-female_612c1055.webp" alt="HTW Berlin" className="w-8 h-8 object-contain" />
             <span className="text-sm font-bold text-[#76B900]">HTW Berlin · Thesis Match Maker</span>
           </div>
           <p className="text-xs text-gray-400">Prüfer:innen-Profil einrichten</p>
