@@ -489,6 +489,42 @@ export const appRouter = router({
           actorId: 0,
           metadata: { email: input.email, requestedRole: input.role },
         } as any);
+        // E-Mail an SuperAdmin(s) senden
+        try {
+          const { sendEmail } = await import("./emailHelper");
+          const { getSuperadminEmails } = await import("./db");
+          const superadminEmails = await getSuperadminEmails();
+          const roleLabels: Record<string, string> = {
+            student: "Studierende:r",
+            examiner: "Prüfer:in (Erstprüfer:in)",
+            second_examiner: "Zweitprüfer:in",
+            admin: "Verwaltung",
+          };
+          const roleLabel = roleLabels[input.role] ?? input.role;
+          const adminUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL ? "" : ""}/admin`;
+          for (const adminEmail of superadminEmails) {
+            await sendEmail({
+              to: adminEmail,
+              subject: `[HTW Berlin Thesis Match Maker] Neue Registrierung: ${input.name} (${roleLabel})`,
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+  <h2 style="color:#005B4F">Neue Registrierung wartet auf Freischaltung</h2>
+  <p>Eine neue Person hat sich registriert und wartet auf Ihre Freischaltung:</p>
+  <table style="border-collapse:collapse;width:100%">
+    <tr><td style="padding:8px;font-weight:bold">Name:</td><td style="padding:8px">${input.name}</td></tr>
+    <tr><td style="padding:8px;font-weight:bold">E-Mail:</td><td style="padding:8px">${input.email}</td></tr>
+    <tr><td style="padding:8px;font-weight:bold">Gewünschte Rolle:</td><td style="padding:8px">${roleLabel}</td></tr>
+  </table>
+  <p style="margin-top:24px">Bitte melden Sie sich im Admin-Dashboard an, um den Zugang freizuschalten oder abzulehnen.</p>
+  <p><a href="/admin" style="background:#005B4F;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block">Zum Admin-Dashboard</a></p>
+  <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb">
+  <p style="color:#6b7280;font-size:12px">HTW Berlin Thesis Match Maker &ndash; Automatische Benachrichtigung</p>
+</div>`,
+              text: `Neue Registrierung wartet auf Freischaltung\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\nBitte melden Sie sich im Admin-Dashboard an, um den Zugang freizuschalten.`,
+            });
+          }
+        } catch (emailErr) {
+          console.warn("[Register] SuperAdmin-E-Mail konnte nicht gesendet werden:", emailErr);
+        }
         return { success: true };
       }),
     loginWithPassword: publicProcedure
@@ -2653,7 +2689,8 @@ export const appRouter = router({
 
     // Alle ausstehenden Rollenanfragen abrufen (Admin + Superadmin)
     getPending: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+      const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+      if (!roles.includes("admin") && !roles.includes("superadmin")) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
       }
       return getPendingRoleUsers();
@@ -2663,7 +2700,8 @@ export const appRouter = router({
     approve: protectedProcedure
       .input(z.object({ userId: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
         const result = await approveUserRole(input.userId, ctx.user.id, ctx.user.role);
@@ -2678,7 +2716,8 @@ export const appRouter = router({
         reason: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
         const result = await rejectUserRole(input.userId, ctx.user.id, ctx.user.role, input.reason);

@@ -22,10 +22,10 @@ const IconSettings = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" st
 const IconStats = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
 const IconCalendar = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 
-function useNavItems() {
+function useNavItems(pendingCount = 0) {
   const { t } = useLanguage();
   return [
-    { href: "/admin/role-approvals", label: "Rollenanfragen", icon: Icons.users },
+    { href: "/admin/role-approvals", label: `Freischaltungen${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: Icons.users },
     { href: "/admin", label: t.admin.overview, icon: Icons.home },
     { href: "/admin/requests", label: t.admin.requests, icon: Icons.list },
     { href: "/admin/audit", label: t.admin.audit, icon: Icons.log },
@@ -1298,7 +1298,9 @@ export default function AdminDashboard() {
   }
   
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates">("overview");
-  const navItems = useNavItems();
+  const { data: pendingForNav } = trpc.roleApproval.getPending.useQuery(undefined, { refetchInterval: 60000 });
+  const pendingNavCount = (pendingForNav ?? []).length;
+  const navItems = useNavItems(pendingNavCount);
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
@@ -1313,7 +1315,7 @@ export default function AdminDashboard() {
     },
   }));
   const titles: Record<string, string> = {
-    role_approvals: "Rollenanfragen",
+    role_approvals: "Freischaltungen",
     overview: "Verwaltungs-Dashboard",
     requests: "Alle Anfragen",
     audit: "Audit-Log",
@@ -1324,7 +1326,7 @@ export default function AdminDashboard() {
   };
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
-      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={false} />}
+      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={true} />}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests />}
       {activeTab === "audit" && <AuditLogView />}

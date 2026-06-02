@@ -371,7 +371,7 @@
 - [ ] Magic-Link-Mechanismus aus Login.tsx und Home.tsx entfernen
 - [ ] Login-Seite: Nur E-Mail/Passwort-Login, Link zu /register
 - [ ] Home.tsx: Anmelden-Button → /login, Registrieren-Button → /register
-- [ ] Admin-Dashboard: Tab "Neue Registrierungen" mit Liste wartender Konten (roleStatus="pending")
+- [x] Admin-Dashboard: Tab "Neue Registrierungen" mit Liste wartender Konten (roleStatus="pending")
 - [ ] Admin: Freischalten-Button (setzt roleStatus="approved", isActive=true)
 - [ ] Admin: Ablehnen-Button mit Begründung (setzt roleStatus="rejected")
 - [ ] Wartende Nutzer:innen sehen nach Login eine Warteseite (PendingApproval)
@@ -946,3 +946,31 @@
 ### Migration / Datenkonsistenz
 - [x] Bestehende Nutzer: `users.role` → Eintrag in `user_roles` migrieren (SQL-Skript)
 - [x] `users.role` weiterhin synchron halten (Haupt-Rolle = erste/primäre Rolle)
+
+## Feature: Freischaltungs-Workflow für neue Nutzer ✅ KOMPLETT
+
+### DB-Schema
+- [x] `users.roleStatus` (approved/pending/rejected) – bereits vorhanden (boolean, default false) – Freischaltungsstatus
+- [x] Bestehende Nutzer: roleStatus = "approved" (rückwirkend freigeschaltet)
+- [x] Migration per `pnpm db:push` ausgeführt
+
+### Backend – Registrierung & Auth
+- [x] `register`: setzt `roleStatus = "pending"` für neue Nutzer
+- [x] `register`: sendet E-Mail an SuperAdmin(s) mit Freischaltungs-Link
+- [x] `loginWithPassword`: prüft `roleStatus`; wirft FORBIDDEN wenn nicht freigeschaltet
+- [x] `approveUser(userId, approvedBy)` – Nutzer freischalten
+- [x] `rejectUser(userId, rejectedBy, reason?)` – Nutzer ablehnen (optional)
+- [x] `getPendingUsers()` – alle nicht freigeschalteten Nutzer abrufen
+- [x] E-Mail an Nutzer nach Freischaltung (Benachrichtigung)
+
+### tRPC-Prozeduren
+- [x] `admin.getPendingUsers` (via roleApproval.getPending) – Liste wartender Nutzer
+- [x] `admin.approveUser` (via roleApproval.approve) – Nutzer freischalten
+- [x] `admin.rejectUser` (via roleApproval.reject) – Nutzer ablehnen
+
+### Frontend
+- [x] Login: Fehlermeldung „Ihr Konto wartet auf Freischaltung durch den Administrator"
+- [x] Registrierung: Hinweis „Ihre Anmeldung wurde eingereicht. Sie erhalten eine E-Mail nach der Freischaltung."
+- [x] Admin-Dashboard: Tab „Ausstehende Freischaltungen" mit Nutzer-Liste
+- [x] Admin-Dashboard: Freischalten- und Ablehnen-Buttons pro Nutzer
+- [x] Admin-Dashboard: Badge-Zähler für ausstehende Freischaltungen im Tab-Header

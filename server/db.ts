@@ -3025,6 +3025,25 @@ export function isSuperadmin(email: string): boolean {
 }
 
 /**
+ * Gibt alle SuperAdmin-E-Mail-Adressen zurück (für Benachrichtigungen)
+ */
+export async function getSuperadminEmails(): Promise<string[]> {
+  // Statische Liste aus SUPERADMIN_EMAILS
+  const staticEmails = [...SUPERADMIN_EMAILS];
+  // Zusätzlich: alle Nutzer mit Rolle 'superadmin' aus der DB
+  const db = await getDb();
+  if (!db) return staticEmails;
+  try {
+    const rows = await db.execute(`SELECT email FROM users WHERE role = 'superadmin' AND email IS NOT NULL`);
+    const dbEmails = (rows[0] as unknown as any[]).map((r: any) => r.email as string).filter(Boolean);
+    const all = Array.from(new Set([...staticEmails, ...dbEmails]));
+    return all;
+  } catch {
+    return staticEmails;
+  }
+}
+
+/**
  * Hole Superadmin-Status
  */
 export async function getSuperadminStatus(userId: number) {

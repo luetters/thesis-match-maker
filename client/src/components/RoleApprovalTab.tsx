@@ -69,10 +69,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
 
   const pending = pendingQuery.data ?? [];
 
-  // Für Admin-Rolle: nur Studierende anzeigen
-  const visiblePending = canApproveAll
-    ? pending
-    : pending.filter((u) => u.requestedRole === "student");
+  // Admin sieht alle ausstehenden Registrierungen
+  const visiblePending = pending;
 
   const handleApprove = (userId: number) => {
     approveMutation.mutate({ userId });
@@ -95,11 +93,9 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Rollenanfragen</h2>
+          <h2 className="text-xl font-bold text-gray-900">Freischaltung neuer Kolleg:innen</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            {canApproveAll
-              ? "Ausstehende Rollenanfragen aller Nutzer"
-              : "Ausstehende Rollenanfragen von Studierenden"}
+            Neue Registrierungen, die auf Freischaltung warten
           </p>
         </div>
         <Button
@@ -199,16 +195,14 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         </div>
       )}
 
-      {/* Hinweis für Admin (nur Studierende) */}
-      {!canApproveAll && (
-        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <p>
-            Als Verwaltung können Sie ausschließlich Rollenanfragen von Studierenden bestätigen oder ablehnen.
-            Anfragen für Prüfer:innen und weitere Verwaltungsmitglieder werden vom Superadmin bearbeitet.
-          </p>
-        </div>
-      )}
+      {/* Hinweis: E-Mail-Benachrichtigung */}
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        <p>
+          Bei jeder neuen Registrierung erhalten Sie automatisch eine E-Mail-Benachrichtigung.
+          Nach der Freischaltung wird die Person per E-Mail informiert und kann sich anmelden.
+        </p>
+      </div>
 
       {/* Ablehnen-Dialog */}
       <Dialog
