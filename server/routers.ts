@@ -881,7 +881,7 @@ export const appRouter = router({
             maxSecond: sc.adminOverride && sc.adminMaxSecond != null ? sc.adminMaxSecond : sc.maxSecond,
           }));
           // Aktive Betreuungslast aus DB
-          const { getDb } = await import("./_core/db");
+          const { getDb } = await import("./db");
           const dbInstance = await getDb();
           if (dbInstance) {
             const { thesisRequests: trTable } = await import("../drizzle/schema");

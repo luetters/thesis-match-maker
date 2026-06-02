@@ -746,36 +746,57 @@ export default function ExaminerProfile() {
             {/* Themengebiete & Forschung — prominente Karte */}
             <ResearchTopicsCard tags={allTags} researchFocus={profile?.researchFocus} />
 
-            {/* Anfrage stellen CTA (nur für Studierende) */}
-            {currentUser?.role === "student" && (
-              <div className="rounded-2xl overflow-hidden border border-primary/20" style={{ background: "linear-gradient(135deg, #F1F8E9 0%, #E8F5D0 100%)" }}>
-                <div className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#76B900" }}>
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 mb-1">{E.supervisionRequest}</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        {E.supervisionRequestDesc.replace("{name}", `${profile?.academicTitle ? `${profile.academicTitle} ` : ""}${user.name}`)}
-                      </p>
-                      <Link
-                        href="/student"
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 shadow-sm"
-                        style={{ backgroundColor: "#76B900" }}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            {/* Anfrage stellen CTA */}
+            {(() => {
+              const examinerName = `${profile?.academicTitle ? `${profile.academicTitle} ` : ""}${user.name}`;
+              const requestUrl = `/student/new?examiner=${userId}`;
+              const isExaminerRole = currentUser?.role === "examiner" || currentUser?.role === "second_examiner";
+              // Prüfer:innen sehen keinen CTA
+              if (isOwnProfile || isExaminerRole) return null;
+              return (
+                <div className="rounded-2xl overflow-hidden border border-primary/20" style={{ background: "linear-gradient(135deg, #F1F8E9 0%, #E8F5D0 100%)" }}>
+                  <div className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#76B900" }}>
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        {E.submitRequest}
-                      </Link>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-bold text-gray-900 mb-1">{E.supervisionRequest}</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          {E.supervisionRequestDesc.replace("{name}", examinerName)}
+                        </p>
+                        {currentUser?.role === "student" ? (
+                          <Link
+                            href={requestUrl}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 shadow-sm"
+                            style={{ backgroundColor: "#76B900" }}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            {E.submitRequest}
+                          </Link>
+                        ) : (
+                          // Nicht eingeloggt oder andere Rolle → Login mit returnTo
+                          <Link
+                            href={`/login?returnTo=${encodeURIComponent(requestUrl)}`}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 shadow-sm"
+                            style={{ backgroundColor: "#76B900" }}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            {E.loginBtn}
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {!profile?.bio && allTags.length === 0 && !profile?.researchFocus && !isOwnProfile && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">

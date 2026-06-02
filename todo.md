@@ -852,6 +852,13 @@
 - [x] Registrierungsformular: Studiengang-Auswahl (Abschlussart + Fachbereich + Studiengang) bei Registrierung als Studierende:r
 - [x] Backend: register-Prozedur nimmt programmeId entgegen und setzt programme_id direkt bei Registrierung
 
+## Feature: CTA-Button auf Prüfer:innen-Profil für Betreuungsanfrage
+- [ ] ExaminerProfile: Button "Betreuungsanfrage stellen" verlinkt auf /student/new?examiner=<userId>
+- [ ] ExaminerProfile: Nicht eingeloggte Besucher werden zu /login?returnTo=... weitergeleitet
+- [ ] ExaminerProfile: Button nur für Studierende sichtbar (role=student), für andere Rollen ausgeblendet
+- [ ] StudentDashboard: URL-Parameter ?examiner=<id> lesen und wantedExaminerId vorausfüllen
+- [ ] StudentDashboard: Tab "new" automatisch aktivieren wenn ?examiner-Parameter vorhanden
+
 ## Feature: Öffentliche Profilansicht Prüfer:innen optimieren
 - [x] Backend: getPublicProfile gibt Semesterkapazitäten zurück (mit Admin-Override-Logik)
 - [x] Backend: getPublicProfile gibt aktuelle Betreuungslast (activeFirstCount, activeSecondCount) zurück

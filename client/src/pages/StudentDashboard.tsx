@@ -78,7 +78,7 @@ function getNextSemesters(): { label: string; value: string }[] {
 
 const DRAFT_KEY = "htw-thesis-request-draft";
 
-function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
+function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () => void; preselectExaminerId?: number }) {
   const { t } = useLanguage();
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
@@ -103,7 +103,7 @@ function NewRequestForm({ onSuccess }: { onSuccess: () => void }) {
     targetSemester: "",
     language: "de" as "de" | "en",
     degreeType: "bachelor" as "bachelor" | "master",
-    wantedExaminerId: 0,
+    wantedExaminerId: preselectExaminerId,
   });
 
   // Zweitgutachter-Kandidaten gefiltert nach Erstgutachter-Präferenzen
@@ -1383,16 +1383,22 @@ function StatusHistory() {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
   const [location] = useLocation();
+  // URL-Parameter ?examiner=<id> auslesen (von Prüfer:innen-Profil-Button)
+  const preselectExaminerId = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return parseInt(params.get("examiner") ?? "0", 10) || 0;
+    } catch { return 0; }
+  })();
   const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history">(
-    location === "/student/new" ? "new" :
+    location.startsWith("/student/new") || preselectExaminerId > 0 ? "new" :
     location === "/student/examiners" ? "examiners" :
     location === "/student/colloquiums" ? "colloquiums" :
     location === "/student/history" ? "history" : "requests"
   );
-
   const utils = trpc.useUtils();
 
   const navItems = useNavItems();
