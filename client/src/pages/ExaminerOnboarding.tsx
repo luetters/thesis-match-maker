@@ -29,6 +29,14 @@ type Step = 1 | 2 | 3 | 4 | 5;
 
 const LANGUAGE_OPTIONS = ["Deutsch", "Englisch", "Französisch", "Spanisch", "Arabisch", "Türkisch", "Russisch", "Chinesisch", "Japanisch"];
 
+const DEPARTMENT_OPTIONS = [
+  { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
+  { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+  { value: "FB3", label: "FB 3 – Wirtschaftswissenschaften" },
+  { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+  { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
+];
+
 // ─── Fortschrittsleiste ───────────────────────────────────────────────────────
 function StepBar({ current, steps }: { current: Step; steps: { id: number; label: string }[] }) {
   return (
@@ -104,11 +112,7 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
 interface ProfileData {
   title: string;
   department: string;
-  bio: string;
-  researchFocus: string;
-  officeHours: string;
   websiteUrl: string;
-  phone: string;
   languages: string[];
 }
 
@@ -134,11 +138,11 @@ function Step2Profile({
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-bold text-gray-900">Profildaten</h2>
-        <p className="text-sm text-gray-500 mt-1">Diese Informationen sind für Studierende sichtbar.</p>
+        <p className="text-sm text-gray-500 mt-1">Diese Informationen sind für Studierende sichtbar. Weitere Details können Sie später in Ihrem Profil ergänzen.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Akademischer Titel</label>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Akademischer Titel <span className="text-gray-400 font-normal">(optional)</span></label>
           <input
             type="text"
             value={data.title}
@@ -148,60 +152,21 @@ function Step2Profile({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Fachbereich / Abteilung</label>
-          <input
-            type="text"
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Fachbereich</label>
+          <select
             value={data.department}
             onChange={(e) => onChange({ department: e.target.value })}
-            placeholder="z.B. Fachbereich 3 – Wirtschaft"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
-          />
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 bg-white"
+          >
+            <option value="">Bitte wählen…</option>
+            {DEPARTMENT_OPTIONS.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </select>
         </div>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Kurzbiografie <span className="text-gray-400 font-normal">(optional)</span></label>
-        <textarea
-          value={data.bio}
-          onChange={(e) => onChange({ bio: e.target.value })}
-          rows={3}
-          placeholder="Kurze Beschreibung Ihrer Tätigkeit und Expertise…"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 resize-none"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Forschungsschwerpunkte <span className="text-gray-400 font-normal">(optional)</span></label>
-        <input
-          type="text"
-          value={data.researchFocus}
-          onChange={(e) => onChange({ researchFocus: e.target.value })}
-          placeholder="z.B. Controlling, Unternehmensführung, Digitalisierung"
-          className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
-        />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Sprechstunden <span className="text-gray-400 font-normal">(optional)</span></label>
-          <input
-            type="text"
-            value={data.officeHours}
-            onChange={(e) => onChange({ officeHours: e.target.value })}
-            placeholder="z.B. Di 14–16 Uhr, Raum C 123"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Telefon <span className="text-gray-400 font-normal">(optional)</span></label>
-          <input
-            type="tel"
-            value={data.phone}
-            onChange={(e) => onChange({ phone: e.target.value })}
-            placeholder="z.B. +49 30 5019-XXXX"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-2">Betreuungssprachen</label>
+        <label className="block text-xs font-semibold text-gray-600 mb-2">Mögliche Betreuungssprachen</label>
         <div className="flex flex-wrap gap-2">
           {LANGUAGE_OPTIONS.map((lang) => (
             <button
@@ -215,6 +180,7 @@ function Step2Profile({
             </button>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-1.5">Wählen Sie alle Sprachen, in denen Sie Abschlussarbeiten betreuen können.</p>
       </div>
       <div className="flex gap-3 pt-2">
         <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
@@ -592,11 +558,7 @@ export default function ExaminerOnboarding() {
   const [profile, setProfile] = useState<ProfileData>({
     title: "",
     department: "",
-    bio: "",
-    researchFocus: "",
-    officeHours: "",
     websiteUrl: "",
-    phone: "",
     languages: ["Deutsch"],
   });
   const [programmeIds, setProgrammeIds] = useState<number[]>([]);
@@ -620,7 +582,10 @@ export default function ExaminerOnboarding() {
       return;
     }
     completeOnboarding.mutate({
-      ...profile,
+      title: profile.title,
+      department: profile.department,
+      websiteUrl: profile.websiteUrl,
+      languages: profile.languages,
       programmeIds,
       maxSupervisions,
       isSecondExaminer,

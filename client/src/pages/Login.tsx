@@ -678,6 +678,9 @@ export default function Login() {
                           className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
                         />
                       </div>
+                      {(selectedRole === "examiner" || selectedRole === "second_examiner") && (
+                        <p className="text-xs text-white/40 mt-1">just your full name without academic titles</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">{L.emailLabel}</Label>

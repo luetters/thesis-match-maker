@@ -982,3 +982,12 @@
 - [x] Frontend: Sprach-Präferenz in Ansicht anzeigen (Flagge + Label)
 - [x] Frontend: preferredLanguage wird beim Speichern an Backend übermittelt
 - [x] Frontend: Telefonnummer in Ansicht mit Klick-to-call verbessert (tel:-Link)
+
+## Feature: Prüfer:innen-Onboarding Vereinfachung
+- [x] Login.tsx: Name-Feld Hilfetext auf Englisch ("just your full name without academic titles")
+- [x] ExaminerOnboarding.tsx: Fachbereich als Dropdown (FB1–FB5 mit vollem Namen)
+- [x] ExaminerOnboarding.tsx: Kurzbiografie entfernen
+- [x] ExaminerOnboarding.tsx: Forschungsschwerpunkte entfernen
+- [x] ExaminerOnboarding.tsx: Sprechstunden entfernen
+- [x] ExaminerOnboarding.tsx: Telefon entfernen
+- [x] ExaminerOnboarding.tsx: "Betreuungssprachen" → "Mögliche Betreuungssprachen"
