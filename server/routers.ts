@@ -868,6 +868,35 @@ export const appRouter = router({
           }
         }
         const examinerProfile = isExaminerRole ? await getExaminerProfileByUserId(input.userId) : null;
+        // Semesterkapazitäten und aktive Betreuungslast für Prüfer:innen
+        let semesterCapacities: Array<{ semester: string; maxFirst: number; maxSecond: number }> = [];
+        let activeFirstCount = 0;
+        let activeSecondCount = 0;
+        if (isExaminerRole) {
+          const { getSemesterCapacities: getSC } = await import("./db");
+          const caps = await getSC(input.userId);
+          semesterCapacities = caps.map((sc) => ({
+            semester: sc.semester,
+            maxFirst: sc.adminOverride && sc.adminMaxFirst != null ? sc.adminMaxFirst : sc.maxFirst,
+            maxSecond: sc.adminOverride && sc.adminMaxSecond != null ? sc.adminMaxSecond : sc.maxSecond,
+          }));
+          // Aktive Betreuungslast aus DB
+          const { getDb } = await import("./_core/db");
+          const dbInstance = await getDb();
+          if (dbInstance) {
+            const { thesisRequests: trTable } = await import("../drizzle/schema");
+            const { inArray } = await import("drizzle-orm");
+            const activeStatuses = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED", "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED"];
+            const activeReqs = await dbInstance
+              .select({ examinerId: trTable.examinerId, secondExaminerId: trTable.secondExaminerId })
+              .from(trTable)
+              .where(inArray(trTable.status, activeStatuses));
+            for (const r of activeReqs) {
+              if (r.examinerId === input.userId) activeFirstCount++;
+              if (r.secondExaminerId === input.userId) activeSecondCount++;
+            }
+          }
+        }
         // Nur öffentliche Felder zurückgeben
         return {
           id: user.id,
@@ -892,6 +921,10 @@ export const appRouter = router({
           researchTags: examinerProfile?.tags ? (Array.isArray(examinerProfile.tags) ? (examinerProfile.tags as string[]).join(", ") : String(examinerProfile.tags)) : null,
           photoUrl: examinerProfile?.photoUrl ?? null,
           websiteUrl: examinerProfile?.websiteUrl ?? null,
+          // Kapazitäten
+          semesterCapacities,
+          activeFirstCount,
+          activeSecondCount,
         };
       }),
     // Prüfer: Erweiterte Profil-Felder aktualisieren

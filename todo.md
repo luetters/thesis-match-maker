@@ -852,6 +852,15 @@
 - [x] Registrierungsformular: Studiengang-Auswahl (Abschlussart + Fachbereich + Studiengang) bei Registrierung als Studierende:r
 - [x] Backend: register-Prozedur nimmt programmeId entgegen und setzt programme_id direkt bei Registrierung
 
+## Feature: Öffentliche Profilansicht Prüfer:innen optimieren
+- [x] Backend: getPublicProfile gibt Semesterkapazitäten zurück (mit Admin-Override-Logik)
+- [x] Backend: getPublicProfile gibt aktuelle Betreuungslast (activeFirstCount, activeSecondCount) zurück
+- [x] Frontend: Kapazitäts-Widget mit Fortschrittsbalken (frei/belegt, Erst-/Zweitprüfung)
+- [x] Frontend: Themengebiete als farbige Tags mit Icon-Karte
+- [x] Frontend: Verbesserte visuelle Hierarchie (Kapazität links prominent, Bio+Themen rechts)
+- [x] Frontend: Betreuungssprachen, Sprechzeiten und Studiengänge ansprechend dargestellt
+- [x] Frontend: HTW-Berlin-Banner-Header, Profil-Hero mit Farbverlauf
+
 ## Feature: Profil-Menüpunkt für Prüfer:innen konsolidieren
 - [x] ThesisDashboardLayout: Sidebar-Link "Mein Profil" für Prüfer:innen ausgeblendet (role examiner/second_examiner)
 - [x] ThesisDashboardLayout: Header-Dropdown-Profil-Link für Prüfer:innen leitet auf /examiner/profile um
