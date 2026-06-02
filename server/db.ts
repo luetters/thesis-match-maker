@@ -3469,9 +3469,27 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     );
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung" };
+      const roleLabels: Record<string, string> = {
+        student: "Studierende:r",
+        examiner: "Prüfer:in (Erstprüfer:in)",
+        second_examiner: "Zweitprüfer:in",
+        admin: "Verwaltung",
+        pav: "PA-Vorsitz",
+        dean: "Dekan:in",
+        vice_dean: "Prodekan:in",
+        superadmin: "Superadmin",
+      };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
-      const dashboardLinks: Record<string, string> = { student: "/student", examiner: "/examiner", second_examiner: "/examiner", admin: "/admin" };
+      const dashboardLinks: Record<string, string> = {
+        student: "/student",
+        examiner: "/examiner",
+        second_examiner: "/examiner",
+        admin: "/admin",
+        pav: "/admin",
+        dean: "/admin",
+        vice_dean: "/admin",
+        superadmin: "/admin",
+      };
       const dashboardLink = dashboardLinks[requestedRole] ?? "/";
       try {
         const template = await getEmailTemplateByKey("role_approved");

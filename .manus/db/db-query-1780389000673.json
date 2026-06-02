@@ -1,0 +1,20 @@
+{
+  "query": "SELECT `key`, subject, SUBSTRING(html_body, 1, 100) AS htmlPreview FROM email_templates WHERE `key` IN ('role_approved', 'role_rejected');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT `key`, subject, SUBSTRING(html_body, 1, 100) AS htmlPreview FROM email_templates WHERE `key` IN ('role_approved', 'role_rejected');",
+  "rows": [
+    {
+      "key": "role_approved",
+      "subject": "Ihre Rolle wurde bestätigt – HTW Berlin Thesis Match Maker",
+      "htmlPreview": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\"><div style=\"background:#0069"
+    },
+    {
+      "key": "role_rejected",
+      "subject": "Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker",
+      "htmlPreview": "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\"><div style=\"background:#0069"
+    }
+  ],
+  "messages": [],
+  "stdout": "key\tsubject\thtmlPreview\nrole_approved\tIhre Rolle wurde bestätigt – HTW Berlin Thesis Match Maker\t<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\"><div style=\"background:#0069\nrole_rejected\tIhre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker\t<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\"><div style=\"background:#0069\n",
+  "stderr": "",
+  "execution_time_ms": 270
+}
