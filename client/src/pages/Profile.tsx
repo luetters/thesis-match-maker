@@ -281,6 +281,13 @@ export default function Profile() {
       navigate("/examiner/profile");
     }
   }, [loading, user, hasRole, navigate]);
+  // Zugewiesene Prüfer:innen (nur für Studierende)
+  const { data: assignedExaminers, isLoading: isLoadingExaminers } = trpc.profile.getAssignedExaminers.useQuery(undefined, {
+    enabled: !!user && !loading,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const { data: profile, isLoading, refetch } = trpc.profile.get.useQuery(undefined, {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
@@ -862,6 +869,176 @@ export default function Profile() {
             )}
           </div>
         </div>
+
+        {/* ── Zugewiesene Prüfer:innen (nur Studierende) ── */}
+        {isStudent && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#16a34a" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span style={{ color: "#16a34a" }}>{p.sectionAssignedExaminers}</span>
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">{p.assignedExaminersDesc}</p>
+            {isLoadingExaminers ? (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                {p.assignedExaminersLoading}
+              </div>
+            ) : !assignedExaminers || assignedExaminers.length === 0 ? (
+              <div className="flex items-center gap-3 py-4 px-4 rounded-xl bg-gray-50 border border-gray-100">
+                <svg className="w-8 h-8 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-sm text-gray-400 italic">{p.assignedExaminersNone}</p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {assignedExaminers.map((group) => (
+                  <div key={group.thesisId}>
+                    {/* Thesis-Titel als Gruppenüberschrift wenn mehrere Anfragen */}
+                    {assignedExaminers.length > 1 && (
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        {p.examinerThesisTitle}: {group.thesisTitle}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {group.examiners.map((examiner) => (
+                        <div
+                          key={`${group.thesisId}-${examiner.id}`}
+                          className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                        >
+                          {/* Farbiger Kopfstreifen je nach Rolle */}
+                          <div
+                            className="h-2 w-full"
+                            style={{ background: examiner.role === "first" ? "#16a34a" : "#0891b2" }}
+                          />
+                          <div className="p-4">
+                            {/* Avatar + Name + Rolle */}
+                            <div className="flex items-start gap-3 mb-4">
+                              <div
+                                className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border-2 border-white shadow"
+                                style={{ background: examiner.role === "first" ? "#f0fdf4" : "#ecfeff" }}
+                              >
+                                {examiner.avatarUrl ? (
+                                  <img src={examiner.avatarUrl} alt={examiner.name ?? ""} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span
+                                    className="text-base font-bold"
+                                    style={{ color: examiner.role === "first" ? "#16a34a" : "#0891b2" }}
+                                  >
+                                    {examiner.name
+                                      ? examiner.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+                                      : "?"}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {examiner.academicTitle ? `${examiner.academicTitle} ` : ""}{examiner.name ?? "—"}
+                                </p>
+                                <span
+                                  className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{
+                                    background: examiner.role === "first" ? "#f0fdf4" : "#ecfeff",
+                                    color: examiner.role === "first" ? "#16a34a" : "#0891b2",
+                                    border: `1px solid ${examiner.role === "first" ? "#86efac" : "#67e8f9"}`,
+                                  }}
+                                >
+                                  {examiner.role === "first" ? p.examinerRoleFirst : p.examinerRoleSecond}
+                                </span>
+                                {examiner.department && (
+                                  <p className="text-xs text-gray-400 mt-1 truncate">{examiner.department}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Kontaktdaten */}
+                            <div className="space-y-2">
+                              {examiner.email && (
+                                <a
+                                  href={`mailto:${examiner.email}`}
+                                  className="flex items-center gap-2 text-xs text-gray-600 hover:text-[#76b900] transition-colors group"
+                                >
+                                  <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                  </span>
+                                  <span className="truncate group-hover:underline">{examiner.email}</span>
+                                </a>
+                              )}
+                              {examiner.phone && (
+                                <a
+                                  href={`tel:${examiner.phone}`}
+                                  className="flex items-center gap-2 text-xs text-gray-600 hover:text-[#76b900] transition-colors group"
+                                >
+                                  <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#76b900] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                  </span>
+                                  <span className="truncate group-hover:underline">{examiner.phone}</span>
+                                </a>
+                              )}
+                              {examiner.officeHours && (
+                                <div className="flex items-start gap-2 text-xs text-gray-600">
+                                  <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center mt-0.5">
+                                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </span>
+                                  <div>
+                                    <span className="font-medium text-gray-500 block">{p.examinerContactOfficeHours}</span>
+                                    <span className="text-gray-700">{examiner.officeHours}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {examiner.officeRoom && (
+                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                  <span className="flex-shrink-0 w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                  </span>
+                                  <span>{p.examinerContactOfficeRoom}: {examiner.officeRoom}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Aktions-Links */}
+                            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
+                              {examiner.bookingUrl && (
+                                <a
+                                  href={examiner.bookingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
+                                  style={{ background: "#7c3aed" }}
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                  {p.examinerContactBooking}
+                                </a>
+                              )}
+                              <Link
+                                href={`/profile/${examiner.id}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:border-[#76b900] hover:text-[#76b900] transition-colors"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                {p.examinerContactViewProfile}
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Studierende ── */}
         {isStudent && (

@@ -149,6 +149,7 @@ import {
   addUserRole,
   removeUserRole,
   AppRole,
+  getAssignedExaminers,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -311,6 +312,10 @@ const profileRouterDef = router({
       }
       return { success: true };
     }),
+  getAssignedExaminers: protectedProcedure.query(async ({ ctx }) => {
+    return getAssignedExaminers(ctx.user.id);
+  }),
+
   deleteAvatar: protectedProcedure
     .mutation(async ({ ctx }) => {
       const ok = await clearProfileAvatar(ctx.user.id);

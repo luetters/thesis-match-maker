@@ -1014,3 +1014,10 @@
 - [ ] Frontend: Profilseite – Primärfachbereich-Dropdown + Multi-Fachbereich-Auswahl im Bearbeitungsmodus
 - [ ] Frontend: Profilseite – Alle erlaubten Fachbereiche in der Ansicht als Badges anzeigen
 - [ ] Frontend: Prüfer:innen-Verzeichnis – Filterung nach erlaubten Fachbereichen
+
+## Feature: Zugewiesene Prüfer:innen auf Studenten-Profilseite
+
+- [x] Backend: getAssignedExaminers(studentId) DB-Funktion – JOIN thesis_requests + users + examiner_profiles
+- [x] Backend: profile.getAssignedExaminers tRPC-Prozedur (protectedProcedure)
+- [x] Frontend: Prüfer:innen-Übersicht-Karte auf Studenten-Profilseite (Name, Foto, Fachbereich, E-Mail, Telefon, Sprechstunden, Rolle)
+- [x] Frontend: Übersetzungen für Prüfer:innen-Übersicht (DE/EN)

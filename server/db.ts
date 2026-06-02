@@ -4537,3 +4537,160 @@ export async function setExaminerDepartments(
     .set({ department: primaryDepartment })
     .where(eq(examinerProfiles.userId, userId));
 }
+
+// --- Zugewiesene Prüfer:innen für Studierende ------------------------------------
+
+/**
+ * Gibt die zugewiesenen Prüfer:innen (Erst- und Zweitprüfer:in) für einen Studierenden zurück.
+ * Liefert Kontaktinformationen und Sprechstunden aus users + examiner_profiles.
+ */
+export async function getAssignedExaminers(studentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Neueste Thesis-Anfrage mit zugewiesenem Erst- und/oder Zweitprüfer laden
+  const requests = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      status: thesisRequests.status,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+    })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.studentId, studentId),
+        or(
+          sql`${thesisRequests.examinerId} IS NOT NULL`,
+          sql`${thesisRequests.secondExaminerId} IS NOT NULL`
+        )
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt))
+    .limit(5);
+
+  if (requests.length === 0) return [];
+
+  // Alle relevanten Prüfer:innen-IDs sammeln
+  const examinerIds = new Set<number>();
+  for (const req of requests) {
+    if (req.examinerId) examinerIds.add(req.examinerId);
+    if (req.secondExaminerId) examinerIds.add(req.secondExaminerId);
+  }
+  if (examinerIds.size === 0) return [];
+
+  const ids = Array.from(examinerIds);
+
+  // Nutzer-Daten laden
+  const examinerUsers = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatarUrl: users.avatarUrl,
+      phone: users.phone,
+      department: users.department,
+      academicTitle: users.academicTitle,
+      officeRoom: users.officeRoom,
+      officeHours: users.officeHours,
+      website: users.website,
+      bookingUrl: users.bookingUrl,
+    })
+    .from(users)
+    .where(inArray(users.id, ids));
+
+  // Prüfer:innen-Profil-Daten laden (officeHours, photoUrl, alternativeEmail)
+  const examinerProfileRows = await db
+    .select({
+      userId: examinerProfiles.userId,
+      photoUrl: examinerProfiles.photoUrl,
+      officeHours: examinerProfiles.officeHours,
+      phone: examinerProfiles.phone,
+      alternativeEmail: examinerProfiles.alternativeEmail,
+      department: examinerProfiles.department,
+    })
+    .from(examinerProfiles)
+    .where(inArray(examinerProfiles.userId, ids));
+
+  const profileMap = new Map(examinerProfileRows.map((p) => [p.userId, p]));
+  const userMap = new Map(examinerUsers.map((u) => [u.id, u]));
+
+  // Ergebnis aufbauen: pro Thesis-Anfrage Erst- und Zweitprüfer:in
+  const result: Array<{
+    thesisId: number;
+    thesisTitle: string;
+    thesisStatus: string;
+    examiners: Array<{
+      id: number;
+      role: "first" | "second";
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      avatarUrl: string | null;
+      department: string | null;
+      academicTitle: string | null;
+      officeRoom: string | null;
+      officeHours: string | null;
+      website: string | null;
+      bookingUrl: string | null;
+    }>;
+  }> = [];
+
+  for (const req of requests) {
+    const examiners: typeof result[0]["examiners"] = [];
+
+    if (req.examinerId) {
+      const u = userMap.get(req.examinerId);
+      const ep = profileMap.get(req.examinerId);
+      if (u) {
+        examiners.push({
+          id: u.id,
+          role: "first",
+          name: u.name ?? null,
+          email: ep?.alternativeEmail ?? u.email ?? null,
+          phone: ep?.phone ?? u.phone ?? null,
+          avatarUrl: ep?.photoUrl ?? u.avatarUrl ?? null,
+          department: ep?.department ?? u.department ?? null,
+          academicTitle: u.academicTitle ?? null,
+          officeRoom: u.officeRoom ?? null,
+          officeHours: ep?.officeHours ?? u.officeHours ?? null,
+          website: u.website ?? null,
+          bookingUrl: u.bookingUrl ?? null,
+        });
+      }
+    }
+
+    if (req.secondExaminerId) {
+      const u = userMap.get(req.secondExaminerId);
+      const ep = profileMap.get(req.secondExaminerId);
+      if (u) {
+        examiners.push({
+          id: u.id,
+          role: "second",
+          name: u.name ?? null,
+          email: ep?.alternativeEmail ?? u.email ?? null,
+          phone: ep?.phone ?? u.phone ?? null,
+          avatarUrl: ep?.photoUrl ?? u.avatarUrl ?? null,
+          department: ep?.department ?? u.department ?? null,
+          academicTitle: u.academicTitle ?? null,
+          officeRoom: u.officeRoom ?? null,
+          officeHours: ep?.officeHours ?? u.officeHours ?? null,
+          website: u.website ?? null,
+          bookingUrl: u.bookingUrl ?? null,
+        });
+      }
+    }
+
+    if (examiners.length > 0) {
+      result.push({
+        thesisId: req.id,
+        thesisTitle: req.title,
+        thesisStatus: req.status,
+        examiners,
+      });
+    }
+  }
+
+  return result;
+}
