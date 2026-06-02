@@ -112,6 +112,7 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
 interface ProfileData {
   title: string;
   department: string;
+  allowedDepartments: string[];
   websiteUrl: string;
   languages: string[];
 }
@@ -152,10 +153,17 @@ function Step2Profile({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Fachbereich</label>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Primärer Fachbereich</label>
           <select
             value={data.department}
-            onChange={(e) => onChange({ department: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              // Primärfachbereich immer in allowedDepartments aufnehmen
+              const allowed = data.allowedDepartments.includes(val)
+                ? data.allowedDepartments
+                : val ? [...data.allowedDepartments, val] : data.allowedDepartments;
+              onChange({ department: val, allowedDepartments: allowed });
+            }}
             className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 bg-white"
           >
             <option value="">Bitte wählen…</option>
@@ -164,6 +172,40 @@ function Step2Profile({
             ))}
           </select>
         </div>
+      </div>
+      {/* Weitere erlaubte Fachbereiche */}
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-2">Weitere Fachbereiche <span className="text-gray-400 font-normal">(optional – falls Sie auch in anderen FB prüfen)</span></label>
+        <div className="flex flex-wrap gap-2">
+          {DEPARTMENT_OPTIONS.map((d) => {
+            const isPrimary = d.value === data.department;
+            const isSelected = data.allowedDepartments.includes(d.value);
+            return (
+              <button
+                key={d.value}
+                type="button"
+                disabled={isPrimary}
+                onClick={() => {
+                  const next = isSelected
+                    ? data.allowedDepartments.filter((x) => x !== d.value)
+                    : [...data.allowedDepartments, d.value];
+                  onChange({ allowedDepartments: next });
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all
+                  ${
+                    isPrimary
+                      ? "border-[#76B900] bg-[#76B900] text-white cursor-default"
+                      : isSelected
+                      ? "border-[#76B900] bg-[#76B900]/10 text-[#76B900]"
+                      : "border-gray-200 text-gray-500 hover:border-gray-300"
+                  }`}
+              >
+                {d.value}{isPrimary ? " ★" : ""}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-gray-400 mt-1.5">Der primäre Fachbereich (★) ist immer ausgewählt.</p>
       </div>
       <div>
         <label className="block text-xs font-semibold text-gray-600 mb-2">Mögliche Betreuungssprachen</label>
@@ -558,6 +600,7 @@ export default function ExaminerOnboarding() {
   const [profile, setProfile] = useState<ProfileData>({
     title: "",
     department: "",
+    allowedDepartments: [],
     websiteUrl: "",
     languages: ["Deutsch"],
   });
@@ -584,6 +627,8 @@ export default function ExaminerOnboarding() {
     completeOnboarding.mutate({
       title: profile.title,
       department: profile.department,
+      allowedDepartments: profile.allowedDepartments.length > 0 ? profile.allowedDepartments : (profile.department ? [profile.department] : []),
+      primaryDepartment: profile.department || undefined,
       websiteUrl: profile.websiteUrl,
       languages: profile.languages,
       programmeIds,

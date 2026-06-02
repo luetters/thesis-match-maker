@@ -384,6 +384,7 @@ export default function Profile() {
     }
     setForm({
       name: profile.name ?? "", bio: profile.bio ?? "", phone: profile.phone ?? "", department: profile.department ?? "",
+      allowedDepartments: (profile as any).allowedDepartments ?? (profile.department ? [profile.department] : []),
       matrikelNr: profile.matrikelNr ?? "", thesisType: (profile.thesisType as "" | "bachelor" | "master") ?? "",
       enrollmentSemester: profile.enrollmentSemester ?? "", targetSemester: profile.targetSemester ?? "",
       academicTitle: profile.academicTitle ?? "", officeRoom: profile.officeRoom ?? "", officeHours: profile.officeHours ?? "",
@@ -419,6 +420,8 @@ export default function Profile() {
         examinerProgrammeIds: programmeIdsToSave,
         examinerBio: form.examinerBio || undefined,
         examinerResearchFocus: form.examinerResearchFocus || undefined,
+        allowedDepartments: ((form as any).allowedDepartments ?? []).length > 0 ? (form as any).allowedDepartments : undefined,
+        primaryDepartment: form.department || undefined,
       } : {}),
       staffId: form.staffId || undefined, responsibilityArea: form.responsibilityArea || undefined, officeLocation: form.officeLocation || undefined,
       secondEmail: form.secondEmail || undefined, website: form.website || undefined, linkedIn: form.linkedIn || undefined, researchGate: form.researchGate || undefined,
@@ -705,12 +708,51 @@ export default function Profile() {
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldDepartment}</label>
               {editMode ? (
-                <select value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white">
-                  <option value="">{p.fieldDepartmentPlaceholder}</option>
-                  {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                </select>
+                <>
+                  <select value={form.department} onChange={(e) => {
+                    const val = e.target.value;
+                    const allowed: string[] = (form as any).allowedDepartments ?? [];
+                    const newAllowed = allowed.includes(val) ? allowed : (val ? [...allowed, val] : allowed);
+                    setForm((f) => ({ ...f, department: val, allowedDepartments: newAllowed } as any));
+                  }} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white mb-2">
+                    <option value="">{p.fieldDepartmentPlaceholder}</option>
+                    {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">Weitere erlaubte Fachbereiche</p>
+                  <div className="flex flex-wrap gap-2">
+                    {DEPARTMENTS.map((d) => {
+                      const isPrimary = d.value === form.department;
+                      const allowed: string[] = (form as any).allowedDepartments ?? [];
+                      const isSelected = allowed.includes(d.value);
+                      return (
+                        <button key={d.value} type="button" disabled={isPrimary}
+                          onClick={() => {
+                            const next = isSelected ? allowed.filter((x) => x !== d.value) : [...allowed, d.value];
+                            setForm((f) => ({ ...f, allowedDepartments: next } as any));
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold border-2 transition-all ${
+                            isPrimary ? "border-[#76b900] bg-[#76b900] text-white cursor-default"
+                            : isSelected ? "border-[#76b900] bg-[#76b900]/10 text-[#76b900]"
+                            : "border-gray-200 text-gray-500 hover:border-gray-300"
+                          }`}>
+                          {d.value}{isPrimary ? " ★" : ""}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Primärfachbereich (★) ist immer aktiv.</p>
+                </>
               ) : (
-                <p className="text-sm text-gray-800">{profile.department ? getDepartmentLabel(profile.department) : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
+                <div>
+                  <p className="text-sm text-gray-800 mb-1">{profile.department ? getDepartmentLabel(profile.department) : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
+                  {((profile as any).allowedDepartments ?? []).filter((d: string) => d !== profile.department).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {((profile as any).allowedDepartments ?? []).filter((d: string) => d !== profile.department).map((d: string) => (
+                        <span key={d} className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 border border-gray-200">{d}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div>

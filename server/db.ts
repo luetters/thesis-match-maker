@@ -3615,6 +3615,8 @@ export async function getProfile(userId: number) {
     let examinerProgrammeIds: number[] = [];
     let examinerBio: string | null = null;
     let examinerResearchFocus: string | null = null;
+    let allowedDepartments: string[] = [];
+    let primaryDepartment: string | null = null;
     const isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
     if (isExaminerRole) {
       try {
@@ -3628,6 +3630,12 @@ export async function getProfile(userId: number) {
         }
         const progRows = await db.execute(`SELECT programme_id AS programmeId FROM examiner_programmes WHERE examiner_id = ${userId}`);
         examinerProgrammeIds = (progRows[0] as unknown as any[]).map((r: any) => r.programmeId as number);
+        // Fachbereiche laden
+        const deptRows = await db.execute(`SELECT department, is_primary AS isPrimary FROM examiner_departments WHERE user_id = ${userId}`);
+        const depts = (deptRows[0] as unknown as any[]);
+        allowedDepartments = depts.map((d: any) => d.department as string);
+        const primaryRow = depts.find((d: any) => d.isPrimary === 1);
+        primaryDepartment = primaryRow ? primaryRow.department as string : (allowedDepartments[0] ?? user.department ?? null);
       } catch { /* ignore */ }
     }
     return {
@@ -3668,6 +3676,8 @@ export async function getProfile(userId: number) {
       examinerProgrammeIds: isExaminerRole ? examinerProgrammeIds : null,
       examinerBio: isExaminerRole ? examinerBio : null,
       examinerResearchFocus: isExaminerRole ? examinerResearchFocus : null,
+      allowedDepartments: isExaminerRole ? allowedDepartments : null,
+      primaryDepartment: isExaminerRole ? primaryDepartment : null,
     };
   } catch (error) {
     console.error("[Profile] Fehler beim Abrufen:", error);
@@ -4473,4 +4483,57 @@ async function syncPrimaryRole(userId: number): Promise<void> {
   // Erste Rolle nach Priorität wählen
   const primary = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? roles[0];
   await db.update(users).set({ role: primary }).where(eq(users.id, userId));
+}
+
+
+// ─── Prüfer:innen-Fachbereich-Verwaltung ─────────────────────────────────────
+
+import { examinerDepartments } from "../drizzle/schema";
+
+/**
+ * Alle Fachbereiche eines Prüfers laden.
+ * Gibt { department, isPrimary }[] zurück.
+ */
+export async function getExaminerDepartments(userId: number): Promise<{ department: string; isPrimary: boolean }[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ department: examinerDepartments.department, isPrimary: examinerDepartments.isPrimary })
+    .from(examinerDepartments)
+    .where(eq(examinerDepartments.userId, userId));
+  return rows.map((r) => ({ department: r.department, isPrimary: r.isPrimary === 1 }));
+}
+
+/**
+ * Fachbereiche eines Prüfers setzen (ersetzt alle vorhandenen Einträge).
+ * @param userId - Nutzer-ID
+ * @param departments - Liste aller erlaubten Fachbereiche (z.B. ["FB1", "FB3"])
+ * @param primaryDepartment - Primärer Fachbereich (muss in departments enthalten sein)
+ */
+export async function setExaminerDepartments(
+  userId: number,
+  departments: string[],
+  primaryDepartment: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Alle vorhandenen Einträge löschen
+  await db.delete(examinerDepartments).where(eq(examinerDepartments.userId, userId));
+
+  if (departments.length === 0) return;
+
+  // Neue Einträge anlegen
+  const rows = departments.map((dept) => ({
+    userId,
+    department: dept,
+    isPrimary: dept === primaryDepartment ? 1 : 0,
+  }));
+  await db.insert(examinerDepartments).values(rows);
+
+  // examiner_profiles.department synchron halten (Primärfachbereich)
+  await db
+    .update(examinerProfiles)
+    .set({ department: primaryDepartment })
+    .where(eq(examinerProfiles.userId, userId));
 }

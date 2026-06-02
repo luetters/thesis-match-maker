@@ -355,9 +355,21 @@ export const userRoles = mysqlTable("user_roles", {
   index("uq_user_role").on(table.userId, table.role),
 ]);
 
-// ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────
-import { InferInsertModel } from "drizzle-orm";
+// ─── Prüfer:innen-Fachbereich-Zuordnung (Multi-Fachbereich) ──────────────────────────────
+// Ein Prüfer hat einen Primärfachbereich (isPrimary=1) und kann weitere erlauben (isPrimary=0)
+export const examinerDepartments = mysqlTable("examiner_departments", {
+  id: int().autoincrement().notNull(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  department: varchar({ length: 10 }).notNull(), // z.B. "FB1", "FB2", ...
+  isPrimary: int("is_primary").default(0).notNull(), // 1 = Primärfachbereich
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+},
+(table) => [
+  index("uq_examiner_dept").on(table.userId, table.department),
+]);
 
+// ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────────────────────
+import { InferInsertModel } from "drizzle-orm";
 export type InsertUser = InferInsertModel<typeof users>;
 export type InsertAuditLogEntry = InferInsertModel<typeof auditLog>;
 export type InsertExaminerProfile = InferInsertModel<typeof examinerProfiles>;

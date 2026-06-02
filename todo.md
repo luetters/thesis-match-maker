@@ -1001,3 +1001,16 @@
 - [x] Profile.tsx: form-State und handleSave um examinerBio und examinerResearchFocus erweitert
 - [x] Backend: getProfile lädt examinerBio und examinerResearchFocus aus examiner_profiles
 - [x] Backend: profile.update speichert examinerBio und examinerResearchFocus via upsertExaminerProfile
+
+## Feature: Prüfer:innen – Multi-Fachbereich-Zuordnung
+- [ ] DB-Schema: `examiner_departments`-Tabelle (userId, department, isPrimary) anlegen
+- [ ] Migration per `pnpm db:push` ausführen
+- [ ] Backend: `getExaminerDepartments(userId)` in db.ts
+- [ ] Backend: `setExaminerDepartments(userId, departments, primaryDept)` in db.ts
+- [ ] Backend: `getProfile` liefert `allowedDepartments[]` und `primaryDepartment`
+- [ ] Backend: `completeOnboarding` speichert Fachbereiche in `examiner_departments`
+- [ ] Backend: `profile.update` aktualisiert Fachbereiche
+- [ ] Frontend: Onboarding – Primärfachbereich-Dropdown + Checkboxen für weitere Fachbereiche
+- [ ] Frontend: Profilseite – Primärfachbereich-Dropdown + Multi-Fachbereich-Auswahl im Bearbeitungsmodus
+- [ ] Frontend: Profilseite – Alle erlaubten Fachbereiche in der Ansicht als Badges anzeigen
+- [ ] Frontend: Prüfer:innen-Verzeichnis – Filterung nach erlaubten Fachbereichen

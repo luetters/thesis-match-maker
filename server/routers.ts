@@ -259,6 +259,9 @@ const profileRouterDef = router({
       examinerProgrammeIds: z.array(z.number().int().positive()).optional(),
       examinerBio: z.string().max(2000).optional(),
       examinerResearchFocus: z.string().max(2000).optional(),
+      // Multi-Fachbereich für Prüfer:innen
+      allowedDepartments: z.array(z.string().max(10)).max(5).optional(),
+      primaryDepartment: z.string().max(10).optional(),
       // Verwaltung
       staffId: z.string().max(32).optional(),
       responsibilityArea: z.string().max(255).optional(),
@@ -296,6 +299,15 @@ const profileRouterDef = router({
       // Studiengänge speichern
       if (isExaminer && input.examinerProgrammeIds !== undefined) {
         await setExaminerProgrammes(ctx.user.id, input.examinerProgrammeIds);
+      }
+      // Multi-Fachbereich speichern
+      if (isExaminer && input.allowedDepartments !== undefined && input.allowedDepartments.length > 0) {
+        const { setExaminerDepartments } = await import('./db');
+        await setExaminerDepartments(
+          ctx.user.id,
+          input.allowedDepartments,
+          input.primaryDepartment ?? input.allowedDepartments[0]
+        );
       }
       return { success: true };
     }),
@@ -1060,6 +1072,9 @@ export const appRouter = router({
           // Erweiterte Profildaten
           title: z.string().optional(),
           department: z.string().optional(),
+          // Multi-Fachbereich
+          allowedDepartments: z.array(z.string()).optional(),
+          primaryDepartment: z.string().optional(),
           bio: z.string().optional(),
           researchFocus: z.string().optional(),
           officeHours: z.string().optional(),
@@ -1071,16 +1086,27 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { programmeIds, isSecondExaminer, alternativeEmail, ...profileFields } = input;
+        const { programmeIds, isSecondExaminer, alternativeEmail, allowedDepartments, primaryDepartment, ...profileFields } = input;
         await upsertExaminerProfile({
           userId: ctx.user.id,
           ...profileFields,
+          // Primärfachbereich in examiner_profiles.department speichern
+          department: primaryDepartment ?? profileFields.department,
           alternativeEmail: alternativeEmail ?? null,
           isSecondExaminer: isSecondExaminer ? 1 : 0,
           onboardingCompleted: 1,
         });
         if (programmeIds && programmeIds.length > 0) {
           await setExaminerProgrammes(ctx.user.id, programmeIds);
+        }
+        // Fachbereiche in examiner_departments speichern
+        if (allowedDepartments && allowedDepartments.length > 0) {
+          const { setExaminerDepartments } = await import("./db");
+          await setExaminerDepartments(
+            ctx.user.id,
+            allowedDepartments,
+            primaryDepartment ?? allowedDepartments[0]
+          );
         }
         return { success: true };
       }),
