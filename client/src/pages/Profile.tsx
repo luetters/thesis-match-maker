@@ -291,6 +291,7 @@ export default function Profile() {
     name: "", bio: "", phone: "", department: "",
     matrikelNr: "", thesisType: "" as "" | "bachelor" | "master", enrollmentSemester: "", targetSemester: "",
     academicTitle: "", officeRoom: "", officeHours: "",
+    examinerBio: "", examinerResearchFocus: "",
     staffId: "", responsibilityArea: "", officeLocation: "",
     secondEmail: "", website: "", linkedIn: "", researchGate: "",
     htwProfileUrl: "", miscLink: "", bookingUrl: "",
@@ -385,6 +386,8 @@ export default function Profile() {
       matrikelNr: profile.matrikelNr ?? "", thesisType: (profile.thesisType as "" | "bachelor" | "master") ?? "",
       enrollmentSemester: profile.enrollmentSemester ?? "", targetSemester: profile.targetSemester ?? "",
       academicTitle: profile.academicTitle ?? "", officeRoom: profile.officeRoom ?? "", officeHours: profile.officeHours ?? "",
+      examinerBio: (profile as any).examinerBio ?? "",
+      examinerResearchFocus: (profile as any).examinerResearchFocus ?? "",
       staffId: profile.staffId ?? "", responsibilityArea: profile.responsibilityArea ?? "", officeLocation: profile.officeLocation ?? "",
       secondEmail: profile.secondEmail ?? "", website: profile.website ?? "", linkedIn: profile.linkedIn ?? "", researchGate: profile.researchGate ?? "",
       htwProfileUrl: profile.htwProfileUrl ?? "", miscLink: profile.miscLink ?? "", bookingUrl: profile.bookingUrl ?? "",
@@ -413,6 +416,8 @@ export default function Profile() {
         examinerLanguages,
         examinerKeywords,
         examinerProgrammeIds: programmeIdsToSave,
+        examinerBio: form.examinerBio || undefined,
+        examinerResearchFocus: form.examinerResearchFocus || undefined,
       } : {}),
       staffId: form.staffId || undefined, responsibilityArea: form.responsibilityArea || undefined, officeLocation: form.officeLocation || undefined,
       secondEmail: form.secondEmail || undefined, website: form.website || undefined, linkedIn: form.linkedIn || undefined, researchGate: form.researchGate || undefined,
@@ -870,6 +875,59 @@ export default function Profile() {
                   ? <FieldInput label={p.fieldOfficeHours} value={form.officeHours} onChange={(v) => setForm((f) => ({ ...f, officeHours: v }))} placeholder={p.fieldOfficeHoursPlaceholder} />
                   : <FieldView label={p.fieldOfficeHours} value={profile.officeHours} notSpecified={p.notSpecified} />}
               </div>
+
+              {/* ── Kurzbiografie (Prüfer:innen) ── */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                  {lang === 'de' ? 'Kurzbiografie' : 'Short Biography'}
+                </label>
+                {editMode ? (
+                  <>
+                    <textarea
+                      value={form.examinerBio}
+                      onChange={(e) => setForm((f) => ({ ...f, examinerBio: e.target.value }))}
+                      placeholder={lang === 'de' ? 'Kurze Vorstellung Ihrer Person und Ihres akademischen Werdegangs…' : 'Brief introduction of yourself and your academic background…'}
+                      rows={4}
+                      maxLength={2000}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] transition-all resize-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1 text-right">{form.examinerBio.length}/2000</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {(profile as any).examinerBio
+                      ? (profile as any).examinerBio
+                      : <span className="text-gray-400 italic">{p.notSpecified}</span>}
+                  </p>
+                )}
+              </div>
+
+              {/* ── Forschungsschwerpunkte (Prüfer:innen) ── */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                  {lang === 'de' ? 'Forschungsschwerpunkte' : 'Research Focus'}
+                </label>
+                {editMode ? (
+                  <>
+                    <textarea
+                      value={form.examinerResearchFocus}
+                      onChange={(e) => setForm((f) => ({ ...f, examinerResearchFocus: e.target.value }))}
+                      placeholder={lang === 'de' ? 'Beschreiben Sie Ihre Forschungsschwerpunkte und thematischen Interessen…' : 'Describe your research focus and thematic interests…'}
+                      rows={4}
+                      maxLength={2000}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 focus:border-[#2563eb] transition-all resize-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1 text-right">{form.examinerResearchFocus.length}/2000</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {(profile as any).examinerResearchFocus
+                      ? (profile as any).examinerResearchFocus
+                      : <span className="text-gray-400 italic">{p.notSpecified}</span>}
+                  </p>
+                )}
+              </div>
+
               <div className="sm:col-span-2">
                 {editMode ? (
                   <TagInput label={p.fieldResearchTags} tags={researchTagList} onChange={setResearchTagList} placeholder={p.fieldResearchTagsPlaceholder} hint={p.fieldResearchTagsHint} />

@@ -991,3 +991,13 @@
 - [x] ExaminerOnboarding.tsx: Sprechstunden entfernen
 - [x] ExaminerOnboarding.tsx: Telefon entfernen
 - [x] ExaminerOnboarding.tsx: "Betreuungssprachen" → "Mögliche Betreuungssprachen"
+
+## Feature: Profilseite – Prüfer:innen-Felder (Kurzbiografie, Forschungsschwerpunkte, Sprechstunde, Telefon)
+- [x] Profile.tsx: Kurzbiografie-Textarea für Prüfer:innen im Bearbeitungsmodus
+- [x] Profile.tsx: Forschungsschwerpunkte-Feld für Prüfer:innen im Bearbeitungsmodus
+- [x] Profile.tsx: Sprechstunden-Feld bereits vorhanden (officeHours)
+- [x] Profile.tsx: Telefon-Feld bereits vorhanden (phone in Persönliche Daten)
+- [x] Profile.tsx: Alle Felder in der Ansicht anzeigen (auch wenn leer: Platzhalter)
+- [x] Profile.tsx: form-State und handleSave um examinerBio und examinerResearchFocus erweitert
+- [x] Backend: getProfile lädt examinerBio und examinerResearchFocus aus examiner_profiles
+- [x] Backend: profile.update speichert examinerBio und examinerResearchFocus via upsertExaminerProfile

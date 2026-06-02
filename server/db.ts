@@ -3613,14 +3613,18 @@ export async function getProfile(userId: number) {
     let examinerLanguages: string[] = [];
     let examinerKeywords: string[] = [];
     let examinerProgrammeIds: number[] = [];
+    let examinerBio: string | null = null;
+    let examinerResearchFocus: string | null = null;
     const isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
     if (isExaminerRole) {
       try {
-        const epRows = await db.execute(`SELECT languages, tags FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
+        const epRows = await db.execute(`SELECT languages, tags, bio, research_focus AS researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
         const ep = (epRows[0] as unknown as any[])[0];
         if (ep) {
           try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages) : []; } catch { examinerLanguages = []; }
           try { examinerKeywords = ep.tags ? (typeof ep.tags === 'string' ? JSON.parse(ep.tags) : ep.tags) : []; } catch { examinerKeywords = []; }
+          examinerBio = ep.bio ?? null;
+          examinerResearchFocus = ep.researchFocus ?? null;
         }
         const progRows = await db.execute(`SELECT programme_id AS programmeId FROM examiner_programmes WHERE examiner_id = ${userId}`);
         examinerProgrammeIds = (progRows[0] as unknown as any[]).map((r: any) => r.programmeId as number);
@@ -3662,6 +3666,8 @@ export async function getProfile(userId: number) {
       examinerLanguages: isExaminerRole ? examinerLanguages : null,
       examinerKeywords: isExaminerRole ? examinerKeywords : null,
       examinerProgrammeIds: isExaminerRole ? examinerProgrammeIds : null,
+      examinerBio: isExaminerRole ? examinerBio : null,
+      examinerResearchFocus: isExaminerRole ? examinerResearchFocus : null,
     };
   } catch (error) {
     console.error("[Profile] Fehler beim Abrufen:", error);

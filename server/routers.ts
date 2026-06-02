@@ -257,6 +257,8 @@ const profileRouterDef = router({
       examinerLanguages: z.array(z.string()).optional(),
       examinerKeywords: z.array(z.string().max(64)).max(30).optional(),
       examinerProgrammeIds: z.array(z.number().int().positive()).optional(),
+      examinerBio: z.string().max(2000).optional(),
+      examinerResearchFocus: z.string().max(2000).optional(),
       // Verwaltung
       staffId: z.string().max(32).optional(),
       responsibilityArea: z.string().max(255).optional(),
@@ -282,11 +284,13 @@ const profileRouterDef = router({
       }
       // Prüfer:innen-spezifische Felder in examiner_profiles speichern
       const isExaminer = ctx.user.roles?.includes('examiner') || ctx.user.roles?.includes('second_examiner') || ctx.user.role === 'examiner' || ctx.user.role === 'second_examiner';
-      if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined)) {
+      if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined || input.examinerBio !== undefined || input.examinerResearchFocus !== undefined)) {
         await upsertExaminerProfile({
           userId: ctx.user.id,
           ...(input.examinerLanguages !== undefined ? { languages: input.examinerLanguages } : {}),
           ...(input.examinerKeywords !== undefined ? { tags: input.examinerKeywords } : {}),
+          ...(input.examinerBio !== undefined ? { bio: input.examinerBio } : {}),
+          ...(input.examinerResearchFocus !== undefined ? { researchFocus: input.examinerResearchFocus } : {}),
         });
       }
       // Studiengänge speichern
