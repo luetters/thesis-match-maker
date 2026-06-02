@@ -568,9 +568,13 @@ export const appRouter = router({
         return { success: true, insertId };
       }),
 
-    // Student: Eigene Anfragen abrufen
+    // Student: Eigene Anfragen abrufen (mit Erstbetreuer-Name)
     myRequests: studentProcedure.query(async ({ ctx }) => {
       return getThesisRequestsByStudent(ctx.user.id);
+    }),
+    // Student: Prüfen ob offene Anfrage vorhanden
+    hasOpenRequest: studentProcedure.query(async ({ ctx }) => {
+      return hasOpenThesisRequest(ctx.user.id);
     }),
 
     // Prüfer: Eigene Betreuungen abrufen

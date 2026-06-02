@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, name, email, role, roleStatus FROM users WHERE email = 'lehmtine@htw-berlin.de';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user b2M3zjrH4Bqh6KV.6ae5f11ff116 --database S6SJ5g57xxsBDi3ueaEfs9 --execute SELECT id, name, email, role, roleStatus FROM users WHERE email = 'lehmtine@htw-berlin.de';",
+  "rows": [
+    {
+      "id": "5701393",
+      "name": "Tine Lehmann",
+      "email": "lehmtine@htw-berlin.de",
+      "role": "examiner",
+      "roleStatus": "pending"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\troleStatus\n5701393\tTine Lehmann\tlehmtine@htw-berlin.de\texaminer\tpending\n",
+  "stderr": "",
+  "execution_time_ms": 274
+}

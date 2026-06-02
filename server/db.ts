@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { alias, and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -211,9 +211,31 @@ export async function getThesisRequestById(id: number) {
 export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
+  // Alias für den LEFT JOIN auf den Erstbetreuer
+  const wantedExaminerAlias = alias(users, "wanted_examiner");
   return db
-    .select()
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      abstract: thesisRequests.abstract,
+      department: thesisRequests.department,
+      status: thesisRequests.status,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      exposeUrl: thesisRequests.exposeUrl,
+      exposeKey: thesisRequests.exposeKey,
+      rejectionReason: thesisRequests.rejectionReason,
+      createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      studentId: thesisRequests.studentId,
+      wantedExaminerId: thesisRequests.wantedExaminerId,
+      wantedExaminerName: wantedExaminerAlias.name,
+    })
     .from(thesisRequests)
+    .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
     .where(eq(thesisRequests.studentId, studentId))
     .orderBy(desc(thesisRequests.createdAt));
 }

@@ -853,11 +853,11 @@
 - [x] Backend: register-Prozedur nimmt programmeId entgegen und setzt programme_id direkt bei Registrierung
 
 ## Feature: CTA-Button auf Prüfer:innen-Profil für Betreuungsanfrage
-- [ ] ExaminerProfile: Button "Betreuungsanfrage stellen" verlinkt auf /student/new?examiner=<userId>
-- [ ] ExaminerProfile: Nicht eingeloggte Besucher werden zu /login?returnTo=... weitergeleitet
-- [ ] ExaminerProfile: Button nur für Studierende sichtbar (role=student), für andere Rollen ausgeblendet
-- [ ] StudentDashboard: URL-Parameter ?examiner=<id> lesen und wantedExaminerId vorausfüllen
-- [ ] StudentDashboard: Tab "new" automatisch aktivieren wenn ?examiner-Parameter vorhanden
+- [x] ExaminerProfile: Button "Betreuungsanfrage stellen" verlinkt auf /student/new?examiner=<userId>
+- [x] ExaminerProfile: Nicht eingeloggte Besucher werden zu /login?returnTo=... weitergeleitet
+- [x] ExaminerProfile: Button nur für Studierende sichtbar (role=student), für andere Rollen ausgeblendet
+- [x] StudentDashboard: URL-Parameter ?examiner=<id> lesen und wantedExaminerId vorausfüllen
+- [x] StudentDashboard: Tab "new" automatisch aktivieren wenn ?examiner-Parameter vorhanden
 
 ## Feature: Öffentliche Profilansicht Prüfer:innen optimieren
 - [x] Backend: getPublicProfile gibt Semesterkapazitäten zurück (mit Admin-Override-Logik)
@@ -886,3 +886,11 @@
 - [x] DB: 60 fiktive Prüfer:innen mit is_fictitious_example=1 markiert (300 gelöscht)
 - [x] Frontend: ExaminerDirectory – Badge "Fiktives Beispiel" bei fiktiven Prüfer:innen
 - [x] Übersetzungen: DE "Fiktives Beispiel" / EN "Fictitious Example" in LanguageContext
+
+## Feature: Antragsformular-Sperre und erweiterte Anfragen-Historie
+- [x] Antragsformular: Sofortige Sperrung wenn offene Anfrage vorhanden (Banner in Bildschirmmitte)
+- [x] Antragsformular: Keine weitere Anfrage möglich solange Status offen ist
+- [x] Anfragen-Historie: Datum der Anfrage anzeigen
+- [x] Anfragen-Historie: Kontaktierter Erstbetreuer anzeigen
+- [x] Anfragen-Historie: Thema, Beschreibung und Abstract anzeigen
+- [x] Anfragen-Historie: Anhang (Exposé-PDF) anzeigen

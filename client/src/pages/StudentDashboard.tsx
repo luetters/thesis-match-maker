@@ -1319,6 +1319,13 @@ function StatusHistory() {
     { enabled: selectedId !== null }
   );
   const { t } = useLanguage();
+
+  const selectedRequest = requests?.find((r: { id: number }) => r.id === selectedId) as {
+    id: number; title: string; description?: string | null; abstract?: string | null;
+    createdAt?: number | null; wantedExaminerId?: number | null; wantedExaminerName?: string | null;
+    exposeUrl?: string | null; status: string;
+  } | undefined;
+
   if (isLoading) return <div className="text-sm text-gray-500">{t.student.loading}</div>;
   if (!requests?.length) return (
     <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
@@ -1337,6 +1344,7 @@ function StatusHistory() {
   };
   return (
     <div className="space-y-5">
+      {/* Anfrage-Auswahl */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">{t.student.historySelectRequest}</label>
         <select
@@ -1345,38 +1353,106 @@ function StatusHistory() {
           className="w-full max-w-md px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
         >
           <option value="">{t.student.historyPlease}</option>
-          {requests.map((r) => (
+          {(requests as { id: number; title: string }[]).map((r) => (
             <option key={r.id} value={r.id}>{r.title}</option>
           ))}
         </select>
       </div>
-      {selectedId && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-5">{t.student.historyTitle}</h3>
-          {!logs?.length ? (
-            <p className="text-sm text-gray-500">{t.student.historyNoEntries}</p>
-          ) : (
-            <ol className="relative border-l-2" style={{ borderColor: "#76B900" }}>
-              {logs.map((log, i) => (
-                <li key={log.id} className={`ml-6 ${i < logs.length - 1 ? "mb-6" : ""}` }>
-                  <span
-                    className="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white"
-                    style={{ backgroundColor: "#76B900" }}
-                  >
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                  </span>
-                  <div className="pl-2">
-                    <p className="text-sm font-semibold text-gray-900">{actionLabel[log.action] ?? log.action}</p>
-                    {log.fromStatus && log.toStatus && (
-                      <p className="text-xs text-gray-500">{log.fromStatus} → {log.toStatus}</p>
-                    )}
-                    {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">{t.student.historyReason}: {log.reason}</p>}
-                    <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
+
+      {/* Anfragen-Details */}
+      {selectedRequest && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-100" style={{ backgroundColor: "#f0f7e6" }}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-base">{selectedRequest.title}</h3>
+                {selectedRequest.createdAt && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {t.student.historyRequestDate ?? "Eingereicht am"}:{" "}
+                    <span className="font-medium">{new Date(selectedRequest.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</span>
+                  </p>
+                )}
+              </div>
+              <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600">
+                {selectedRequest.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Erstbetreuer */}
+            {selectedRequest.wantedExaminerName && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.historyFirstExaminer ?? "Kontaktierte Erstbetreuung"}</p>
+                <p className="text-sm text-gray-800 font-medium">{selectedRequest.wantedExaminerName}</p>
+              </div>
+            )}
+
+            {/* Beschreibung */}
+            {selectedRequest.description && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.description}</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{selectedRequest.description}</p>
+              </div>
+            )}
+
+            {/* Abstract */}
+            {selectedRequest.abstract && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.abstractLabel}</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{selectedRequest.abstract}</p>
+              </div>
+            )}
+
+            {/* Anhang */}
+            {selectedRequest.exposeUrl && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.exposeLabel}</p>
+                <a
+                  href={selectedRequest.exposeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  style={{ color: "#76B900" }}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {t.student.exposeLabel} (PDF)
+                </a>
+              </div>
+            )}
+
+            {/* Verlauf-Timeline */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.student.historyTitle}</p>
+              {!logs?.length ? (
+                <p className="text-sm text-gray-500">{t.student.historyNoEntries}</p>
+              ) : (
+                <ol className="relative border-l-2" style={{ borderColor: "#76B900" }}>
+                  {logs.map((log, i) => (
+                    <li key={log.id} className={`ml-6 ${i < logs.length - 1 ? "mb-6" : ""}`}>
+                      <span
+                        className="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white"
+                        style={{ backgroundColor: "#76B900" }}
+                      >
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      </span>
+                      <div className="pl-2">
+                        <p className="text-sm font-semibold text-gray-900">{actionLabel[log.action] ?? log.action}</p>
+                        {log.fromStatus && log.toStatus && (
+                          <p className="text-xs text-gray-500">{log.fromStatus} → {log.toStatus}</p>
+                        )}
+                        {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">{t.student.historyReason}: {log.reason}</p>}
+                        <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -1400,6 +1476,10 @@ export default function StudentDashboard() {
     location === "/student/history" ? "history" : "requests"
   );
   const utils = trpc.useUtils();
+  // Prüfen ob offene Anfrage vorhanden (für Sperr-Banner)
+  const { data: hasOpenReq } = trpc.thesis.hasOpenRequest.useQuery(undefined, {
+    enabled: activeTab === "new",
+  });
 
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
@@ -1426,13 +1506,35 @@ export default function StudentDashboard() {
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
       {activeTab === "new" && (
         <div className="max-w-2xl">
+          {hasOpenReq ? (
+            /* Sperr-Banner: zentriert im Bildschirm */
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center border border-amber-200">
+                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">{t.student.openRequestBlockTitle ?? "Offene Anfrage vorhanden"}</h2>
+                <p className="text-sm text-gray-600 mb-6">{t.student.openRequestBlockDesc ?? "Sie haben bereits eine offene Betreuungsanfrage. Bitte warten Sie auf eine Antwort oder ziehen Sie die bestehende Anfrage zurück, bevor Sie eine neue stellen."}</p>
+                <button
+                  onClick={() => setActiveTab("requests")}
+                  className="w-full py-2.5 px-4 rounded-xl font-medium text-white"
+                  style={{ backgroundColor: "#76B900" }}
+                >
+                  {t.student.openRequestBlockBtn ?? "Meine Anfragen anzeigen"}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
             <h2 className="font-semibold text-gray-900 mb-1">{t.student.submitIdea}</h2>
             <p className="text-sm text-gray-500 mb-6">{t.student.submitIdeaDesc}</p>
             <NewRequestForm onSuccess={() => {
               utils.thesis.myRequests.invalidate();
+              utils.thesis.hasOpenRequest.invalidate();
               setActiveTab("requests");
-            }} />
+            }} preselectExaminerId={preselectExaminerId} />
           </div>
         </div>
       )}

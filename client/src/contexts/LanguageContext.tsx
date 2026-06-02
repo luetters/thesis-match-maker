@@ -272,6 +272,11 @@ const translations = {
       withdrawBtn: "Zurückziehen",
       withdrawSuccess: "Anfrage wurde zurückgezogen.",
       withdrawError: "Anfrage konnte nicht zurückgezogen werden.",
+      openRequestBlockTitle: "Offene Anfrage vorhanden",
+      openRequestBlockDesc: "Sie haben bereits eine offene Betreuungsanfrage. Bitte warten Sie auf eine Antwort oder ziehen Sie die bestehende Anfrage zurück, bevor Sie eine neue stellen.",
+      openRequestBlockBtn: "Meine Anfragen anzeigen",
+      historyRequestDate: "Eingereicht am",
+      historyFirstExaminer: "Kontaktierte Erstbetreuung",
     },
     // Examiner Dashboard
     examiner: {
@@ -1019,6 +1024,11 @@ const translations = {
       withdrawBtn: "Withdraw",
       withdrawSuccess: "Request has been withdrawn.",
       withdrawError: "The request could not be withdrawn.",
+      openRequestBlockTitle: "Open request exists",
+      openRequestBlockDesc: "You already have an open supervision request. Please wait for a response or withdraw the existing request before submitting a new one.",
+      openRequestBlockBtn: "View my requests",
+      historyRequestDate: "Submitted on",
+      historyFirstExaminer: "Contacted primary supervisor",
     },
     // Examiner Dashboard
     examiner: {
