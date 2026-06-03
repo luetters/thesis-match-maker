@@ -346,7 +346,7 @@ function Sidebar({
             </div>
           </div>
           {/* Profil-Link: für Prüfer:innen direkt zum Dashboard-Tab, für andere Rollen zur /profile-Seite */}
-          {role !== "examiner" && role !== "second_examiner" && (
+          {role !== "examiner" && role !== "second_examiner" && role !== "student" && role !== "user" && (
             <a
               href="/profile"
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:text-[#76B900] hover:bg-primary/5 transition-all mb-1"
