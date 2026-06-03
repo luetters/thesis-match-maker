@@ -173,13 +173,14 @@ export async function getAllExaminers() {
       name: programmes.name,
       abbreviation: programmes.abbreviation,
       level: programmes.level,
+      pictogramUrl: programmes.pictogramUrl,
     })
     .from(examinerProgrammes)
     .innerJoin(programmes, eq(examinerProgrammes.programmeId, programmes.id));
-  const programmesMap = new Map<number, Array<{ id: number; name: string; abbreviation: string; level: string }>>();
+  const programmesMap = new Map<number, Array<{ id: number; name: string; abbreviation: string; level: string; pictogramUrl: string | null }>>();
   for (const p of programmeRows) {
     if (!programmesMap.has(p.examinerId)) programmesMap.set(p.examinerId, []);
-    programmesMap.get(p.examinerId)!.push({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? p.name.slice(0, 4), level: p.level });
+    programmesMap.get(p.examinerId)!.push({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? p.name.slice(0, 4), level: p.level, pictogramUrl: p.pictogramUrl ?? null });
   }
 
   return result.map((r) => ({

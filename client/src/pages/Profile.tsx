@@ -1368,7 +1368,10 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                     {(Array.isArray(profile.examinerProgrammeIds) && profile.examinerProgrammeIds.length > 0) ? (
                       <div className="flex flex-wrap gap-1.5">
                         {(allProgrammes ?? []).filter(p => profile.examinerProgrammeIds!.includes(p.id)).map((prog, i) => (
-                          <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
+                          <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
+                            {(prog as any).pictogramUrl && (
+                              <img src={(prog as any).pictogramUrl} alt="" className="w-4 h-4 object-contain flex-shrink-0" loading="lazy" />
+                            )}
                             <span className="font-bold">{prog.abbreviation}</span>
                           </span>
                         ))}

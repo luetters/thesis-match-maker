@@ -897,9 +897,16 @@ function PavManagementTab() {
                     isAssigned ? "border-[#76B900] bg-primary/5" : "border-gray-200"
                   }`}
                 >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{prog.name}</p>
-                    <p className="text-xs text-gray-400">{prog.level === "master" ? "Master" : "Bachelor"} - {prog.abbreviation}</p>
+                  <div className="flex items-center gap-2">
+                    {(prog as any).pictogramUrl ? (
+                      <img src={(prog as any).pictogramUrl} alt="" className="w-8 h-8 object-contain flex-shrink-0" loading="lazy" />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{prog.abbreviation?.slice(0,2)}</div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{prog.name}</p>
+                      <p className="text-xs text-gray-400">{prog.level === "master" ? "Master" : "Bachelor"} · {prog.abbreviation}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() =>

@@ -33,7 +33,7 @@ type ExaminerListItem = {
     officeHours?: string | null;
     websiteUrl?: string | null;
   } | null;
-  programmes?: Array<{ id: number; name: string; abbreviation: string; level: string }>;
+  programmes?: Array<{ id: number; name: string; abbreviation: string; level: string; pictogramUrl?: string | null }>;
 };
 
 function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
@@ -138,9 +138,12 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
           {programmes.slice(0, 4).map((p) => (
             <span
               key={p.id}
-              className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
               title={p.name}
             >
+              {p.pictogramUrl && (
+                <img src={p.pictogramUrl} alt="" className="w-4 h-4 object-contain flex-shrink-0" loading="lazy" />
+              )}
               {p.abbreviation}
             </span>
           ))}
