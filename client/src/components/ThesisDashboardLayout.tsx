@@ -476,17 +476,19 @@ export function ThesisDashboardLayout({
                     <p className="text-sm font-medium text-gray-900 truncate">{user?.name ?? "Nutzer:in"}</p>
                     <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
                   </div>
-                  {/* Profil-Link: für Prüfer:innen zum Dashboard-Tab, für andere zur /profile-Seite */}
-                  <a
-                    href={user?.role === "examiner" || user?.role === "second_examiner" ? "/examiner/profile" : "/profile"}
-                    onClick={() => setShowProfileMenu(false)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    {t.nav.myProfile}
-                  </a>
+                  {/* Profil-Link: nur für Rollen ohne eigenen Profil-navItem (Admin, PAV, Dekan) */}
+                  {user?.role !== "examiner" && user?.role !== "second_examiner" && user?.role !== "student" && user?.role !== "user" && (
+                    <a
+                      href="/profile"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      {t.nav.myProfile}
+                    </a>
+                  )}
                   {user?.loginMethod === "password" && (
                     <button
                       onClick={() => { setShowProfileMenu(false); setShowChangePassword(true); }}
