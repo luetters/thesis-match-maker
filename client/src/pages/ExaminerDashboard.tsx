@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import Profile from "@/pages/Profile";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -1685,7 +1686,7 @@ export default function ExaminerDashboard() {
       {activeTab === "requests" && <RequestsView />}
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "history" && <ExaminerStatusHistory />}
-      {activeTab === "profile" && <ProfileEdit />}
+      {activeTab === "profile" && <Profile embedded={true} />}
       {activeTab === "programmes" && <ProgrammeSettings />}
       {activeTab === "commission" && <CommissionPreferences />}
     </ThesisDashboardLayout>

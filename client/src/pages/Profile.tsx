@@ -269,6 +269,105 @@ function LinkDisplay({
   );
 }
 
+// ─── Semester-Hilfsfunktionen ───────────────────────────────────────────────
+function generateUpcomingSemesters(): string[] {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const isWinter = month >= 10 || month <= 3;
+  const semesters: string[] = [];
+  let y = year;
+  let ws = isWinter;
+  for (let i = 0; i < 4; i++) {
+    semesters.push(ws ? `WS${y}` : `SoSe${y}`);
+    if (ws) { y++; ws = false; } else { ws = true; }
+  }
+  return semesters;
+}
+function semesterLabel(s: string): string {
+  if (s.startsWith("WS")) { const y = parseInt(s.slice(2)); return `WS ${y}/${y + 1}`; }
+  if (s.startsWith("SoSe")) return `SoSe ${s.slice(4)}`;
+  return s;
+}
+type SemesterCapacity = { semester: string; maxFirst: number; maxSecond: number };
+
+// ─── Betreuungskapazitäten-Block ─────────────────────────────────────────────
+function SemesterCapacityBlock() {
+  const { t } = useLanguage();
+  const utils = trpc.useUtils();
+  const upcomingSemesters = generateUpcomingSemesters();
+
+  const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
+  const updateCapacityMutation = trpc.examiner.updateSemesterCapacity.useMutation({
+    onSuccess: () => { utils.examiner.myProfile.invalidate(); },
+  });
+
+  const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const existing: SemesterCapacity[] = (profile.semesterCapacities ?? []) as SemesterCapacity[];
+    const merged = upcomingSemesters.map((sem) => {
+      const found = existing.find((c) => c.semester === sem);
+      return found ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
+    });
+    setCapacities(merged);
+  }, [profile]);
+
+  const handleChange = (semester: string, field: "maxFirst" | "maxSecond", value: number) => {
+    setCapacities((prev) => prev.map((c) => c.semester === semester ? { ...c, [field]: value } : c));
+  };
+
+  const handleSave = async () => {
+    await updateCapacityMutation.mutateAsync({ capacities });
+    toast.success("Kapazitäten gespeichert");
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+        Betreuungskapazitäten
+      </h2>
+      <p className="text-sm text-gray-500 mb-5">Legen Sie fest, wie viele Erst- und Zweitbetreuungen Sie pro Semester übernehmen können.</p>
+      <div className="space-y-3">
+        {capacities.map((cap) => (
+          <div key={cap.semester} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
+            <span className="w-28 text-sm font-medium text-gray-700">{semesterLabel(cap.semester)}</span>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 w-20">Erstbetreuung</label>
+              <input
+                type="number" min={0} max={20} value={cap.maxFirst}
+                onChange={(e) => handleChange(cap.semester, "maxFirst", parseInt(e.target.value) || 0)}
+                className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 w-24">Zweitbetreuung</label>
+              <input
+                type="number" min={0} max={20} value={cap.maxSecond}
+                onChange={(e) => handleChange(cap.semester, "maxSecond", parseInt(e.target.value) || 0)}
+                className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={updateCapacityMutation.isPending}
+          className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+        >
+          {updateCapacityMutation.isPending ? "Wird gespeichert…" : "Kapazitäten speichern"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const { user, hasRole, loading } = useAuth();
@@ -278,11 +377,12 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Prüfer:innen werden nach Auth-Load zum Dashboard-Profil-Tab weitergeleitet
+  // (nur im standalone-Modus, nicht wenn die Komponente bereits eingebettet ist)
   useEffect(() => {
-    if (!loading && user && (hasRole("examiner") || hasRole("second_examiner"))) {
+    if (!embedded && !loading && user && (hasRole("examiner") || hasRole("second_examiner"))) {
       navigate("/examiner/profile");
     }
-  }, [loading, user, hasRole, navigate]);
+  }, [embedded, loading, user, hasRole, navigate]);
   // Zugewiesene Prüfer:innen (nur für Studierende)
   const { data: assignedExaminers, isLoading: isLoadingExaminers } = trpc.profile.getAssignedExaminers.useQuery(undefined, {
     enabled: !!user && !loading,
@@ -1515,6 +1615,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             <EmailTemplateEditor />
           </div>
         )}
+
+        {/* ── Betreuungskapazitäten (nur für Prüfer:innen) ── */}
+        {isExaminer && <SemesterCapacityBlock />}
 
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

@@ -283,7 +283,7 @@ const translations = {
     examiner: {
       title: "Prüfer:innen-Dashboard",
       requests: "Anfragen",
-      profile: "Profil",
+      profile: "Mein Profil",
       colloquiums: "Kolloquium",
       history: "Verlauf",
       accept: "Annehmen",
@@ -1055,7 +1055,7 @@ const translations = {
     examiner: {
       title: "Examiner Dashboard",
       requests: "Requests",
-      profile: "Profile",
+      profile: "My Profile",
       colloquiums: "Colloquium",
       pending: "History",
       accept: "Accept",
