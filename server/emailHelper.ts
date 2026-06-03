@@ -175,10 +175,12 @@ export async function sendEmail({
     return false;
   }
   try {
-    await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text });
+    const info = await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text });
+    console.log(`[Email] Gesendet an ${to} | Betreff: ${subject} | ID: ${info.messageId}`);
     return true;
-  } catch (err) {
-    console.error("[Email] Fehler beim Senden:", err);
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string; response?: string };
+    console.error(`[Email] Fehler beim Senden an ${to}: ${e.message} | Code: ${e.code} | Response: ${e.response}`);
     return false;
   }
 }
