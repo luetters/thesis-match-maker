@@ -8,7 +8,7 @@
  * Verwendung:
  *   <ProgrammeLogo abbreviation="BWL" pictogramUrl={prog.pictogramUrl} size="md" />
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export type ProgrammeLogoSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -34,7 +34,6 @@ const SIZE_MAP: Record<ProgrammeLogoSize, { container: string; text: string }> =
  */
 function FallbackIcon({ size }: { size: ProgrammeLogoSize }) {
   const { container, text } = SIZE_MAP[size];
-  // Kürzel wird nicht mehr als Text gezeigt – stattdessen ein neutrales Icon
   return (
     <span
       className={`${container} rounded bg-[#f0f7e6] flex items-center justify-center flex-shrink-0`}
@@ -66,13 +65,17 @@ export function ProgrammeLogo({
   const [imgError, setImgError] = useState(false);
   const { container } = SIZE_MAP[size];
 
+  // Fehler-State zurücksetzen wenn sich die URL ändert (z.B. nach Upload)
+  useEffect(() => {
+    setImgError(false);
+  }, [pictogramUrl]);
+
   if (pictogramUrl && !imgError) {
     return (
       <img
         src={pictogramUrl}
         alt={abbreviation}
         className={`${container} object-contain flex-shrink-0 ${className}`}
-        loading="lazy"
         onError={() => setImgError(true)}
       />
     );
