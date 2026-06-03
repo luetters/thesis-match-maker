@@ -54,6 +54,7 @@ function Router() {
 
       {/* Studierenden-Dashboard (alle Subrouten werden intern verwaltet) */}
       <Route path="/student" component={StudentDashboard} />
+      <Route path="/student/profile" component={StudentDashboard} />
       <Route path="/student/:tab" component={StudentDashboard} />
 
       {/* Prüfer:innen-Onboarding-Assistent */}

@@ -268,7 +268,7 @@ function LinkDisplay({
 }
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
-export default function Profile() {
+export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const { user, hasRole, loading } = useAuth();
   const [, navigate] = useLocation();
   const { t, lang } = useLanguage();
@@ -494,14 +494,54 @@ export default function Profile() {
   const publicProfileUrl = `${window.location.origin}/profile/${profile.id}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ── Header ── */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={backLink} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            {p.back}
-          </Link>
+    <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
+      {/* ── Header (nur standalone, nicht als eingebetteter Tab) ── */}
+      {!embedded && (
+        <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+          <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href={backLink} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              {p.back}
+            </Link>
+            <span className="text-sm font-semibold text-gray-700">{p.title}</span>
+            {!editMode ? (
+              <button onClick={handleEditStart} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#76b900] hover:text-[#76b900] transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                {p.edit}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => setEditMode(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors">{p.cancel}</button>
+                <button
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending || hasUrlErrors}
+                  title={hasUrlErrors ? p.urlSaveBlocked : undefined}
+                  className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: "#76b900" }}
+                >
+                  {updateMutation.isPending
+                    ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                  {p.save}
+                </button>
+              </div>
+            )}
+          </div>
+          {/* URL-Fehler-Banner */}
+          {editMode && hasUrlErrors && (
+            <div className="bg-red-50 border-t border-red-200 px-4 py-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-red-600">{p.urlErrorBanner}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bearbeiten-Aktionsleiste bei eingebettetem Modus */}
+      {embedded && (
+        <div className="flex items-center justify-between mb-4">
           <span className="text-sm font-semibold text-gray-700">{p.title}</span>
           {!editMode ? (
             <button onClick={handleEditStart} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#76b900] hover:text-[#76b900] transition-colors">
@@ -525,20 +565,19 @@ export default function Profile() {
               </button>
             </div>
           )}
+          {editMode && hasUrlErrors && (
+            <div className="mt-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-red-600">{p.urlErrorBanner}</p>
+            </div>
+          )}
         </div>
-        {/* URL-Fehler-Banner */}
-        {editMode && hasUrlErrors && (
-          <div className="bg-red-50 border-t border-red-200 px-4 py-2 flex items-center gap-2">
-            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-xs text-red-600">{p.urlErrorBanner}</p>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* ── Inhalt ── */}
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <div className={embedded ? "space-y-6" : "max-w-3xl mx-auto px-4 py-8 space-y-6"}>
 
         {/* ── Profilkarte ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -826,7 +865,7 @@ export default function Profile() {
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-            {editMode ? (
+            {!isStudent && (editMode ? (
               <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
@@ -839,7 +878,7 @@ export default function Profile() {
                   />
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
-            )}
+            ))}
             {editMode ? (
               <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
@@ -854,7 +893,7 @@ export default function Profile() {
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-            {editMode ? (
+            {!isStudent && (editMode ? (
               <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
@@ -867,7 +906,7 @@ export default function Profile() {
                   />
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
-            )}
+            ))}
           </div>
         </div>
 
@@ -1102,7 +1141,7 @@ export default function Profile() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                     </svg>
                     <span className="text-sm text-gray-500">
-                      {profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="italic">{p.notSpecified}</span>}
+                      {profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : (<span className="italic">{p.notSpecified}</span>)}
                     </span>
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import Profile from "./Profile";
 import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { trpc } from "@/lib/trpc";
@@ -31,6 +32,7 @@ const Icons = {
 const Icons2 = {
   calendar: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   history: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  profile: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
 };
 function useNavItems() {
   const { t } = useLanguage();
@@ -40,6 +42,7 @@ function useNavItems() {
     { href: "/student/examiners", label: t.nav.examiners, icon: Icons.search },
     { href: "/student/colloquiums", label: t.student.colloquiums, icon: Icons2.calendar },
     { href: "/student/history", label: t.student.history, icon: Icons2.history },
+    { href: "/student/profile", label: t.student.tabProfile, icon: Icons2.profile },
   ];
 }
 
@@ -1469,11 +1472,12 @@ export default function StudentDashboard() {
       return parseInt(params.get("examiner") ?? "0", 10) || 0;
     } catch { return 0; }
   })();
-  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history">(
+  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history" | "profile">(
     location.startsWith("/student/new") || preselectExaminerId > 0 ? "new" :
     location === "/student/examiners" ? "examiners" :
     location === "/student/colloquiums" ? "colloquiums" :
-    location === "/student/history" ? "history" : "requests"
+    location === "/student/history" ? "history" :
+    location === "/student/profile" ? "profile" : "requests"
   );
   const utils = trpc.useUtils();
   // Prüfen ob offene Anfrage vorhanden (für Sperr-Banner)
@@ -1490,6 +1494,7 @@ export default function StudentDashboard() {
       else if (item.href === "/student/examiners") setActiveTab("examiners");
       else if (item.href === "/student/colloquiums") setActiveTab("colloquiums");
       else if (item.href === "/student/history") setActiveTab("history");
+      else if (item.href === "/student/profile") setActiveTab("profile");
     },
   }));
 
@@ -1500,6 +1505,7 @@ export default function StudentDashboard() {
     examiners: t.student.tabExaminers,
     colloquiums: t.student.tabColloquiums,
     history: t.student.tabHistory,
+    profile: t.student.tabProfile,
   };
 
   return (
@@ -1550,6 +1556,7 @@ export default function StudentDashboard() {
       )}
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "history" && <StatusHistory />}
+      {activeTab === "profile" && <Profile embedded={true} />}
     </ThesisDashboardLayout>
   );
 }
