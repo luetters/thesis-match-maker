@@ -530,11 +530,11 @@ function Step5Capacity({
       </div>
       {/* Prüfer:innen-Typ */}
       <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-2">Prüfer:innen-Typ <span className="text-red-400">*</span></label>
+        <label className="block text-xs font-semibold text-gray-600 mb-2">Prüfer:innen-Typ</label>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { value: false, label: "Erstprüfer:in", sub: "HTW-Berlin-Lehrperson (@htw-berlin.de / @htw-berlin.com)", icon: "🎓" },
-            { value: true, label: "Zweitprüfer:in", sub: "Externe Fachperson (beliebige E-Mail)", icon: "👥" },
+            { value: false, label: "Erstprüfer:in", sub: "HTW Berlin-Lehrperson (@htw-berlin.de) – kann auch als Zweitprüfer:in fungieren", icon: "🎓" },
+            { value: true, label: "Nur Zweitprüfer:in", sub: "Externe Fachperson (beliebige E-Mail) – kein HTW Berlin-Beschäftigungsverhältnis", icon: "👥" },
           ].map((opt) => (
             <button
               key={String(opt.value)}
@@ -549,6 +549,7 @@ function Step5Capacity({
             </button>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-2">Erstprüfer:innen können stets auch als Zweitprüfer:in eingesetzt werden.</p>
       </div>
       {/* Alternative E-Mail (nur für Zweitprüfer:innen) */}
       {isSecondExaminer === true && (
@@ -572,7 +573,7 @@ function Step5Capacity({
         </button>
         <button
           onClick={onFinish}
-          disabled={isSecondExaminer === null || isPending}
+          disabled={isPending}
           className="flex-1 py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-40"
           style={{ backgroundColor: "#76B900" }}
         >
@@ -611,8 +612,8 @@ export default function ExaminerOnboarding() {
 
   const utils = trpc.useUtils();
   const completeOnboarding = trpc.examiner.completeOnboarding.useMutation({
-    onSuccess: () => {
-      utils.examiner.myProfile.invalidate();
+    onSuccess: async () => {
+      await utils.examiner.myProfile.invalidate();
       toast.success("Profil erfolgreich eingerichtet – willkommen!");
       navigate("/examiner");
     },
@@ -620,10 +621,8 @@ export default function ExaminerOnboarding() {
   });
 
   const handleFinish = () => {
-    if (isSecondExaminer === null) {
-      toast.error("Bitte wählen Sie Ihren Prüfer:innen-Typ aus.");
-      return;
-    }
+    // Wenn kein Typ gewählt: Standard = Erstprüfer:in (isSecondExaminer = false)
+    const resolvedIsSecondExaminer = isSecondExaminer ?? false;
     completeOnboarding.mutate({
       title: profile.title,
       department: profile.department,
@@ -633,7 +632,7 @@ export default function ExaminerOnboarding() {
       languages: profile.languages,
       programmeIds,
       maxSupervisions,
-      isSecondExaminer,
+      isSecondExaminer: resolvedIsSecondExaminer,
       alternativeEmail: alternativeEmail || null,
     });
   };
