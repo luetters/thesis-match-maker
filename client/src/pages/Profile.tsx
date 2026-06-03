@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { AvatarCropModal } from "@/components/AvatarCropModal";
+import { UserAvatar } from "@/components/UserAvatar";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { EmailTemplateEditor } from "@/components/EmailTemplateEditor";
 import { trpc } from "@/lib/trpc";
@@ -957,22 +958,13 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                           <div className="p-4">
                             {/* Avatar + Name + Rolle */}
                             <div className="flex items-start gap-3 mb-4">
-                              <div
-                                className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border-2 border-white shadow"
-                                style={{ background: examiner.role === "first" ? "#f0fdf4" : "#ecfeff" }}
-                              >
-                                {examiner.avatarUrl ? (
-                                  <img src={examiner.avatarUrl} alt={examiner.name ?? ""} className="w-full h-full object-cover" />
-                                ) : (
-                                  <span
-                                    className="text-base font-bold"
-                                    style={{ color: examiner.role === "first" ? "#16a34a" : "#0891b2" }}
-                                  >
-                                    {examiner.name
-                                      ? examiner.name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()
-                                      : "?"}
-                                  </span>
-                                )}
+                              <div className="flex-shrink-0">
+                                <UserAvatar
+                                  name={examiner.name ?? "?"}
+                                  avatarUrl={examiner.avatarUrl}
+                                  size="xl"
+                                  rounded="2xl"
+                                />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-900 truncate">
