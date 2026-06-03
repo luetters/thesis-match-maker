@@ -1060,7 +1060,7 @@ export default function Profile() {
                 </svg>
                 <p className="text-xs text-gray-500 leading-relaxed">{p.fieldStudyProgrammeReadOnlyHint}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Fachbereich – read-only */}
                 <div>
                   <label className="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{p.fieldDepartment}</label>
@@ -1094,25 +1094,24 @@ export default function Profile() {
                     );
                   })()}
                 </div>
+                {/* Abschlusstyp – read-only */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{p.fieldThesisType}</label>
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-100 cursor-not-allowed">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span className="text-sm text-gray-500">
+                      {profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="italic">{p.notSpecified}</span>}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {editMode
                 ? <FieldInput label={p.fieldMatrikelNr} value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder={p.fieldMatrikelNrPlaceholder} />
                 : <FieldView label={p.fieldMatrikelNr} value={profile.matrikelNr} notSpecified={p.notSpecified} />}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldThesisType}</label>
-                {editMode ? (
-                  <select value={form.thesisType} onChange={(e) => setForm((f) => ({ ...f, thesisType: e.target.value as "" | "bachelor" | "master" }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white">
-                    <option value="">{p.fieldDepartmentPlaceholder}</option>
-                    <option value="bachelor">Bachelor</option>
-                    <option value="master">Master</option>
-                  </select>
-                ) : (
-                  <p className="text-sm text-gray-800">{profile.thesisType === "bachelor" ? "Bachelor" : profile.thesisType === "master" ? "Master" : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
-                )}
-              </div>
               {editMode
                 ? <FieldInput label={p.fieldEnrollmentSemester} value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} placeholder={p.fieldEnrollmentSemesterPlaceholder} />
                 : <FieldView label={p.fieldEnrollmentSemester} value={profile.enrollmentSemester} notSpecified={p.notSpecified} />}
