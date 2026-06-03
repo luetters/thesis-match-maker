@@ -817,8 +817,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         </div>
 
-        {/* ── Online-Präsenz ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        {/* ── Online-Präsenz (nur für Nicht-Prüfer:innen, da Prüfer:innen einen eigenen Links-Block haben) ── */}
+        {!isExaminer && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             {p.sectionOnline}
@@ -909,7 +909,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* ── Zugewiesene Prüfer:innen (nur Studierende) ── */}
         {isStudent && (
@@ -1153,7 +1153,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
-        {/* ── Prüfer:innen ── */}
+        {/* ── Prüfer:innen: Büro & Kontakt ── */}
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
@@ -1172,9 +1172,24 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   ? <FieldInput label={p.fieldOfficeHours} value={form.officeHours} onChange={(v) => setForm((f) => ({ ...f, officeHours: v }))} placeholder={p.fieldOfficeHoursPlaceholder} />
                   : <FieldView label={p.fieldOfficeHours} value={profile.officeHours} notSpecified={p.notSpecified} />}
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* ── Kurzbiografie (Prüfer:innen) ── */}
-              <div className="sm:col-span-2">
+        {/* ── Prüfer:innen: Biographie & Forschung ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Biographie & Forschung' : 'Biography & Research'}</span>
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Diese Informationen sind auf Ihrem öffentlichen Profil sichtbar und helfen Studierenden, Sie besser kennenzulernen.' : 'This information is visible on your public profile and helps students get to know you better.'}</p>
+            <div className="space-y-6">
+
+              {/* ── Kurzbiografie ── */}
+              <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
                   {lang === 'de' ? 'Kurzbiografie' : 'Short Biography'}
                 </label>
@@ -1185,13 +1200,16 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   />
                 ) : (
                   (profile as any).examinerBio
-                    ? <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: (profile as any).examinerBio }} />
-                    : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>
+                    ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: (profile as any).examinerBio }} />
+                    : <div className="border border-dashed border-gray-200 rounded-xl p-4 text-center">
+                        <p className="text-sm text-gray-400 italic">{p.notSpecified}</p>
+                        {!editMode && <button onClick={handleEditStart} className="mt-2 text-xs text-[#2563eb] hover:underline">{lang === 'de' ? 'Biografie hinzufügen' : 'Add biography'}</button>}
+                      </div>
                 )}
               </div>
 
-              {/* ── Forschungsschwerpunkte (Prüfer:innen) ── */}
-              <div className="sm:col-span-2">
+              {/* ── Forschungsschwerpunkte ── */}
+              <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
                   {lang === 'de' ? 'Forschungsschwerpunkte' : 'Research Focus'}
                 </label>
@@ -1202,12 +1220,44 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   />
                 ) : (
                   (profile as any).examinerResearchFocus
-                    ? <div className="prose prose-sm max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: (profile as any).examinerResearchFocus }} />
-                    : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>
+                    ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: (profile as any).examinerResearchFocus }} />
+                    : <div className="border border-dashed border-gray-200 rounded-xl p-4 text-center">
+                        <p className="text-sm text-gray-400 italic">{p.notSpecified}</p>
+                        {!editMode && <button onClick={handleEditStart} className="mt-2 text-xs text-[#2563eb] hover:underline">{lang === 'de' ? 'Forschungsschwerpunkte hinzufügen' : 'Add research focus'}</button>}
+                      </div>
                 )}
               </div>
 
-              <div className="sm:col-span-2">
+              {/* ── Schlagworte ── */}
+              <div>
+                {editMode ? (
+                  <TagInput
+                    label={lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
+                    tags={examinerKeywords}
+                    onChange={setExaminerKeywords}
+                    placeholder={lang === 'de' ? 'Schlagwort eingeben und Enter drücken…' : 'Enter keyword and press Enter…'}
+                    hint={lang === 'de' ? 'Themen, die Sie bei Abschlussarbeiten betreuen möchten' : 'Topics you are willing to supervise in theses'}
+                  />
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                      {lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
+                    </label>
+                    {(Array.isArray(profile.examinerKeywords) && profile.examinerKeywords.length > 0)
+                      ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {profile.examinerKeywords.map((kw, i) => (
+                            <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{kw}</span>
+                          ))}
+                        </div>
+                      )
+                      : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Forschungs-Tags ── */}
+              <div>
                 {editMode ? (
                   <TagInput label={p.fieldResearchTags} tags={researchTagList} onChange={setResearchTagList} placeholder={p.fieldResearchTagsPlaceholder} hint={p.fieldResearchTagsHint} />
                 ) : (
@@ -1225,7 +1275,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
 
               {/* ── Prüfungssprachen ── */}
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   {lang === 'de' ? 'Prüfungssprachen' : 'Examination Languages'}
                 </label>
@@ -1256,41 +1306,25 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* ── Schlagworte für Interessen/Themen ── */}
-              <div className="sm:col-span-2">
-                {editMode ? (
-                  <TagInput
-                    label={lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
-                    tags={examinerKeywords}
-                    onChange={setExaminerKeywords}
-                    placeholder={lang === 'de' ? 'Schlagwort eingeben und Enter drücken…' : 'Enter keyword and press Enter…'}
-                    hint={lang === 'de' ? 'Themen, die Sie bei Abschlussarbeiten betreuen möchten' : 'Topics you are willing to supervise in theses'}
-                  />
-                ) : (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
-                      {lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
-                    </label>
-                    {(Array.isArray(profile.examinerKeywords) && profile.examinerKeywords.length > 0)
-                      ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {profile.examinerKeywords.map((kw, i) => (
-                            <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{kw}</span>
-                          ))}
-                        </div>
-                      )
-                      : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                  </div>
-                )}
-              </div>
-
-              {/* ── Studiengänge in denen geprüft wird ── */}
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                  {lang === 'de' ? 'Studiengänge (Prüfungsberechtigung)' : 'Study Programmes (Examination Eligibility)'}
-                </label>
-                {editMode ? (
+        {/* ── Prüfer:innen: Studiengangbeteiligung ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Studiengangbeteiligung' : 'Study Programme Participation'}</span>
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie fest, in welchen Studiengängen Sie Abschlussarbeiten betreuen und prüfen dürfen.' : 'Define in which study programmes you are authorised to supervise and examine theses.'}</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                {lang === 'de' ? 'Studiengänge (Prüfungsberechtigung)' : 'Study Programmes (Examination Eligibility)'}
+              </label>
+              {editMode ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 mb-3">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1346,7 +1380,105 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                     )}
                   </div>
                 )}
-              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Prüfer:innen: Online-Links ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Online-Links & Profile' : 'Online Links & Profiles'}</span>
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Ergänzen Sie Links zu Ihren externen Profilen und Buchungssystemen. Diese werden auf Ihrem öffentlichen Profil angezeigt.' : 'Add links to your external profiles and booking systems. These will be displayed on your public profile.'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {editMode ? (
+                <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
+                  {profile.website ? (
+                    <LinkDisplay href={profile.website} label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      iconBg="#f0fdf4" iconColor="#76b900" hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
+                  {profile.bookingUrl ? (
+                    <LinkDisplay href={profile.bookingUrl} label={p.fieldBookingLabel}
+                      iconBg="#faf5ff" iconColor="#7c3aed" hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
+                  {profile.linkedIn ? (
+                    <LinkDisplay href={profile.linkedIn} label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
+                      iconBg="#0a66c2" hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
+                  {profile.researchGate ? (
+                    <LinkDisplay href={profile.researchGate} label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
+                      iconBg="#00d0af" hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
+                  {profile.htwProfileUrl ? (
+                    <LinkDisplay href={profile.htwProfileUrl} label="HTW Berlin"
+                      iconBg="#1a5490" hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<span className="text-white font-bold text-xs">HTW</span>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
+                  {profile.miscLink ? (
+                    <LinkDisplay href={profile.miscLink} label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      iconBg="#f3f4f6" iconColor="#6b7280" hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
             </div>
           </div>
         )}
