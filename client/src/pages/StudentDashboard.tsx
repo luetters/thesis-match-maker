@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -603,9 +604,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               </div>
               {/* Studiengang */}
               <div className="bg-white rounded-lg px-3 py-2.5 border border-[#76B900]/20 flex items-center gap-2">
-                {(myProgramme as any).pictogramUrl && (
-                  <img src={(myProgramme as any).pictogramUrl} alt={(myProgramme as any).abbreviation ?? myProgramme.name} className="w-6 h-6 object-contain shrink-0" />
-                )}
+                <ProgrammeLogo abbreviation={(myProgramme as any).abbreviation ?? myProgramme.name} pictogramUrl={(myProgramme as any).pictogramUrl} size="sm" />
                 <div>
                   <div className="text-xs text-gray-400 mb-0.5">{t.student.studyProgramLabel}</div>
                   <div className="text-sm font-semibold text-[#76B900]">

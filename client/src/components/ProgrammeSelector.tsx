@@ -5,6 +5,7 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useRef } from "react";
+import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
 import {
@@ -168,9 +169,7 @@ export function StudentProgrammeSelector({ onDone }: { onDone?: () => void }) {
       <div className="flex flex-col items-center gap-3 py-6">
         <div className="text-sm text-gray-500 mb-1">Ihr zugeordneter Studiengang:</div>
         <div className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-[#76B900] bg-[#76B900]/5">
-          {myProgramme.pictogramUrl && (
-            <img src={myProgramme.pictogramUrl} alt={myProgramme.name} className="w-20 h-20 object-contain" />
-          )}
+          <ProgrammeLogo abbreviation={myProgramme.abbreviation ?? ''} pictogramUrl={myProgramme.pictogramUrl} size="xl" />
           <div className="font-bold text-[#76B900]">{myProgramme.abbreviation}</div>
           <div className="text-sm text-gray-700">{myProgramme.name}</div>
           <div className="text-xs text-gray-400 capitalize">{myProgramme.level === "bachelor" ? "Bachelor" : "Master"}</div>
@@ -304,13 +303,7 @@ function SortableProgrammeItem({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      {programme.pictogramUrl ? (
-        <img src={programme.pictogramUrl} alt={programme.name} className="w-7 h-7 object-contain flex-shrink-0" loading="lazy" />
-      ) : (
-        <div className="w-7 h-7 rounded-lg bg-[#76B900]/10 flex items-center justify-center text-[#76B900] text-xs font-bold flex-shrink-0">
-          {programme.abbreviation?.slice(0, 2)}
-        </div>
-      )}
+      <ProgrammeLogo abbreviation={programme.abbreviation ?? ''} pictogramUrl={programme.pictogramUrl} size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-gray-900 truncate">{programme.abbreviation}</p>
         <p className="text-xs text-gray-400 truncate">{programme.name}</p>
@@ -357,13 +350,7 @@ function AvailableProgrammeItem({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      {programme.pictogramUrl ? (
-        <img src={programme.pictogramUrl} alt={programme.name} className="w-7 h-7 object-contain flex-shrink-0" loading="lazy" />
-      ) : (
-        <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 text-xs font-bold flex-shrink-0">
-          {programme.abbreviation?.slice(0, 2)}
-        </div>
-      )}
+      <ProgrammeLogo abbreviation={programme.abbreviation ?? ''} pictogramUrl={programme.pictogramUrl} size="md" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-gray-900 truncate">{programme.abbreviation}</p>
         <p className="text-xs text-gray-400 truncate">{programme.name}</p>
@@ -620,13 +607,7 @@ export function ExaminerProgrammeSelector() {
             <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${
               activeType === "available" ? "bg-white border-gray-200" : "bg-[#76B900]/10 border-[#76B900]/40"
             }`}>
-              {activeProgramme.pictogramUrl ? (
-                <img src={activeProgramme.pictogramUrl} alt={activeProgramme.name} className="w-7 h-7 object-contain flex-shrink-0" />
-              ) : (
-                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 text-xs font-bold">
-                  {activeProgramme.abbreviation?.slice(0, 2)}
-                </div>
-              )}
+              <ProgrammeLogo abbreviation={activeProgramme.abbreviation ?? ''} pictogramUrl={activeProgramme.pictogramUrl} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 truncate">{activeProgramme.abbreviation}</p>
                 <p className="text-xs text-gray-400 truncate">{activeProgramme.name}</p>

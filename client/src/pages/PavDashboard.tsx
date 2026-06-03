@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
@@ -785,11 +786,7 @@ export default function PavDashboard() {
                     } shadow-sm`}
                   >
                     <div className="flex items-center gap-2.5">
-                      {(prog as any).pictogramUrl ? (
-                        <img src={(prog as any).pictogramUrl} alt="" className="w-9 h-9 object-contain flex-shrink-0" loading="lazy" />
-                      ) : (
-                        <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{prog.abbreviation?.slice(0,2)}</div>
-                      )}
+                      <ProgrammeLogo abbreviation={(prog as any).abbreviation ?? ''} pictogramUrl={(prog as any).pictogramUrl} size="lg" />
                       <div>
                         <p className="font-medium text-gray-900">{prog.name}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{prog.level === "master" ? t.pav.master : t.pav.bachelor} · {prog.abbreviation}</p>

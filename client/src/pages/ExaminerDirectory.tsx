@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 
 // ─── Examiner Card ────────────────────────────────────────────────────────────
 type ExaminerListItem = {
@@ -141,9 +142,7 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
               title={p.name}
             >
-              {p.pictogramUrl && (
-                <img src={p.pictogramUrl} alt="" className="w-4 h-4 object-contain flex-shrink-0" loading="lazy" />
-              )}
+              <ProgrammeLogo abbreviation={p.abbreviation} pictogramUrl={p.pictogramUrl} size="xs" />
               {p.abbreviation}
             </span>
           ))}

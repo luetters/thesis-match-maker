@@ -9,6 +9,7 @@ import { AdminManagementTab } from "./AdminManagementTab";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
+import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -898,11 +899,7 @@ function PavManagementTab() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {(prog as any).pictogramUrl ? (
-                      <img src={(prog as any).pictogramUrl} alt="" className="w-8 h-8 object-contain flex-shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{prog.abbreviation?.slice(0,2)}</div>
-                    )}
+                    <ProgrammeLogo abbreviation={prog.abbreviation ?? ''} pictogramUrl={(prog as any).pictogramUrl} size="lg" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{prog.name}</p>
                       <p className="text-xs text-gray-400">{prog.level === "master" ? "Master" : "Bachelor"} · {prog.abbreviation}</p>
