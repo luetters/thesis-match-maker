@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
+import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -278,7 +279,7 @@ function generateUpcomingSemesters(): string[] {
   const semesters: string[] = [];
   let y = year;
   let ws = isWinter;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     semesters.push(ws ? `WS${y}` : `SoSe${y}`);
     if (ws) { y++; ws = false; } else { ws = true; }
   }
@@ -1405,7 +1406,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
-        {/* ── Prüfer:innen: Studiengangbeteiligung ── */}
+        {/* ── Prüfer:innen: Studiengangbeteiligung (via ExaminerProgrammeSelector) ── */}
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
@@ -1415,68 +1416,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Studiengangbeteiligung' : 'Study Programme Participation'}</span>
             </h2>
             <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie fest, in welchen Studiengängen Sie Abschlussarbeiten betreuen und prüfen dürfen.' : 'Define in which study programmes you are authorised to supervise and examine theses.'}</p>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                {lang === 'de' ? 'Studiengänge (Prüfungsberechtigung)' : 'Study Programmes (Examination Eligibility)'}
-              </label>
-              {editMode ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={examinerProgrammeIds === null}
-                          onChange={(e) => {
-                            if (e.target.checked) setExaminerProgrammeIds(null);
-                            else setExaminerProgrammeIds([]);
-                          }}
-                          className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          {lang === 'de' ? 'Alle Studiengänge (Standard)' : 'All study programmes (default)'}
-                        </span>
-                      </label>
-                    </div>
-                    {examinerProgrammeIds !== null && (
-                      <div className="grid grid-cols-1 gap-1.5 max-h-64 overflow-y-auto border border-gray-200 rounded-xl p-3 bg-gray-50">
-                        {(allProgrammes ?? []).map(prog => (
-                          <label key={prog.id} className="flex items-center gap-2.5 cursor-pointer select-none py-1 hover:bg-white rounded-lg px-2 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={examinerProgrammeIds.includes(prog.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) setExaminerProgrammeIds(prev => prev ? [...prev, prog.id] : [prog.id]);
-                                else setExaminerProgrammeIds(prev => prev ? prev.filter(id => id !== prog.id) : []);
-                              }}
-                              className="w-4 h-4 rounded border-gray-300 accent-[#2563eb] flex-shrink-0"
-                            />
-                            <span className="text-xs font-semibold text-[#2563eb] w-16 flex-shrink-0">{prog.abbreviation}</span>
-                            <span className="text-sm text-gray-700 truncate">{prog.name}</span>
-                            <span className="text-xs text-gray-400 flex-shrink-0 capitalize">{prog.level}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    {(Array.isArray(profile.examinerProgrammeIds) && profile.examinerProgrammeIds.length > 0) ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {(allProgrammes ?? []).filter(p => profile.examinerProgrammeIds!.includes(p.id)).map((prog, i) => (
-                          <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
-                            <ProgrammeLogo abbreviation={(prog as any).abbreviation ?? ''} pictogramUrl={(prog as any).pictogramUrl} size="xs" />
-                            <span className="font-bold">{prog.abbreviation}</span>
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">
-                        {lang === 'de' ? 'Alle Studiengänge' : 'All study programmes'}
-                      </span>
-                    )}
-                  </div>
-                )}
-            </div>
+            <ExaminerProgrammeSelector />
           </div>
         )}
 
