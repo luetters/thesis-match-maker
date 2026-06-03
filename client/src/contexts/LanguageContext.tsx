@@ -697,6 +697,8 @@ const translations = {
       fieldEnrollmentSemesterPlaceholder: "z.B. WiSe 2022/23",
       fieldTargetSemester: "Zielsemester (Abschluss)",
       fieldTargetSemesterPlaceholder: "z.B. SoSe 2025",
+      fieldStudyProgramme: "Studiengang",
+      fieldStudyProgrammeReadOnlyHint: "Fachbereich und Studiengang stammen aus der Anmeldung und können nicht geändert werden.",
       // Prüfer:innen
       fieldAcademicTitle: "Akademischer Titel",
       fieldAcademicTitlePlaceholder: "z.B. Prof. Dr.",
@@ -1466,6 +1468,8 @@ const translations = {
       fieldEnrollmentSemesterPlaceholder: "e.g. WiSe 2022/23",
       fieldTargetSemester: "Target Semester (Graduation)",
       fieldTargetSemesterPlaceholder: "e.g. SoSe 2025",
+      fieldStudyProgramme: "Study Programme",
+      fieldStudyProgrammeReadOnlyHint: "Department and study programme are set during registration and cannot be changed.",
       // Examiner
       fieldAcademicTitle: "Academic Title",
       fieldAcademicTitlePlaceholder: "e.g. Prof. Dr.",

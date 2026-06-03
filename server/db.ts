@@ -3605,7 +3605,7 @@ export async function getProfile(userId: number) {
   if (!db) return null;
   try {
     const rows = await db.execute(
-      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, second_email AS secondEmail, website, linked_in AS linkedIn, research_gate AS researchGate, htw_profile_url AS htwProfileUrl, misc_link AS miscLink, booking_url AS bookingUrl, preferredLanguage, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
+      `SELECT id, name, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, programme_id AS programmeId, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, second_email AS secondEmail, website, linked_in AS linkedIn, research_gate AS researchGate, htw_profile_url AS htwProfileUrl, misc_link AS miscLink, booking_url AS bookingUrl, preferredLanguage, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
     );
     const user = (rows[0] as unknown as any[])[0];
     if (!user) return null;
@@ -3649,6 +3649,7 @@ export async function getProfile(userId: number) {
       bio: user.bio as string | null,
       phone: user.phone as string | null,
       department: user.department as string | null,
+      programmeId: (user.programmeId as number | null) ?? null,
       matrikelNr: user.matrikelNr as string | null,
       thesisType: user.thesisType as 'bachelor' | 'master' | null,
       enrollmentSemester: user.enrollmentSemester as string | null,

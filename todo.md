@@ -1031,3 +1031,10 @@
 
 ## Feature: Angemeldet bl- [x] Login.tsx: „Angemeldet bleiben“-Checkbox im Login-Formular ergänzenänzen
 - [x] localStorage: E-Mail bei aktivierter Checkbox speichern und beim nächsten Besuch voraus- [x] Übersetzungen: DE/EN für „Angemeldet bleiben“ in LanguageContext hinzufügenzufügen
+
+## Feature: Fachbereich und Studienfach als Read-only im Studenten-Profil
+- [x] Profile.tsx: Fachbereich (department) als ausgegraut/read-only anzeigen (beide Modi: edit + view)
+- [x] Profile.tsx: Studienfach (programmeId) als ausgegraut/read-only mit Studiengangs-Icon anzeigen
+- [x] Profile.tsx: Hinweistext "Stammt aus der Anmeldung, nicht änderbar" unter den Feldern
+- [x] LanguageContext.tsx: Übersetzungsschlüssel für Fachbereich/Studienfach read-only Hinweis
+- [x] DB: student@htw-berlin.com → department=FB3, programmeId=Bachelor International Business (ID 4)

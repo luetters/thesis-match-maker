@@ -297,6 +297,7 @@ export default function Profile() {
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({
     name: "", bio: "", phone: "", department: "",
+    allowedDepartments: [] as string[],
     matrikelNr: "", thesisType: "" as "" | "bachelor" | "master", enrollmentSemester: "", targetSemester: "",
     academicTitle: "", officeRoom: "", officeHours: "",
     examinerBio: "", examinerResearchFocus: "",
@@ -309,7 +310,7 @@ export default function Profile() {
   const [examinerLanguages, setExaminerLanguages] = useState<string[]>([]);
   const [examinerKeywords, setExaminerKeywords] = useState<string[]>([]);
   const [examinerProgrammeIds, setExaminerProgrammeIds] = useState<number[] | null>(null); // null = alle
-  const { data: allProgrammes } = trpc.programmes.list.useQuery(undefined, { enabled: !!profile && (profile.role === 'examiner' || profile.role === 'second_examiner') });
+  const { data: allProgrammes } = trpc.programmes.list.useQuery(undefined, { enabled: !!profile });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -1050,6 +1051,52 @@ export default function Profile() {
               </svg>
               <span style={{ color: "#16a34a" }}>{p.sectionStudent}</span>
             </h2>
+
+            {/* ── Fachbereich & Studienfach (read-only, aus Anmeldung) ── */}
+            <div className="mb-5 p-4 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="flex items-start gap-2 mb-3">
+                <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-xs text-gray-500 leading-relaxed">{p.fieldStudyProgrammeReadOnlyHint}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Fachbereich – read-only */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{p.fieldDepartment}</label>
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-100 cursor-not-allowed">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span className="text-sm text-gray-500">
+                      {profile.department ? (getDepartmentLabel(profile.department) ?? profile.department) : <span className="italic">{p.notSpecified}</span>}
+                    </span>
+                  </div>
+                </div>
+                {/* Studiengang – read-only mit Icon */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">{p.fieldStudyProgramme}</label>
+                  {(() => {
+                    const prog = (allProgrammes ?? []).find(pr => pr.id === (profile as any).programmeId);
+                    return (
+                      <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 cursor-not-allowed min-h-[42px]">
+                        {prog?.pictogramUrl ? (
+                          <img src={prog.pictogramUrl} alt={prog.name} className="w-7 h-7 rounded-md object-contain flex-shrink-0 bg-white p-0.5" />
+                        ) : (
+                          <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        )}
+                        <span className="text-sm text-gray-500 leading-tight">
+                          {prog ? `${prog.name}` : <span className="italic">{p.notSpecified}</span>}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {editMode
                 ? <FieldInput label={p.fieldMatrikelNr} value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder={p.fieldMatrikelNrPlaceholder} />
