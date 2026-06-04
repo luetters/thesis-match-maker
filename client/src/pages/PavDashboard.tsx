@@ -68,6 +68,59 @@ function AdminWorkflowTab() {
 
   const selectedThesis = (theses ?? []).find((t) => t.id === selected);
 
+  function exportCsv() {
+    const rows = theses ?? [];
+    const headers = [
+      "ID", "Titel", "Studiengang", "Abschlussart", "Studierende:r", "E-Mail",
+      "Anmeldestatus", "Angemeldet am", "Abgabefrist", "Verteidigungsdatum",
+      "Akte geschlossen am", "Systemstatus",
+    ];
+    const statusLabels: Record<string, string> = {
+      not_registered: "Nicht angemeldet",
+      registered: "Angemeldet \u2013 Zulassung ausstehend",
+      admitted: "Zugelassen",
+      rejected: "Abgelehnt",
+      case_closed: "Akte vollst\u00e4ndig \u00fcbermittelt",
+    };
+    const escape = (v: string | null | undefined) => {
+      if (v == null) return "";
+      const s = String(v);
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+    const fmt = (d: Date | string | null | undefined) =>
+      d ? new Date(d).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+    const csvLines = [
+      headers.join(","),
+      ...rows.map((t) =>
+        [
+          t.id,
+          escape(t.title),
+          escape(t.department),
+          escape(t.degreeType),
+          escape(t.studentName),
+          escape(t.studentEmail),
+          escape(statusLabels[t.officialRegistrationStatus ?? "not_registered"] ?? t.officialRegistrationStatus),
+          fmt(t.officialRegistrationAt),
+          fmt(t.submissionDeadline),
+          fmt(t.defenseDate),
+          fmt(t.caseClosedAt),
+          escape(t.status),
+        ].join(",")
+      ),
+    ];
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `anmeldung-zulassung-${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function openAction(id: number, a: typeof action) {
     setSelected(id);
     setAction(a);
@@ -76,8 +129,21 @@ function AdminWorkflowTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-        Übersicht aller offiziell angemeldeten und zugelassenen Abschlussarbeiten. Hier können Sie den Verwaltungsworkflow steuern.
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex-1 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+          Übersicht aller offiziell angemeldeten und zugelassenen Abschlussarbeiten. Hier können Sie den Verwaltungsworkflow steuern.
+        </div>
+        {(theses ?? []).length > 0 && (
+          <button
+            onClick={exportCsv}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[#5e9200] transition-colors whitespace-nowrap"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            CSV exportieren
+          </button>
+        )}
       </div>
 
       {isLoading ? (
