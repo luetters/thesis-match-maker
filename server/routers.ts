@@ -150,6 +150,13 @@ import {
   removeUserRole,
   AppRole,
   getAssignedExaminers,
+  getRegisteredTheses,
+  setOfficialRegistration,
+  setAdmission,
+  extendDeadline,
+  setDefenseDate,
+  closeCase,
+  getDeadlineChanges,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -287,7 +294,7 @@ const profileRouterDef = router({
         await setPreferredLanguage(ctx.user.id, input.preferredLanguage);
       }
       // Prüfer:innen-spezifische Felder in examiner_profiles speichern
-      const isExaminer = ctx.user.roles?.includes('examiner') || ctx.user.roles?.includes('second_examiner') || ctx.user.role === 'examiner' || ctx.user.role === 'second_examiner';
+      const isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
       if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined || input.examinerBio !== undefined || input.examinerResearchFocus !== undefined)) {
         await upsertExaminerProfile({
           userId: ctx.user.id,
@@ -636,8 +643,8 @@ export const appRouter = router({
           studentId: ctx.user.id,
           title: input.title,
           description: input.description,
-          department: input.department,
-          abstract: input.abstract,
+          department: input.department ?? "",
+          abstract: input.abstract ?? "",
           targetSemester: input.targetSemester,
           language: input.language,
           degreeType: input.degreeType,
@@ -977,7 +984,7 @@ export const appRouter = router({
           if (dbInstance) {
             const { thesisRequests: trTable } = await import("../drizzle/schema");
             const { inArray } = await import("drizzle-orm");
-            const activeStatuses = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED", "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED"];
+            const activeStatuses = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED", "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED"] as const;
             const activeReqs = await dbInstance
               .select({ examinerId: trTable.examinerId, secondExaminerId: trTable.secondExaminerId })
               .from(trTable)
@@ -2162,6 +2169,107 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── Verwaltungsworkflow: Anmeldung & Zulassung ──────────────────────────
+  adminWorkflow: router({
+    /** Alle offiziell angemeldeten/zugelassenen Arbeiten */
+    getRegisteredTheses: pavProcedure.query(async () => {
+      return getRegisteredTheses();
+    }),
+
+    /** Arbeit offiziell anmelden (Zulassung ausstehend) */
+    registerThesis: pavProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        await setOfficialRegistration(input.thesisRequestId, ctx.user.id);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          metadata: { officialStatus: "registered", note: "Arbeit offiziell angemeldet, Zulassung ausstehend" },
+        });
+        return { success: true };
+      }),
+
+    /** Thesis zulassen und Abgabedatum setzen */
+    admitThesis: pavProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        submissionDeadline: z.string(),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await setAdmission(input.thesisRequestId, ctx.user.id, input.submissionDeadline, input.note);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          metadata: { officialStatus: "admitted", submissionDeadline: input.submissionDeadline, note: input.note },
+        });
+        return { success: true };
+      }),
+
+    /** Abgabefrist verlängern */
+    extendDeadline: pavProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        newDeadline: z.string(),
+        reason: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await extendDeadline(input.thesisRequestId, ctx.user.id, input.newDeadline, input.reason);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          metadata: { action: "deadline_extended", newDeadline: input.newDeadline, reason: input.reason },
+        });
+        return { success: true };
+      }),
+
+    /** Verteidigungsdatum eintragen */
+    setDefenseDate: pavProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        defenseDate: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await setDefenseDate(input.thesisRequestId, ctx.user.id, input.defenseDate);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          metadata: { action: "defense_date_set", defenseDate: input.defenseDate },
+        });
+        return { success: true };
+      }),
+
+    /** Akte vollständig übermitteln */
+    closeCase: pavProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        await closeCase(input.thesisRequestId, ctx.user.id);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          metadata: { officialStatus: "case_closed", note: "Akte vollständig übermittelt" },
+        });
+        return { success: true };
+      }),
+
+    /** Abgabefrist-Änderungsprotokoll abrufen */
+    getDeadlineChanges: pavProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getDeadlineChanges(input.thesisRequestId);
+      }),
+  }),
+
   // ─── E-Mail-Vorlagen (Superadmin) ─────────────────────────────────────────
   emailTemplates: router({
     /** Alle Vorlagen abrufen */
@@ -2245,8 +2353,8 @@ export const appRouter = router({
           wantedExaminerId: input.wantedExaminerId,
           title: input.title,
           description: input.description,
-          department: input.department,
-          abstract: input.abstract,
+          department: input.department ?? "",
+          abstract: input.abstract ?? "",
           targetSemester: input.targetSemester,
           language: input.language,
           degreeType: input.degreeType,

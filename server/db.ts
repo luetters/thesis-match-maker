@@ -23,6 +23,7 @@ import {
   savedFilters,
   examinerSemesterCapacities,
   userRoles,
+  deadlineChanges,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -2039,8 +2040,8 @@ export async function getThesisStatsByPeriod(
   if (!db) return [];
 
   const conditions: any[] = [
-    gte(thesisRequests.createdAt, startDate),
-    lte(thesisRequests.createdAt, endDate)
+    gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+    lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
   ];
 
   if (filters?.department) {
@@ -2080,8 +2081,8 @@ export async function getThesisStatsByFaculty(
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate)
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
       )
     );
 
@@ -2121,8 +2122,8 @@ export async function getThesisStatsByStatus(
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate)
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
       )
     );
 
@@ -2152,8 +2153,8 @@ export async function getAverageProcessingTime(
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate),
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " ")),
         inArray(thesisRequests.status, ["ACCEPTED", "REJECTED", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_REJECTED"])
       )
     );
@@ -2183,8 +2184,8 @@ export async function getDropoutRate(
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate)
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
       )
     );
 
@@ -2193,8 +2194,8 @@ export async function getDropoutRate(
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate),
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " ")),
         inArray(thesisRequests.status, ["FIRST_EXAMINER_REJECTED", "REJECTED"])
       )
     );
@@ -2226,8 +2227,8 @@ export async function getExaminerWorkload(
     .leftJoin(examinerProfiles, eq(examinerProfiles.userId, users.id))
     .where(
       and(
-        gte(thesisRequests.createdAt, startDate),
-        lte(thesisRequests.createdAt, endDate)
+        gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
       )
     );
 
@@ -2278,8 +2279,8 @@ export async function generateCSVReport(
       .innerJoin(users, eq(thesisRequests.studentId, users.id))
       .where(
         and(
-          gte(thesisRequests.createdAt, startDate),
-          lte(thesisRequests.createdAt, endDate)
+          gte(thesisRequests.createdAt, typeof startDate === "string" ? startDate : startDate.toISOString().slice(0, 19).replace("T", " ")),
+          lte(thesisRequests.createdAt, typeof endDate === "string" ? endDate : endDate.toISOString().slice(0, 19).replace("T", " "))
         )
       );
 
@@ -2438,8 +2439,9 @@ export async function createReminderSchedule(
   const db = await getDb();
   if (!db) return null;
 
-  const scheduledAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  scheduledAt.setDate(scheduledAt.getDate() + delayDays);
+  const scheduledAtDate = new Date();
+  scheduledAtDate.setDate(scheduledAtDate.getDate() + delayDays);
+  const scheduledAt = scheduledAtDate.toISOString().slice(0, 19).replace('T', ' ');
 
   const result = await db
     .insert(reminderSchedules)
@@ -2460,14 +2462,14 @@ export async function getRemindersDue() {
   const db = await getDb();
   if (!db) return [];
 
-  const now = new Date();
+  const nowStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const reminders = await db
     .select()
     .from(reminderSchedules)
     .where(
       and(
         eq(reminderSchedules.status, "pending"),
-        lte(reminderSchedules.scheduledAt, now)
+        lte(reminderSchedules.scheduledAt, nowStr)
       )
     )
     .limit(100);
@@ -2597,8 +2599,9 @@ export async function cleanupOldReminders() {
   const db = await getDb();
   if (!db) return 0;
 
-  const ninetyDaysAgo = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const ninetyDaysAgoDate = new Date();
+  ninetyDaysAgoDate.setDate(ninetyDaysAgoDate.getDate() - 90);
+  const ninetyDaysAgo = ninetyDaysAgoDate.toISOString().slice(0, 19).replace('T', ' ');
 
   await db
     .delete(reminderSchedules)
@@ -2651,10 +2654,10 @@ export async function searchThesisRequests(query: string, filters?: SearchFilter
     conditions.push(inArray(thesisRequests.language, filters.language));
   }
   if (filters?.dateFrom) {
-    conditions.push(gte(thesisRequests.createdAt, filters.dateFrom));
+    conditions.push(gte(thesisRequests.createdAt, typeof filters.dateFrom === "string" ? filters.dateFrom : filters.dateFrom!.toISOString().slice(0, 19).replace("T", " ")));
   }
   if (filters?.dateTo) {
-    conditions.push(lte(thesisRequests.createdAt, filters.dateTo));
+    conditions.push(lte(thesisRequests.createdAt, typeof filters.dateTo === "string" ? filters.dateTo : filters.dateTo!.toISOString().slice(0, 19).replace("T", " ")));
   }
 
   const results = await db
@@ -2833,10 +2836,10 @@ export async function getAuditTrailByUser(
   const conditions: any[] = [eq(auditLog.actorId, userId)];
 
   if (dateFrom) {
-    conditions.push(gte(auditLog.createdAt, dateFrom));
+    conditions.push(gte(auditLog.createdAt, typeof dateFrom === "string" ? dateFrom : dateFrom.toISOString().slice(0, 19).replace("T", " ")));
   }
   if (dateTo) {
-    conditions.push(lte(auditLog.createdAt, dateTo));
+    conditions.push(lte(auditLog.createdAt, typeof dateTo === "string" ? dateTo : dateTo.toISOString().slice(0, 19).replace("T", " ")));
   }
 
   const trail = await db
@@ -2862,10 +2865,10 @@ export async function exportAuditTrailCSV(filters?: {
   const conditions: any[] = [];
 
   if (filters?.dateFrom) {
-    conditions.push(gte(auditLog.createdAt, filters.dateFrom));
+    conditions.push(gte(auditLog.createdAt, typeof filters.dateFrom === "string" ? filters.dateFrom : filters.dateFrom.toISOString().slice(0, 19).replace("T", " ")));
   }
   if (filters?.dateTo) {
-    conditions.push(lte(auditLog.createdAt, filters.dateTo));
+    conditions.push(lte(auditLog.createdAt, typeof filters.dateTo === "string" ? filters.dateTo : filters.dateTo.toISOString().slice(0, 19).replace("T", " ")));
   }
   if (filters?.userId) {
     conditions.push(eq(auditLog.actorId, filters.userId));
@@ -2900,7 +2903,7 @@ export async function exportAuditTrailCSV(filters?: {
     entry.fromStatus || "",
     entry.toStatus || "",
     entry.reason || "",
-    entry.createdAt?.toISOString() || "",
+    entry.createdAt || "",
   ]);
 
   // CSV String
@@ -2972,8 +2975,8 @@ export async function getComplianceReport(dateFrom: Date, dateTo: Date) {
     .from(thesisRequests)
     .where(
       and(
-        gte(thesisRequests.createdAt, dateFrom),
-        lte(thesisRequests.createdAt, dateTo)
+        gte(thesisRequests.createdAt, typeof dateFrom === "string" ? dateFrom : dateFrom.toISOString().slice(0, 19).replace("T", " ")),
+        lte(thesisRequests.createdAt, typeof dateTo === "string" ? dateTo : dateTo.toISOString().slice(0, 19).replace("T", " "))
       )
     );
 
@@ -2992,7 +2995,7 @@ export async function getComplianceReport(dateFrom: Date, dateTo: Date) {
   const completedWithTime = requests
     .filter((r) => r.updatedAt && r.createdAt && r.status === "COMPLETED")
     .map((r) => {
-      const time = (r.updatedAt!.getTime() - r.createdAt!.getTime()) / (1000 * 60 * 60 * 24);
+      const time = (new Date(r.updatedAt!).getTime() - new Date(r.createdAt!).getTime()) / (1000 * 60 * 60 * 24);
       return time;
     });
 
@@ -4695,4 +4698,155 @@ export async function getAssignedExaminers(studentId: number) {
   }
 
   return result;
+}
+
+// ─── Verwaltungsworkflow: Anmeldung & Zulassung ─────────────────────────────
+
+/** Alle Anträge abrufen, die offiziell angemeldet oder zugelassen sind (für PAV-Übersicht) */
+export async function getRegisteredTheses() {
+  const db = await getDb();
+  if (!db) return [];
+  const student = aliasedTable(users, "student");
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      department: thesisRequests.department,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      officialRegistrationStatus: thesisRequests.officialRegistrationStatus,
+      officialRegistrationAt: thesisRequests.officialRegistrationAt,
+      admissionAt: thesisRequests.admissionAt,
+      admissionNote: thesisRequests.admissionNote,
+      submissionDeadline: thesisRequests.submissionDeadline,
+      defenseDate: thesisRequests.defenseDate,
+      caseClosedAt: thesisRequests.caseClosedAt,
+      createdAt: thesisRequests.createdAt,
+      studentId: thesisRequests.studentId,
+      studentName: student.name,
+      studentEmail: student.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(student, eq(thesisRequests.studentId, student.id))
+    .where(
+      or(
+        eq(thesisRequests.officialRegistrationStatus, "registered"),
+        eq(thesisRequests.officialRegistrationStatus, "admitted"),
+        eq(thesisRequests.officialRegistrationStatus, "case_closed"),
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+/** Arbeit offiziell anmelden (Status: registered, Zulassung ausstehend) */
+export async function setOfficialRegistration(
+  thesisRequestId: number,
+  actorId: number,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    officialRegistrationStatus: "registered",
+    officialRegistrationAt: now,
+    officialRegistrationBy: actorId,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Thesis zulassen und Abgabedatum setzen (Status: admitted) */
+export async function setAdmission(
+  thesisRequestId: number,
+  actorId: number,
+  submissionDeadline: string,
+  note?: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    officialRegistrationStatus: "admitted",
+    admissionAt: now,
+    admissionBy: actorId,
+    admissionNote: note ?? null,
+    submissionDeadline,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Abgabefrist verlängern – Protokolleintrag in deadline_changes */
+export async function extendDeadline(
+  thesisRequestId: number,
+  actorId: number,
+  newDeadline: string,
+  reason: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  // Altes Datum lesen
+  const [thesis] = await db.select({ submissionDeadline: thesisRequests.submissionDeadline })
+    .from(thesisRequests).where(eq(thesisRequests.id, thesisRequestId)).limit(1);
+  const previousDeadline = thesis?.submissionDeadline ?? null;
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  // Neues Datum setzen
+  await db.update(thesisRequests).set({ submissionDeadline: newDeadline })
+    .where(eq(thesisRequests.id, thesisRequestId));
+  // Protokolleintrag
+  await db.insert(deadlineChanges).values({
+    thesisRequestId,
+    previousDeadline: previousDeadline ?? undefined,
+    newDeadline,
+    reason,
+    changedBy: actorId,
+    changedAt: now,
+  });
+}
+
+/** Verteidigungsdatum eintragen */
+export async function setDefenseDate(
+  thesisRequestId: number,
+  actorId: number,
+  defenseDate: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    defenseDate,
+    defenseDateSetAt: now,
+    defenseDateSetBy: actorId,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Akte vollständig übermitteln (Status: case_closed) */
+export async function closeCase(
+  thesisRequestId: number,
+  actorId: number,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(thesisRequests).set({
+    officialRegistrationStatus: "case_closed",
+    caseClosedAt: now,
+    caseClosedBy: actorId,
+  }).where(eq(thesisRequests.id, thesisRequestId));
+}
+
+/** Abgabefrist-Änderungsprotokoll für einen Antrag abrufen */
+export async function getDeadlineChanges(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const changedByUser = aliasedTable(users, "changed_by_user");
+  return db
+    .select({
+      id: deadlineChanges.id,
+      previousDeadline: deadlineChanges.previousDeadline,
+      newDeadline: deadlineChanges.newDeadline,
+      reason: deadlineChanges.reason,
+      changedAt: deadlineChanges.changedAt,
+      changedByName: changedByUser.name,
+    })
+    .from(deadlineChanges)
+    .leftJoin(changedByUser, eq(deadlineChanges.changedBy, changedByUser.id))
+    .where(eq(deadlineChanges.thesisRequestId, thesisRequestId))
+    .orderBy(desc(deadlineChanges.changedAt));
 }

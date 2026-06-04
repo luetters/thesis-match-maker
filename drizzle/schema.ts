@@ -218,6 +218,24 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	defenseEligibilityNote: text("defense_eligibility_note"),
 	defenseEligibilityCheckedBy: int("defense_eligibility_checked_by"),
 	defenseEligibilityCheckedAt: datetime("defense_eligibility_checked_at", { mode: "string" }),
+	// ─── Offizieller Anmelde- und Zulassungsworkflow (Verwaltung) ───
+	officialRegistrationStatus: mysqlEnum("official_registration_status", [
+		"not_registered",     // noch nicht offiziell angemeldet
+		"registered",         // Arbeit angemeldet, Zulassung ausstehend
+		"admitted",           // Thesis zugelassen
+		"case_closed"         // Akte vollständig übermittelt
+	]).default("not_registered").notNull(),
+	officialRegistrationAt: datetime("official_registration_at", { mode: "string" }),
+	officialRegistrationBy: int("official_registration_by"),
+	admissionAt: datetime("admission_at", { mode: "string" }),
+	admissionBy: int("admission_by"),
+	admissionNote: text("admission_note"),
+	submissionDeadline: datetime("submission_deadline", { mode: "string" }),
+	defenseDate: datetime("defense_date", { mode: "string" }),
+	defenseDateSetAt: datetime("defense_date_set_at", { mode: "string" }),
+	defenseDateSetBy: int("defense_date_set_by"),
+	caseClosedAt: datetime("case_closed_at", { mode: "string" }),
+	caseClosedBy: int("case_closed_by"),
 });
 
 export const users = mysqlTable("users", {
@@ -278,9 +296,9 @@ export const reminderSchedules = mysqlTable("reminder_schedules", {
   id: int().autoincrement().notNull(),
   thesisRequestId: int("thesis_request_id").notNull(),
   reminderType: varchar("reminder_type", { length: 64 }).notNull(),
-  scheduledAt: timestamp("scheduled_at", { mode: "date" }).notNull(),
+  scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
   status: mysqlEnum(["pending", "sent", "failed"]).default("pending").notNull(),
-  sentAt: timestamp("sent_at", { mode: "date" }),
+  sentAt: timestamp("sent_at", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
 });
 
@@ -367,6 +385,17 @@ export const examinerDepartments = mysqlTable("examiner_departments", {
 (table) => [
   index("uq_examiner_dept").on(table.userId, table.department),
 ]);
+
+// ─── Abgabefrist-Änderungsprotokoll ─────────────────────────────────────────────────────────
+export const deadlineChanges = mysqlTable("deadline_changes", {
+  id: int().autoincrement().notNull(),
+  thesisRequestId: int("thesis_request_id").notNull().references(() => thesisRequests.id, { onDelete: "cascade" }),
+  previousDeadline: datetime("previous_deadline", { mode: "string" }),
+  newDeadline: datetime("new_deadline", { mode: "string" }).notNull(),
+  reason: text("reason").notNull(),
+  changedBy: int("changed_by").notNull(),
+  changedAt: datetime("changed_at", { mode: "string" }).notNull(),
+});
 
 // ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────────────────────
 import { InferInsertModel } from "drizzle-orm";

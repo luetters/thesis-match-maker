@@ -8,7 +8,223 @@ import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
-type ActiveTab = "unassigned" | "proposals" | "programmes" | "enrollment" | "defense" | "history";
+type ActiveTab = "unassigned" | "proposals" | "programmes" | "enrollment" | "defense" | "history" | "workflow";
+
+// ─── OfficialStatusBadge ──────────────────────────────────────────────────────
+function OfficialStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    not_registered: { label: "Nicht angemeldet",         cls: "bg-gray-50 text-gray-500 border-gray-200" },
+    registered:     { label: "Angemeldet – Zulassung ausstehend", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    admitted:       { label: "Zugelassen",               cls: "bg-green-50 text-green-700 border-green-200" },
+    case_closed:    { label: "Akte übermittelt",         cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  };
+  const s = map[status] ?? { label: status, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+}
+
+// ─── AdminWorkflowTab ─────────────────────────────────────────────────────────
+function AdminWorkflowTab() {
+  const utils = trpc.useUtils();
+  const { data: theses, isLoading } = trpc.adminWorkflow.getRegisteredTheses.useQuery();
+  const [selected, setSelected] = useState<number | null>(null);
+  const [action, setAction] = useState<"register" | "admit" | "extend" | "defense" | "close" | null>(null);
+  const [deadline, setDeadline] = useState("");
+  const [note, setNote] = useState("");
+  const [reason, setReason] = useState("");
+  const [defenseDate, setDefenseDate] = useState("");
+  const [showHistory, setShowHistory] = useState<number | null>(null);
+
+  const { data: deadlineHistory } = trpc.adminWorkflow.getDeadlineChanges.useQuery(
+    { thesisRequestId: showHistory! },
+    { enabled: showHistory !== null }
+  );
+
+  const invalidate = () => utils.adminWorkflow.getRegisteredTheses.invalidate();
+
+  const registerMut = trpc.adminWorkflow.registerThesis.useMutation({
+    onSuccess: () => { toast.success("Arbeit offiziell angemeldet."); invalidate(); setAction(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const admitMut = trpc.adminWorkflow.admitThesis.useMutation({
+    onSuccess: () => { toast.success("Thesis zugelassen."); invalidate(); setAction(null); setDeadline(""); setNote(""); },
+    onError: (e) => toast.error(e.message),
+  });
+  const extendMut = trpc.adminWorkflow.extendDeadline.useMutation({
+    onSuccess: () => { toast.success("Abgabefrist verlängert."); invalidate(); setAction(null); setDeadline(""); setReason(""); if (showHistory) utils.adminWorkflow.getDeadlineChanges.invalidate({ thesisRequestId: showHistory }); },
+    onError: (e) => toast.error(e.message),
+  });
+  const defenseMut = trpc.adminWorkflow.setDefenseDate.useMutation({
+    onSuccess: () => { toast.success("Verteidigungsdatum eingetragen."); invalidate(); setAction(null); setDefenseDate(""); },
+    onError: (e) => toast.error(e.message),
+  });
+  const closeMut = trpc.adminWorkflow.closeCase.useMutation({
+    onSuccess: () => { toast.success("Akte als vollständig übermittelt markiert."); invalidate(); setAction(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const selectedThesis = (theses ?? []).find((t) => t.id === selected);
+
+  function openAction(id: number, a: typeof action) {
+    setSelected(id);
+    setAction(a);
+    setDeadline(""); setNote(""); setReason(""); setDefenseDate("");
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+        Übersicht aller offiziell angemeldeten und zugelassenen Abschlussarbeiten. Hier können Sie den Verwaltungsworkflow steuern.
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
+      ) : (theses ?? []).length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <p className="text-lg font-medium">Keine Einträge vorhanden</p>
+          <p className="text-sm mt-1">Sobald Studierende ihre Arbeit offiziell anmelden, erscheinen sie hier.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {(theses ?? []).map((thesis) => (
+            <div key={thesis.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-xs font-mono text-gray-400">#{thesis.id}</span>
+                    <OfficialStatusBadge status={thesis.officialRegistrationStatus ?? "not_registered"} />
+                  </div>
+                  <p className="font-medium text-gray-900 truncate">{thesis.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{thesis.studentName ?? "–"} · {thesis.degreeType ?? "–"} · {thesis.department ?? "–"}</p>
+                  {thesis.submissionDeadline && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Abgabefrist: <span className="font-medium">{formatDate(thesis.submissionDeadline)}</span>
+                      {thesis.defenseDate && <> · Verteidigung: <span className="font-medium">{formatDate(thesis.defenseDate)}</span></>}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {thesis.officialRegistrationStatus === "not_registered" && (
+                    <button onClick={() => openAction(thesis.id, "register")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 transition-colors">Anmelden</button>
+                  )}
+                  {thesis.officialRegistrationStatus === "registered" && (
+                    <button onClick={() => openAction(thesis.id, "admit")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#76B900] text-white hover:bg-[var(--primary)] transition-colors">Zulassen</button>
+                  )}
+                  {thesis.officialRegistrationStatus === "admitted" && (<>
+                    <button onClick={() => openAction(thesis.id, "extend")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">Frist verlängern</button>
+                    <button onClick={() => openAction(thesis.id, "defense")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">Verteidigung</button>
+                    <button onClick={() => openAction(thesis.id, "close")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors">Akte schließen</button>
+                  </>)}
+                  <button onClick={() => setShowHistory(showHistory === thesis.id ? null : thesis.id)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 transition-colors">Protokoll</button>
+                </div>
+              </div>
+              {/* Fristprotokoll */}
+              {showHistory === thesis.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs font-medium text-gray-600 mb-2">Abgabefrist-Änderungsprotokoll</p>
+                  {(deadlineHistory ?? []).length === 0 ? (
+                    <p className="text-xs text-gray-400">Keine Friständerungen protokolliert.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {(deadlineHistory ?? []).map((entry) => (
+                        <div key={entry.id} className="flex items-start gap-2 text-xs text-gray-600">
+                          <span className="text-gray-400 whitespace-nowrap">{formatDate(entry.changedAt)}</span>
+                          <span className="text-gray-400">→</span>
+                          <span>Frist geändert zu <strong>{formatDate(entry.newDeadline)}</strong> (vorher: {formatDate(entry.previousDeadline)}). Begründung: {entry.reason}. Von: {entry.changedByName ?? "–"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Aktions-Dialog */}
+      {action && selected !== null && selectedThesis && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              {action === "register" && "Arbeit offiziell anmelden"}
+              {action === "admit" && "Thesis zulassen"}
+              {action === "extend" && "Abgabefrist verlängern"}
+              {action === "defense" && "Verteidigungsdatum eintragen"}
+              {action === "close" && "Akte vollständig übermitteln"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4 line-clamp-2">{selectedThesis.title}</p>
+
+            {action === "register" && (
+              <p className="text-sm text-gray-700 mb-4">Die Arbeit wird als offiziell angemeldet markiert. Zulassung ist noch ausstehend.</p>
+            )}
+            {(action === "admit" || action === "extend") && (
+              <div className="space-y-3 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {action === "admit" ? "Abgabedatum" : "Neues Abgabedatum"} <span className="text-red-500">*</span>
+                  </label>
+                  <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30" />
+                </div>
+                {action === "admit" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hinweis (optional)</label>
+                    <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={512}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 resize-none" />
+                  </div>
+                )}
+                {action === "extend" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Begründung <span className="text-red-500">*</span></label>
+                    <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} maxLength={512}
+                      placeholder="z. B. Krankheit, besondere Umstände…"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 resize-none" />
+                  </div>
+                )}
+              </div>
+            )}
+            {action === "defense" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verteidigungsdatum <span className="text-red-500">*</span></label>
+                <input type="date" value={defenseDate} onChange={(e) => setDefenseDate(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30" />
+              </div>
+            )}
+            {action === "close" && (
+              <p className="text-sm text-gray-700 mb-4">Die Akte wird als vollständig übermittelt markiert. Dieser Schritt schließt den Verwaltungsvorgang ab.</p>
+            )}
+
+            <div className="flex gap-3">
+              <button onClick={() => setAction(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Abbrechen</button>
+              <button
+                disabled={
+                  (action === "admit" && !deadline) ||
+                  (action === "extend" && (!deadline || !reason.trim())) ||
+                  (action === "defense" && !defenseDate) ||
+                  registerMut.isPending || admitMut.isPending || extendMut.isPending || defenseMut.isPending || closeMut.isPending
+                }
+                onClick={() => {
+                  if (action === "register") registerMut.mutate({ thesisRequestId: selected });
+                  if (action === "admit") admitMut.mutate({ thesisRequestId: selected, submissionDeadline: deadline, note: note || undefined });
+                  if (action === "extend") extendMut.mutate({ thesisRequestId: selected, newDeadline: deadline, reason });
+                  if (action === "defense") defenseMut.mutate({ thesisRequestId: selected, defenseDate });
+                  if (action === "close") closeMut.mutate({ thesisRequestId: selected });
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] disabled:opacity-50 transition-colors"
+              >
+                {(registerMut.isPending || admitMut.isPending || extendMut.isPending || defenseMut.isPending || closeMut.isPending) ? "Wird gespeichert…" : "Bestätigen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 function formatDate(d: Date | string | null | undefined) {
@@ -532,6 +748,7 @@ export default function PavDashboard() {
     { id: "proposals",   label: "Vorschläge", badge: pendingCount },
     { id: "enrollment",  label: "Anmeldefsähigkeit", badge: enrollmentCount },
     { id: "defense",     label: "Prüfungsfähigkeit", badge: defenseCount },
+    { id: "workflow",    label: "Anmeldung & Zulassung" },
     { id: "history",     label: "Entscheidungshistorie" },
     { id: "programmes",  label: t.pav.myProgrammes },
   ];
@@ -768,6 +985,8 @@ export default function PavDashboard() {
           </div>
         )}
 
+        {/* Tab: Anmeldung & Zulassung */}
+        {activeTab === "workflow" && <AdminWorkflowTab />}
         {/* Tab: Entscheidungshistorie */}
         {activeTab === "history" && <DecisionHistoryTab />}
 

@@ -1,0 +1,1 @@
+ALTER TABLE `deadline_changes` MODIFY COLUMN `changed_at` timestamp NOT NULL DEFAULT (now());

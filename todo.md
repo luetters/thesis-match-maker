@@ -1038,3 +1038,19 @@
 - [x] Profile.tsx: Hinweistext "Stammt aus der Anmeldung, nicht änderbar" unter den Feldern
 - [x] LanguageContext.tsx: Übersetzungsschlüssel für Fachbereich/Studienfach read-only Hinweis
 - [x] DB: student@htw-berlin.com → department=FB3, programmeId=Bachelor International Business (ID 4)
+
+## Verwaltungsworkflow (Anmeldung & Zulassung)
+
+- [ ] DB: Felder officialRegistrationStatus, admissionStatus, defenseDate, caseClosedAt, caseClosedBy zu thesis_requests hinzufügen
+- [ ] DB: Neue Tabelle deadline_changes (Protokoll aller Abgabefrist-Änderungen)
+- [ ] DB: Migration ausführen (pnpm db:push)
+- [ ] Backend: PAV-Prozedur setOfficialRegistration
+- [ ] Backend: PAV-Prozedur setAdmission (Zulassung + Abgabedatum)
+- [ ] Backend: PAV-Prozedur extendDeadline (Fristverlängerung mit Begründung)
+- [ ] Backend: PAV-Prozedur setDefenseDate
+- [ ] Backend: PAV-Prozedur closeCase (Akte vollständig übermittelt)
+- [ ] Backend: PAV-Query getRegisteredTheses
+- [ ] Backend: getExaminerAcceptedRequests um neue Felder erweitern
+- [ ] Frontend: PAV-Dashboard neuer Tab Anmeldung & Zulassung
+- [ ] Frontend: Dialoge für alle PAV-Aktionen
+- [ ] Frontend: Prüfer:innen-Ansicht mit Status und Abgabedatum
