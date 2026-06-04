@@ -51,10 +51,6 @@ function useNavItems() {
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
   ];
-  // Kommissionspräferenzen nur für Erstprüfer:innen (role=examiner)
-  if (isFirstExaminer) {
-    items.push({ href: "/examiner/commission", label: "Kommissionspräferenzen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> });
-  }
   return items;
 }
 
@@ -1329,309 +1325,17 @@ function SelectedDropZone({ isOver }: { isOver: boolean }) {
   );
 }
 
-// ─── Commission Preferences ────────────────────────────────────────────────────
-function CommissionPreferences() {
-  const utils = trpc.useUtils();
-  const { data: prefs, isLoading: prefsLoading } = trpc.thesisPhase27.getCommissionPreferences.useQuery();
-  const { data: allCandidates = [], isLoading: candidatesLoading } = trpc.thesisPhase27.getAllSecondExaminerCandidates.useQuery();
-
-  // Ausgewählte IDs in Reihenfolge (rechte Liste)
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  // Aktives Drag-Element
-  const [activeId, setActiveId] = useState<string | null>(null);
-  // Ob ein Element gerade über die rechte Drop-Zone schwebt
-  const [overRight, setOverRight] = useState(false);
-
-  // Präferenzen beim Laden initialisieren
-  useEffect(() => {
-    if (prefs) setSelectedIds(prefs as number[]);
-  }, [prefs]);
-
-  const setMutation = trpc.thesisPhase27.setCommissionPreferences.useMutation({
-    onSuccess: () => {
-      toast.success("Kommissionspräferenzen gespeichert.");
-      utils.thesisPhase27.getCommissionPreferences.invalidate();
-    },
-    onError: (err: any) => toast.error(err.message),
-    onSettled: () => setSaving(false),
-  });
-
-  // Kandidaten-Maps
-  const candidateMap = new Map((allCandidates as any[]).map((c: any) => [c.id, c]));
-  const available = (allCandidates as any[])
-    .filter((c: any) => !selectedIds.includes(c.id))
-    .filter((c: any) => !searchQuery || (c.name ?? "").toLowerCase().includes(searchQuery.toLowerCase()));
-  // Reihenfolge der rechten Liste entspricht selectedIds
-  const selected = selectedIds.map((id) => candidateMap.get(id)).filter(Boolean) as any[];
-
-  const addToSelected = (id: number) => setSelectedIds((prev) => [...prev, id]);
-  const removeFromSelected = (id: number) => setSelectedIds((prev) => prev.filter((x) => x !== id));
-
-  // Move-All: alle verfügbaren (ungefiltert) hinzufügen
-  const addAll = () => {
-    const allAvailableIds = (allCandidates as any[])
-      .filter((c: any) => !selectedIds.includes(c.id))
-      .map((c: any) => c.id);
-    setSelectedIds((prev) => [...prev, ...allAvailableIds]);
-  };
-  // Move-All: alle ausgewählten entfernen
-  const removeAll = () => setSelectedIds([]);
-
-  const handleSave = () => {
-    setSaving(true);
-    setMutation.mutate({ secondExaminerIds: selectedIds });
-  };
-
-  // DnD-Sensoren: 8px Bewegung nötig, damit Klick nicht als Drag gilt
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
-
-  // IDs für SortableContext
-  const availableIds = available.map((c: any) => `available-${c.id}`);
-  const selectedSortableIds = selectedIds.map((id) => `selected-${id}`);
-
-  // Drop-Zone für rechte Liste (wenn leer)
-  const { setNodeRef: setRightDropRef, isOver: isOverRight } = useDroppable({ id: "selected-zone" });
-
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(String(event.active.id));
-  }
-
-  function handleDragOver(event: DragOverEvent) {
-    const { over } = event;
-    if (!over) { setOverRight(false); return; }
-    const overId = String(over.id);
-    setOverRight(overId === "selected-zone" || overId.startsWith("selected-"));
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveId(null);
-    setOverRight(false);
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeIdStr = String(active.id);
-    const overIdStr = String(over.id);
-    const activeData = active.data.current as any;
-    const overData = over.data.current as any;
-
-    // Fall 1: Element aus linker Liste → rechte Liste (oder Drop-Zone)
-    if (activeData?.type === "available") {
-      const candidateId = activeData.candidateId as number;
-      if (overIdStr === "selected-zone" || overData?.type === "selected") {
-        // Einfügen an der richtigen Position
-        if (overData?.type === "selected") {
-          const overCandidateId = overData.candidateId as number;
-          const overIndex = selectedIds.indexOf(overCandidateId);
-          setSelectedIds((prev) => {
-            const next = prev.filter((x) => x !== candidateId);
-            next.splice(overIndex, 0, candidateId);
-            return next;
-          });
-        } else {
-          addToSelected(candidateId);
-        }
-      }
-      return;
-    }
-
-    // Fall 2: Element aus rechter Liste → linke Liste
-    if (activeData?.type === "selected" && overData?.type === "available") {
-      removeFromSelected(activeData.candidateId);
-      return;
-    }
-
-    // Fall 3: Umsortierung innerhalb der rechten Liste
-    if (activeData?.type === "selected" && overData?.type === "selected") {
-      const oldIndex = selectedIds.indexOf(activeData.candidateId);
-      const newIndex = selectedIds.indexOf(overData.candidateId);
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        setSelectedIds((prev) => arrayMove(prev, oldIndex, newIndex));
-      }
-    }
-  }
-
-  // Aktives Drag-Element für Overlay
-  const activeCandidateId = activeId
-    ? parseInt(activeId.replace("available-", "").replace("selected-", ""), 10)
-    : null;
-  const activeCandidate = activeCandidateId ? candidateMap.get(activeCandidateId) : null;
-  const activeType = activeId?.startsWith("available-") ? "available" : "selected";
-
-  if (prefsLoading || candidatesLoading) {
-    return <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">Kommissionspräferenzen</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Wählen Sie die Zweitgutachter:innen aus, mit denen Sie bevorzugt zusammenarbeiten möchten.
-          Ziehen Sie Personen zwischen den Listen oder klicken Sie auf einen Eintrag.
-          Die Reihenfolge in der rechten Liste gibt Ihre Präferenz an.
-        </p>
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-start">
-          {/* Linke Liste: Verfügbare Zweitgutachter:innen */}
-          <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Zweitgutachter:innen</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{available.length} Person{available.length !== 1 ? "en" : ""}</p>
-                </div>
-                <button
-                  onClick={addAll}
-                  disabled={(allCandidates as any[]).filter((c: any) => !selectedIds.includes(c.id)).length === 0}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#76B900]/10 text-[#76B900] hover:bg-[#76B900]/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Alle hinzufügen"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  </svg>
-                  Alle
-                </button>
-              </div>
-              <div className="mt-2 relative">
-                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Suchen..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-[#76B900]/50 focus:border-[#76B900]/50"
-                />
-              </div>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {available.length === 0 ? (
-                <div className="px-4 py-6 text-center text-xs text-gray-400">Alle Kandidat:innen wurden ausgewählt.</div>
-              ) : (
-                <SortableContext items={availableIds} strategy={verticalListSortingStrategy}>
-                  {available.map((c: any) => (
-                    <AvailableItem key={c.id} candidate={c} onAdd={addToSelected} />
-                  ))}
-                </SortableContext>
-              )}
-            </div>
-          </div>
-
-          {/* Mittel-Indikator */}
-          <div className="flex flex-col items-center justify-center gap-2 py-4">
-            <div className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center">
-              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </div>
-            <span className="text-xs text-gray-400 text-center">Ziehen oder<br/>Klicken</span>
-          </div>
-
-          {/* Rechte Liste: Bevorzugte Zweitgutachter:innen */}
-          <div className={`rounded-2xl border overflow-hidden transition-colors ${
-            isOverRight || overRight
-              ? "border-[#76B900] bg-[#76B900]/10 shadow-[0_0_0_3px_rgba(118,185,0,0.15)]"
-              : "border-[#76B900]/30 bg-[#76B900]/5"
-          }`}>
-            <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine bevorzugten Zweitgutachter:innen</h3>
-                  <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Person{selected.length !== 1 ? "en" : ""} ausgewählt · Reihenfolge = Präferenz</p>
-                </div>
-                <button
-                  onClick={removeAll}
-                  disabled={selected.length === 0}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-400 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Alle entfernen"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
-                  </svg>
-                  Alle
-                </button>
-              </div>
-            </div>
-            <div className="max-h-80 overflow-y-auto" ref={setRightDropRef}>
-              {selected.length === 0 ? (
-                <SelectedDropZone isOver={isOverRight || overRight} />
-              ) : (
-                <SortableContext items={selectedSortableIds} strategy={verticalListSortingStrategy}>
-                  {selected.map((c: any, idx: number) => (
-                    <SelectedItem key={c.id} candidate={c} index={idx} onRemove={removeFromSelected} />
-                  ))}
-                </SortableContext>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Drag-Overlay: schwebendes Element beim Ziehen */}
-        <DragOverlay>
-          {activeCandidate ? (
-            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${
-              activeType === "available"
-                ? "bg-white border-gray-200"
-                : "bg-[#76B900]/10 border-[#76B900]/40"
-            }`}>
-              <UserAvatar name={activeCandidate.name} email={activeCandidate.email} avatarUrl={activeCandidate.photoUrl ?? activeCandidate.avatarUrl} size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">{activeCandidate.name}</p>
-                {activeCandidate.title && <p className="text-xs text-gray-400 truncate">{activeCandidate.title}</p>}
-              </div>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-
-      {/* Speichern-Button */}
-      <div className="flex items-center justify-between pt-2">
-        <p className="text-xs text-gray-400">
-          {selected.length === 0
-            ? "Ohne Präferenzen stehen alle Zweitgutachter:innen für Studierende zur Verfügung."
-            : `${selected.length} bevorzugte Zweitgutachter:in${selected.length !== 1 ? "nen" : ""} ausgewählt.`}
-        </p>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50"
-          style={{ backgroundColor: "#76B900" }}
-        >
-          {saving ? (
-            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Speichern...</>
-          ) : (
-            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Präferenzen speichern</>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ────────────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
   const [location, navigate] = useLocation();
   // URL-basierte Tab-Initialisierung: /examiner/profile öffnet direkt den Profil-Tab
-  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "commission" => {
+  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" => {
     if (location === "/examiner/profile") return "profile";
     if (location === "/examiner/requests") return "requests";
     if (location === "/examiner/colloquiums") return "colloquiums";
     if (location === "/examiner/history") return "history";
     if (location === "/examiner/programmes") return "profile"; // Weiterleitung: Studiengänge jetzt in Mein Profil
-    if (location === "/examiner/commission") return "commission";
+    if (location === "/examiner/commission") return "profile"; // Kommissionspräferenzen jetzt in Mein Profil
     return "overview";
   };
   const [activeTab, setActiveTab] = useState(getInitialTab);
@@ -1664,7 +1368,7 @@ export default function ExaminerDashboard() {
       else if (item.href === "/examiner/colloquiums") setActiveTab("colloquiums");
       else if (item.href === "/examiner/history") setActiveTab("history");
       else if (item.href === "/examiner/profile") setActiveTab("profile");
-      else if (item.href === "/examiner/commission") setActiveTab("commission");
+
     },
   }));
 
@@ -1674,7 +1378,6 @@ export default function ExaminerDashboard() {
     colloquiums: t.examiner.colloquiums,
     history: t.examiner.history,
     profile: t.examiner.profile,
-    commission: "Kommissionspräferenzen",
   };
 
   return (
@@ -1684,7 +1387,6 @@ export default function ExaminerDashboard() {
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "history" && <ExaminerStatusHistory />}
       {activeTab === "profile" && <Profile embedded={true} />}
-      {activeTab === "commission" && <CommissionPreferences />}
     </ThesisDashboardLayout>
   );
 }

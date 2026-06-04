@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
+import { CommissionPreferences } from "@/components/CommissionPreferences";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -299,7 +300,7 @@ function SemesterCapacityBlock() {
   const upcomingSemesters = generateUpcomingSemesters();
 
   const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
-  const updateCapacityMutation = trpc.examiner.updateSemesterCapacity.useMutation({
+  const updateCapacityMutation = trpc.examiner.upsertSemesterCapacity.useMutation({
     onSuccess: () => { utils.examiner.myProfile.invalidate(); },
   });
 
@@ -307,7 +308,7 @@ function SemesterCapacityBlock() {
 
   useEffect(() => {
     if (!profile) return;
-    const existing: SemesterCapacity[] = (profile.semesterCapacities ?? []) as SemesterCapacity[];
+    const existing: SemesterCapacity[] = ((profile as any).semesterCapacities ?? []) as SemesterCapacity[];
     const merged = upcomingSemesters.map((sem) => {
       const found = existing.find((c) => c.semester === sem);
       return found ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
@@ -320,7 +321,11 @@ function SemesterCapacityBlock() {
   };
 
   const handleSave = async () => {
-    await updateCapacityMutation.mutateAsync({ capacities });
+    await updateCapacityMutation.mutateAsync(capacities[0] ?? { semester: '', maxFirst: 0, maxSecond: 0 });
+    // Alle Kapazitäten speichern
+    for (const cap of capacities) {
+      await updateCapacityMutation.mutateAsync(cap);
+    }
     toast.success("Kapazitäten gespeichert");
   };
 
@@ -414,6 +419,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const [examinerKeywords, setExaminerKeywords] = useState<string[]>([]);
   const [examinerProgrammeIds, setExaminerProgrammeIds] = useState<number[] | null>(null); // null = alle
   const { data: allProgrammes } = trpc.programmes.list.useQuery(undefined, { enabled: !!profile });
+  // Einklappbare Sektionen
+  const [programmesOpen, setProgrammesOpen] = useState(false);
+  const [commissionOpen, setCommissionOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -1253,8 +1261,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
-              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-              <span style={{ color: "#2563eb" }}>{p.sectionExaminer}</span>
+              <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+              <span style={{ color: "#76B900" }}>{p.sectionExaminer}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {editMode
@@ -1276,10 +1284,10 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Biographie & Forschung' : 'Biography & Research'}</span>
+              <span style={{ color: "#76B900" }}>{lang === 'de' ? 'Biographie & Forschung' : 'Biography & Research'}</span>
             </h2>
             <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Diese Informationen sind auf Ihrem öffentlichen Profil sichtbar und helfen Studierenden, Sie besser kennenzulernen.' : 'This information is visible on your public profile and helps students get to know you better.'}</p>
             <div className="space-y-6">
@@ -1408,15 +1416,28 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
 
         {/* ── Prüfer:innen: Studiengangbeteiligung (via ExaminerProgrammeSelector) ── */}
         {isExaminer && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <button
+              type="button"
+              onClick={() => setProgrammesOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span className="text-base font-semibold" style={{ color: "#76B900" }}>{lang === 'de' ? 'Studiengangbeteiligung' : 'Study Programme Participation'}</span>
+              </div>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${programmesOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Studiengangbeteiligung' : 'Study Programme Participation'}</span>
-            </h2>
-            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie fest, in welchen Studiengängen Sie Abschlussarbeiten betreuen und prüfen dürfen.' : 'Define in which study programmes you are authorised to supervise and examine theses.'}</p>
-            <ExaminerProgrammeSelector />
+            </button>
+            {programmesOpen && (
+              <div className="px-6 pb-6">
+                <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie fest, in welchen Studiengängen Sie Abschlussarbeiten betreuen und prüfen dürfen.' : 'Define in which study programmes you are authorised to supervise and examine theses.'}</p>
+                <ExaminerProgrammeSelector />
+              </div>
+            )}
           </div>
         )}
 
@@ -1424,10 +1445,10 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <svg className="w-5 h-5" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172 a 4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              <span style={{ color: "#2563eb" }}>{lang === 'de' ? 'Online-Links & Profile' : 'Online Links & Profiles'}</span>
+              <span style={{ color: "#76B900" }}>{lang === 'de' ? 'Online-Links & Profile' : 'Online Links & Profiles'}</span>
             </h2>
             <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Ergänzen Sie Links zu Ihren externen Profilen und Buchungssystemen. Diese werden auf Ihrem öffentlichen Profil angezeigt.' : 'Add links to your external profiles and booking systems. These will be displayed on your public profile.'}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1546,8 +1567,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              E-Mail-Templates
+              <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              <span style={{ color: "#76B900" }}>E-Mail-Templates</span>
             </h2>
             <p className="text-sm text-gray-500 mb-5">
               Definieren Sie persönliche Vorlagen für häufige Antworten an Studierende. Die Variablen werden beim Versand automatisch durch die konkreten Daten ersetzt.
@@ -1558,6 +1579,33 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
 
         {/* ── Betreuungskapazitäten (nur für Prüfer:innen) ── */}
         {isExaminer && <SemesterCapacityBlock />}
+
+        {/* ── Kommissionspräferenzen (nur für Erstprüfer:innen) ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <button
+              type="button"
+              onClick={() => setCommissionOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="text-base font-semibold" style={{ color: "#76B900" }}>{lang === 'de' ? 'Kommissionspräferenzen' : 'Commission Preferences'}</span>
+              </div>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${commissionOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {commissionOpen && (
+              <div className="px-6 pb-6">
+                <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie Ihre bevorzugten Zweitprüfer:innen für Kolloquien fest. Diese Präferenzen werden bei der automatischen Zuteilung berücksichtigt.' : 'Define your preferred second examiners for colloquiums. These preferences are considered during automatic assignment.'}</p>
+                <CommissionPreferences />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

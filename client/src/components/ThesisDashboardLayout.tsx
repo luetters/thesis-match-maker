@@ -5,6 +5,29 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
 
+// ─── App-Logo mit Fallback ────────────────────────────────────────────────────
+function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
+  const [imgError, setImgError] = useState(false);
+  if (imgError) {
+    return (
+      <div
+        className={`${className} rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-white text-xs`}
+        style={{ background: "linear-gradient(135deg, #76B900, #5a8f00)" }}
+      >
+        TM
+      </div>
+    );
+  }
+  return (
+    <img
+      src="/manus-storage/logo-sidebar_8dd3989f.webp"
+      alt="HTW Berlin Thesis Match Logo"
+      className={`${className} object-contain flex-shrink-0`}
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
 // ─── Passwort-ändern-Dialog ─────────────────────────────────────────────────
 function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
@@ -297,11 +320,7 @@ function Sidebar({
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
-          <img
-            src="/manus-storage/logo-sidebar_8dd3989f.webp"
-            alt="Thesis Match Maker Logo"
-            className="w-8 h-8 object-contain flex-shrink-0"
-          />
+          <AppLogo className="w-8 h-8" />
           <div>
             <div className="text-sm font-bold text-gray-900 leading-tight">Thesis Match</div>
             <div className="text-xs text-gray-400 leading-tight">HTW Berlin · FB 3</div>
