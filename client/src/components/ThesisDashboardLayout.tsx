@@ -423,6 +423,13 @@ export function ThesisDashboardLayout({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Navigation darf nicht während des Renderings ausgelöst werden (React 19)
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate("/");
+    }
+  }, [loading, isAuthenticated, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -435,7 +442,6 @@ export function ThesisDashboardLayout({
   }
 
   if (!isAuthenticated) {
-    navigate("/");
     return null;
   }
 
