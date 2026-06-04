@@ -365,7 +365,7 @@ function SemesterCapacityBlock() {
         <button
           onClick={handleSave}
           disabled={updateCapacityMutation.isPending}
-          className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+          className="px-5 py-2 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50" style={{ backgroundColor: '#76B900' }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5e9200')} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#76B900')}
         >
           {updateCapacityMutation.isPending ? "Wird gespeichert…" : "Kapazitäten speichern"}
         </button>
@@ -422,6 +422,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   // Einklappbare Sektionen
   const [programmesOpen, setProgrammesOpen] = useState(false);
   const [commissionOpen, setCommissionOpen] = useState(false);
+  const [bioOpen, setBioOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -1280,15 +1281,125 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
-        {/* ── Prüfer:innen: Biographie & Forschung ── */}
+        {/* ── Prüfer:innen: Online-Links ── */}
         {isExaminer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
               <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172 a 4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              <span style={{ color: "#76B900" }}>{lang === 'de' ? 'Biographie & Forschung' : 'Biography & Research'}</span>
+              <span style={{ color: "#76B900" }}>{lang === 'de' ? 'Online-Links & Profile' : 'Online Links & Profiles'}</span>
             </h2>
+            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Ergänzen Sie Links zu Ihren externen Profilen und Buchungssystemen. Diese werden auf Ihrem öffentlichen Profil angezeigt.' : 'Add links to your external profiles and booking systems. These will be displayed on your public profile.'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {editMode ? (
+                <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
+                  {profile.website ? (
+                    <LinkDisplay href={profile.website} label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      iconBg="#f0fdf4" iconColor="#76b900" hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
+                  {profile.bookingUrl ? (
+                    <LinkDisplay href={profile.bookingUrl} label={p.fieldBookingLabel}
+                      iconBg="#faf5ff" iconColor="#7c3aed" hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
+                  {profile.linkedIn ? (
+                    <LinkDisplay href={profile.linkedIn} label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
+                      iconBg="#0a66c2" hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
+                  {profile.researchGate ? (
+                    <LinkDisplay href={profile.researchGate} label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
+                      iconBg="#00d0af" hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
+                  {profile.htwProfileUrl ? (
+                    <LinkDisplay href={profile.htwProfileUrl} label="HTW Berlin"
+                      iconBg="#1a5490" hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<span className="text-white font-bold text-xs">HTW</span>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+              {editMode ? (
+                <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
+                  {profile.miscLink ? (
+                    <LinkDisplay href={profile.miscLink} label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      iconBg="#f3f4f6" iconColor="#6b7280" hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
+                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
+                      iconContent={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
+                    />
+                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Prüfer:innen: Biographie & Forschung ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <button
+              type="button"
+              onClick={() => setBioOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span className="text-base font-semibold" style={{ color: "#76B900" }}>{lang === 'de' ? 'Biographie & Forschung' : 'Biography & Research'}</span>
+              </div>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${bioOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {bioOpen && (
+            <div className="px-6 pb-6">
             <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Diese Informationen sind auf Ihrem öffentlichen Profil sichtbar und helfen Studierenden, Sie besser kennenzulernen.' : 'This information is visible on your public profile and helps students get to know you better.'}</p>
             <div className="space-y-6">
 
@@ -1411,6 +1522,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 )}
               </div>
             </div>
+            </div>
+            )}
           </div>
         )}
 
@@ -1441,102 +1554,30 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
-        {/* ── Prüfer:innen: Online-Links ── */}
+        {/* ── Kommissionspräferenzen (direkt nach Studiengangbeteiligung) ── */}
         {isExaminer && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172 a 4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <button
+              type="button"
+              onClick={() => setCommissionOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-6 py-5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="text-base font-semibold" style={{ color: "#76B900" }}>{lang === 'de' ? 'Kommissionspräferenzen' : 'Commission Preferences'}</span>
+              </div>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${commissionOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              <span style={{ color: "#76B900" }}>{lang === 'de' ? 'Online-Links & Profile' : 'Online Links & Profiles'}</span>
-            </h2>
-            <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Ergänzen Sie Links zu Ihren externen Profilen und Buchungssystemen. Diese werden auf Ihrem öffentlichen Profil angezeigt.' : 'Add links to your external profiles and booking systems. These will be displayed on your public profile.'}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {editMode ? (
-                <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
-                  {profile.website ? (
-                    <LinkDisplay href={profile.website} label={profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                      iconBg="#f0fdf4" iconColor="#76b900" hoverBorderColor="hover:border-[#76b900]" hoverBgColor="hover:bg-[#f6ffe0]" textColor="text-[#76b900]"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-              {editMode ? (
-                <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
-                  {profile.bookingUrl ? (
-                    <LinkDisplay href={profile.bookingUrl} label={p.fieldBookingLabel}
-                      iconBg="#faf5ff" iconColor="#7c3aed" hoverBorderColor="hover:border-[#7c3aed]" hoverBgColor="hover:bg-[#faf5ff]" textColor="text-[#7c3aed]"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<svg className="w-4 h-4" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-              {editMode ? (
-                <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
-                  {profile.linkedIn ? (
-                    <LinkDisplay href={profile.linkedIn} label={profile.linkedIn.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "").replace(/\/$/, "") || "LinkedIn"}
-                      iconBg="#0a66c2" hoverBorderColor="hover:border-[#0a66c2]" hoverBgColor="hover:bg-[#eff6ff]" textColor="text-[#0a66c2]"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-              {editMode ? (
-                <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
-                  {profile.researchGate ? (
-                    <LinkDisplay href={profile.researchGate} label={profile.researchGate.replace(/^https?:\/\/(www\.)?researchgate\.net\/profile\//, "").replace(/\/$/, "") || "ResearchGate"}
-                      iconBg="#00d0af" hoverBorderColor="hover:border-[#00d0af]" hoverBgColor="hover:bg-[#ecfdf5]" textColor="text-[#00a896]"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<span className="text-white font-bold text-xs" style={{ letterSpacing: "-0.5px" }}>RG</span>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-              {editMode ? (
-                <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
-                  {profile.htwProfileUrl ? (
-                    <LinkDisplay href={profile.htwProfileUrl} label="HTW Berlin"
-                      iconBg="#1a5490" hoverBorderColor="hover:border-[#1a5490]" hoverBgColor="hover:bg-[#f0f4f8]" textColor="text-[#1a5490]"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<span className="text-white font-bold text-xs">HTW</span>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-              {editMode ? (
-                <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
-                  {profile.miscLink ? (
-                    <LinkDisplay href={profile.miscLink} label={profile.miscLink.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                      iconBg="#f3f4f6" iconColor="#6b7280" hoverBorderColor="hover:border-gray-400" hoverBgColor="hover:bg-gray-50" textColor="text-gray-700"
-                      copiedMsg={p.profileLinkCopied} failMsg={p.profileLinkCopyFailed}
-                      iconContent={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
-                    />
-                  ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
-                </div>
-              )}
-            </div>
+            </button>
+            {commissionOpen && (
+              <div className="px-6 pb-6">
+                <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie Ihre bevorzugten Zweitprüfer:innen für Kolloquien fest. Diese Präferenzen werden bei der automatischen Zuteilung berücksichtigt.' : 'Define your preferred second examiners for colloquiums. These preferences are considered during automatic assignment.'}</p>
+                <CommissionPreferences />
+              </div>
+            )}
           </div>
         )}
 
@@ -1579,33 +1620,6 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
 
         {/* ── Betreuungskapazitäten (nur für Prüfer:innen) ── */}
         {isExaminer && <SemesterCapacityBlock />}
-
-        {/* ── Kommissionspräferenzen (nur für Erstprüfer:innen) ── */}
-        {isExaminer && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-            <button
-              type="button"
-              onClick={() => setCommissionOpen((o) => !o)}
-              className="w-full flex items-center justify-between px-6 py-5 text-left"
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span className="text-base font-semibold" style={{ color: "#76B900" }}>{lang === 'de' ? 'Kommissionspräferenzen' : 'Commission Preferences'}</span>
-              </div>
-              <svg className={`w-5 h-5 text-gray-400 transition-transform ${commissionOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {commissionOpen && (
-              <div className="px-6 pb-6">
-                <p className="text-sm text-gray-500 mb-5">{lang === 'de' ? 'Legen Sie Ihre bevorzugten Zweitprüfer:innen für Kolloquien fest. Diese Präferenzen werden bei der automatischen Zuteilung berücksichtigt.' : 'Define your preferred second examiners for colloquiums. These preferences are considered during automatic assignment.'}</p>
-                <CommissionPreferences />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
