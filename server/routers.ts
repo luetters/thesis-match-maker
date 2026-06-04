@@ -2271,21 +2271,19 @@ export const appRouter = router({
   }),
 
   // ─── E-Mail-Vorlagen (Superadmin) ─────────────────────────────────────────
-  emailTemplates: router({
+    emailTemplates: router({
     /** Alle Vorlagen abrufen */
-    getAll: superadminProcedure.query(async () => {
+    getAll: adminProcedure.query(async () => {
       return getAllEmailTemplates();
     }),
-
     /** Einzelne Vorlage abrufen */
-    getByKey: superadminProcedure
+    getByKey: adminProcedure
       .input(z.object({ key: z.string() }))
       .query(async ({ input }) => {
         return getEmailTemplateByKey(input.key);
       }),
-
     /** Vorlage aktualisieren */
-    update: superadminProcedure
+    update: adminProcedure
       .input(z.object({
         key: z.string(),
         subject: z.string().optional(),
