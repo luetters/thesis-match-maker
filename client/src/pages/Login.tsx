@@ -213,6 +213,8 @@ export default function Login() {
       role: selectedRole ?? "student",
       matrikelNr: regMatrikelNr.trim() || undefined,
       programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
+      department: (selectedRole === "student") ? regFachbereich : undefined,
+      thesisType: (selectedRole === "student") ? regDegreeType : undefined,
     };
     registerMutation.mutate(regPayload);
   }
@@ -664,8 +666,14 @@ export default function Login() {
                             onChange={(e) => { setRegFachbereich(e.target.value); setRegProgrammeId(null); }}
                             className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
                           >
-                            {["FB1","FB2","FB3","FB4","FB5"].map(fb => (
-                              <option key={fb} value={fb} className="bg-gray-900">{fb}</option>
+                            {[
+                              { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
+                              { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+                              { value: "FB3", label: "FB 3 – Wirtschaftswissenschaften" },
+                              { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+                              { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
+                            ].map(fb => (
+                              <option key={fb.value} value={fb.value} className="bg-gray-900">{fb.label}</option>
                             ))}
                           </select>
                           {/* Studiengang-Dropdown */}
@@ -679,7 +687,7 @@ export default function Login() {
                               className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
                             >
                               <option value="" className="bg-gray-900">-- Studiengang wählen --</option>
-                              {(programmesQuery.data ?? []).filter((p: any) => p.level === regDegreeType && (p.fachbereich ?? 'FB3') === regFachbereich).map((p: any) => (
+                              {(programmesQuery.data ?? []).filter((p: any) => p.level === regDegreeType && (p.fachbereich === regFachbereich || (!p.fachbereich && regFachbereich === 'FB3'))).map((p: any) => (
                                 <option key={p.id} value={p.id} className="bg-gray-900">
                                   {p.abbreviation ? `${p.abbreviation} – ${p.name}` : p.name}
                                 </option>

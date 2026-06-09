@@ -459,6 +459,8 @@ export const appRouter = router({
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
           programmeId: z.number().int().positive().optional(),
+          department: z.string().optional(),
+          thesisType: z.enum(["bachelor", "master"]).optional(),
         })
       )
       .mutation(async ({ input }) => {
@@ -510,6 +512,8 @@ export const appRouter = router({
           passwordHash,
           lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
           ...(input.matrikelNr ? { matrikelNr: input.matrikelNr.trim() } : {}),
+          ...(input.department ? { department: input.department } : {}),
+          ...(input.thesisType ? { thesisType: input.thesisType } : {}),
         } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
