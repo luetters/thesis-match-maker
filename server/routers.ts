@@ -157,6 +157,11 @@ import {
   setDefenseDate,
   closeCase,
   getDeadlineChanges,
+  createExaminerInitiatedDraft,
+  getDraftByInviteToken,
+  confirmStudentDraft,
+  getExaminerDraftRequests,
+  getAllDraftRequests,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -2966,7 +2971,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         const student = await getUserById(req.studentId);
         if (!student?.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse des Prüflings gefunden." });
-        await sendEmail({
+                await sendEmail({
           to: student.email,
           subject: input.subject,
           html: input.body.replace(/\n/g, "<br>"),
@@ -2974,6 +2979,116 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
-});
 
+  // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────
+  invite: router({
+    /**
+     * Erstgutachter oder PAV legt einen Entwurf-Antrag an und lädt den Studierenden per E-Mail ein.
+     */
+    createDraft: protectedProcedure
+      .input(z.object({
+        studentEmail: z.string().email(),
+        title: z.string().min(3).max(512),
+        description: z.string().min(10),
+        department: z.string().min(1).max(255),
+        targetSemester: z.string().min(1).max(32),
+        language: z.enum(["de", "en"]),
+        degreeType: z.enum(["bachelor", "master"]),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isExaminer = userHasRole(ctx.user, "examiner");
+        const isPav = userHasRole(ctx.user, "pav");
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isExaminer && !isPav && !isAdmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen oder PAV können Studierende einladen." });
+        }
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(32).toString("hex");
+        const role = isExaminer ? "examiner" : isPav ? "pav" : "admin";
+        await createExaminerInitiatedDraft({
+          examinerId: ctx.user.id,
+          initiatedByRole: role,
+          studentEmail: input.studentEmail,
+          title: input.title,
+          description: input.description,
+          department: input.department,
+          targetSemester: input.targetSemester,
+          language: input.language,
+          degreeType: input.degreeType,
+          inviteToken: token,
+        });
+        // Einladungs-E-Mail senden
+        const confirmUrl = `${input.origin}/thesis/confirm?token=${token}`;
+        const examinerName = ctx.user.name ?? "Ihre Prüfer:in";
+        await sendEmail({
+          to: input.studentEmail,
+          subject: `Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`,
+          html: `
+            <p>Sehr geehrte:r Studierende:r,</p>
+            <p><strong>${examinerName}</strong> hat einen Antrag für Ihre Abschlussarbeit angelegt:</p>
+            <p><strong>Thema:</strong> ${input.title}</p>
+            <p>Bitte überprüfen Sie die Angaben, ergänzen Sie Ihre Informationen und bestätigen Sie den Antrag unter folgendem Link:</p>
+            <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
+            <p>Dieser Link ist 14 Tage gültig.</p>
+            <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
+          `,
+        });
+        return { success: true, token };
+      }),
+
+    /**
+     * Öffentliche Prozedur: Holt den Entwurf anhand des Tokens (für die Bestätigungsseite).
+     */
+    getDraft: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const draft = await getDraftByInviteToken(input.token);
+        if (!draft) throw new TRPCError({ code: "NOT_FOUND", message: "Einladungs-Token nicht gefunden oder abgelaufen." });
+        return draft;
+      }),
+
+    /**
+     * Studierende:r bestätigt den Antrag (muss eingeloggt sein).
+     */
+    confirmDraft: protectedProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        title: z.string().min(3).max(512).optional(),
+        description: z.string().min(10).optional(),
+        abstract: z.string().max(2000).optional(),
+        targetSemester: z.string().max(32).optional(),
+        language: z.enum(["de", "en"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!userHasRole(ctx.user, "student") && !userHasRole(ctx.user, "admin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Studierende können einen Antrag bestätigen." });
+        }
+        const result = await confirmStudentDraft({
+          token: input.token,
+          studentId: ctx.user.id,
+          title: input.title,
+          description: input.description,
+          abstract: input.abstract,
+          targetSemester: input.targetSemester,
+          language: input.language,
+        });
+        return result;
+      }),
+
+    /**
+     * Holt alle Entwurf-Anträge des eingeloggten Erstgutachters.
+     */
+    getMyDrafts: examinerProcedure.query(async ({ ctx }) => {
+      return getExaminerDraftRequests(ctx.user.id);
+    }),
+
+    /**
+     * PAV/Admin: Alle offenen Einladungs-Entwürfe.
+     */
+    getAllDrafts: pavProcedure.query(async () => {
+      return getAllDraftRequests();
+    }),
+  }),
+});
 export type AppRouter = typeof appRouter;

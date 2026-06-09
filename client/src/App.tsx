@@ -21,6 +21,7 @@ import PavRespond from "./pages/PavRespond";
 import DeanDashboard from "./pages/DeanDashboard";
 import Maintenance from "./pages/Maintenance";
 import ResetPassword from "./pages/ResetPassword";
+import ThesisConfirm from "./pages/ThesisConfirm";
 import ExaminerOnboarding from "./pages/ExaminerOnboarding";
 import DeanStats from "./pages/DeanStats";
 import ExaminerManagement from "./pages/ExaminerManagement";
@@ -102,6 +103,9 @@ function Router() {
 
       {/* Passwort-Reset */}
       <Route path="/reset-password" component={ResetPassword} />
+
+      {/* Studierenden-Bestätigung (Examiner/PAV-initiierter Antrag) */}
+      <Route path="/thesis/confirm" component={ThesisConfirm} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />

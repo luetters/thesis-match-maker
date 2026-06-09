@@ -9,6 +9,11 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +45,151 @@ const Icons2 = {
   calendar: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   history: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
 };
+// ─── Semester-Optionen ───────────────────────────────────────────────────────
+function getNextSemesters(): { label: string; value: string }[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  let startYear = currentYear;
+  let startSemester = currentMonth >= 10 ? "WS" : currentMonth >= 4 ? "SoSe" : "WS";
+  if (startSemester === "WS" && currentMonth < 10) startYear -= 1;
+  const semesters = [];
+  for (let i = 0; i < 6; i++) {
+    if (startSemester === "WS") {
+      semesters.push({ label: `WS ${startYear}/${startYear + 1}`, value: `WS${startYear}` });
+      startYear += 1;
+      startSemester = "SoSe";
+    } else {
+      semesters.push({ label: `SoSe ${startYear}`, value: `SoSe${startYear}` });
+      startSemester = "WS";
+    }
+  }
+  return semesters;
+}
+
+const DEPT_OPTIONS = [
+  { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
+  { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+  { value: "FB3", label: "FB 3 – Wirtschaftswissenschaften" },
+  { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+  { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
+];
+
+// ─── Studierenden einladen (Formular) ─────────────────────────────────────────
+function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [studentEmail, setStudentEmail] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [department, setDepartment] = useState("");
+  const [targetSemester, setTargetSemester] = useState("");
+  const [language, setLanguage] = useState<"de" | "en">("de");
+  const [degreeType, setDegreeType] = useState<"bachelor" | "master">("bachelor");
+
+  const createDraft = trpc.invite.createDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Einladung wurde erfolgreich versandt. Der Studierende erhält eine E-Mail zur Bestätigung.");
+      setOpen(false);
+      setStudentEmail(""); setTitle(""); setDescription(""); setDepartment(""); setTargetSemester("");
+      onSuccess?.();
+    },
+    onError: (err) => toast.error(err.message ?? "Fehler beim Versenden der Einladung."),
+  });
+
+  const semesters = getNextSemesters();
+  const canSubmit = studentEmail && title.trim().length >= 3 && description.trim().length >= 10 && department && targetSemester;
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        style={{ backgroundColor: "#76B900" }}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+        Studierenden einladen
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold" style={{ color: "#76B900" }}>Studierenden zur Antragstellung einladen</h3>
+        <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+      </div>
+      <p className="text-sm text-gray-500">
+        Tragen Sie die E-Mail-Adresse des Studierenden und die Eckdaten der Abschlussarbeit ein.
+        Der Studierende erhält eine E-Mail und kann die Angaben ergänzen und bestätigen.
+        Erst nach der Bestätigung beginnt die Suche nach einer Zweitgutachter:in.
+      </p>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold text-gray-700">E-Mail-Adresse des Studierenden <span className="text-red-500">*</span></Label>
+          <Input type="email" value={studentEmail} onChange={e => setStudentEmail(e.target.value)} placeholder="vorname.nachname@htw-berlin.de" className="text-sm" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold text-gray-700">Thema der Abschlussarbeit <span className="text-red-500">*</span></Label>
+          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Vorläufiger Titel" className="text-sm" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold text-gray-700">Aufgabenstellung / Beschreibung <span className="text-red-500">*</span></Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Kurze Beschreibung der Aufgabenstellung" rows={3} className="text-sm resize-none" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold text-gray-700">Fachbereich <span className="text-red-500">*</span></Label>
+            <Select value={department} onValueChange={setDepartment}>
+              <SelectTrigger className="text-sm"><SelectValue placeholder="Fachbereich wählen" /></SelectTrigger>
+              <SelectContent>{DEPT_OPTIONS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold text-gray-700">Zielsemester <span className="text-red-500">*</span></Label>
+            <Select value={targetSemester} onValueChange={setTargetSemester}>
+              <SelectTrigger className="text-sm"><SelectValue placeholder="Semester wählen" /></SelectTrigger>
+              <SelectContent>{semesters.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold text-gray-700">Abschlussart</Label>
+            <Select value={degreeType} onValueChange={v => setDegreeType(v as "bachelor" | "master")}>
+              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bachelor">Bachelor</SelectItem>
+                <SelectItem value="master">Master</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold text-gray-700">Sprache der Arbeit</Label>
+            <Select value={language} onValueChange={v => setLanguage(v as "de" | "en")}>
+              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="de">Deutsch</SelectItem>
+                <SelectItem value="en">Englisch</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3 justify-end pt-2">
+        <Button variant="outline" onClick={() => setOpen(false)} className="text-sm">Abbrechen</Button>
+        <Button
+          disabled={!canSubmit || createDraft.isPending}
+          onClick={() => createDraft.mutate({ studentEmail, title: title.trim(), description: description.trim(), department, targetSemester, language, degreeType, origin: window.location.origin })}
+          className="text-sm text-white"
+          style={{ backgroundColor: "#76B900" }}
+        >
+          {createDraft.isPending ? "Wird gesendet…" : "Einladung versenden"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function useNavItems() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -780,8 +930,15 @@ function Overview() {
     matched: requests?.filter((r) => r.status === "MATCHED").length ?? 0,
   };
 
+  const utils = trpc.useUtils();
+
   return (
     <div className="space-y-6">
+      {/* Einladungsformular */}
+      <div className="flex justify-end">
+        <InviteStudentForm onSuccess={() => utils.thesis.examinerRequests.invalidate()} />
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: t.examiner.statsTotal ?? "Gesamt", value: stats.total, color: "text-gray-900" },

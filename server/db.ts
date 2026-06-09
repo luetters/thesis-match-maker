@@ -4850,3 +4850,209 @@ export async function getDeadlineChanges(thesisRequestId: number) {
     .where(eq(deadlineChanges.thesisRequestId, thesisRequestId))
     .orderBy(desc(deadlineChanges.changedAt));
 }
+
+// ─── Phase: Examiner/PAV-initiierter Antrag ──────────────────────────────────
+
+/**
+ * Erstgutachter oder PAV legt einen Entwurf-Antrag für einen Studierenden an.
+ */
+export async function createExaminerInitiatedDraft(params: {
+  examinerId: number;
+  initiatedByRole: string;
+  studentEmail: string;
+  title: string;
+  description: string;
+  department: string;
+  targetSemester: string;
+  language: "de" | "en";
+  degreeType: "bachelor" | "master";
+  inviteToken: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  // Prüfen ob es bereits einen offenen Entwurf für diese E-Mail gibt
+  const existing = await db
+    .select({ id: thesisRequests.id })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.studentInviteEmail as any, params.studentEmail),
+        inArray(thesisRequests.status as any, ["DRAFT_BY_EXAMINER", "PENDING_STUDENT_CONFIRMATION"] as any)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    throw new Error("Für diese E-Mail-Adresse existiert bereits ein offener Einladungs-Entwurf.");
+  }
+
+  // Prüfen ob ein Nutzer mit dieser E-Mail bereits existiert
+  const existingStudent = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, params.studentEmail))
+    .limit(1);
+
+  const studentId = existingStudent.length > 0 ? existingStudent[0].id : 0;
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  const result = await db.insert(thesisRequests).values({
+    studentId: studentId,
+    examinerId: params.examinerId,
+    title: params.title,
+    description: params.description,
+    department: params.department,
+    targetSemester: params.targetSemester,
+    language: params.language,
+    degreeType: params.degreeType,
+    status: "DRAFT_BY_EXAMINER" as any,
+    initiatedBy: params.examinerId,
+    initiatedByRole: params.initiatedByRole,
+    studentInviteToken: params.inviteToken,
+    studentInviteEmail: params.studentEmail,
+    studentInviteSentAt: now,
+    hasOwnTopic: 1,
+  } as any);
+
+  return result;
+}
+
+/**
+ * Holt einen Entwurf-Antrag anhand des Einladungs-Tokens.
+ */
+export async function getDraftByInviteToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const examinerUser = aliasedTable(users, "examiner_user");
+
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      studentInviteEmail: thesisRequests.studentInviteEmail as any,
+      studentInviteSentAt: thesisRequests.studentInviteSentAt as any,
+      studentConfirmedAt: thesisRequests.studentConfirmedAt as any,
+      initiatedByRole: thesisRequests.initiatedByRole as any,
+      examinerName: examinerUser.name,
+      examinerEmail: examinerUser.email,
+    })
+    .from(thesisRequests)
+    .leftJoin(examinerUser, eq(thesisRequests.examinerId, examinerUser.id))
+    .where(eq(thesisRequests.studentInviteToken as any, token))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
+ * Studierende:r bestätigt den Entwurf-Antrag und ergänzt seine Angaben.
+ * Status wechselt zu PENDING_SECOND_EXAMINER (Suche nach Zweitgutachter beginnt).
+ */
+export async function confirmStudentDraft(params: {
+  token: string;
+  studentId: number;
+  title?: string;
+  description?: string;
+  abstract?: string;
+  targetSemester?: string;
+  language?: "de" | "en";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  const draft = await getDraftByInviteToken(params.token);
+  if (!draft) throw new Error("Einladungs-Token nicht gefunden.");
+  if (draft.status !== "DRAFT_BY_EXAMINER" && draft.status !== "PENDING_STUDENT_CONFIRMATION") {
+    throw new Error("Dieser Antrag wurde bereits bestätigt oder ist nicht mehr aktiv.");
+  }
+
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  await db
+    .update(thesisRequests)
+    .set({
+      studentId: params.studentId,
+      status: "PENDING_SECOND_EXAMINER" as any,
+      studentConfirmedAt: now,
+      ...(params.title && { title: params.title }),
+      ...(params.description && { description: params.description }),
+      ...(params.abstract && { abstract: params.abstract }),
+      ...(params.targetSemester && { targetSemester: params.targetSemester }),
+      ...(params.language && { language: params.language }),
+    } as any)
+    .where(eq(thesisRequests.studentInviteToken as any, params.token));
+
+  return { success: true, thesisRequestId: draft.id };
+}
+
+/**
+ * Holt alle Entwurf-Anträge eines Erstgutachters.
+ */
+export async function getExaminerDraftRequests(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      studentInviteEmail: thesisRequests.studentInviteEmail as any,
+      studentInviteSentAt: thesisRequests.studentInviteSentAt as any,
+      studentConfirmedAt: thesisRequests.studentConfirmedAt as any,
+      createdAt: thesisRequests.createdAt,
+    })
+    .from(thesisRequests)
+    .where(
+      and(
+        eq(thesisRequests.initiatedBy as any, examinerId),
+        inArray(thesisRequests.status as any, ["DRAFT_BY_EXAMINER", "PENDING_STUDENT_CONFIRMATION"] as any)
+      )
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
+
+/**
+ * Holt alle offenen Einladungs-Entwürfe für die PAV-Verwaltung.
+ */
+export async function getAllDraftRequests() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const examinerUser = aliasedTable(users, "examiner_user");
+
+  return db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      department: thesisRequests.department,
+      targetSemester: thesisRequests.targetSemester,
+      degreeType: thesisRequests.degreeType,
+      status: thesisRequests.status,
+      studentInviteEmail: thesisRequests.studentInviteEmail as any,
+      studentInviteSentAt: thesisRequests.studentInviteSentAt as any,
+      studentConfirmedAt: thesisRequests.studentConfirmedAt as any,
+      initiatedByRole: thesisRequests.initiatedByRole as any,
+      createdAt: thesisRequests.createdAt,
+      examinerName: examinerUser.name,
+    })
+    .from(thesisRequests)
+    .leftJoin(examinerUser, eq(thesisRequests.examinerId, examinerUser.id))
+    .where(
+      inArray(thesisRequests.status as any, ["DRAFT_BY_EXAMINER", "PENDING_STUDENT_CONFIRMATION"] as any)
+    )
+    .orderBy(desc(thesisRequests.createdAt));
+}
