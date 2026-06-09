@@ -704,22 +704,44 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const existing = await getThesisRequestById(input.id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
-        if (
-          existing.examinerId !== ctx.user.id &&
-          existing.secondExaminerId !== ctx.user.id &&
-          ctx.user.role !== "admin"
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist dir nicht zugewiesen." });
+
+        const isWantedExaminer = (existing as any).wantedExaminerId === ctx.user.id;
+        const isAssignedExaminer = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+
+        if (!isWantedExaminer && !isAssignedExaminer && !isAdmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         }
-        const newStatus = input.action === "accept" ? "ACCEPTED" : "REJECTED";
-        await updateThesisRequestStatus(input.id, newStatus, {
-          rejectionReason: input.rejectionReason,
-        });
+
+        // Statusübergang: PENDING_FIRST_EXAMINER → FIRST_EXAMINER_ACCEPTED / FIRST_EXAMINER_REJECTED
+        //                 PENDING / sonstige    → ACCEPTED / REJECTED
+        let newStatus: string;
+        let auditAction: string;
+        if (existing.status === "PENDING_FIRST_EXAMINER") {
+          if (input.action === "accept") {
+            const { acceptThesisRequest } = await import("./db");
+            await acceptThesisRequest(input.id, ctx.user.id);
+            newStatus = "FIRST_EXAMINER_ACCEPTED";
+            auditAction = "EXAMINER_ACCEPTED";
+          } else {
+            const { rejectThesisRequest } = await import("./db");
+            await rejectThesisRequest(input.id, input.rejectionReason);
+            newStatus = "FIRST_EXAMINER_REJECTED";
+            auditAction = "EXAMINER_REJECTED";
+          }
+        } else {
+          newStatus = input.action === "accept" ? "ACCEPTED" : "REJECTED";
+          auditAction = input.action === "accept" ? "EXAMINER_ACCEPTED" : "EXAMINER_REJECTED";
+          await updateThesisRequestStatus(input.id, newStatus as any, {
+            rejectionReason: input.rejectionReason,
+          });
+        }
+
         await createAuditLogEntry({
           thesisRequestId: input.id,
           actorId: ctx.user.id,
           actorRole: ctx.user.role,
-          action: input.action === "accept" ? "EXAMINER_ACCEPTED" : "EXAMINER_REJECTED",
+          action: auditAction,
           fromStatus: existing.status,
           toStatus: newStatus,
           reason: input.rejectionReason,
@@ -728,7 +750,7 @@ export const appRouter = router({
         await notifyThesisParticipants({
           thesisRequestId: input.id,
           studentId: existing.studentId,
-          examinerId: existing.examinerId,
+          examinerId: existing.examinerId ?? ctx.user.id,
           secondExaminerId: existing.secondExaminerId,
           title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
           message: `Ihre Anfrage "${existing.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.${input.rejectionReason ? ` Begründung: ${input.rejectionReason}` : ""}`,

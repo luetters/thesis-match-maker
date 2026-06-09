@@ -496,6 +496,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     onSuccess: (_, vars) => {
       toast.success(vars.action === "accept" ? t.examiner.toastAccepted ?? "Anfrage angenommen!" : t.examiner.toastRejected ?? "Anfrage abgelehnt.");
       utils.thesis.examinerRequests.invalidate();
+      utils.examiner.getPendingRequests.invalidate();
       setShowRejectForm(false);
     },
     onError: (err) => toast.error(err.message),
@@ -554,7 +555,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     );
   }
 
-  const isPending = req.status === "PENDING";
+  const isPending = req.status === "PENDING" || req.status === "PENDING_FIRST_EXAMINER";
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -749,7 +750,9 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
 // ─── Requests View ────────────────────────────────────────────────────────────
 function RequestsView() {
-  const { data: requests, isLoading } = trpc.thesis.examinerRequests.useQuery();
+  const { data: assignedRequests, isLoading: loadingAssigned } = trpc.thesis.examinerRequests.useQuery();
+  const { data: pendingRequests, isLoading: loadingPending } = trpc.examiner.getPendingRequests.useQuery();
+  const isLoading = loadingAssigned || loadingPending;
 
   if (isLoading) {
     return (
@@ -759,7 +762,17 @@ function RequestsView() {
     );
   }
 
-  if (!requests?.length) {
+  // Ausstehende Freigaben (PENDING_FIRST_EXAMINER) – noch nicht in assignedRequests enthalten
+  const assignedIds = new Set((assignedRequests ?? []).map((r) => r.id));
+  const newPending = (pendingRequests ?? []).filter((r) => !assignedIds.has(r.id));
+
+  // Alle Anfragen zusammenführen: zuerst ausstehende Freigaben, dann zugewiesene
+  const allRequests = [
+    ...newPending.map((r) => ({ ...r, exposeUrl: (r as any).exposeUrl ?? null, degreeType: (r as any).degreeType ?? null, language: (r as any).language ?? null })),
+    ...(assignedRequests ?? []),
+  ];
+
+  if (!allRequests.length) {
     return (
       <div className="text-center py-16">
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
@@ -773,15 +786,27 @@ function RequestsView() {
     );
   }
 
-  const pending = requests.filter((r) => r.status === "PENDING");
-  const others = requests.filter((r) => r.status !== "PENDING");
+  const awaitingApproval = allRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER");
+  const pending = allRequests.filter((r) => r.status === "PENDING");
+  const others = allRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER");
 
   return (
     <div className="space-y-6">
-      {pending.length > 0 && (
+      {awaitingApproval.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400" />
+            Zur Freigabe ausstehend ({awaitingApproval.length})
+          </h3>
+          <div className="space-y-4">
+            {awaitingApproval.map((req) => <RequestCard key={req.id} req={req} />)}
+          </div>
+        </div>
+      )}
+      {pending.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-400" />
             Offene Anfragen ({pending.length})
           </h3>
           <div className="space-y-4">
