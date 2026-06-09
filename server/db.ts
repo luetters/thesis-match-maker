@@ -1693,15 +1693,16 @@ export async function markTokenAsUsed(token: string) {
 export async function acceptThesisRequest(thesisRequestId: number, examinerId: number) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
-  
-  // Get thesis request details
-  const thesisResult = await (db as any).query.thesisRequests.findFirst({
-    where: eq(thesisRequests.id, thesisRequestId),
-  });
-  
+
+  // Anfrage laden
+  const [thesisResult] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
   if (!thesisResult) throw new Error("Anfrage nicht gefunden");
-  
-  // Update thesis status
+
+  // Status aktualisieren
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_ACCEPTED",
@@ -1709,23 +1710,23 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
       updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
-  
-  // Create notification for student
-  const examinerProfile = await (db as any).query.examinerProfiles.findFirst({
-    where: eq(examinerProfiles.userId, examinerId),
-  });
-  
-  const notificationTitle = "Anfrage akzeptiert";
-  const notificationContent = `Ihre Anfrage wurde von ${examinerProfile?.title || "einer Gutachter:in"} akzeptiert. Sie können nun einen Zweitgutachter wählen.`;
-  
+
+  // Prüfer-Name für Benachrichtigung laden
+  const [examinerUser] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, examinerId))
+    .limit(1);
+  const examinerName = examinerUser?.name ?? "der Gutachter:in";
+
+  // In-App-Benachrichtigung für Studierenden
   await db.insert(notifications).values({
     userId: thesisResult.studentId,
-    title: notificationTitle,
-    message: notificationContent,
+    title: "Betreuungsanfrage angenommen",
+    message: `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde von ${examinerName} angenommen. Sie können nun einen Zweitgutachter wählen.`,
     type: "status_change",
-    thesisRequestId: thesisRequestId,
+    thesisRequestId,
     read: 0,
-    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
   });
 }
 
@@ -1735,15 +1736,16 @@ export async function acceptThesisRequest(thesisRequestId: number, examinerId: n
 export async function rejectThesisRequest(thesisRequestId: number, rejectionReason?: string) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
-  
-  // Get thesis request details
-  const thesisResult = await (db as any).query.thesisRequests.findFirst({
-    where: eq(thesisRequests.id, thesisRequestId),
-  });
-  
+
+  // Anfrage laden
+  const [thesisResult] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
   if (!thesisResult) throw new Error("Anfrage nicht gefunden");
-  
-  // Update thesis status
+
+  // Status aktualisieren
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_REJECTED",
@@ -1751,21 +1753,19 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
       updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
-  
-  // Create notification for student
-  const notificationTitle = "Anfrage abgelehnt";
-  const notificationContent = rejectionReason 
-    ? `Ihre Anfrage wurde leider abgelehnt. Grund: ${rejectionReason}`
-    : "Ihre Anfrage wurde leider abgelehnt. Sie können eine neue Anfrage einreichen.";
-  
+
+  // In-App-Benachrichtigung für Studierenden
+  const notificationContent = rejectionReason
+    ? `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde leider abgelehnt. Begründung: ${rejectionReason}`
+    : `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde leider abgelehnt. Sie können eine neue Anfrage einreichen.`;
+
   await db.insert(notifications).values({
     userId: thesisResult.studentId,
-    title: notificationTitle,
+    title: "Betreuungsanfrage abgelehnt",
     message: notificationContent,
     type: "status_change",
-    thesisRequestId: thesisRequestId,
+    thesisRequestId,
     read: 0,
-    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
   });
 }
 
@@ -4937,6 +4937,7 @@ export async function getDraftByInviteToken(token: string) {
       language: thesisRequests.language,
       degreeType: thesisRequests.degreeType,
       status: thesisRequests.status,
+      examinerId: thesisRequests.examinerId,
       studentInviteEmail: thesisRequests.studentInviteEmail as any,
       studentInviteSentAt: thesisRequests.studentInviteSentAt as any,
       studentConfirmedAt: thesisRequests.studentConfirmedAt as any,
@@ -4989,6 +4990,27 @@ export async function confirmStudentDraft(params: {
       ...(params.language && { language: params.language }),
     } as any)
     .where(eq(thesisRequests.studentInviteToken as any, params.token));
+
+  // Studierenden-Namen für Benachrichtigung laden
+  const [studentUser] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, params.studentId))
+    .limit(1);
+  const studentName = studentUser?.name ?? studentUser?.email ?? "Ein:e Studierende:r";
+  const thesisTitle = (params.title ?? draft.title) as string;
+
+  // In-App-Benachrichtigung für Erstgutachter
+  if (draft.examinerId) {
+    await db.insert(notifications).values({
+      userId: draft.examinerId,
+      title: "Einladung bestätigt",
+      message: `${studentName} hat die Einladung für die Abschlussarbeit \u201e${thesisTitle}\u201c bestätigt. Der Antrag wartet nun auf die Zuweisung eines Zweitgutachters.`,
+      type: "status_change",
+      thesisRequestId: draft.id,
+      read: 0,
+    });
+  }
 
   return { success: true, thesisRequestId: draft.id };
 }

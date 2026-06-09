@@ -1462,6 +1462,89 @@ function StatusHistory() {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────────────────────────────────
+// ─── Benachrichtigungs-Banner ────────────────────────────────────────────────
+function StatusNotificationBanner() {
+  const utils = trpc.useUtils();
+  const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
+  const markRead = trpc.notifications.markRead.useMutation({
+    onSuccess: () => {
+      utils.notifications.list.invalidate();
+      utils.notifications.unreadCount.invalidate();
+    },
+  });
+
+  // Nur ungelesene Status-Änderungen anzeigen
+  const unread = notifications.filter(
+    (n) => !n.read && n.type === "status_change"
+  );
+
+  if (unread.length === 0) return null;
+
+  const latest = unread[0];
+  const isAccepted = latest.title.toLowerCase().includes("angenommen") || latest.title.toLowerCase().includes("bestätigt");
+
+  return (
+    <div
+      className={`mb-5 rounded-2xl border p-4 flex items-start gap-3 shadow-sm ${
+        isAccepted
+          ? "bg-green-50 border-green-200"
+          : "bg-red-50 border-red-200"
+      }`}
+    >
+      {/* Icon */}
+      <div
+        className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+          isAccepted ? "bg-green-100" : "bg-red-100"
+        }`}
+      >
+        {isAccepted ? (
+          <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </div>
+
+      {/* Text */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold ${
+          isAccepted ? "text-green-800" : "text-red-800"
+        }`}>
+          {latest.title}
+        </p>
+        <p className={`text-sm mt-0.5 ${
+          isAccepted ? "text-green-700" : "text-red-700"
+        }`}>
+          {latest.message}
+        </p>
+        {unread.length > 1 && (
+          <p className="text-xs mt-1 text-gray-500">
+            +{unread.length - 1} weitere ungelesene Benachrichtigung{unread.length - 1 > 1 ? "en" : ""}
+          </p>
+        )}
+      </div>
+
+      {/* Schließen-Button */}
+      <button
+        onClick={() => unread.forEach((n) => markRead.mutate({ id: n.id }))}
+        className={`flex-shrink-0 p-1 rounded-lg transition-colors ${
+          isAccepted ? "hover:bg-green-100 text-green-600" : "hover:bg-red-100 text-red-600"
+        }`}
+        title="Als gelesen markieren"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export default function StudentDashboard() {
   const [location] = useLocation();
   // URL-Parameter ?examiner=<id> auslesen (von Prüfer:innen-Profil-Button)
@@ -1509,6 +1592,8 @@ export default function StudentDashboard() {
 
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
+      {/* Globales Benachrichtigungs-Banner – erscheint auf allen Tabs */}
+      <StatusNotificationBanner />
       {activeTab === "new" && (
         <div className="max-w-2xl">
           {hasOpenReq ? (
