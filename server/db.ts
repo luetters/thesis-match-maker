@@ -5026,6 +5026,109 @@ export async function getExaminerDraftRequests(examinerId: number) {
 }
 
 /**
+ * Aktualisiert einen Entwurf-Antrag (Thema, Beschreibung, E-Mail, Semester etc.).
+ * Nur möglich, solange Status DRAFT_BY_EXAMINER oder PENDING_STUDENT_CONFIRMATION.
+ */
+export async function updateDraftRequest(params: {
+  requestId: number;
+  callerId: number;  // Erstgutachter-ID oder Admin-ID
+  isAdmin: boolean;
+  title?: string;
+  description?: string;
+  department?: string;
+  targetSemester?: string;
+  language?: "de" | "en";
+  degreeType?: "bachelor" | "master";
+  studentEmail?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  // Antrag laden und Berechtigung prüfen
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      status: thesisRequests.status,
+      examinerId: thesisRequests.examinerId,
+      initiatedBy: thesisRequests.initiatedBy as any,
+      studentInviteToken: thesisRequests.studentInviteToken as any,
+    })
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, params.requestId))
+    .limit(1);
+
+  const req = rows[0];
+  if (!req) throw new Error("Antrag nicht gefunden.");
+  if (req.status !== "DRAFT_BY_EXAMINER" && req.status !== "PENDING_STUDENT_CONFIRMATION") {
+    throw new Error("Dieser Antrag kann nicht mehr bearbeitet werden.");
+  }
+  if (!params.isAdmin && req.examinerId !== params.callerId && req.initiatedBy !== params.callerId) {
+    throw new Error("Keine Berechtigung für diesen Antrag.");
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (params.title !== undefined) updates.title = params.title;
+  if (params.description !== undefined) updates.description = params.description;
+  if (params.department !== undefined) updates.department = params.department;
+  if (params.targetSemester !== undefined) updates.targetSemester = params.targetSemester;
+  if (params.language !== undefined) updates.language = params.language;
+  if (params.degreeType !== undefined) updates.degreeType = params.degreeType;
+  if (params.studentEmail !== undefined) {
+    updates.studentInviteEmail = params.studentEmail;
+    // Token bleibt gleich – neue E-Mail erhält denselben Link
+  }
+
+  if (Object.keys(updates).length === 0) return { success: true };
+
+  await db
+    .update(thesisRequests)
+    .set(updates as any)
+    .where(eq(thesisRequests.id, params.requestId));
+
+  return { success: true, token: req.studentInviteToken };
+}
+
+/**
+ * Zieht eine ausstehende Einladung zurück (setzt Status auf WITHDRAWN).
+ * Nur möglich, solange Status DRAFT_BY_EXAMINER oder PENDING_STUDENT_CONFIRMATION.
+ */
+export async function withdrawDraftRequest(params: {
+  requestId: number;
+  callerId: number;
+  isAdmin: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  const rows = await db
+    .select({
+      id: thesisRequests.id,
+      status: thesisRequests.status,
+      examinerId: thesisRequests.examinerId,
+      initiatedBy: thesisRequests.initiatedBy as any,
+    })
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, params.requestId))
+    .limit(1);
+
+  const req = rows[0];
+  if (!req) throw new Error("Antrag nicht gefunden.");
+  if (req.status !== "DRAFT_BY_EXAMINER" && req.status !== "PENDING_STUDENT_CONFIRMATION") {
+    throw new Error("Dieser Antrag kann nicht mehr zurückgezogen werden.");
+  }
+  if (!params.isAdmin && req.examinerId !== params.callerId && req.initiatedBy !== params.callerId) {
+    throw new Error("Keine Berechtigung für diesen Antrag.");
+  }
+
+  await db
+    .update(thesisRequests)
+    .set({ status: "WITHDRAWN" as any })
+    .where(eq(thesisRequests.id, params.requestId));
+
+  return { success: true };
+}
+
+/**
  * Holt alle offenen Einladungs-Entwürfe für die PAV-Verwaltung.
  */
 export async function getAllDraftRequests() {

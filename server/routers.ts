@@ -162,6 +162,8 @@ import {
   confirmStudentDraft,
   getExaminerDraftRequests,
   getAllDraftRequests,
+  updateDraftRequest,
+  withdrawDraftRequest,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -3089,6 +3091,85 @@ export const appRouter = router({
     getAllDrafts: pavProcedure.query(async () => {
       return getAllDraftRequests();
     }),
+
+    /**
+     * Erstgutachter oder PAV bearbeitet einen Entwurf-Antrag nachträglich.
+     */
+    updateDraft: protectedProcedure
+      .input(z.object({
+        requestId: z.number().int().positive(),
+        title: z.string().min(3).max(512).optional(),
+        description: z.string().min(10).optional(),
+        department: z.string().min(1).max(255).optional(),
+        targetSemester: z.string().min(1).max(32).optional(),
+        language: z.enum(["de", "en"]).optional(),
+        degreeType: z.enum(["bachelor", "master"]).optional(),
+        studentEmail: z.string().email().optional(),
+        resendEmail: z.boolean().optional(),
+        origin: z.string().url().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isExaminer = userHasRole(ctx.user, "examiner");
+        const isPav = userHasRole(ctx.user, "pav");
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isExaminer && !isPav && !isAdmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung." });
+        }
+        const result = await updateDraftRequest({
+          requestId: input.requestId,
+          callerId: ctx.user.id,
+          isAdmin: isPav || isAdmin,
+          title: input.title,
+          description: input.description,
+          department: input.department,
+          targetSemester: input.targetSemester,
+          language: input.language,
+          degreeType: input.degreeType,
+          studentEmail: input.studentEmail,
+        });
+        // Optional: Einladungs-E-Mail erneut senden
+        if (input.resendEmail && input.origin && result.token) {
+          const targetEmail = input.studentEmail ?? undefined;
+          if (targetEmail) {
+            const confirmUrl = `${input.origin}/thesis/confirm?token=${result.token}`;
+            const examinerName = ctx.user.name ?? "Ihre Prüfer:in";
+            await sendEmail({
+              to: targetEmail,
+              subject: `Aktualisierte Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`,
+              html: `
+                <p>Sehr geehrte:r Studierende:r,</p>
+                <p><strong>${examinerName}</strong> hat Ihren Antrag für die Abschlussarbeit aktualisiert.</p>
+                ${input.title ? `<p><strong>Thema:</strong> ${input.title}</p>` : ""}
+                <p>Bitte überprüfen Sie die aktualisierten Angaben und bestätigen Sie den Antrag:</p>
+                <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
+                <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
+              `,
+            });
+          }
+        }
+        return { success: true };
+      }),
+
+    /**
+     * Erstgutachter oder PAV zieht eine ausstehende Einladung zurück.
+     */
+    withdrawDraft: protectedProcedure
+      .input(z.object({
+        requestId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isExaminer = userHasRole(ctx.user, "examiner");
+        const isPav = userHasRole(ctx.user, "pav");
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isExaminer && !isPav && !isAdmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung." });
+        }
+        return withdrawDraftRequest({
+          requestId: input.requestId,
+          callerId: ctx.user.id,
+          isAdmin: isPav || isAdmin,
+        });
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

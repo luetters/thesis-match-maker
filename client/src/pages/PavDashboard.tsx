@@ -27,6 +27,181 @@ function OfficialStatusBadge({ status }: { status: string }) {
 }
 
 // ─── AdminWorkflowTab ─────────────────────────────────────────────────────────
+// ─── PAV: Ausstehende Einladungen verwalten ───────────────────────────────────
+function PavPendingInvitationsPanel() {
+  const utils = trpc.useUtils();
+  const { data: drafts, isLoading } = trpc.invite.getAllDrafts.useQuery();
+
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDepartment, setEditDepartment] = useState("");
+  const [editSemester, setEditSemester] = useState("");
+  const [editLanguage, setEditLanguage] = useState<"de" | "en">("de");
+  const [editDegreeType, setEditDegreeType] = useState<"bachelor" | "master">("bachelor");
+  const [editEmail, setEditEmail] = useState("");
+  const [resendEmail, setResendEmail] = useState(false);
+
+  const DEPT_OPTIONS = [
+    { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
+    { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+    { value: "FB3", label: "FB 3 – Wirtschaftswissenschaften" },
+    { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+    { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
+  ];
+
+  const updateDraft = trpc.invite.updateDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Einladung aktualisiert.");
+      setEditId(null);
+      utils.invite.getAllDrafts.invalidate();
+    },
+    onError: (e) => toast.error(e.message ?? "Fehler beim Aktualisieren."),
+  });
+
+  const withdrawDraft = trpc.invite.withdrawDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Einladung zurückgezogen.");
+      utils.invite.getAllDrafts.invalidate();
+    },
+    onError: (e) => toast.error(e.message ?? "Fehler beim Zurückziehen."),
+  });
+
+  function openEdit(d: NonNullable<typeof drafts>[0]) {
+    setEditId(d.id);
+    setEditTitle(d.title ?? "");
+    setEditDescription((d as any).description ?? "");
+    setEditDepartment(d.department ?? "");
+    setEditSemester(d.targetSemester ?? "");
+    setEditLanguage((d as any).language ?? "de");
+    setEditDegreeType((d.degreeType as "bachelor" | "master") ?? "bachelor");
+    setEditEmail((d as any).studentInviteEmail ?? "");
+    setResendEmail(false);
+  }
+
+  if (isLoading) return <div className="h-16 bg-white rounded-xl animate-pulse" />;
+  if (!drafts?.length) return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center text-sm text-gray-400">
+      Keine ausstehenden Einladungen.
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <h3 className="font-semibold text-sm" style={{ color: "#76B900" }}>Ausstehende Einladungen ({drafts.length})</h3>
+      <div className="space-y-3">
+        {drafts.map((d) => (
+          <div key={d.id}>
+            {editId === d.id ? (
+              <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Einladung bearbeiten</span>
+                  <button onClick={() => setEditId(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+                </div>
+                <div className="grid grid-cols-1 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">E-Mail des Studierenden</label>
+                    <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Thema</label>
+                    <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Beschreibung</label>
+                    <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Fachbereich</label>
+                      <select value={editDepartment} onChange={e => setEditDepartment(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30">
+                        {DEPT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Abschlussart</label>
+                      <select value={editDegreeType} onChange={e => setEditDegreeType(e.target.value as "bachelor" | "master")}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30">
+                        <option value="bachelor">Bachelor</option>
+                        <option value="master">Master</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={resendEmail} onChange={e => setResendEmail(e.target.checked)} className="rounded" />
+                    Einladungs-E-Mail erneut senden
+                  </label>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setEditId(null)}
+                    className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                    Abbrechen
+                  </button>
+                  <button
+                    disabled={updateDraft.isPending}
+                    onClick={() => updateDraft.mutate({
+                      requestId: d.id,
+                      title: editTitle.trim() || undefined,
+                      description: editDescription.trim() || undefined,
+                      department: editDepartment || undefined,
+                      targetSemester: editSemester || undefined,
+                      language: editLanguage,
+                      degreeType: editDegreeType,
+                      studentEmail: editEmail.trim() || undefined,
+                      resendEmail,
+                      origin: window.location.origin,
+                    })}
+                    className="px-4 py-2 rounded-lg bg-[#76B900] text-white text-sm font-medium hover:bg-[#5e9200] disabled:opacity-50 transition-colors">
+                    {updateDraft.isPending ? "Wird gespeichert…" : "Speichern"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{d.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {(d as any).studentInviteEmail} · {d.targetSemester} · {d.degreeType === "master" ? "Master" : "Bachelor"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Erstgutachter:in: {(d as any).examinerName ?? "–"}
+                  </p>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium mt-1 ${
+                    d.status === "DRAFT_BY_EXAMINER" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"
+                  }`}>
+                    {d.status === "DRAFT_BY_EXAMINER" ? "Entwurf" : "Warte auf Bestätigung"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => openEdit(d)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors">
+                    Bearbeiten
+                  </button>
+                  <button
+                    disabled={withdrawDraft.isPending}
+                    onClick={() => {
+                      if (confirm(`Einladung für "${d.title}" wirklich zurückziehen?`)) {
+                        withdrawDraft.mutate({ requestId: d.id });
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors">
+                    Zurückziehen
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AdminWorkflowTab() {
   const utils = trpc.useUtils();
   const { data: theses, isLoading } = trpc.adminWorkflow.getRegisteredTheses.useQuery();
@@ -1052,7 +1227,12 @@ export default function PavDashboard() {
         )}
 
         {/* Tab: Anmeldung & Zulassung */}
-        {activeTab === "workflow" && <AdminWorkflowTab />}
+        {activeTab === "workflow" && (
+          <div className="space-y-6">
+            <PavPendingInvitationsPanel />
+            <AdminWorkflowTab />
+          </div>
+        )}
         {/* Tab: Entscheidungshistorie */}
         {activeTab === "history" && <DecisionHistoryTab />}
 

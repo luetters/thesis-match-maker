@@ -190,6 +190,200 @@ function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
   );
 }
 
+// ─── Ausstehende Einladungen verwalten ───────────────────────────────────────
+function PendingInvitationsPanel({ onChanged }: { onChanged?: () => void }) {
+  const utils = trpc.useUtils();
+  const { data: drafts, isLoading } = trpc.invite.getMyDrafts.useQuery();
+
+  // Edit-State
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDepartment, setEditDepartment] = useState("");
+  const [editSemester, setEditSemester] = useState("");
+  const [editLanguage, setEditLanguage] = useState<"de" | "en">("de");
+  const [editDegreeType, setEditDegreeType] = useState<"bachelor" | "master">("bachelor");
+  const [editEmail, setEditEmail] = useState("");
+  const [resendEmail, setResendEmail] = useState(false);
+
+  const updateDraft = trpc.invite.updateDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Einladung wurde aktualisiert.");
+      setEditId(null);
+      utils.invite.getMyDrafts.invalidate();
+      onChanged?.();
+    },
+    onError: (err) => toast.error(err.message ?? "Fehler beim Aktualisieren."),
+  });
+
+  const withdrawDraft = trpc.invite.withdrawDraft.useMutation({
+    onSuccess: () => {
+      toast.success("Einladung wurde zurückgezogen.");
+      utils.invite.getMyDrafts.invalidate();
+      onChanged?.();
+    },
+    onError: (err) => toast.error(err.message ?? "Fehler beim Zurückziehen."),
+  });
+
+  const semesters = getNextSemesters();
+
+  function openEdit(d: NonNullable<typeof drafts>[0]) {
+    setEditId(d.id);
+    setEditTitle(d.title ?? "");
+    setEditDescription(d.description ?? "");
+    setEditDepartment(d.department ?? "");
+    setEditSemester(d.targetSemester ?? "");
+    setEditLanguage((d.language as "de" | "en") ?? "de");
+    setEditDegreeType((d.degreeType as "bachelor" | "master") ?? "bachelor");
+    setEditEmail((d as any).studentInviteEmail ?? "");
+    setResendEmail(false);
+  }
+
+  if (isLoading) return null;
+  if (!drafts?.length) return null;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      <h2 className="font-semibold" style={{ color: "#76B900" }}>Ausstehende Einladungen</h2>
+      <p className="text-xs text-gray-500">Diese Einladungen wurden versandt, aber noch nicht vom Studierenden bestätigt.</p>
+      <div className="space-y-3">
+        {drafts.map((d) => (
+          <div key={d.id}>
+            {editId === d.id ? (
+              // ── Bearbeiten-Formular ──────────────────────────────────────
+              <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Einladung bearbeiten</span>
+                  <button onClick={() => setEditId(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600">E-Mail-Adresse des Studierenden</Label>
+                    <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} className="text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600">Thema</Label>
+                    <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} className="text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600">Beschreibung</Label>
+                    <Textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={3} className="text-sm resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold text-gray-600">Fachbereich</Label>
+                      <Select value={editDepartment} onValueChange={setEditDepartment}>
+                        <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>{DEPT_OPTIONS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold text-gray-600">Zielsemester</Label>
+                      <Select value={editSemester} onValueChange={setEditSemester}>
+                        <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>{semesters.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold text-gray-600">Abschlussart</Label>
+                      <Select value={editDegreeType} onValueChange={v => setEditDegreeType(v as "bachelor" | "master")}>
+                        <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bachelor">Bachelor</SelectItem>
+                          <SelectItem value="master">Master</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold text-gray-600">Sprache</Label>
+                      <Select value={editLanguage} onValueChange={v => setEditLanguage(v as "de" | "en")}>
+                        <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="de">Deutsch</SelectItem>
+                          <SelectItem value="en">Englisch</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={resendEmail} onChange={e => setResendEmail(e.target.checked)} className="rounded" />
+                    Einladungs-E-Mail erneut senden
+                  </label>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setEditId(null)}>Abbrechen</Button>
+                  <Button
+                    size="sm"
+                    disabled={updateDraft.isPending}
+                    onClick={() => updateDraft.mutate({
+                      requestId: d.id,
+                      title: editTitle.trim() || undefined,
+                      description: editDescription.trim() || undefined,
+                      department: editDepartment || undefined,
+                      targetSemester: editSemester || undefined,
+                      language: editLanguage,
+                      degreeType: editDegreeType,
+                      studentEmail: editEmail.trim() || undefined,
+                      resendEmail,
+                      origin: window.location.origin,
+                    })}
+                    className="text-white"
+                    style={{ backgroundColor: "#76B900" }}
+                  >
+                    {updateDraft.isPending ? "Wird gespeichert…" : "Speichern"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // ── Listenzeile ─────────────────────────────────────────────
+              <div className="flex items-start justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{d.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {(d as any).studentInviteEmail} · {d.targetSemester} · {d.degreeType === "master" ? "Master" : "Bachelor"}
+                  </p>
+                  <p className="text-xs mt-0.5">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                      d.status === "DRAFT_BY_EXAMINER" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"
+                    }`}>
+                      {d.status === "DRAFT_BY_EXAMINER" ? "Entwurf" : "Warte auf Bestätigung"}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => openEdit(d)}
+                  >
+                    Bearbeiten
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                    disabled={withdrawDraft.isPending}
+                    onClick={() => {
+                      if (confirm(`Einladung für "${d.title}" wirklich zurückziehen?`)) {
+                        withdrawDraft.mutate({ requestId: d.id });
+                      }
+                    }}
+                  >
+                    Zurückziehen
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function useNavItems() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -936,8 +1130,14 @@ function Overview() {
     <div className="space-y-6">
       {/* Einladungsformular */}
       <div className="flex justify-end">
-        <InviteStudentForm onSuccess={() => utils.thesis.examinerRequests.invalidate()} />
+        <InviteStudentForm onSuccess={() => {
+          utils.thesis.examinerRequests.invalidate();
+          utils.invite.getMyDrafts.invalidate();
+        }} />
       </div>
+
+      {/* Ausstehende Einladungen */}
+      <PendingInvitationsPanel onChanged={() => utils.thesis.examinerRequests.invalidate()} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
