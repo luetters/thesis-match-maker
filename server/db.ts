@@ -344,6 +344,91 @@ export async function getAllAuditLogs() {
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt));
 }
 
+/**
+ * Kombinierte Historien-Abfrage für Studierende:
+ * Gibt Audit-Log-Einträge und Benachrichtigungen zu einer Abschlussarbeit zurück,
+ * chronologisch zusammengeführt.
+ */
+export async function getStudentThesisHistory(thesisRequestId: number, studentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Audit-Log-Einträge für diese Abschlussarbeit
+  const actorAlias = aliasedTable(users, "actor_user");
+  const auditRows = await db
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      fromStatus: auditLog.fromStatus,
+      toStatus: auditLog.toStatus,
+      reason: auditLog.reason,
+      actorRole: auditLog.actorRole,
+      actorName: actorAlias.name,
+      createdAt: auditLog.createdAt,
+    })
+    .from(auditLog)
+    .leftJoin(actorAlias, eq(auditLog.actorId, actorAlias.id))
+    .where(eq(auditLog.thesisRequestId, thesisRequestId))
+    .orderBy(desc(auditLog.createdAt));
+
+  // Benachrichtigungen des Studierenden zu dieser Abschlussarbeit
+  const notifRows = await db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, studentId),
+        eq(notifications.thesisRequestId, thesisRequestId)
+      )
+    )
+    .orderBy(desc(notifications.createdAt));
+
+  // Beide Listen zusammenführen und chronologisch sortieren
+  type HistoryEntry = {
+    id: string;
+    kind: "audit" | "notification";
+    title: string;
+    detail: string | null;
+    fromStatus: string | null;
+    toStatus: string | null;
+    actorName: string | null;
+    actorRole: string | null;
+    createdAt: string;
+    read?: boolean;
+  };
+
+  const auditEntries: HistoryEntry[] = auditRows.map((r) => ({
+    id: `audit-${r.id}`,
+    kind: "audit",
+    title: r.action,
+    detail: r.reason ?? null,
+    fromStatus: r.fromStatus ?? null,
+    toStatus: r.toStatus ?? null,
+    actorName: r.actorName ?? null,
+    actorRole: r.actorRole ?? null,
+    createdAt: r.createdAt,
+  }));
+
+  const notifEntries: HistoryEntry[] = notifRows.map((r) => ({
+    id: `notif-${r.id}`,
+    kind: "notification",
+    title: r.title,
+    detail: r.message,
+    fromStatus: null,
+    toStatus: null,
+    actorName: null,
+    actorRole: null,
+    createdAt: r.createdAt,
+    read: r.read === 1,
+  }));
+
+  const combined = [...auditEntries, ...notifEntries].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return combined;
+}
+
 // --- Notifications ----------------------------------------------------------------
 
 export async function createNotification(entry: InsertNotification) {

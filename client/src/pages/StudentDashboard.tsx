@@ -1053,7 +1053,7 @@ function MyRequests() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-xs text-amber-700 font-medium">
-                Deadline: {new Date((req as { deadline: Date | string }).deadline).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+                Deadline: {new Date((req as unknown as { deadline: Date | string }).deadline).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
               </span>
               <a
                 href={`/api/thesis/${req.id}/deadline.ics`}
@@ -1312,148 +1312,276 @@ function MyColloquiums() {
   );
 }
 
-// ─── Statushistorie ───────────────────────────────────────────────────────────
+// ─── Statushistorie ────────────────────────────────────────────────
+
+// Lesbare Labels für Audit-Aktionen
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  THESIS_CREATED: "Antrag eingereicht",
+  STATUS_CHANGED: "Status geändert",
+  EXAMINER_ACCEPTED: "Betreuung angenommen",
+  EXAMINER_REJECTED: "Betreuung abgelehnt",
+  FIRST_EXAMINER_ASSIGNED: "Erstgutachter:in zugewiesen",
+  SECOND_EXAMINER_ASSIGNED: "Zweitgutachter:in zugewiesen",
+  COLLOQUIUM_CREATED: "Kolloquium angelegt",
+  DEADLINE_SET: "Abgabefrist gesetzt",
+  DEADLINE_EXTENDED: "Abgabefrist verlängert",
+  ENROLLMENT_ELIGIBILITY_SET: "Zulassungsprüfung abgeschlossen",
+  DEFENSE_ELIGIBILITY_SET: "Verteidigungsfreigabe erteilt",
+  REGISTRATION_SET: "Offizielle Anmeldung eingetragen",
+  ADMISSION_SET: "Zulassung eingetragen",
+  CASE_CLOSED: "Vorgang abgeschlossen",
+  DRAFT_WITHDRAWN: "Einladung zurückgezogen",
+  STUDENT_CONFIRMED: "Einladung bestätigt",
+};
+
+// Status-Badges
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Ausstehend", color: "bg-amber-100 text-amber-800" },
+  PENDING_FIRST_EXAMINER: { label: "Wartet auf Erstgutachter:in", color: "bg-blue-100 text-blue-800" },
+  PENDING_SECOND_EXAMINER: { label: "Wartet auf Zweitgutachter:in", color: "bg-blue-100 text-blue-800" },
+  PENDING_STUDENT_CONFIRMATION: { label: "Wartet auf Ihre Bestätigung", color: "bg-amber-100 text-amber-800" },
+  FIRST_EXAMINER_ACCEPTED: { label: "Erstgutachter:in zugestimmt", color: "bg-green-100 text-green-800" },
+  FIRST_EXAMINER_REJECTED: { label: "Erstgutachter:in abgelehnt", color: "bg-red-100 text-red-800" },
+  ACCEPTED: { label: "Angenommen", color: "bg-green-100 text-green-800" },
+  REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
+  MATCHED: { label: "Zugewiesen", color: "bg-green-100 text-green-800" },
+  WITHDRAWN: { label: "Zurückgezogen", color: "bg-gray-100 text-gray-600" },
+  COMPLETED: { label: "Abgeschlossen", color: "bg-emerald-100 text-emerald-800" },
+  DRAFT_BY_EXAMINER: { label: "Entwurf", color: "bg-gray-100 text-gray-600" },
+};
+
 function StatusHistory() {
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const { data: logs } = trpc.auditLog.byThesis.useQuery(
+  const utils = trpc.useUtils();
+
+  // Ersten Antrag automatisch auswählen
+  useEffect(() => {
+    if (requests?.length && selectedId === null) {
+      setSelectedId((requests as { id: number }[])[0].id);
+    }
+  }, [requests, selectedId]);
+
+  // Kombinierte Historien-Abfrage (Audit-Log + Benachrichtigungen)
+  const { data: history = [], isLoading: historyLoading } = trpc.auditLog.studentHistory.useQuery(
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
   );
-  const { t } = useLanguage();
 
-  const selectedRequest = requests?.find((r: { id: number }) => r.id === selectedId) as {
-    id: number; title: string; description?: string | null; abstract?: string | null;
-    createdAt?: number | null; wantedExaminerId?: number | null; wantedExaminerName?: string | null;
-    exposeUrl?: string | null; status: string;
-  } | undefined;
+  const markRead = trpc.notifications.markRead.useMutation({
+    onSuccess: () => {
+      utils.notifications.list.invalidate();
+      utils.notifications.unreadCount.invalidate();
+    },
+  });
 
-  if (isLoading) return <div className="text-sm text-gray-500">{t.student.loading}</div>;
-  if (!requests?.length) return (
-    <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
-      <p className="text-sm text-gray-500">{t.student.noRequestsTitle}</p>
+  const selectedRequest = (requests as Array<{
+    id: number; title: string; status: string;
+    createdAt?: number | null; wantedExaminerName?: string | null;
+    exposeUrl?: string | null;
+  }> | undefined)?.find((r) => r.id === selectedId);
+
+  if (isLoading) return (
+    <div className="flex items-center gap-2 text-sm text-gray-500 py-8">
+      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+      </svg>
+      Wird geladen…
     </div>
   );
-  const actionLabel: Record<string, string> = {
-    THESIS_CREATED: t.student.auditThesisCreated,
-    STATUS_CHANGED: t.student.auditStatusChanged,
-    EXAMINER_ACCEPTED: t.student.auditExaminerAccepted,
-    EXAMINER_REJECTED: t.student.auditExaminerRejected,
-    FIRST_EXAMINER_ASSIGNED: t.student.auditFirstAssigned,
-    SECOND_EXAMINER_ASSIGNED: t.student.auditSecondAssigned,
-    COLLOQUIUM_CREATED: t.student.auditColloquiumCreated,
-    DEADLINE_SET: t.student.auditDeadlineSet,
-  };
+
+  if (!requests?.length) return (
+    <div className="bg-white rounded-2xl p-10 border border-gray-100 shadow-sm text-center">
+      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <p className="text-sm font-medium text-gray-700">Keine Abschlussarbeitsanträge vorhanden</p>
+      <p className="text-xs text-gray-400 mt-1">Sobald Sie einen Antrag gestellt haben, erscheint hier die vollständige Verlaufshistorie.</p>
+    </div>
+  );
+
   return (
     <div className="space-y-5">
-      {/* Anfrage-Auswahl */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">{t.student.historySelectRequest}</label>
-        <select
-          value={selectedId ?? ""}
-          onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
-          className="w-full max-w-md px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
-        >
-          <option value="">{t.student.historyPlease}</option>
-          {(requests as { id: number; title: string }[]).map((r) => (
-            <option key={r.id} value={r.id}>{r.title}</option>
-          ))}
-        </select>
-      </div>
+      {/* Antrag-Auswahl (nur wenn mehrere vorhanden) */}
+      {(requests as { id: number }[]).length > 1 && (
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-gray-700 shrink-0">Antrag:</label>
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
+            className="flex-1 max-w-sm px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
+          >
+            {(requests as { id: number; title: string }[]).map((r) => (
+              <option key={r.id} value={r.id}>{r.title}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Anfragen-Details */}
+      {/* Antrag-Header-Karte */}
       {selectedRequest && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100" style={{ backgroundColor: "#f0f7e6" }}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 text-base">{selectedRequest.title}</h3>
+          <div className="px-6 py-4 flex items-center justify-between gap-4" style={{ background: "linear-gradient(135deg, #f0f7e6 0%, #e8f5d0 100%)" }}>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-gray-900 text-base truncate">{selectedRequest.title}</h3>
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
                 {selectedRequest.createdAt && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {t.student.historyRequestDate ?? "Eingereicht am"}:{" "}
-                    <span className="font-medium">{new Date(selectedRequest.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</span>
-                  </p>
+                  <span className="text-xs text-gray-500">
+                    Eingereicht: {new Date(selectedRequest.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+                  </span>
+                )}
+                {selectedRequest.wantedExaminerName && (
+                  <span className="text-xs text-gray-500">• Erstbetreuung: {selectedRequest.wantedExaminerName}</span>
                 )}
               </div>
-              <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-white border border-gray-200 text-gray-600">
-                {selectedRequest.status}
-              </span>
             </div>
+            <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${
+              STATUS_LABELS[selectedRequest.status]?.color ?? "bg-gray-100 text-gray-600"
+            }`}>
+              {STATUS_LABELS[selectedRequest.status]?.label ?? selectedRequest.status}
+            </span>
           </div>
 
-          <div className="p-6 space-y-5">
-            {/* Erstbetreuer */}
-            {selectedRequest.wantedExaminerName && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.historyFirstExaminer ?? "Kontaktierte Erstbetreuung"}</p>
-                <p className="text-sm text-gray-800 font-medium">{selectedRequest.wantedExaminerName}</p>
-              </div>
-            )}
+          {/* Timeline */}
+          <div className="p-6">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-5">Chronologischer Verlauf</h4>
 
-            {/* Beschreibung */}
-            {selectedRequest.description && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.description}</p>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{selectedRequest.description}</p>
+            {historyLoading ? (
+              <div className="flex items-center gap-2 text-sm text-gray-400 py-4">
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Verlauf wird geladen…
               </div>
-            )}
+            ) : history.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4">Noch keine Ereignisse vorhanden.</p>
+            ) : (
+              <ol className="relative">
+                {(history as Array<{
+                  id: string;
+                  kind: "audit" | "notification";
+                  title: string;
+                  detail: string | null;
+                  fromStatus: string | null;
+                  toStatus: string | null;
+                  actorName: string | null;
+                  actorRole: string | null;
+                  createdAt: string;
+                  read?: boolean;
+                }>).map((entry, i) => {
+                  const isNotif = entry.kind === "notification";
+                  const isUnread = isNotif && !entry.read;
+                  const isLast = i === history.length - 1;
 
-            {/* Abstract */}
-            {selectedRequest.abstract && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.abstractLabel}</p>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{selectedRequest.abstract}</p>
-              </div>
-            )}
+                  let dotColor = "#76B900";
+                  let dotIcon = (
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  );
+                  if (isNotif) {
+                    const titleLc = entry.title.toLowerCase();
+                    if (titleLc.includes("abgelehnt") || titleLc.includes("rejected")) {
+                      dotColor = "#ef4444";
+                      dotIcon = (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      );
+                    } else if (titleLc.includes("bestätigt") || titleLc.includes("angenommen") || titleLc.includes("accepted")) {
+                      dotColor = "#22c55e";
+                    } else {
+                      dotColor = "#3b82f6";
+                      dotIcon = (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      );
+                    }
+                  }
 
-            {/* Anhang */}
-            {selectedRequest.exposeUrl && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{t.student.exposeLabel}</p>
-                <a
-                  href={selectedRequest.exposeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                  style={{ color: "#76B900" }}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  {t.student.exposeLabel} (PDF)
-                </a>
-              </div>
-            )}
-
-            {/* Verlauf-Timeline */}
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.student.historyTitle}</p>
-              {!logs?.length ? (
-                <p className="text-sm text-gray-500">{t.student.historyNoEntries}</p>
-              ) : (
-                <ol className="relative border-l-2" style={{ borderColor: "#76B900" }}>
-                  {logs.map((log, i) => (
-                    <li key={log.id} className={`ml-6 ${i < logs.length - 1 ? "mb-6" : ""}`}>
-                      <span
-                        className="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white"
-                        style={{ backgroundColor: "#76B900" }}
+                  return (
+                    <li key={entry.id} className={`relative flex gap-4 ${!isLast ? "pb-6" : ""}`}>
+                      {!isLast && (
+                        <div className="absolute left-3 top-7 bottom-0 w-px bg-gray-200" />
+                      )}
+                      <div
+                        className="relative z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white"
+                        style={{ backgroundColor: dotColor }}
                       >
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      </span>
-                      <div className="pl-2">
-                        <p className="text-sm font-semibold text-gray-900">{actionLabel[log.action] ?? log.action}</p>
-                        {log.fromStatus && log.toStatus && (
-                          <p className="text-xs text-gray-500">{log.fromStatus} → {log.toStatus}</p>
-                        )}
-                        {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">{t.student.historyReason}: {log.reason}</p>}
-                        <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
+                        {dotIcon}
+                      </div>
+                      <div className={`flex-1 min-w-0 rounded-xl px-4 py-3 ${
+                        isUnread ? "bg-blue-50 border border-blue-100" : "bg-gray-50"
+                      }`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {isNotif ? entry.title : (AUDIT_ACTION_LABELS[entry.title] ?? entry.title)}
+                            </p>
+                            {entry.fromStatus && entry.toStatus && (
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  STATUS_LABELS[entry.fromStatus]?.color ?? "bg-gray-100 text-gray-600"
+                                }`}>
+                                  {STATUS_LABELS[entry.fromStatus]?.label ?? entry.fromStatus}
+                                </span>
+                                <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  STATUS_LABELS[entry.toStatus]?.color ?? "bg-gray-100 text-gray-600"
+                                }`}>
+                                  {STATUS_LABELS[entry.toStatus]?.label ?? entry.toStatus}
+                                </span>
+                              </div>
+                            )}
+                            {isNotif && entry.detail && (
+                              <p className="text-xs text-gray-600 mt-1 leading-relaxed">{entry.detail}</p>
+                            )}
+                            {!isNotif && entry.detail && (
+                              <p className="text-xs text-gray-500 italic mt-1">Begründung: {entry.detail}</p>
+                            )}
+                            {entry.actorName && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {entry.actorRole === "admin" || entry.actorRole === "pav"
+                                  ? "Verwaltung"
+                                  : entry.actorRole === "examiner"
+                                  ? "Prüfer:in"
+                                  : "System"}: {entry.actorName}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            {isUnread && (
+                              <button
+                                onClick={() => {
+                                  const notifId = parseInt(entry.id.replace("notif-", ""), 10);
+                                  markRead.mutate({ id: notifId });
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                              >
+                                Als gelesen markieren
+                              </button>
+                            )}
+                            <time className="text-xs text-gray-400 whitespace-nowrap">
+                              {new Date(entry.createdAt).toLocaleString("de-DE", {
+                                day: "2-digit", month: "2-digit", year: "numeric",
+                                hour: "2-digit", minute: "2-digit"
+                              })}
+                            </time>
+                          </div>
+                        </div>
                       </div>
                     </li>
-                  ))}
-                </ol>
-              )}
-            </div>
+                  );
+                })}
+              </ol>
+            )}
           </div>
         </div>
       )}
@@ -1461,7 +1589,7 @@ function StatusHistory() {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────────────────────────────────
 // ─── Benachrichtigungs-Banner ────────────────────────────────────────────────
 function StatusNotificationBanner() {
   const utils = trpc.useUtils();

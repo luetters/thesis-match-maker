@@ -164,6 +164,7 @@ import {
   getAllDraftRequests,
   updateDraftRequest,
   withdrawDraftRequest,
+  getStudentThesisHistory,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1230,6 +1231,15 @@ export const appRouter = router({
       .input(z.object({ thesisRequestId: z.number() }))
       .query(async ({ input }) => {
         return getAuditLogByThesis(input.thesisRequestId);
+      }),
+    /**
+     * Kombinierte Historien-Abfrage für Studierende:
+     * Gibt Audit-Log-Einträge und Benachrichtigungen chronologisch zusammengeführt zurück.
+     */
+    studentHistory: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return getStudentThesisHistory(input.thesisRequestId, ctx.user.id);
       }),
   }),
 
