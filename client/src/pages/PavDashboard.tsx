@@ -5,6 +5,16 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ─── Typen ────────────────────────────────────────────────────────────────────
 type ExaminerRole = "first" | "second";
@@ -41,6 +51,7 @@ function PavPendingInvitationsPanel() {
   const [editDegreeType, setEditDegreeType] = useState<"bachelor" | "master">("bachelor");
   const [editEmail, setEditEmail] = useState("");
   const [resendEmail, setResendEmail] = useState(false);
+  const [withdrawConfirm, setWithdrawConfirm] = useState<{ id: number; title: string } | null>(null);
 
   const DEPT_OPTIONS = [
     { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
@@ -184,11 +195,7 @@ function PavPendingInvitationsPanel() {
                   </button>
                   <button
                     disabled={withdrawDraft.isPending}
-                    onClick={() => {
-                      if (confirm(`Einladung für "${d.title}" wirklich zurückziehen?`)) {
-                        withdrawDraft.mutate({ requestId: d.id });
-                      }
-                    }}
+                    onClick={() => setWithdrawConfirm({ id: d.id, title: d.title ?? "" })}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors">
                     Zurückziehen
                   </button>
@@ -198,6 +205,33 @@ function PavPendingInvitationsPanel() {
           </div>
         ))}
       </div>
+
+      {/* Bestätigungsdialog Zurückziehen */}
+      <AlertDialog open={withdrawConfirm !== null} onOpenChange={(open) => { if (!open) setWithdrawConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Einladung zurückziehen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Die Einladung für <strong className="text-gray-900">{withdrawConfirm?.title}</strong> wird unwiderruflich zurückgezogen.
+              Der Studierende kann die Einladung danach nicht mehr annehmen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (withdrawConfirm) {
+                  withdrawDraft.mutate({ requestId: withdrawConfirm.id });
+                  setWithdrawConfirm(null);
+                }
+              }}
+            >
+              Ja, zurückziehen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

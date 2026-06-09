@@ -15,6 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DndContext,
   DragOverlay,
   PointerSensor,
@@ -205,6 +215,7 @@ function PendingInvitationsPanel({ onChanged }: { onChanged?: () => void }) {
   const [editDegreeType, setEditDegreeType] = useState<"bachelor" | "master">("bachelor");
   const [editEmail, setEditEmail] = useState("");
   const [resendEmail, setResendEmail] = useState(false);
+  const [withdrawConfirm, setWithdrawConfirm] = useState<{ id: number; title: string } | null>(null);
 
   const updateDraft = trpc.invite.updateDraft.useMutation({
     onSuccess: () => {
@@ -366,11 +377,7 @@ function PendingInvitationsPanel({ onChanged }: { onChanged?: () => void }) {
                     size="sm"
                     className="text-xs text-red-600 border-red-200 hover:bg-red-50"
                     disabled={withdrawDraft.isPending}
-                    onClick={() => {
-                      if (confirm(`Einladung für "${d.title}" wirklich zurückziehen?`)) {
-                        withdrawDraft.mutate({ requestId: d.id });
-                      }
-                    }}
+                    onClick={() => setWithdrawConfirm({ id: d.id, title: d.title ?? "" })}
                   >
                     Zurückziehen
                   </Button>
@@ -380,6 +387,33 @@ function PendingInvitationsPanel({ onChanged }: { onChanged?: () => void }) {
           </div>
         ))}
       </div>
+
+      {/* Bestätigungsdialog Zurückziehen */}
+      <AlertDialog open={withdrawConfirm !== null} onOpenChange={(open) => { if (!open) setWithdrawConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Einladung zurückziehen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Die Einladung für <strong className="text-gray-900">{withdrawConfirm?.title}</strong> wird unwiderruflich zurückgezogen.
+              Der Studierende kann die Einladung danach nicht mehr annehmen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (withdrawConfirm) {
+                  withdrawDraft.mutate({ requestId: withdrawConfirm.id });
+                  setWithdrawConfirm(null);
+                }
+              }}
+            >
+              Ja, zurückziehen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
