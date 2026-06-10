@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, Mail, CheckCircle, XCircle, Clock, Info } from "lucide-react";
+import { Save, Mail, CheckCircle, XCircle, Clock, Info, AlertTriangle } from "lucide-react";
 
 type TemplateType = "requirements" | "acceptance" | "rejection" | "fully_booked";
 
@@ -58,6 +58,11 @@ export function EmailTemplateEditor() {
   const saveMutation = trpc.examinerEmailTemplates.save.useMutation({
     onSuccess: () => {
       toast.success("Template gespeichert", { description: "Ihre Änderungen wurden erfolgreich gespeichert." });
+      // Nach erfolgreichem Speichern: gespeicherten Tab als "sauber" markieren
+      setSavedTemplates((prev) => ({
+        ...prev,
+        [activeTab]: { ...localTemplates[activeTab] },
+      }));
     },
     onError: (err) => {
       toast.error("Fehler beim Speichern", { description: err.message });
@@ -71,13 +76,54 @@ export function EmailTemplateEditor() {
     fully_booked: { subject: "", body: "" },
   });
 
+  // Zuletzt gespeicherter Zustand (für Dirty-Erkennung)
+  const [savedTemplates, setSavedTemplates] = useState<Record<TemplateType, TemplateData>>({
+    requirements: { subject: "", body: "" },
+    acceptance: { subject: "", body: "" },
+    rejection: { subject: "", body: "" },
+    fully_booked: { subject: "", body: "" },
+  });
+
   const [activeTab, setActiveTab] = useState<TemplateType>("requirements");
+  const [pendingTab, setPendingTab] = useState<TemplateType | null>(null);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
   useEffect(() => {
     if (templates) {
-      setLocalTemplates(templates as Record<TemplateType, TemplateData>);
+      const tpls = templates as Record<TemplateType, TemplateData>;
+      setLocalTemplates(tpls);
+      setSavedTemplates(tpls);
     }
   }, [templates]);
+
+  const isDirty = (type: TemplateType) => {
+    return (
+      localTemplates[type].subject !== savedTemplates[type].subject ||
+      localTemplates[type].body !== savedTemplates[type].body
+    );
+  };
+
+  const handleTabChange = (newTab: TemplateType) => {
+    if (isDirty(activeTab)) {
+      setPendingTab(newTab);
+      setShowUnsavedWarning(true);
+    } else {
+      setActiveTab(newTab);
+    }
+  };
+
+  const confirmTabChange = () => {
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+    setShowUnsavedWarning(false);
+  };
+
+  const cancelTabChange = () => {
+    setPendingTab(null);
+    setShowUnsavedWarning(false);
+  };
 
   const handleChange = (type: TemplateType, field: "subject" | "body", value: string) => {
     setLocalTemplates((prev) => ({
@@ -97,7 +143,6 @@ export function EmailTemplateEditor() {
   const insertVariable = (variable: string, type: TemplateType) => {
     const textarea = document.getElementById(`body-${type}`) as HTMLTextAreaElement | null;
     if (!textarea) {
-      // Fallback: ans Ende anhängen
       handleChange(type, "body", localTemplates[type].body + variable);
       return;
     }
@@ -106,7 +151,6 @@ export function EmailTemplateEditor() {
     const newBody =
       localTemplates[type].body.slice(0, start) + variable + localTemplates[type].body.slice(end);
     handleChange(type, "body", newBody);
-    // Cursor nach der eingefügten Variable positionieren
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + variable.length, start + variable.length);
@@ -161,18 +205,55 @@ export function EmailTemplateEditor() {
         </CardContent>
       </Card>
 
+      {/* Warnung bei ungespeicherten Änderungen */}
+      {showUnsavedWarning && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800">Ungespeicherte Änderungen</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Das aktuelle Template wurde noch nicht gespeichert. Möchten Sie trotzdem wechseln?
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={cancelTabChange}
+                className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => { handleSave(activeTab); confirmTabChange(); }}
+                className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+              >
+                Speichern &amp; wechseln
+              </button>
+              <button
+                onClick={confirmTabChange}
+                className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                Ohne Speichern wechseln
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Template-Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TemplateType)}>
+      <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as TemplateType)}>
         <TabsList className="grid grid-cols-4 w-full">
           {(Object.keys(TEMPLATE_CONFIG) as TemplateType[]).map((type) => {
             const cfg = TEMPLATE_CONFIG[type];
             const hasContent = localTemplates[type].subject || localTemplates[type].body;
+            const dirty = isDirty(type);
             return (
               <TabsTrigger key={type} value={type} className="relative text-xs gap-1.5">
                 {cfg.icon}
                 <span className="hidden sm:inline">{cfg.label}</span>
-                {hasContent && (
+                {hasContent && !dirty && (
                   <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-500" />
+                )}
+                {dirty && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-500" />
                 )}
               </TabsTrigger>
             );
@@ -181,6 +262,7 @@ export function EmailTemplateEditor() {
 
         {(Object.keys(TEMPLATE_CONFIG) as TemplateType[]).map((type) => {
           const cfg = TEMPLATE_CONFIG[type];
+          const dirty = isDirty(type);
           return (
             <TabsContent key={type} value={type} className="space-y-4 mt-4">
               <div className={`rounded-md border px-4 py-3 text-sm flex items-start gap-2 ${cfg.color}`}>
@@ -189,6 +271,24 @@ export function EmailTemplateEditor() {
                   <span className="font-medium">{cfg.label}</span>
                   <span className="ml-2 text-xs opacity-80">{cfg.description}</span>
                 </div>
+              </div>
+
+              {/* Speichertaste oben */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {dirty
+                    ? <span className="text-amber-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Ungespeicherte Änderungen</span>
+                    : <span className="text-green-600 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Gespeichert</span>}
+                </p>
+                <Button
+                  onClick={() => handleSave(type)}
+                  disabled={saveMutation.isPending || !dirty}
+                  size="sm"
+                  variant={dirty ? "default" : "outline"}
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  {saveMutation.isPending ? "Wird gespeichert…" : "Template speichern"}
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -247,10 +347,12 @@ export function EmailTemplateEditor() {
                   </Card>
                 )}
 
+                {/* Speichertaste unten */}
                 <Button
                   onClick={() => handleSave(type)}
-                  disabled={saveMutation.isPending}
+                  disabled={saveMutation.isPending || !dirty}
                   className="w-full sm:w-auto"
+                  variant={dirty ? "default" : "outline"}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saveMutation.isPending ? "Wird gespeichert…" : "Template speichern"}

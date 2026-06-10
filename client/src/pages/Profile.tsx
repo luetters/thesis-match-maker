@@ -321,8 +321,8 @@ function SemesterCapacityBlock() {
   };
 
   const handleSave = async () => {
-    await updateCapacityMutation.mutateAsync(capacities[0] ?? { semester: '', maxFirst: 0, maxSecond: 0 });
-    // Alle Kapazitäten speichern
+    if (capacities.length === 0) return;
+    // Alle Kapazitäten speichern (ohne doppelten ersten Eintrag)
     for (const cap of capacities) {
       await updateCapacityMutation.mutateAsync(cap);
     }
@@ -1552,25 +1552,24 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   {lang === 'de' ? 'Prüfungssprachen' : 'Examination Languages'}
                 </label>
-                {editMode ? (
-                  <div className="flex gap-4">
-                    {(['Deutsch', 'English'] as const).map((lang_) => (
-                      <label key={lang_} className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={examinerLanguages.includes(lang_)}
-                          onChange={(e) => {
-                            if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
-                            else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
-                          }}
-                          className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
-                        />
-                        <span className="text-sm text-gray-700">{lang_}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="flex gap-4">
+                  {(['Deutsch', 'English'] as const).map((lang_) => (
+                    <label key={lang_} className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={examinerLanguages.includes(lang_)}
+                        onChange={(e) => {
+                          if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
+                          else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
+                      />
+                      <span className="text-sm text-gray-700">{lang_}</span>
+                    </label>
+                  ))}
+                </div>
+                {!editMode && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
                     {(Array.isArray(profile.examinerLanguages) && profile.examinerLanguages.length > 0)
                       ? profile.examinerLanguages.map((l, i) => (
                           <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{l}</span>
@@ -1579,6 +1578,35 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* ── Speichertaste für Biographie & Forschung ── */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
+              {editMode && (
+                <button
+                  onClick={() => setEditMode(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-xl border border-gray-200 transition-colors"
+                >
+                  {lang === 'de' ? 'Abbrechen' : 'Cancel'}
+                </button>
+              )}
+              <button
+                onClick={editMode ? handleSave : handleEditStart}
+                disabled={updateMutation.isPending}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#76B900' }}
+                onMouseEnter={(e) => { if (!updateMutation.isPending) e.currentTarget.style.backgroundColor = '#5e9200'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#76B900'; }}
+              >
+                {updateMutation.isPending
+                  ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={editMode ? "M5 13l4 4L19 7" : "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"} /></svg>}
+                {updateMutation.isPending
+                  ? (lang === 'de' ? 'Wird gespeichert…' : 'Saving…')
+                  : editMode
+                    ? (lang === 'de' ? 'Speichern' : 'Save')
+                    : (lang === 'de' ? 'Bearbeiten' : 'Edit')}
+              </button>
             </div>
             </div>
             )}
