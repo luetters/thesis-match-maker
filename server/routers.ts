@@ -3075,6 +3075,11 @@ export const appRouter = router({
         thesisRequestId: z.number().int().positive(),
         subject: z.string().min(1).max(255),
         body: z.string().min(1),
+        attachments: z.array(z.object({
+          filename: z.string().max(255),
+          base64: z.string(),
+          mimeType: z.string().max(128),
+        })).max(5).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const req = await getThesisRequestById(input.thesisRequestId);
@@ -3086,12 +3091,29 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         const student = await getUserById(req.studentId);
         if (!student?.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse des Prüflings gefunden." });
-        await sendEmail({
+        // Anhänge aus base64 dekodieren
+        const emailAttachments = (input.attachments ?? []).map((a) => ({
+          filename: a.filename,
+          content: Buffer.from(a.base64, "base64"),
+          contentType: a.mimeType,
+        }));
+        // Größenprüfung: max. 10 MB gesamt
+        const totalSize = emailAttachments.reduce((sum, a) => sum + (a.content as Buffer).byteLength, 0);
+        if (totalSize > 10 * 1024 * 1024) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Anhänge überschreiten 10 MB. Bitte reduzieren Sie die Dateigröße." });
+        }
+        const sent = await sendEmail({
           to: student.email,
           subject: input.subject,
           html: input.body.replace(/\n/g, "<br>"),
+          attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
         });
-        return { success: true };
+        if (!sent) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "E-Mail konnte nicht gesendet werden." });
+        return {
+          success: true,
+          sentTo: student.email,
+          attachmentCount: emailAttachments.length,
+        };
       }),
   }),
 

@@ -491,6 +491,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [requirementsSubject, setRequirementsSubject] = useState("");
   const [requirementsBody, setRequirementsBody] = useState("");
   const [requirementsPreviewMode, setRequirementsPreviewMode] = useState(false);
+  const [requirementsAttachments, setRequirementsAttachments] = useState<Array<{ filename: string; base64: string; mimeType: string; sizeKb: number }>>([]);
+  const [requirementsSent, setRequirementsSent] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
@@ -511,9 +513,14 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   });
 
   const sendRequirementsMail = trpc.examinerEmailTemplates.sendRequirements.useMutation({
-    onSuccess: () => {
-      toast.success("Persönliche Hinweise wurden per E-Mail gesendet.");
-      setRequirementsDialog(null);
+    onSuccess: (data) => {
+      setRequirementsSent(true);
+      // Dialog nach 2,5 Sekunden automatisch schließen
+      setTimeout(() => {
+        setRequirementsDialog(null);
+        setRequirementsSent(false);
+        setRequirementsAttachments([]);
+      }, 2500);
     },
     onError: (err) => toast.error("E-Mail konnte nicht gesendet werden: " + err.message),
   });
@@ -540,6 +547,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     setRequirementsSubject(subject);
     setRequirementsBody(body);
     setRequirementsPreviewMode(false);
+    setRequirementsAttachments([]);
+    setRequirementsSent(false);
     setRequirementsDialog({ subject, body });
   }
 
@@ -777,11 +786,30 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 {req.studentEmail && <span className="ml-1 text-gray-400">&lt;{req.studentEmail}&gt;</span>}
               </div>
 
-              {!requirementsPreviewMode ? (
+              {/* ── Erfolgsmeldung nach Versand ── */}
+              {requirementsSent ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-semibold text-gray-900">E-Mail erfolgreich gesendet</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Persönliche Hinweise wurden an <strong>{req.studentName ?? "die/den Studierende:n"}</strong> gesendet.
+                      {requirementsAttachments.length > 0 && (
+                        <span> ({requirementsAttachments.length} {requirementsAttachments.length === 1 ? "Anhang" : "Anhänge"} mitgesendet)</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">Dieser Dialog schließt sich automatisch…</p>
+                  </div>
+                </div>
+              ) : !requirementsPreviewMode ? (
                 /* ── Bearbeitungs-Modus ── */
                 <>
                   <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-                    Die Vorlage stammt aus Ihrem Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in". Sie können den Text hier noch anpassen.
+                    Die Vorlage stammt aus Ihrem Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in“. Sie können den Text hier noch anpassen.
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Betreff</label>
@@ -796,7 +824,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
                     <textarea
-                      rows={10}
+                      rows={8}
                       value={requirementsBody}
                       onChange={(e) => setRequirementsBody(e.target.value)}
                       placeholder="Ihr persönlicher Hinweistext..."
@@ -804,8 +832,71 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                     />
                     {!requirementsSubject && !requirementsBody && (
                       <p className="text-xs text-amber-600 mt-1">
-                        Kein Template hinterlegt. Bitte legen Sie zuerst ein Template im Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in" an.
+                        Kein Template hinterlegt. Bitte legen Sie zuerst ein Template im Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in“ an.
                       </p>
+                    )}
+                  </div>
+                  {/* ── Dateianhang-Upload ── */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Anhänge (max. 5 Dateien, 10 MB gesamt)</label>
+                    <label
+                      className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span className="text-xs">Dateien hier ablegen oder klicken zum Auswählen</span>
+                      </div>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files ?? []);
+                          if (requirementsAttachments.length + files.length > 5) {
+                            toast.error("Maximal 5 Anhänge erlaubt.");
+                            return;
+                          }
+                          files.forEach((file) => {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast.error(`"${file.name}" ist zu groß (max. 5 MB pro Datei).`);
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const base64 = (ev.target?.result as string).split(",")[1];
+                              setRequirementsAttachments((prev) => [
+                                ...prev,
+                                { filename: file.name, base64, mimeType: file.type || "application/octet-stream", sizeKb: Math.round(file.size / 1024) },
+                              ]);
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {requirementsAttachments.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {requirementsAttachments.map((a, i) => (
+                          <li key={i} className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-1.5">
+                            <span className="text-gray-700 truncate max-w-[220px]">{a.filename}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-gray-400">{a.sizeKb} KB</span>
+                              <button
+                                onClick={() => setRequirementsAttachments((prev) => prev.filter((_, j) => j !== i))}
+                                className="text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 </>
@@ -828,6 +919,19 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                       <p className="text-sm text-gray-400 italic">Kein Text eingegeben.</p>
                     )}
                   </div>
+                  {requirementsAttachments.length > 0 && (
+                    <div className="px-4 py-2 border-t border-gray-200 bg-white">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Anhänge</p>
+                      <div className="flex flex-wrap gap-1">
+                        {requirementsAttachments.map((a, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 rounded-lg px-2 py-0.5">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                            {a.filename} ({a.sizeKb} KB)
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="px-4 py-2 bg-amber-50 border-t border-amber-100">
                     <p className="text-xs text-amber-700">
                       Dies ist eine Vorschau der E-Mail, die an <strong>{req.studentName ?? "die/den Studierende:n"}</strong> gesendet wird.
@@ -870,6 +974,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                     thesisRequestId: req.id,
                     subject: requirementsSubject,
                     body: requirementsBody,
+                    attachments: requirementsAttachments.map(({ filename, base64, mimeType }) => ({ filename, base64, mimeType })),
                   });
                 }}
                 disabled={sendRequirementsMail.isPending}

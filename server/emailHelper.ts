@@ -163,11 +163,13 @@ export async function sendEmail({
   subject,
   html,
   text,
+  attachments,
 }: {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>;
 }): Promise<boolean> {
   const cfg = getTransporter();
   if (!cfg) {
@@ -175,7 +177,7 @@ export async function sendEmail({
     return false;
   }
   try {
-    const info = await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text });
+    const info = await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text, attachments });
     console.log(`[Email] Gesendet an ${to} | Betreff: ${subject} | ID: ${info.messageId}`);
     return true;
   } catch (err: unknown) {
