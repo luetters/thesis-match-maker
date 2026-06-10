@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
@@ -309,6 +310,7 @@ export default function ExaminerDirectory() {
   const [filterRole, setFilterRole] = useState<"all" | "first" | "second">("all");
   const [filterTag, setFilterTag] = useState<string>("");
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState<"name" | "capacity_asc" | "capacity_desc">("name");
 
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery(undefined, {
     enabled: !!user,
@@ -375,6 +377,21 @@ export default function ExaminerDirectory() {
   });
 
   const hasActiveFilters = search || filterProgramme || filterCapacity !== "all" || filterRole !== "all" || filterTag;
+
+  // Sortierung
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "name") {
+        const na = a.user?.name ?? "";
+        const nb = b.user?.name ?? "";
+        return na.localeCompare(nb, "de");
+      }
+      // Kapazität: freie Slots = max - aktiv
+      const freeA = (a.profile?.maxSupervisions ?? 0) - ((a as any).activeSupervisions as number ?? 0);
+      const freeB = (b.profile?.maxSupervisions ?? 0) - ((b as any).activeSupervisions as number ?? 0);
+      return sortBy === "capacity_asc" ? freeA - freeB : freeB - freeA;
+    });
+  }, [filtered, sortBy]);
 
   // Tags für Dropdown filtern (Suche im Tag-Dropdown)
   const [tagSearch, setTagSearch] = useState("");
@@ -588,6 +605,21 @@ export default function ExaminerDirectory() {
               ))}
             </div>
 
+            {/* Sortierung */}
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="h-8 text-xs border-gray-200 rounded-xl w-44">
+                <svg className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                <SelectValue placeholder="Sortieren nach" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name (A–Z)</SelectItem>
+                <SelectItem value="capacity_desc">Kapazität (meiste frei)</SelectItem>
+                <SelectItem value="capacity_asc">Kapazität (wenigste frei)</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Result count + Reset */}
             <div className="ml-auto flex items-center gap-3">
               {hasActiveFilters && (
@@ -644,7 +676,7 @@ export default function ExaminerDirectory() {
               <div key={i} className="h-56 bg-white rounded-2xl animate-pulse border border-gray-100" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -670,7 +702,7 @@ export default function ExaminerDirectory() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((ex) => (
+            {sorted.map((ex) => (
               <ExaminerCard
                 key={ex.user.id}
                 examiner={ex as ExaminerListItem}
