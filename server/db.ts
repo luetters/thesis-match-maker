@@ -1839,19 +1839,9 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
     })
     .where(eq(thesisRequests.id, thesisRequestId));
 
-  // In-App-Benachrichtigung für Studierenden
-  const notificationContent = rejectionReason
-    ? `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde leider abgelehnt. Begründung: ${rejectionReason}`
-    : `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde leider abgelehnt. Sie können eine neue Anfrage einreichen.`;
-
-  await db.insert(notifications).values({
-    userId: thesisResult.studentId,
-    title: "Betreuungsanfrage abgelehnt",
-    message: notificationContent,
-    type: "status_change",
-    thesisRequestId,
-    read: 0,
-  });
+  // Hinweis: Die In-App-Benachrichtigung wird vom aufrufenden Router via
+  // notifyThesisParticipants mit korrekter thesisRequestId geschrieben.
+  // Kein Doppeleintrag hier.
 }
 
 /**

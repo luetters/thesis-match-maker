@@ -748,10 +748,11 @@ export const appRouter = router({
           reason: input.rejectionReason,
         });
         // In-App-Benachrichtigung
+        // Bei PENDING_FIRST_EXAMINER ist examinerId noch null – nur Studierenden benachrichtigen
         await notifyThesisParticipants({
           thesisRequestId: input.id,
           studentId: existing.studentId,
-          examinerId: existing.examinerId ?? ctx.user.id,
+          examinerId: existing.examinerId ?? null,
           secondExaminerId: existing.secondExaminerId,
           title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
           message: `Ihre Anfrage "${existing.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.${input.rejectionReason ? ` Begründung: ${input.rejectionReason}` : ""}`,
