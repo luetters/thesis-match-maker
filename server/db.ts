@@ -767,21 +767,40 @@ export async function getColloquiumsByStudent(studentId: number) {
 export async function getThesisStats() {
   const db = await getDb();
   if (!db) return null;
-  const all = await db.select().from(thesisRequests);
+
+  // Anfragen mit Studiengang des Studierenden (über users → programmes) laden
+  const all = await db
+    .select({
+      id: thesisRequests.id,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
+    })
+    .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id));
+
   const byStatus: Record<string, number> = {};
-  const byDepartment: Record<string, number> = {};
+  const byProgramme: Record<string, number> = {};
   const byMonth: Record<string, number> = {};
+
   for (const r of all) {
     byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
-    const dept = r.department ?? 'Unbekannt';
-    byDepartment[dept] = (byDepartment[dept] ?? 0) + 1;
+    // Studiengang: Abkürzung bevorzugen, sonst vollständiger Name, sonst "Unbekannt"
+    const prog = r.programmeAbbreviation ?? r.programmeName ?? "Unbekannt";
+    byProgramme[prog] = (byProgramme[prog] ?? 0) + 1;
     const month = new Date(r.createdAt).toISOString().slice(0, 7);
     byMonth[month] = (byMonth[month] ?? 0) + 1;
   }
+
   return {
     total: all.length,
     byStatus: Object.entries(byStatus).map(([name, value]) => ({ name, value })),
-    byDepartment: Object.entries(byDepartment).map(([name, value]) => ({ name, value })),
+    // byDepartment wird jetzt als Studiengang-Gruppierung zurückgegeben (FB3-intern)
+    byDepartment: Object.entries(byProgramme)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value]) => ({ name, value })),
     byMonth: Object.entries(byMonth).sort().map(([month, count]) => ({ month, count })),
   };
 }

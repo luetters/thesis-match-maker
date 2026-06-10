@@ -1255,7 +1255,7 @@ function StatisticsView() {
           </ResponsiveContainer>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Fachbereich</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Studiengang</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={stats.byDepartment} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

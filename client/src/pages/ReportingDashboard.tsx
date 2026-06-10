@@ -280,7 +280,7 @@ export default function ReportingDashboard() {
             {/* Nach Fachbereich */}
             {activeTab === "faculty" && (
               <Card className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Anfragen nach Fachbereich</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Anfragen nach Studiengang</h3>
                 <ResponsiveContainer width="100%" height={400}>
                   <ComposedChart data={barData}>
                     <CartesianGrid strokeDasharray="3 3" />

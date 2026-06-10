@@ -712,7 +712,7 @@ function SystemStatsTab() {
 
       {stats?.byDepartment && stats.byDepartment.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Fachbereich</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Anfragen nach Studiengang</h3>
           <div className="space-y-3">
             {stats.byDepartment.map((d: any) => (
               <div key={d.name ?? d.department} className="flex items-center gap-3">
