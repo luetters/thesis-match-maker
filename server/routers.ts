@@ -3061,7 +3061,32 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         const student = await getUserById(req.studentId);
         if (!student?.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse des Prüflings gefunden." });
-                await sendEmail({
+        await sendEmail({
+          to: student.email,
+          subject: input.subject,
+          html: input.body.replace(/\n/g, "<br>"),
+        });
+        return { success: true };
+      }),
+
+    /** Persönliche Hinweise/Anforderungen-Mail an Studierende senden */
+    sendRequirements: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        subject: z.string().min(1).max(255),
+        body: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        const isAssigned = req.examinerId === ctx.user.id || req.secondExaminerId === ctx.user.id;
+        const isWanted = (req as any).wantedExaminerId === ctx.user.id;
+        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isAssigned && !isWanted && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
+        const student = await getUserById(req.studentId);
+        if (!student?.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse des Prüflings gefunden." });
+        await sendEmail({
           to: student.email,
           subject: input.subject,
           html: input.body.replace(/\n/g, "<br>"),

@@ -486,7 +486,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
-  const [emailDialog, setEmailDialog] = useState<{ action: "accept" | "reject" | "fully_booked"; subject: string; body: string } | null>(null);
+  const [emailDialog, setEmailDialog] = useState<{ action: "accept" | "reject" | "fully_booked" | "requirements"; subject: string; body: string } | null>(null);
+  const [requirementsDialog, setRequirementsDialog] = useState<{ subject: string; body: string } | null>(null);
+  const [requirementsSubject, setRequirementsSubject] = useState("");
+  const [requirementsBody, setRequirementsBody] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
@@ -506,8 +509,37 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     onError: (err) => toast.error("E-Mail konnte nicht gesendet werden: " + err.message),
   });
 
+  const sendRequirementsMail = trpc.examinerEmailTemplates.sendRequirements.useMutation({
+    onSuccess: () => {
+      toast.success("Persönliche Hinweise wurden per E-Mail gesendet.");
+      setRequirementsDialog(null);
+    },
+    onError: (err) => toast.error("E-Mail konnte nicht gesendet werden: " + err.message),
+  });
+
   // Template für Aktion laden und Dialog öffnen
   const { data: examinerTemplates } = trpc.examinerEmailTemplates.getAll.useQuery();
+
+  function openRequirementsDialog() {
+    const tpl = examinerTemplates?.["requirements"];
+    const vars = {
+      name: req.studentName ?? "",
+      thema: req.title ?? "",
+      semester: req.targetSemester ?? "",
+      studiengang: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "",
+    };
+    const resolve = (text: string) =>
+      text
+        .replace(/\{\{name\}\}/g, vars.name)
+        .replace(/\{\{thema\}\}/g, vars.thema)
+        .replace(/\{\{semester\}\}/g, vars.semester)
+        .replace(/\{\{studiengang\}\}/g, vars.studiengang);
+    const subject = tpl?.subject ? resolve(tpl.subject) : "";
+    const body = tpl?.body ? resolve(tpl.body) : "";
+    setRequirementsSubject(subject);
+    setRequirementsBody(body);
+    setRequirementsDialog({ subject, body });
+  }
 
   function openEmailDialog(action: "accept" | "reject" | "fully_booked") {
     const typeMap = { accept: "acceptance", reject: "rejection", fully_booked: "fully_booked" } as const;
@@ -676,6 +708,97 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               </svg>
               Ablehnen
             </button>
+          </div>
+          <button
+            onClick={openRequirementsDialog}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Sende Mail mit persönlichen Hinweisen
+          </button>
+        </div>
+      )}
+
+      {/* Dialog: Persönliche Hinweise senden */}
+      {requirementsDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setRequirementsDialog(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col"
+            style={{ maxHeight: "90vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="font-semibold text-gray-900">Persönliche Hinweise/Anforderungen senden</span>
+              </div>
+              <button onClick={() => setRequirementsDialog(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <div className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
+                <span className="font-medium">An:</span> {req.studentName ?? "Studierende:r"}
+                {req.studentEmail && <span className="ml-1 text-gray-400">&lt;{req.studentEmail}&gt;</span>}
+              </div>
+              <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                Die Vorlage stammt aus Ihrem Profil unter "Persönliche Hinweise/Anforderungen Erstgutachter:in". Sie können den Text hier noch anpassen.
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Betreff</label>
+                <input
+                  type="text"
+                  value={requirementsSubject}
+                  onChange={(e) => setRequirementsSubject(e.target.value)}
+                  placeholder="Betreff der E-Mail..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
+                <textarea
+                  rows={8}
+                  value={requirementsBody}
+                  onChange={(e) => setRequirementsBody(e.target.value)}
+                  placeholder="Ihr persönlicher Hinweistext..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none font-mono"
+                />
+                {!requirementsSubject && !requirementsBody && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Kein Template hinterlegt. Bitte legen Sie zuerst ein Template im Profil unter "Persönliche Hinweise/Anforderungen Erstgutachter:in" an.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+              <button
+                onClick={() => setRequirementsDialog(null)}
+                className="flex-1 px-4 py-2 rounded-xl text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => {
+                  if (!requirementsSubject || !requirementsBody) {
+                    toast.error("Bitte füllen Sie Betreff und Text aus.");
+                    return;
+                  }
+                  sendRequirementsMail.mutate({
+                    thesisRequestId: req.id,
+                    subject: requirementsSubject,
+                    body: requirementsBody,
+                  });
+                }}
+                disabled={sendRequirementsMail.isPending}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all disabled:opacity-50"
+              >
+                {sendRequirementsMail.isPending ? "Wird gesendet..." : "Hinweise senden"}
+              </button>
+            </div>
           </div>
         </div>
       )}

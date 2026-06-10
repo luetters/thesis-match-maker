@@ -18,8 +18,8 @@ interface TemplateData {
 
 const TEMPLATE_CONFIG: Record<TemplateType, { label: string; description: string; icon: React.ReactNode; color: string }> = {
   requirements: {
-    label: "Anforderungen",
-    description: "Informiert Interessent:innen über Ihre Anforderungen und Erwartungen an Abschlussarbeiten.",
+    label: "Persönliche Hinweise/Anforderungen Erstgutachter:in",
+    description: "Persönliche Hinweise und Anforderungen, die beim Erstkontakt mit Interessent:innen automatisch mitgesendet werden können.",
     icon: <Info className="h-4 w-4" />,
     color: "bg-blue-50 border-blue-200 text-blue-800",
   },
