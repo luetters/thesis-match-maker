@@ -1693,6 +1693,9 @@ function StatusNotificationBanner() {
 function FavoritesList() {
   const { data: favorites, isLoading, refetch } = trpc.favorites.list.useQuery();
   const toggleMutation = trpc.favorites.toggle.useMutation({ onSuccess: () => refetch() });
+  const updateNoteMutation = trpc.favorites.updateNote.useMutation({ onSuccess: () => refetch() });
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [noteText, setNoteText] = useState<string>("");
 
   if (isLoading) {
     return (
@@ -1759,10 +1762,60 @@ function FavoritesList() {
                   ))}
                 </div>
               )}
-              {fav.note && (
-                <p className="mt-2 text-xs text-gray-400 italic">„{fav.note}“</p>
-              )}
-              <div className="mt-3 flex items-center gap-3">
+              {/* Notiz-Bereich */}
+              <div className="mt-3">
+                {editingNoteId === fav.examinerId ? (
+                  <div className="space-y-2">
+                    <textarea
+                      className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 focus:border-[#76B900] placeholder-gray-300"
+                      rows={3}
+                      maxLength={512}
+                      placeholder="Persönliche Notiz (max. 512 Zeichen)…"
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          updateNoteMutation.mutate({ examinerId: fav.examinerId, note: noteText });
+                          setEditingNoteId(null);
+                        }}
+                        disabled={updateNoteMutation.isPending}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                        style={{ backgroundColor: "#76B900" }}
+                      >
+                        Speichern
+                      </button>
+                      <button
+                        onClick={() => setEditingNoteId(null)}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200"
+                      >
+                        Abbrechen
+                      </button>
+                      <span className="text-xs text-gray-300 ml-auto">{noteText.length}/512</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    {fav.note ? (
+                      <p className="flex-1 text-xs text-gray-500 italic bg-gray-50 rounded-lg px-3 py-2">„{fav.note}“</p>
+                    ) : (
+                      <p className="flex-1 text-xs text-gray-300 italic">Noch keine Notiz…</p>
+                    )}
+                    <button
+                      onClick={() => { setEditingNoteId(fav.examinerId); setNoteText(fav.note ?? ""); }}
+                      title={fav.note ? "Notiz bearbeiten" : "Notiz hinzufügen"}
+                      className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-3">
                 <a
                   href={`/examiner/profile/${fav.examinerId}`}
                   className="text-xs font-semibold hover:opacity-80 transition-opacity"
