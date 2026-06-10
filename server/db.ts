@@ -5275,3 +5275,23 @@ export async function getAllDraftRequests() {
     )
     .orderBy(desc(thesisRequests.createdAt));
 }
+
+// ─── Thesis Document Verification Tokens ─────────────────────────────────────
+import { thesisDocTokens, InsertThesisDocToken } from "../drizzle/schema";
+
+export async function createThesisDocToken(data: Omit<InsertThesisDocToken, "id" | "createdAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(thesisDocTokens).values(data as InsertThesisDocToken);
+}
+
+export async function getThesisDocTokenByToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(thesisDocTokens)
+    .where(eq(thesisDocTokens.token, token))
+    .limit(1);
+  return rows[0] ?? null;
+}

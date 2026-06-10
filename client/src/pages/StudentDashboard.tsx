@@ -1079,8 +1079,22 @@ function MyRequests() {
               currentUrl={(req as { exposeUrl?: string | null }).exposeUrl}
               onSuccess={() => utils.thesis.myRequests.invalidate()}
             />
-            {/* Anfrage zurückziehen – nur bei noch nicht beantworteten Anfragen */}
-            {WITHDRAWABLE_STATUSES.includes(req.status) && (
+          {/* Anmeldedokument herunterladen – ab MATCHED oder REGISTERED */}
+          {(["MATCHED", "REGISTERED", "FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED"] as string[]).includes(req.status) && (
+            <a
+              href={`/api/thesis/${req.id}/registration.pdf`}
+              download
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
+              title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Anmeldedokument herunterladen (PDF)
+            </a>
+          )}
+          {/* Anfrage zurückziehen – nur bei noch nicht beantworteten Anfragen */}
+          {WITHDRAWABLE_STATUSES.includes(req.status) && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button

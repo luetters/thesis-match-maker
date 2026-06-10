@@ -17,7 +17,8 @@ const isPublicPath = (path: string) =>
   PUBLIC_PATHS.includes(path) ||
   path.startsWith("/examiner/profile/") ||
   path.startsWith("/examiner/respond") ||
-  path.startsWith("/pav/respond");
+  path.startsWith("/pav/respond") ||
+  path.startsWith("/verify/");
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

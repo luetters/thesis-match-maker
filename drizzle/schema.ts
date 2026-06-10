@@ -420,3 +420,20 @@ export type InsertSystemSetting = InferInsertModel<typeof systemSettings>;
 // User-Typ (wird in server/_core/context.ts und sdk.ts verwendet)
 import { InferSelectModel } from "drizzle-orm";
 export type User = InferSelectModel<typeof users>;
+
+// ─── Thesis Document Verification Tokens ─────────────────────────────────────
+export const thesisDocTokens = mysqlTable("thesis_doc_tokens", {
+  id: int().autoincrement().notNull().primaryKey(),
+  token: varchar({ length: 128 }).notNull().unique(),
+  thesisRequestId: int("thesis_request_id").notNull().references(() => thesisRequests.id, { onDelete: "cascade" }),
+  studentName: varchar("student_name", { length: 255 }).notNull(),
+  matrikelNr: varchar("matrikel_nr", { length: 32 }),
+  programmeName: varchar("programme_name", { length: 255 }),
+  title: varchar({ length: 512 }).notNull(),
+  firstExaminerName: varchar("first_examiner_name", { length: 255 }),
+  secondExaminerName: varchar("second_examiner_name", { length: 255 }),
+  targetSemester: varchar("target_semester", { length: 32 }),
+  degreeType: varchar("degree_type", { length: 16 }),
+  createdAt: timestamp({ mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+});
+export type InsertThesisDocToken = InferInsertModel<typeof thesisDocTokens>;

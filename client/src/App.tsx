@@ -27,6 +27,7 @@ import DeanStats from "./pages/DeanStats";
 import ExaminerManagement from "./pages/ExaminerManagement";
 import { useNotificationPoller } from "./hooks/useNotificationPoller";
 import SelectRole from "./pages/SelectRole";
+import VerifyDocument from "./pages/VerifyDocument";
 import RolePending from "./pages/RolePending";
 import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
@@ -106,6 +107,9 @@ function Router() {
 
       {/* Studierenden-Bestätigung (Examiner/PAV-initiierter Antrag) */}
       <Route path="/thesis/confirm" component={ThesisConfirm} />
+
+      {/* Öffentliche Dokumentenverifikation (Login-frei) */}
+      <Route path="/verify/:token" component={VerifyDocument} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />
