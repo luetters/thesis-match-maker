@@ -682,9 +682,22 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
       {/* Anmeldedokument-Download – ab FIRST_EXAMINER_ACCEPTED oder höher */}
       {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED"] as string[]).includes(req.status) && (
-        <a
-          href={`/api/thesis/${req.id}/registration.pdf`}
-          download
+        <button
+          onClick={async () => {
+            try {
+              const res = await fetch(`/api/thesis/${req.id}/registration.pdf`, { credentials: 'include' });
+              if (!res.ok) { const err = await res.json().catch(() => ({})); alert((err as any).error ?? 'Download fehlgeschlagen'); return; }
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              const cd = res.headers.get('content-disposition') ?? '';
+              const match = cd.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+              a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${req.id}.pdf`;
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            } catch { alert('Download fehlgeschlagen'); }
+          }}
           className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors w-fit"
           title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"
         >
@@ -692,7 +705,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Anmeldedokument (PDF)
-        </a>
+        </button>
       )}
 
       {isPending && (

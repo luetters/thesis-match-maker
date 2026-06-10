@@ -575,9 +575,22 @@ function AdminWorkflowTab() {
                     <button onClick={() => openAction(thesis.id, "close")} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors">Akte schließen</button>
                   </>)}
                   <button onClick={() => setShowHistory(showHistory === thesis.id ? null : thesis.id)} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 transition-colors">Protokoll</button>
-                  <a
-                    href={`/api/thesis/${thesis.id}/registration.pdf`}
-                    download
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/thesis/${thesis.id}/registration.pdf`, { credentials: 'include' });
+                        if (!res.ok) { const err = await res.json().catch(() => ({})); alert((err as any).error ?? 'Download fehlgeschlagen'); return; }
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const cd = res.headers.get('content-disposition') ?? '';
+                        const match = cd.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+                        a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${thesis.id}.pdf`;
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch { alert('Download fehlgeschlagen'); }
+                    }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
                     title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"
                   >
@@ -585,7 +598,7 @@ function AdminWorkflowTab() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Anmeldedokument
-                  </a>
+                  </button>
                 </div>
               </div>
               {/* Fristprotokoll */}

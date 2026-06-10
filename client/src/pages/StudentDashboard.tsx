@@ -1083,9 +1083,22 @@ function MyRequests() {
             />
           {/* Anmeldedokument herunterladen – ab MATCHED oder REGISTERED */}
           {(["MATCHED", "REGISTERED", "FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED"] as string[]).includes(req.status) && (
-            <a
-              href={`/api/thesis/${req.id}/registration.pdf`}
-              download
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/thesis/${req.id}/registration.pdf`, { credentials: 'include' });
+                  if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error((err as any).error ?? 'Download fehlgeschlagen'); return; }
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  const cd = res.headers.get('content-disposition') ?? '';
+                  const match = cd.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+                  a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${req.id}.pdf`;
+                  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                } catch { toast.error('Download fehlgeschlagen'); }
+              }}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
               title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"
             >
@@ -1093,7 +1106,7 @@ function MyRequests() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Anmeldedokument herunterladen (PDF)
-            </a>
+            </button>
           )}
           {/* Anfrage zurückziehen – nur bei noch nicht beantworteten Anfragen */}
           {WITHDRAWABLE_STATUSES.includes(req.status) && (
