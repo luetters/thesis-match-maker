@@ -481,7 +481,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -577,7 +577,26 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 <span className="font-medium text-gray-600">Zielsemester:</span>{" "}{req.targetSemester}
               </span>
             )}
+            {req.createdAt && (
+              <span className="text-xs text-gray-400">
+                {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+            )}
           </div>
+          {(req.firstExaminerName || req.secondExaminerName) && (
+            <div className="flex flex-wrap gap-x-3 mt-1">
+              {req.firstExaminerName && (
+                <span className="text-xs text-gray-500">
+                  <span className="font-medium text-gray-600">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
+                </span>
+              )}
+              {req.secondExaminerName && (
+                <span className="text-xs text-gray-500">
+                  <span className="font-medium text-gray-600">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <StatusBadge status={req.status} />
       </div>
@@ -809,8 +828,8 @@ function RequestsView() {
   }
 
   // Ausstehende Freigaben (PENDING_FIRST_EXAMINER) – noch nicht in assignedRequests enthalten
-  const assignedIds = new Set((assignedRequests ?? []).map((r) => r.id));
-  const newPending = (pendingRequests ?? []).filter((r) => !assignedIds.has(r.id));
+  const assignedIds = new Set(((assignedRequests ?? []) as any[]).map((r: any) => r.id));
+  const newPending = ((pendingRequests ?? []) as any[]).filter((r: any) => !assignedIds.has(r.id));
 
   // Alle Anfragen zusammenführen: zuerst ausstehende Freigaben, dann zugewiesene
   const allRequests = [
@@ -1250,11 +1269,12 @@ function ProgrammeSettings() {
 function Overview() {
   const { t } = useLanguage();
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
+  const requestsAny = (requests ?? []) as any[];
   const stats = {
-    total: requests?.length ?? 0,
-    pending: requests?.filter((r) => r.status === "PENDING").length ?? 0,
-    accepted: requests?.filter((r) => r.status === "ACCEPTED").length ?? 0,
-    matched: requests?.filter((r) => r.status === "MATCHED").length ?? 0,
+    total: requestsAny.length,
+    pending: requestsAny.filter((r: any) => r.status === "PENDING").length,
+    accepted: requestsAny.filter((r: any) => r.status === "ACCEPTED").length,
+    matched: requestsAny.filter((r: any) => r.status === "MATCHED").length,
   };
 
   const utils = trpc.useUtils();
@@ -1287,18 +1307,57 @@ function Overview() {
       </div>
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="font-semibold text-gray-900 mb-4">Neueste Anfragen</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Neueste Anfragen</h2>
+          <a href="/examiner/requests" className="text-xs text-[#76B900] hover:underline font-medium">Alle anzeigen →</a>
+        </div>
         {!requests?.length ? (
           <p className="text-sm text-gray-500">Noch keine Anfragen vorhanden.</p>
         ) : (
           <div className="space-y-3">
-            {requests.slice(0, 5).map((req) => (
-              <div key={req.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{req.title}</p>
-                  <p className="text-xs text-gray-500">{req.department}</p>
+            {(requests as any[]).slice(0, 5).map((req: any) => (
+              <div key={req.id} className="py-3 border-b border-gray-50 last:border-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{req.title || "(kein Titel)"}</p>
+                    {req.studentName && (
+                      <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
+                    )}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                      {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium">Study Programme:</span>{" "}
+                          {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                        </span>
+                      )}
+                      {req.targetSemester && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                        </span>
+                      )}
+                      {req.createdAt && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                    {(req.firstExaminerName || req.secondExaminerName) && (
+                      <div className="flex flex-wrap gap-x-3 mt-1">
+                        {req.firstExaminerName && (
+                          <span className="text-xs text-gray-500">
+                            <span className="font-medium">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
+                          </span>
+                        )}
+                        {req.secondExaminerName && (
+                          <span className="text-xs text-gray-500">
+                            <span className="font-medium">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <StatusBadge status={req.status} />
                 </div>
-                <StatusBadge status={req.status} />
               </div>
             ))}
           </div>

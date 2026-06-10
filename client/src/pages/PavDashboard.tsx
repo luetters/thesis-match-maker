@@ -515,7 +515,46 @@ function AdminWorkflowTab() {
                     <OfficialStatusBadge status={thesis.officialRegistrationStatus ?? "not_registered"} />
                   </div>
                   <p className="font-medium text-gray-900 truncate">{thesis.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{thesis.studentName ?? "–"} · {thesis.degreeType ?? "–"} · {thesis.department ?? "–"}</p>
+                  {(thesis as any).studentName && (
+                    <p className="text-xs font-medium text-[#76B900] mt-0.5">{(thesis as any).studentName}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                    {((thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? thesis.department) && (
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-600">Study Programme:</span>{" "}
+                        {(thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? thesis.department}
+                      </span>
+                    )}
+                    {thesis.degreeType && (
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-600">Abschluss:</span>{" "}{thesis.degreeType === "master" ? "Master" : "Bachelor"}
+                      </span>
+                    )}
+                    {(thesis as any).targetSemester && (
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium text-gray-600">Zielsemester:</span>{" "}{(thesis as any).targetSemester}
+                      </span>
+                    )}
+                    {(thesis as any).createdAt && (
+                      <span className="text-xs text-gray-400">
+                        {new Date((thesis as any).createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                  {((thesis as any).firstExaminerName || (thesis as any).secondExaminerName) && (
+                    <div className="flex flex-wrap gap-x-3 mt-1">
+                      {(thesis as any).firstExaminerName && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-600">Erstgutachter:in:</span>{" "}{(thesis as any).firstExaminerName}
+                        </span>
+                      )}
+                      {(thesis as any).secondExaminerName && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-600">Zweitgutachter:in:</span>{" "}{(thesis as any).secondExaminerName}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {thesis.submissionDeadline && (
                     <p className="text-xs text-gray-500 mt-0.5">
                       Abgabefrist: <span className="font-medium">{formatDate(thesis.submissionDeadline)}</span>

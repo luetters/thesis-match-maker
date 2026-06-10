@@ -246,6 +246,8 @@ export async function getThesisRequestsByStudent(studentId: number) {
 export async function getThesisRequestsByExaminer(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_tbe");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_tbe");
   return db
     .select({
       id: thesisRequests.id,
@@ -266,10 +268,14 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       or(
         eq(thesisRequests.examinerId, examinerId),
@@ -282,6 +288,8 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
 export async function getAllThesisRequests() {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner");
   return db
     .select({
       id: thesisRequests.id,
@@ -310,10 +318,14 @@ export async function getAllThesisRequests() {
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .orderBy(desc(thesisRequests.createdAt));
 }
 
@@ -1994,6 +2006,8 @@ export async function sendExaminerConfirmationEmail(
 export async function getExaminerPendingRequests(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_ep");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_ep");
   return db
     .select({
       id: thesisRequests.id,
@@ -2005,14 +2019,20 @@ export async function getExaminerPendingRequests(examinerId: number) {
       language: thesisRequests.language,
       status: thesisRequests.status,
       createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -2025,6 +2045,8 @@ export async function getExaminerPendingRequests(examinerId: number) {
 export async function getExaminerAcceptedRequests(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_ea");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_ea");
   return db
     .select({
       id: thesisRequests.id,
@@ -2036,14 +2058,20 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       language: thesisRequests.language,
       status: thesisRequests.status,
       createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -2056,6 +2084,8 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
 export async function getExaminerRejectedRequests(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_er");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_er");
   return db
     .select({
       id: thesisRequests.id,
@@ -2068,14 +2098,20 @@ export async function getExaminerRejectedRequests(examinerId: number) {
       status: thesisRequests.status,
       rejectionReason: thesisRequests.rejectionReason,
       createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -2088,6 +2124,8 @@ export async function getExaminerRejectedRequests(examinerId: number) {
 export async function getExaminerSecondExaminerRequests(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_ese");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_ese");
   return db
     .select({
       id: thesisRequests.id,
@@ -2099,14 +2137,20 @@ export async function getExaminerSecondExaminerRequests(examinerId: number) {
       language: thesisRequests.language,
       status: thesisRequests.status,
       createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       and(
         eq(thesisRequests.secondExaminerId, examinerId),
@@ -4853,13 +4897,16 @@ export async function getAssignedExaminers(studentId: number) {
 export async function getRegisteredTheses() {
   const db = await getDb();
   if (!db) return [];
-  const student = aliasedTable(users, "student");
+  const student = aliasedTable(users, "student_rg");
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_rg");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_rg");
   return db
     .select({
       id: thesisRequests.id,
       title: thesisRequests.title,
       department: thesisRequests.department,
       degreeType: thesisRequests.degreeType,
+      targetSemester: thesisRequests.targetSemester,
       status: thesisRequests.status,
       officialRegistrationStatus: thesisRequests.officialRegistrationStatus,
       officialRegistrationAt: thesisRequests.officialRegistrationAt,
@@ -4872,9 +4919,16 @@ export async function getRegisteredTheses() {
       studentId: thesisRequests.studentId,
       studentName: student.name,
       studentEmail: student.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerName: secondExaminerAlias.name,
     })
     .from(thesisRequests)
     .leftJoin(student, eq(thesisRequests.studentId, student.id))
+    .leftJoin(programmes, eq(student.programmeId, programmes.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       or(
         eq(thesisRequests.officialRegistrationStatus, "registered"),

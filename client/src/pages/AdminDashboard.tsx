@@ -294,6 +294,8 @@ function AllRequests() {
                   <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Thema / Studierende:r</th>
                   <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Study Programme</th>
                   <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Zielsemester</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden xl:table-cell">Gutachter:innen</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden xl:table-cell">Datum</th>
                   <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Status</th>
                   <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3">Aktionen</th>
                 </tr>
@@ -311,6 +313,25 @@ function AllRequests() {
                     </td>
                     <td className="px-5 py-4 hidden lg:table-cell">
                       <span className="text-sm text-gray-600">{req.targetSemester ?? "–"}</span>
+                    </td>
+                    <td className="px-5 py-4 hidden xl:table-cell">
+                      <div className="space-y-0.5">
+                        {req.firstExaminerName ? (
+                          <div className="text-xs text-gray-600">
+                            <span className="text-gray-400">1.</span>{" "}{req.firstExaminerName}
+                          </div>
+                        ) : <span className="text-xs text-gray-400">–</span>}
+                        {req.secondExaminerName && (
+                          <div className="text-xs text-gray-600">
+                            <span className="text-gray-400">2.</span>{" "}{req.secondExaminerName}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 hidden xl:table-cell">
+                      <span className="text-xs text-gray-500">
+                        {req.createdAt ? new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" }) : "–"}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={req.status} />
@@ -1163,18 +1184,57 @@ function Overview() {
 
         {/* Neueste Anfragen */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Neueste Anfragen</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Neueste Anfragen</h2>
+            <a href="/admin/requests" className="text-xs text-[#76B900] hover:underline font-medium">Alle anzeigen →</a>
+          </div>
           {!requests?.length ? (
             <p className="text-sm text-gray-500">Noch keine Anfragen.</p>
           ) : (
             <div className="space-y-3">
               {requests.slice(0, 5).map((req) => (
-                <div key={req.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{req.title}</p>
-                    <p className="text-xs text-gray-500">{req.department}</p>
+                <div key={req.id} className="py-3 border-b border-gray-50 last:border-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">{req.title || "(kein Titel)"}</p>
+                      {req.studentName && (
+                        <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
+                      )}
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                        {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                          <span className="text-xs text-gray-500">
+                            <span className="font-medium">Study Programme:</span>{" "}
+                            {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                          </span>
+                        )}
+                        {req.targetSemester && (
+                          <span className="text-xs text-gray-500">
+                            <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                          </span>
+                        )}
+                        {req.createdAt && (
+                          <span className="text-xs text-gray-400">
+                            {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                      {(req.firstExaminerName || req.secondExaminerName) && (
+                        <div className="flex flex-wrap gap-x-3 mt-1">
+                          {req.firstExaminerName && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
+                            </span>
+                          )}
+                          {req.secondExaminerName && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <StatusBadge status={req.status} />
                   </div>
-                  <StatusBadge status={req.status} />
                 </div>
               ))}
             </div>
