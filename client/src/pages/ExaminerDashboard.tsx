@@ -490,6 +490,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [requirementsDialog, setRequirementsDialog] = useState<{ subject: string; body: string } | null>(null);
   const [requirementsSubject, setRequirementsSubject] = useState("");
   const [requirementsBody, setRequirementsBody] = useState("");
+  const [requirementsPreviewMode, setRequirementsPreviewMode] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
@@ -538,6 +539,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     const body = tpl?.body ? resolve(tpl.body) : "";
     setRequirementsSubject(subject);
     setRequirementsBody(body);
+    setRequirementsPreviewMode(false);
     setRequirementsDialog({ subject, body });
   }
 
@@ -725,55 +727,117 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       {requirementsDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setRequirementsDialog(null)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col"
-            style={{ maxHeight: "90vh" }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 flex flex-col"
+            style={{ maxHeight: "92vh" }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                 <span className="font-semibold text-gray-900">Persönliche Hinweise/Anforderungen senden</span>
               </div>
-              <button onClick={() => setRequirementsDialog(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Vorschau-Toggle */}
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+                  <button
+                    onClick={() => setRequirementsPreviewMode(false)}
+                    className={`px-3 py-1.5 transition-colors ${
+                      !requirementsPreviewMode
+                        ? 'bg-blue-600 text-white font-medium'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    onClick={() => setRequirementsPreviewMode(true)}
+                    className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${
+                      requirementsPreviewMode
+                        ? 'bg-blue-600 text-white font-medium'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    Vorschau
+                  </button>
+                </div>
+                <button onClick={() => setRequirementsDialog(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            {/* Body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* Empfänger */}
               <div className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
                 <span className="font-medium">An:</span> {req.studentName ?? "Studierende:r"}
                 {req.studentEmail && <span className="ml-1 text-gray-400">&lt;{req.studentEmail}&gt;</span>}
               </div>
-              <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-                Die Vorlage stammt aus Ihrem Profil unter "Persönliche Hinweise/Anforderungen Erstgutachter:in". Sie können den Text hier noch anpassen.
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Betreff</label>
-                <input
-                  type="text"
-                  value={requirementsSubject}
-                  onChange={(e) => setRequirementsSubject(e.target.value)}
-                  placeholder="Betreff der E-Mail..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
-                <textarea
-                  rows={8}
-                  value={requirementsBody}
-                  onChange={(e) => setRequirementsBody(e.target.value)}
-                  placeholder="Ihr persönlicher Hinweistext..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none font-mono"
-                />
-                {!requirementsSubject && !requirementsBody && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Kein Template hinterlegt. Bitte legen Sie zuerst ein Template im Profil unter "Persönliche Hinweise/Anforderungen Erstgutachter:in" an.
-                  </p>
-                )}
-              </div>
+
+              {!requirementsPreviewMode ? (
+                /* ── Bearbeitungs-Modus ── */
+                <>
+                  <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                    Die Vorlage stammt aus Ihrem Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in". Sie können den Text hier noch anpassen.
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Betreff</label>
+                    <input
+                      type="text"
+                      value={requirementsSubject}
+                      onChange={(e) => setRequirementsSubject(e.target.value)}
+                      placeholder="Betreff der E-Mail..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
+                    <textarea
+                      rows={10}
+                      value={requirementsBody}
+                      onChange={(e) => setRequirementsBody(e.target.value)}
+                      placeholder="Ihr persönlicher Hinweistext..."
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y font-mono"
+                    />
+                    {!requirementsSubject && !requirementsBody && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Kein Template hinterlegt. Bitte legen Sie zuerst ein Template im Profil unter „Persönliche Hinweise/Anforderungen Erstgutachter:in" an.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* ── Vorschau-Modus ── */
+                <div className="rounded-xl border border-gray-200 bg-gray-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-white">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-0.5">Betreff</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {requirementsSubject || <span className="text-gray-400 italic">Kein Betreff</span>}
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-2">E-Mail-Text</p>
+                    {requirementsBody ? (
+                      <pre className="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">
+                        {requirementsBody}
+                      </pre>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Kein Text eingegeben.</p>
+                    )}
+                  </div>
+                  <div className="px-4 py-2 bg-amber-50 border-t border-amber-100">
+                    <p className="text-xs text-amber-700">
+                      Dies ist eine Vorschau der E-Mail, die an <strong>{req.studentName ?? "die/den Studierende:n"}</strong> gesendet wird.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Footer */}
             <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
               <button
                 onClick={() => setRequirementsDialog(null)}
@@ -781,6 +845,21 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               >
                 Abbrechen
               </button>
+              {requirementsPreviewMode ? (
+                <button
+                  onClick={() => setRequirementsPreviewMode(false)}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors"
+                >
+                  Zurück zum Bearbeiten
+                </button>
+              ) : (
+                <button
+                  onClick={() => setRequirementsPreviewMode(true)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-blue-700 border border-blue-200 hover:bg-blue-50 transition-colors"
+                >
+                  Vorschau
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (!requirementsSubject || !requirementsBody) {

@@ -305,6 +305,8 @@ function SemesterCapacityBlock() {
   });
 
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
+  const [savedCapacities, setSavedCapacities] = useState<SemesterCapacity[]>([]);
+  const [showCapDirtyWarning, setShowCapDirtyWarning] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -314,7 +316,10 @@ function SemesterCapacityBlock() {
       return found ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
     });
     setCapacities(merged);
+    setSavedCapacities(merged);
   }, [profile]);
+
+  const isDirty = JSON.stringify(capacities) !== JSON.stringify(savedCapacities);
 
   const handleChange = (semester: string, field: "maxFirst" | "maxSecond", value: number) => {
     setCapacities((prev) => prev.map((c) => c.semester === semester ? { ...c, [field]: value } : c));
@@ -322,11 +327,16 @@ function SemesterCapacityBlock() {
 
   const handleSave = async () => {
     if (capacities.length === 0) return;
-    // Alle Kapazitäten speichern (ohne doppelten ersten Eintrag)
     for (const cap of capacities) {
       await updateCapacityMutation.mutateAsync(cap);
     }
+    setSavedCapacities(capacities);
     toast.success("Kapazitäten gespeichert");
+  };
+
+  const handleReset = () => {
+    setCapacities(savedCapacities);
+    setShowCapDirtyWarning(false);
   };
 
   if (isLoading) return null;
@@ -361,11 +371,38 @@ function SemesterCapacityBlock() {
           </div>
         ))}
       </div>
-      <div className="mt-5 flex justify-end">
+      {/* Dirty-Warnung */}
+      {showCapDirtyWarning && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-medium text-amber-800 mb-3">Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?</p>
+          <div className="flex gap-2">
+            <button onClick={() => setShowCapDirtyWarning(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors">Weiter bearbeiten</button>
+            <button onClick={handleReset} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">Änderungen verwerfen</button>
+            <button onClick={() => { handleSave(); setShowCapDirtyWarning(false); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors">Speichern</button>
+          </div>
+        </div>
+      )}
+      <div className="mt-5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <>
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                Ungespeicherte Änderungen
+              </span>
+              <button
+                onClick={handleReset}
+                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg border border-gray-200 transition-colors"
+              >
+                Zurücksetzen
+              </button>
+            </>
+          )}
+        </div>
         <button
           onClick={handleSave}
-          disabled={updateCapacityMutation.isPending}
-          className="px-5 py-2 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50" style={{ backgroundColor: '#76B900' }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#5e9200')} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#76B900')}
+          disabled={updateCapacityMutation.isPending || !isDirty}
+          className="px-5 py-2 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50" style={{ backgroundColor: '#76B900' }} onMouseEnter={(e) => { if (!updateCapacityMutation.isPending && isDirty) e.currentTarget.style.backgroundColor = '#5e9200'; }} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#76B900')}
         >
           {updateCapacityMutation.isPending ? "Wird gespeichert…" : "Kapazitäten speichern"}
         </button>
@@ -423,6 +460,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const [programmesOpen, setProgrammesOpen] = useState(false);
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [bioOpen, setBioOpen] = useState(false);
+  // Dirty-Tracking für Biographie & Forschung
+  const [bioDirtySnapshot, setBioDirtySnapshot] = useState<{ examinerBio: string; examinerResearchFocus: string; examinerLanguages: string[]; examinerKeywords: string[] } | null>(null);
+  const [showBioUnsavedWarning, setShowBioUnsavedWarning] = useState(false);
   // Eigenständiger Bearbeitungsmodus für Online-Links
   const [linksEditMode, setLinksEditMode] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -437,7 +477,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
 
   const updateMutation = trpc.profile.update.useMutation({
-    onSuccess: () => { toast.success(p.profileSaved); setEditMode(false); refetch(); },
+    onSuccess: () => { toast.success(p.profileSaved); setEditMode(false); setBioDirtySnapshot(null); refetch(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -516,6 +556,13 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
       secondEmail: profile.secondEmail ?? "", website: profile.website ?? "", linkedIn: profile.linkedIn ?? "", researchGate: profile.researchGate ?? "",
       htwProfileUrl: profile.htwProfileUrl ?? "", miscLink: profile.miscLink ?? "", bookingUrl: profile.bookingUrl ?? "",
       preferredLanguage: ((profile as any).preferredLanguage as "de" | "en") ?? "de",
+    });
+    // Snapshot für Biographie-Dirty-Tracking
+    setBioDirtySnapshot({
+      examinerBio: (profile as any).examinerBio ?? "",
+      examinerResearchFocus: (profile as any).examinerResearchFocus ?? "",
+      examinerLanguages: Array.isArray(profile.examinerLanguages) ? [...profile.examinerLanguages] : [],
+      examinerKeywords: Array.isArray(profile.examinerKeywords) ? [...profile.examinerKeywords] : [],
     });
     setEditMode(true);
   };
@@ -1443,7 +1490,18 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
             <button
               type="button"
-              onClick={() => setBioOpen((o) => !o)}
+              onClick={() => {
+                // Beim Zuklappen prüfen ob ungespeicherte Änderungen vorhanden
+                if (bioOpen && editMode && bioDirtySnapshot) {
+                  const isDirty =
+                    form.examinerBio !== bioDirtySnapshot.examinerBio ||
+                    form.examinerResearchFocus !== bioDirtySnapshot.examinerResearchFocus ||
+                    JSON.stringify(examinerLanguages) !== JSON.stringify(bioDirtySnapshot.examinerLanguages) ||
+                    JSON.stringify(examinerKeywords) !== JSON.stringify(bioDirtySnapshot.examinerKeywords);
+                  if (isDirty) { setShowBioUnsavedWarning(true); return; }
+                }
+                setBioOpen((o) => !o);
+              }}
               className="w-full flex items-center justify-between px-6 py-5 text-left"
             >
               <div className="flex items-center gap-2">
@@ -1580,11 +1638,50 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             </div>
 
+            {/* ── Warnung: ungespeicherte Änderungen ── */}
+            {showBioUnsavedWarning && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-medium text-amber-800 mb-3">
+                  {lang === 'de' ? 'Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?' : 'You have unsaved changes. Do you want to discard them?'}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowBioUnsavedWarning(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                  >
+                    {lang === 'de' ? 'Weiter bearbeiten' : 'Keep editing'}
+                  </button>
+                  <button
+                    onClick={() => { setShowBioUnsavedWarning(false); setEditMode(false); setBioDirtySnapshot(null); setBioOpen(false); }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                  >
+                    {lang === 'de' ? 'Verwerfen & schließen' : 'Discard & close'}
+                  </button>
+                  <button
+                    onClick={() => { handleSave(); setShowBioUnsavedWarning(false); }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+                  >
+                    {lang === 'de' ? 'Speichern & schließen' : 'Save & close'}
+                  </button>
+                </div>
+              </div>
+            )}
             {/* ── Speichertaste für Biographie & Forschung ── */}
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 mt-2">
               {editMode && (
                 <button
-                  onClick={() => setEditMode(false)}
+                  onClick={() => {
+                    if (bioDirtySnapshot) {
+                      const isDirty =
+                        form.examinerBio !== bioDirtySnapshot.examinerBio ||
+                        form.examinerResearchFocus !== bioDirtySnapshot.examinerResearchFocus ||
+                        JSON.stringify(examinerLanguages) !== JSON.stringify(bioDirtySnapshot.examinerLanguages) ||
+                        JSON.stringify(examinerKeywords) !== JSON.stringify(bioDirtySnapshot.examinerKeywords);
+                      if (isDirty) { setShowBioUnsavedWarning(true); return; }
+                    }
+                    setEditMode(false);
+                    setBioDirtySnapshot(null);
+                  }}
                   className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-xl border border-gray-200 transition-colors"
                 >
                   {lang === 'de' ? 'Abbrechen' : 'Cancel'}
