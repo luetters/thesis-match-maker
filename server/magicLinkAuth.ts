@@ -36,7 +36,7 @@ export async function sendMagicLink(
   const token = generateToken();
   const expiresAt = new Date(Date.now() + LINK_EXPIRY_MINUTES * 60 * 1000);
 
-   await db.insert(magicLinks).values({ email, token, role, expiresAt });
+   await db.insert(magicLinks).values({ email, token, role, expiresAt: expiresAt.toISOString() });
   const link = `${origin}/auth/verify?token=${token}`;
 
   const html = `
@@ -99,6 +99,7 @@ export async function verifyMagicLink(token: string): Promise<{
   if (!db) return null;
 
   const now = new Date();
+  const nowIso = now.toISOString();
 
   // Token in DB suchen
   const rows = await db
@@ -108,7 +109,7 @@ export async function verifyMagicLink(token: string): Promise<{
       and(
         eq(magicLinks.token, token),
         eq(magicLinks.used, 0),
-        gt(magicLinks.expiresAt, now)
+        gt(magicLinks.expiresAt, nowIso)
       )
     )
     .limit(1);
@@ -136,7 +137,7 @@ export async function verifyMagicLink(token: string): Promise<{
     // Bestehenden User aktualisieren
     await db
       .update(users)
-      .set({ lastSignedIn: now, loginMethod: "magic_link" })
+      .set({ lastSignedIn: nowIso, loginMethod: "magic_link" })
       .where(eq(users.openId, openId));
     user = existingUsers[0];
   } else {
@@ -151,7 +152,7 @@ export async function verifyMagicLink(token: string): Promise<{
       name: link.email.split("@")[0],
       loginMethod: "magic_link",
       role,
-      lastSignedIn: now,
+      lastSignedIn: nowIso,
     });
     const newUsers = await db
       .select()

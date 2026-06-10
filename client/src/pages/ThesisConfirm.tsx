@@ -45,7 +45,7 @@ function getNextSemesters(): { label: string; value: string }[] {
 
 export default function ThesisConfirm() {
   const [, navigate] = useLocation();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Token aus URL
   const params = new URLSearchParams(window.location.search);

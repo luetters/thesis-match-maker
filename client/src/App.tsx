@@ -50,7 +50,7 @@ function Router() {
       <Route path="/role-pending" component={RolePending} />
 
       {/* Persönliche Profilseite (alle Rollen) */}
-      <Route path="/profile" component={Profile} />
+      <Route path="/profile" component={Profile as any} />
       {/* Öffentliche Profilseite (rollenbasierte Zugriffskontrolle) */}
       <Route path="/profile/:userId" component={PublicProfile} />
 

@@ -61,7 +61,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   if (user.lastSignedIn !== undefined) {
-    const lsi = user.lastSignedIn instanceof Date ? user.lastSignedIn.toISOString().slice(0, 19).replace('T', ' ') : user.lastSignedIn;
+    const lsi = user.lastSignedIn;
     values.lastSignedIn = lsi;
     updateSet.lastSignedIn = lsi;
   }
@@ -160,7 +160,7 @@ export async function getAllExaminers() {
   const activeRequests = await db
     .select({ examinerId: thesisRequests.examinerId })
     .from(thesisRequests)
-    .where(inArray(thesisRequests.status, activeStatuses as unknown as string[]));
+    .where(inArray(thesisRequests.status, activeStatuses as any));
   const activeCountMap = new Map<number, number>();
   for (const r of activeRequests) {
     if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
@@ -792,7 +792,7 @@ export async function getColloquiumsByExaminer(examinerId: number) {
   // Kolloquien über Thesis-Anfragen des Prüfers
   const theses = await getThesisRequestsByExaminer(examinerId);
   if (theses.length === 0) return [];
-  const thesisIds = theses.map((t) => t.id);
+  const thesisIds = (theses as any[]).map((t) => t.id as number);
   const all = await getAllColloquiums();
   return all.filter((c) => thesisIds.includes(c.thesisRequestId));
 }
@@ -945,7 +945,7 @@ export async function createPasswordResetToken(userId: number, token: string, ex
   await db.insert(passwordResetTokens).values({
     token,
     userId,
-    expiresAt,
+    expiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : expiresAt,
     used: 0,
   } as InsertPasswordResetToken);
 }
@@ -1643,7 +1643,7 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
   const activeRequests = await db
     .select({ examinerId: thesisRequests.examinerId })
     .from(thesisRequests)
-    .where(inArray(thesisRequests.status, activeStatuses as unknown as string[]));
+    .where(inArray(thesisRequests.status, activeStatuses as any));
   const activeCountMap = new Map<number, number>();
   for (const r of activeRequests) {
     if (r.examinerId) activeCountMap.set(r.examinerId, (activeCountMap.get(r.examinerId) ?? 0) + 1);
@@ -4023,7 +4023,7 @@ export async function getFirstExaminers() {
       .where(
         and(
           inArray(thesisRequests.examinerId, examinerIds),
-          inArray(thesisRequests.status, activeStatuses as unknown as string[])
+          inArray(thesisRequests.status, activeStatuses as any)
         )
       );
     for (const r of activeRows) {
@@ -4094,7 +4094,7 @@ export async function getAllSecondExaminerCandidates() {
       .where(
         and(
           inArray(thesisRequests.secondExaminerId, candidateIds),
-          inArray(thesisRequests.status, activeStatuses as unknown as string[])
+          inArray(thesisRequests.status, activeStatuses as any)
         )
       )
       .groupBy(thesisRequests.secondExaminerId);
@@ -5429,6 +5429,7 @@ import { examinerFavorites } from "../drizzle/schema";
 
 export async function toggleFavorite(studentId: number, examinerId: number): Promise<{ isFavorite: boolean }> {
   const db = await getDb();
+  if (!db) return { isFavorite: false };
   const existing = await db
     .select({ id: examinerFavorites.id })
     .from(examinerFavorites)
@@ -5445,6 +5446,7 @@ export async function toggleFavorite(studentId: number, examinerId: number): Pro
 
 export async function getFavoritesByStudent(studentId: number) {
   const db = await getDb();
+  if (!db) return [];
   return db
     .select({ examinerId: examinerFavorites.examinerId, note: examinerFavorites.note, createdAt: examinerFavorites.createdAt })
     .from(examinerFavorites)
@@ -5453,6 +5455,7 @@ export async function getFavoritesByStudent(studentId: number) {
 
 export async function updateFavoriteNote(studentId: number, examinerId: number, note: string): Promise<void> {
   const db = await getDb();
+  if (!db) return;
   await db
     .update(examinerFavorites)
     .set({ note })
