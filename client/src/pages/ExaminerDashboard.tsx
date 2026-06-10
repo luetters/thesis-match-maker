@@ -80,7 +80,7 @@ function getNextSemesters(): { label: string; value: string }[] {
 const DEPT_OPTIONS = [
   { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
   { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
-  { value: "FB3", label: "FB 3 – Wirtschaftswissenschaften" },
+  { value: "FB3", label: "FB 3 – Wirtschafts- und Rechtswissenschaften" },
   { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
   { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
 ];

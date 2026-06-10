@@ -104,7 +104,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Fachbereich 3 – Wirtschaftswissenschaften", logoX + logoW + 14, logoY + 38);
+      .text("Fachbereich 3 – Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 38);
 
     // ── Titel ──────────────────────────────────────────────────────────────────
     doc
@@ -295,7 +295,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .font("Helvetica")
       .fillColor("#ffffff")
       .text(
-        "HTW Berlin – Hochschule für Technik und Wirtschaft Berlin  |  FB 3 Wirtschaftswissenschaften  |  thesis.htw-berlin.com",
+        "HTW Berlin – Hochschule für Technik und Wirtschaft Berlin  |  FB 3 Wirtschafts- und Rechtswissenschaften  |  thesis.htw-berlin.com",
         60,
         footerY + 14,
         { align: "center", width: pageWidth }

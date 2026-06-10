@@ -17,7 +17,7 @@ const ROLE_CONFIG: Record<string, { label: string; labelEn: string; color: strin
 const DEPARTMENTS: Record<string, string> = {
   FB1: "FB 1 – Ingenieurwissenschaften I",
   FB2: "FB 2 – Ingenieurwissenschaften II",
-  FB3: "FB 3 – Wirtschaftswissenschaften",
+  FB3: "FB 3 – Wirtschafts- und Rechtswissenschaften",
   FB4: "FB 4 – Informatik, Kommunikation und Wirtschaft",
   FB5: "FB 5 – Gestaltung und Kultur",
 };
