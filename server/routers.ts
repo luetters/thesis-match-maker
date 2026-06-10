@@ -1626,6 +1626,8 @@ export const appRouter = router({
         allowStudentRegistration: map["allowStudentRegistration"] ?? "true",
         footerText: map["footerText"] ?? "",
         thesisDeadlineWarningDays: map["thesisDeadlineWarningDays"] ?? "14",
+        pdfDisclaimerDe: map["pdfDisclaimerDe"] ?? "Der Thesis Match Maker ist ein Hilfsmittel zur Organisation der Thesisbetreuung. Die Abstimmung erfolgt jedoch ausserhalb der offiziellen Prozesse der HTW Berlin. Aus der erfolgreichen Synchronisierung entsteht kein Anspruch auf eine Thesis im geplanten Semester. Hierzu ist eine Zulassung zur Thesis durch die Verwaltung Ihres Studiengangs erforderlich, die im Nachgang zu diesem Match erfolgt.",
+        pdfDisclaimerEn: map["pdfDisclaimerEn"] ?? "The Thesis Match Maker is a tool designed to help organize your thesis supervision. Please note that any arrangements made here take place outside of HTW Berlin's official administrative processes. A successful match via the platform does not guarantee enrollment in your thesis for the planned semester. For this, official admission from your department's degree program administration is required, which must be requested after a match has been made.",
       };
     }),
     updateSettings: superadminProcedure
@@ -1638,6 +1640,8 @@ export const appRouter = router({
           allowStudentRegistration: z.enum(["true", "false"]).optional(),
           footerText: z.string().max(512).optional(),
           thesisDeadlineWarningDays: z.string().optional(),
+          pdfDisclaimerDe: z.string().max(2000).optional(),
+          pdfDisclaimerEn: z.string().max(2000).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {

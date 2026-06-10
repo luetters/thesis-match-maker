@@ -29,6 +29,8 @@ export interface ThesisPdfData {
   verifyUrl: string;
   verifyToken: string;
   createdAt: Date;
+  disclaimerDe?: string | null;
+  disclaimerEn?: string | null;
 }
 
 const HTW_GREEN = "#76B900";
@@ -289,6 +291,34 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .font("Helvetica")
       .fillColor(GRAY)
       .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 66, { width: qrX - 80 });
+
+    // Disclaimer-Block (zweisprachig, klein, vor dem Footer)
+    const disclaimerDe = data.disclaimerDe ?? "";
+    const disclaimerEn = data.disclaimerEn ?? "";
+    if (disclaimerDe || disclaimerEn) {
+      const disclaimerY = doc.page.height - 130;
+      doc.moveTo(60, disclaimerY - 8).lineTo(60 + pageWidth, disclaimerY - 8).strokeColor("#e5e7eb").lineWidth(0.5).stroke();
+      doc
+        .fontSize(6.5)
+        .font("Helvetica-Bold")
+        .fillColor(GRAY)
+        .text("Hinweis / Disclaimer", 60, disclaimerY);
+      if (disclaimerDe) {
+        doc
+          .fontSize(6)
+          .font("Helvetica")
+          .fillColor(GRAY)
+          .text(disclaimerDe, 60, disclaimerY + 10, { width: pageWidth, lineGap: 1 });
+      }
+      if (disclaimerEn) {
+        const afterDe = doc.y + 4;
+        doc
+          .fontSize(6)
+          .font("Helvetica")
+          .fillColor(GRAY)
+          .text(disclaimerEn, 60, afterDe, { width: pageWidth, lineGap: 1 });
+      }
+    }
 
     // Footer-Balken
     const footerY = doc.page.height - 40;

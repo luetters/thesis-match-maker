@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting } from "./db";
 import { generateThesisPdf } from "./thesisPdf";
 import crypto from "crypto";
 import { generateDeadlineIcs } from "./icsHelper";
@@ -315,6 +315,12 @@ export function registerUploadRoutes(app: Express) {
         degreeType: thesis.degreeType ?? null,
       });
 
+      // Disclaimer-Texte aus den System-Einstellungen laden
+      const disclaimerDeRow = await getSystemSetting("pdfDisclaimerDe");
+      const disclaimerEnRow = await getSystemSetting("pdfDisclaimerEn");
+      const disclaimerDe = disclaimerDeRow?.value ?? "Der Thesis Match Maker ist ein Hilfsmittel zur Organisation der Thesisbetreuung. Die Abstimmung erfolgt jedoch ausserhalb der offiziellen Prozesse der HTW Berlin. Aus der erfolgreichen Synchronisierung entsteht kein Anspruch auf eine Thesis im geplanten Semester. Hierzu ist eine Zulassung zur Thesis durch die Verwaltung Ihres Studiengangs erforderlich, die im Nachgang zu diesem Match erfolgt.";
+      const disclaimerEn = disclaimerEnRow?.value ?? "The Thesis Match Maker is a tool designed to help organize your thesis supervision. Please note that any arrangements made here take place outside of HTW Berlin's official administrative processes. A successful match via the platform does not guarantee enrollment in your thesis for the planned semester. For this, official admission from your department's degree program administration is required, which must be requested after a match has been made.";
+
       const pdfBuffer = await generateThesisPdf({
         studentName: student?.name ?? "Unbekannt",
         matrikelNr: (student as any)?.matrikelNr ?? null,
@@ -328,6 +334,8 @@ export function registerUploadRoutes(app: Express) {
         verifyUrl,
         verifyToken: docToken,
         createdAt: new Date(),
+        disclaimerDe,
+        disclaimerEn,
       });
 
       // Dateiname: Name_Studiengang_Semester.pdf
