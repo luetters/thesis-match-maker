@@ -166,6 +166,9 @@ import {
   withdrawDraftRequest,
   getStudentThesisHistory,
   invalidateDocTokensForRequest,
+  toggleFavorite,
+  getFavoritesByStudent,
+  updateFavoriteNote,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1232,6 +1235,37 @@ export const appRouter = router({
         await upsertSemesterCapacity(ctx.user.id, input.semester, input.maxFirst, input.maxSecond);
         return { success: true };
       }),
+  }),
+
+  // --- Favorites -----------------------------------------------------------
+
+  favorites: router({
+    toggle: studentProcedure
+      .input(z.object({ examinerId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return toggleFavorite(ctx.user.id, input.examinerId);
+      }),
+
+    list: studentProcedure.query(async ({ ctx }) => {
+      const favs = await getFavoritesByStudent(ctx.user.id);
+      const examiners = await getAllExaminers();
+      return favs.map((fav: { examinerId: number; note: string | null; createdAt: string }) => ({
+        ...fav,
+        examiner: examiners.find((ex) => ex.user.id === fav.examinerId) ?? null,
+      }));
+    }),
+
+    updateNote: studentProcedure
+      .input(z.object({ examinerId: z.number(), note: z.string().max(512) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateFavoriteNote(ctx.user.id, input.examinerId, input.note);
+        return { success: true };
+      }),
+
+    myIds: studentProcedure.query(async ({ ctx }) => {
+      const favs = await getFavoritesByStudent(ctx.user.id);
+      return favs.map((f: { examinerId: number }) => f.examinerId);
+    }),
   }),
 
   // --- Audit Log ------------------------------------------------------------

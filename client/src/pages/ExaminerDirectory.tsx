@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState, useMemo } from "react";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { Link } from "wouter";
@@ -38,7 +39,12 @@ type ExaminerListItem = {
   programmes?: Array<{ id: number; name: string; abbreviation: string; level: string; pictogramUrl?: string | null }>;
 };
 
-function ExaminerCard({ examiner, highlightTags }: { examiner: ExaminerListItem; highlightTags?: string[] }) {
+function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }: {
+  examiner: ExaminerListItem;
+  highlightTags?: string[];
+  isFavorite?: boolean;
+  onToggleFavorite?: (examinerId: number) => void;
+}) {
   const { t } = useLanguage();
   const D = t.directory;
   const profile = examiner.profile;
@@ -238,6 +244,24 @@ function ExaminerCard({ examiner, highlightTags }: { examiner: ExaminerListItem;
 
       {/* Footer */}
       <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between">
+        {/* Favoriten-Button */}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => { e.preventDefault(); onToggleFavorite(examiner.user.id); }}
+            title={isFavorite ? "Aus Merkliste entfernen" : "Zur Merkliste hinzufügen"}
+            className="mr-2 p-1.5 rounded-full transition-colors hover:bg-gray-100"
+          >
+            <svg
+              className="w-5 h-5 transition-colors"
+              fill={isFavorite ? "#ef4444" : "none"}
+              stroke={isFavorite ? "#ef4444" : "#9ca3af"}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+        )}
+        {/* original footer left side starts here */}
         <div className="flex items-center gap-3 text-xs text-gray-400">
           {languages.length > 0 && (
             <span>{(languages as string[]).join(" · ")}</span>
@@ -321,6 +345,17 @@ export default function ExaminerDirectory() {
   const { data: allTags } = trpc.examiner.allTags.useQuery(undefined, {
     enabled: !!user,
   });
+
+  const isStudent = user?.role === "student";
+  const { data: favoriteIds, refetch: refetchFavorites } = trpc.favorites.myIds.useQuery(undefined, {
+    enabled: !!user && isStudent,
+  });
+  const toggleFavMutation = trpc.favorites.toggle.useMutation({
+    onSuccess: () => { refetchFavorites(); },
+  });
+  const handleToggleFavorite = (examinerId: number) => {
+    toggleFavMutation.mutate({ examinerId });
+  };
 
   if (authLoading) {
     return (
@@ -707,6 +742,8 @@ export default function ExaminerDirectory() {
                 key={ex.user.id}
                 examiner={ex as ExaminerListItem}
                 highlightTags={filterTag ? [filterTag] : search ? [search] : undefined}
+                isFavorite={isStudent ? (favoriteIds ?? []).includes(ex.user.id) : undefined}
+                onToggleFavorite={isStudent ? handleToggleFavorite : undefined}
               />
             ))}
           </div>

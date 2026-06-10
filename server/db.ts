@@ -5308,3 +5308,38 @@ export async function invalidateDocTokensForRequest(thesisRequestId: number): Pr
     .set({ revoked: 1 } as any)
     .where(eq(thesisDocTokens.thesisRequestId, thesisRequestId));
 }
+
+// ─── Examiner Favorites ───────────────────────────────────────────────────────
+import { examinerFavorites } from "../drizzle/schema";
+
+export async function toggleFavorite(studentId: number, examinerId: number): Promise<{ isFavorite: boolean }> {
+  const db = await getDb();
+  const existing = await db
+    .select({ id: examinerFavorites.id })
+    .from(examinerFavorites)
+    .where(and(eq(examinerFavorites.studentId, studentId), eq(examinerFavorites.examinerId, examinerId)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.delete(examinerFavorites).where(eq(examinerFavorites.id, existing[0].id));
+    return { isFavorite: false };
+  } else {
+    await db.insert(examinerFavorites).values({ studentId, examinerId });
+    return { isFavorite: true };
+  }
+}
+
+export async function getFavoritesByStudent(studentId: number) {
+  const db = await getDb();
+  return db
+    .select({ examinerId: examinerFavorites.examinerId, note: examinerFavorites.note, createdAt: examinerFavorites.createdAt })
+    .from(examinerFavorites)
+    .where(eq(examinerFavorites.studentId, studentId));
+}
+
+export async function updateFavoriteNote(studentId: number, examinerId: number, note: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(examinerFavorites)
+    .set({ note })
+    .where(and(eq(examinerFavorites.studentId, studentId), eq(examinerFavorites.examinerId, examinerId)));
+}

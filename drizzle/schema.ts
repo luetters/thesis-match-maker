@@ -438,3 +438,13 @@ export const thesisDocTokens = mysqlTable("thesis_doc_tokens", {
   revoked: int().default(0).notNull(),
 });
 export type InsertThesisDocToken = InferInsertModel<typeof thesisDocTokens>;
+
+// ─── Examiner Favorites ───────────────────────────────────────────────────────
+export const examinerFavorites = mysqlTable("examiner_favorites", {
+  id: int().autoincrement().notNull().primaryKey(),
+  studentId: int("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  examinerId: int("examiner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  note: varchar({ length: 512 }),
+  createdAt: timestamp({ mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+export type InsertExaminerFavorite = typeof examinerFavorites.$inferInsert;

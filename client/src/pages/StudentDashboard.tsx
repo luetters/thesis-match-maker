@@ -34,6 +34,7 @@ const Icons2 = {
   calendar: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   history: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   profile: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+  heart: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
 };
 function useNavItems() {
   const { t } = useLanguage();
@@ -43,6 +44,7 @@ function useNavItems() {
     { href: "/student/examiners", label: t.nav.examiners, icon: Icons.search },
     { href: "/student/colloquiums", label: t.student.colloquiums, icon: Icons2.calendar },
     { href: "/student/history", label: t.student.history, icon: Icons2.history },
+    { href: "/student/favorites", label: "Merkliste", icon: Icons2.heart },
     { href: "/student/profile", label: t.student.tabProfile, icon: Icons2.profile },
   ];
 }
@@ -1687,6 +1689,98 @@ function StatusNotificationBanner() {
   );
 }
 
+// ─── Favorites List ─────────────────────────────────────────────────────────
+function FavoritesList() {
+  const { data: favorites, isLoading, refetch } = trpc.favorites.list.useQuery();
+  const toggleMutation = trpc.favorites.toggle.useMutation({ onSuccess: () => refetch() });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!favorites || favorites.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </div>
+        <h3 className="font-semibold text-gray-900 mb-1">Keine Einträge in der Merkliste</h3>
+        <p className="text-sm text-gray-500">Markieren Sie interessante Prüfer:innen in der Suche mit dem Herz-Symbol.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">{favorites.length} Prüfer:in{favorites.length !== 1 ? "nen" : ""} in Ihrer Merkliste</p>
+      {favorites.map((fav) => {
+        const ex = fav.examiner;
+        if (!ex) return null;
+        const profile = ex.profile;
+        const tags = Array.isArray(profile?.tags) ? profile.tags as string[] : [];
+        return (
+          <div key={fav.examinerId} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#76B900]/10 flex items-center justify-center text-[#76B900] font-bold text-lg">
+              {(ex.user?.name ?? "?").charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    {profile?.title ? `${profile.title} ` : ""}{ex.user?.name ?? "Unbekannt"}
+                  </h3>
+                  {profile?.department && (
+                    <p className="text-sm text-gray-500">{profile.department}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => toggleMutation.mutate({ examinerId: fav.examinerId })}
+                  title="Aus Merkliste entfernen"
+                  className="p-1.5 rounded-full hover:bg-red-50 transition-colors flex-shrink-0"
+                >
+                  <svg className="w-5 h-5" fill="#ef4444" stroke="#ef4444" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              </div>
+              {profile?.bio && (
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{profile.bio}</p>
+              )}
+              {tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {tags.slice(0, 5).map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F1F8E9] text-[#4A7C00]">{tag}</span>
+                  ))}
+                </div>
+              )}
+              {fav.note && (
+                <p className="mt-2 text-xs text-gray-400 italic">„{fav.note}“</p>
+              )}
+              <div className="mt-3 flex items-center gap-3">
+                <a
+                  href={`/examiner/profile/${fav.examinerId}`}
+                  className="text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ color: "#76B900" }}
+                >
+                  Profil ansehen →
+                </a>
+                <span className="text-xs text-gray-300">·</span>
+                <span className="text-xs text-gray-400">Hinzugefügt: {new Date(fav.createdAt).toLocaleDateString("de-DE")}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function StudentDashboard() {
   const [location] = useLocation();
   // URL-Parameter ?examiner=<id> auslesen (von Prüfer:innen-Profil-Button)
@@ -1696,11 +1790,12 @@ export default function StudentDashboard() {
       return parseInt(params.get("examiner") ?? "0", 10) || 0;
     } catch { return 0; }
   })();
-  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history" | "profile">(
+  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history" | "favorites" | "profile">(
     location.startsWith("/student/new") || preselectExaminerId > 0 ? "new" :
     location === "/student/examiners" ? "examiners" :
     location === "/student/colloquiums" ? "colloquiums" :
     location === "/student/history" ? "history" :
+    location === "/student/favorites" ? "favorites" :
     location === "/student/profile" ? "profile" : "requests"
   );
   const utils = trpc.useUtils();
@@ -1718,6 +1813,7 @@ export default function StudentDashboard() {
       else if (item.href === "/student/examiners") setActiveTab("examiners");
       else if (item.href === "/student/colloquiums") setActiveTab("colloquiums");
       else if (item.href === "/student/history") setActiveTab("history");
+      else if (item.href === "/student/favorites") setActiveTab("favorites");
       else if (item.href === "/student/profile") setActiveTab("profile");
     },
   }));
@@ -1729,6 +1825,7 @@ export default function StudentDashboard() {
     examiners: t.student.tabExaminers,
     colloquiums: t.student.tabColloquiums,
     history: t.student.tabHistory,
+    favorites: "Merkliste",
     profile: t.student.tabProfile,
   };
 
@@ -1782,6 +1879,7 @@ export default function StudentDashboard() {
       )}
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "history" && <StatusHistory />}
+      {activeTab === "favorites" && <FavoritesList />}
       {activeTab === "profile" && <Profile embedded={true} />}
     </ThesisDashboardLayout>
   );
