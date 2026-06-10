@@ -481,7 +481,7 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -560,9 +560,24 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
       <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
-          <p className="text-sm text-gray-500 mt-0.5">{req.department}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-gray-900 truncate">{req.title || "(Thema wird noch festgelegt)"}</h3>
+          {req.studentName && (
+            <p className="text-sm font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
+          )}
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+            {(req.programmeAbbreviation || req.programmeName || req.department) && (
+              <span className="text-xs text-gray-500">
+                <span className="font-medium text-gray-600">Studiengang:</span>{" "}
+                {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+              </span>
+            )}
+            {req.targetSemester && (
+              <span className="text-xs text-gray-500">
+                <span className="font-medium text-gray-600">Zielsemester:</span>{" "}{req.targetSemester}
+              </span>
+            )}
+          </div>
         </div>
         <StatusBadge status={req.status} />
       </div>
@@ -764,7 +779,23 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 }
 
 // ─── Requests View ────────────────────────────────────────────────────────────
+type RequestSortKey = "name" | "programme" | "semester" | "title" | "date";
+
+function sortRequests<T extends { studentName?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; department?: string; targetSemester?: string | null; title?: string; createdAt?: string }>(list: T[], key: RequestSortKey): T[] {
+  return [...list].sort((a, b) => {
+    switch (key) {
+      case "name": return (a.studentName ?? "").localeCompare(b.studentName ?? "", "de");
+      case "programme": return (a.programmeAbbreviation ?? a.programmeName ?? a.department ?? "").localeCompare(b.programmeAbbreviation ?? b.programmeName ?? b.department ?? "", "de");
+      case "semester": return (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "", "de");
+      case "title": return (a.title ?? "").localeCompare(b.title ?? "", "de");
+      case "date": return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+      default: return 0;
+    }
+  });
+}
+
 function RequestsView() {
+  const [sortKey, setSortKey] = useState<RequestSortKey>("date");
   const { data: assignedRequests, isLoading: loadingAssigned } = trpc.thesis.examinerRequests.useQuery();
   const { data: pendingRequests, isLoading: loadingPending } = trpc.examiner.getPendingRequests.useQuery();
   const isLoading = loadingAssigned || loadingPending;
@@ -801,12 +832,40 @@ function RequestsView() {
     );
   }
 
-  const awaitingApproval = allRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER");
-  const pending = allRequests.filter((r) => r.status === "PENDING");
-  const others = allRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER");
+  const awaitingApproval = sortRequests(allRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
+  const pending = sortRequests(allRequests.filter((r) => r.status === "PENDING"), sortKey);
+  const others = sortRequests(allRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER"), sortKey);
+
+  const sortOptions: { value: RequestSortKey; label: string }[] = [
+    { value: "date", label: "Neueste zuerst" },
+    { value: "name", label: "Name A–Z" },
+    { value: "programme", label: "Studiengang A–Z" },
+    { value: "semester", label: "Semester" },
+    { value: "title", label: "Thema A–Z" },
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Sortier-Leiste */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-gray-500 font-medium">Sortieren nach:</span>
+        <div className="flex flex-wrap gap-1.5">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSortKey(opt.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                sortKey === opt.value
+                  ? "bg-[#76B900] text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {awaitingApproval.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">

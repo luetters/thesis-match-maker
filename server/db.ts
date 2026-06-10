@@ -264,9 +264,12 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       studentId: thesisRequests.studentId,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       or(
         eq(thesisRequests.examinerId, examinerId),
@@ -280,8 +283,37 @@ export async function getAllThesisRequests() {
   const db = await getDb();
   if (!db) return [];
   return db
-    .select()
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      department: thesisRequests.department,
+      status: thesisRequests.status,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      exposeUrl: thesisRequests.exposeUrl,
+      rejectionReason: thesisRequests.rejectionReason,
+      createdAt: thesisRequests.createdAt,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      studentId: thesisRequests.studentId,
+      wantedExaminerId: thesisRequests.wantedExaminerId,
+      officialRegistrationStatus: thesisRequests.officialRegistrationStatus,
+      officialRegistrationAt: thesisRequests.officialRegistrationAt,
+      submissionDeadline: thesisRequests.submissionDeadline,
+      defenseDate: thesisRequests.defenseDate,
+      caseClosedAt: thesisRequests.caseClosedAt,
+      enrollmentEligibility: thesisRequests.enrollmentEligibility,
+      deadline: thesisRequests.deadline,
+      studentName: users.name,
+      studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
+    })
     .from(thesisRequests)
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .orderBy(desc(thesisRequests.createdAt));
 }
 
@@ -1078,9 +1110,12 @@ export async function getUnassignedStudents() {
     .select({
       request: thesisRequests,
       student: users,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         or(isNull(thesisRequests.examinerId), eq(thesisRequests.examinerId, 0)),
@@ -1293,11 +1328,17 @@ export async function getUnassignedStudentsByPavProgrammes(pavUserId: number) {
       hasOwnTopic: thesisRequests.hasOwnTopic,
       createdAt: thesisRequests.createdAt,
       studentId: thesisRequests.studentId,
+      targetSemester: thesisRequests.targetSemester,
+      status: thesisRequests.status,
+      enrollmentEligibility: thesisRequests.enrollmentEligibility,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         eq(thesisRequests.status, "PENDING"),
@@ -1966,9 +2007,12 @@ export async function getExaminerPendingRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -1994,9 +2038,12 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -2023,9 +2070,12 @@ export async function getExaminerRejectedRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         eq(thesisRequests.wantedExaminerId, examinerId),
@@ -2051,9 +2101,12 @@ export async function getExaminerSecondExaminerRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       studentName: users.name,
       studentEmail: users.email,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(
       and(
         eq(thesisRequests.secondExaminerId, examinerId),

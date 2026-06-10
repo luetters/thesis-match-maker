@@ -38,6 +38,148 @@ function OfficialStatusBadge({ status }: { status: string }) {
 
 // ─── AdminWorkflowTab ─────────────────────────────────────────────────────────
 // ─── PAV: Ausstehende Einladungen verwalten ───────────────────────────────────
+// ─── UnassignedTab ────────────────────────────────────────────────────────────
+type UnassignedSortKey = "name" | "programme" | "semester" | "title" | "date";
+
+function UnassignedTab({
+  unassigned,
+  loading,
+  onPropose,
+  onDirectAssign,
+  onEligibility,
+}: {
+  unassigned: any[];
+  loading: boolean;
+  onPropose: (id: number, title: string) => void;
+  onDirectAssign: (id: number, title: string) => void;
+  onEligibility: (id: number, title: string, studentName: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [sortKey, setSortKey] = useState<UnassignedSortKey>("date");
+
+  const sortOptions: { value: UnassignedSortKey; label: string }[] = [
+    { value: "date", label: "Neueste zuerst" },
+    { value: "name", label: "Name A–Z" },
+    { value: "programme", label: "Study Programme A–Z" },
+    { value: "semester", label: "Semester" },
+    { value: "title", label: "Thema A–Z" },
+  ];
+
+  function extractRow(row: any) {
+    const isFlat = "studentName" in row;
+    return {
+      id: isFlat ? row.id : row.request?.id,
+      title: isFlat ? row.title : row.request?.title,
+      department: isFlat ? row.department : row.request?.department,
+      degreeType: isFlat ? row.degreeType : row.request?.degreeType,
+      createdAt: isFlat ? row.createdAt : row.request?.createdAt,
+      studentName: isFlat ? row.studentName : row.student?.name,
+      targetSemester: isFlat ? row.targetSemester : row.request?.targetSemester,
+      enrollElig: isFlat ? row.enrollmentEligibility : row.request?.enrollmentEligibility,
+      programmeName: row.programmeName ?? null,
+      programmeAbbreviation: row.programmeAbbreviation ?? null,
+    };
+  }
+
+  const rows = unassigned.map(extractRow);
+  const sorted = [...rows].sort((a, b) => {
+    switch (sortKey) {
+      case "name": return (a.studentName ?? "").localeCompare(b.studentName ?? "", "de");
+      case "programme": return (a.programmeAbbreviation ?? a.programmeName ?? a.department ?? "").localeCompare(b.programmeAbbreviation ?? b.programmeName ?? b.department ?? "", "de");
+      case "semester": return (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "", "de");
+      case "title": return (a.title ?? "").localeCompare(b.title ?? "", "de");
+      case "date": return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+      default: return 0;
+    }
+  });
+
+  if (loading) {
+    return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>;
+  }
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p>{t.pav.noUnassigned}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-gray-500 font-medium">Sortieren nach:</span>
+        <div className="flex flex-wrap gap-1.5">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSortKey(opt.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                sortKey === opt.value
+                  ? "bg-[#76B900] text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {sorted.map((r) => (
+          <div key={r.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold text-gray-900 truncate">{r.title || "(kein Titel)"}</p>
+                {r.enrollElig && <EligibilityBadge status={r.enrollElig} type="enrollment" />}
+              </div>
+              {r.studentName && (
+                <p className="text-sm font-medium text-[#76B900] mt-0.5">{r.studentName}</p>
+              )}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                {(r.programmeAbbreviation || r.programmeName || r.department) && (
+                  <span className="text-xs text-gray-500">
+                    <span className="font-medium text-gray-600">Study Programme:</span>{" "}
+                    {r.programmeAbbreviation ?? r.programmeName ?? r.department}
+                  </span>
+                )}
+                {r.targetSemester && (
+                  <span className="text-xs text-gray-500">
+                    <span className="font-medium text-gray-600">Zielsemester:</span>{" "}{r.targetSemester}
+                  </span>
+                )}
+                {r.degreeType && (
+                  <span className="text-xs text-gray-500">
+                    <span className="font-medium text-gray-600">Abschluss:</span>{" "}{r.degreeType === "master" ? "Master" : "Bachelor"}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Eingereicht: {r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : "–"}</p>
+            </div>
+            <div className="shrink-0 flex flex-col gap-2">
+              <button
+                onClick={() => onPropose(r.id, r.title || "(kein Titel)")}
+                className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
+              >
+                {t.pav.proposeExaminer}
+              </button>
+              <button
+                onClick={() => onDirectAssign(r.id, r.title || "(kein Titel)")}
+                className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
+              >
+                {t.pav.directAssign}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PavPendingInvitationsPanel() {
   const utils = trpc.useUtils();
   const { data: drafts, isLoading } = trpc.invite.getAllDrafts.useQuery();
@@ -127,7 +269,7 @@ function PavPendingInvitationsPanel() {
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Fachbereich</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Study Programme</label>
                       <select value={editDepartment} onChange={e => setEditDepartment(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30">
                         {DEPT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -1087,59 +1229,13 @@ export default function PavDashboard() {
 
         {/* Tab: Unzugeteilte Studierende */}
         {activeTab === "unassigned" && (
-          <>
-            {loadingUnassigned ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
-            ) : (unassigned ?? []).length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p>{t.pav.noUnassigned}</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(unassigned ?? []).map((row) => {
-                  const isFlat = "studentName" in row;
-                  const id = isFlat ? (row as any).id : (row as any).request.id;
-                  const title = isFlat ? (row as any).title : (row as any).request.title;
-                  const department = isFlat ? (row as any).department : (row as any).request.department;
-                  const degreeType = isFlat ? (row as any).degreeType : (row as any).request.degreeType;
-                  const createdAt = isFlat ? (row as any).createdAt : (row as any).request.createdAt;
-                  const studentName = isFlat ? (row as any).studentName : (row as any).student?.name;
-                  const enrollElig = isFlat ? (row as any).enrollmentEligibility : (row as any).request?.enrollmentEligibility;
-                  return (
-                    <div key={id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4 shadow-sm">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-gray-900 truncate">{title || "(kein Titel)"}</p>
-                          {enrollElig && <EligibilityBadge status={enrollElig} type="enrollment" />}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                          {studentName ?? "–"} · {department} · {degreeType === "master" ? "Master" : "Bachelor"}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">Eingereicht: {formatDate(createdAt)}</p>
-                      </div>
-                      <div className="shrink-0 flex flex-col gap-2">
-                        <button
-                          onClick={() => setProposeFor({ id, title: title || "(kein Titel)" })}
-                          className="px-4 py-2 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] transition-colors"
-                        >
-                          {t.pav.proposeExaminer}
-                        </button>
-                        <button
-                          onClick={() => setDirectAssignFor({ id, title: title || "(kein Titel)" })}
-                          className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
-                        >
-                          {t.pav.directAssign}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          <UnassignedTab
+            unassigned={unassigned ?? []}
+            loading={loadingUnassigned}
+            onPropose={(id, title) => setProposeFor({ id, title })}
+            onDirectAssign={(id, title) => setDirectAssignFor({ id, title })}
+            onEligibility={(id, title, studentName) => setEligibilityFor({ id, title, studentName, type: "enrollment" })}
+          />
         )}
 
         {/* Tab: Meine Vorschläge */}

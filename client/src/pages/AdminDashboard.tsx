@@ -178,10 +178,13 @@ function DeadlineModal({
   );
 }
 // ─── All Requests ─────────────────────────────────────────────────────────────
+type AdminSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
+
 function AllRequests() {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<AdminSortKey>("date");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
   const [deadlineModal, setDeadlineModal] = useState<{ id: number; title: string; deadline?: Date | string | null } | null>(null);
   const utils = trpc.useUtils();
@@ -196,11 +199,25 @@ function AllRequests() {
 
   const filtered = requests?.filter((r) => {
     const matchFilter = filter === "ALL" || r.status === filter;
+    const progLabel = r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "";
     const matchSearch = !search ||
       r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.department.toLowerCase().includes(search.toLowerCase());
+      progLabel.toLowerCase().includes(search.toLowerCase()) ||
+      (r.studentName ?? "").toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
+
+  const sorted = filtered ? [...filtered].sort((a, b) => {
+    switch (sortKey) {
+      case "name": return (a.studentName ?? "").localeCompare(b.studentName ?? "", "de");
+      case "programme": return (a.programmeAbbreviation ?? a.programmeName ?? a.department ?? "").localeCompare(b.programmeAbbreviation ?? b.programmeName ?? b.department ?? "", "de");
+      case "semester": return (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "", "de");
+      case "title": return (a.title ?? "").localeCompare(b.title ?? "", "de");
+      case "status": return a.status.localeCompare(b.status);
+      case "date": return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+      default: return 0;
+    }
+  }) : [];
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}</div>;
@@ -238,30 +255,62 @@ function AllRequests() {
         </div>
       </div>
 
+      {/* Sortier-Leiste */}
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        <span className="text-xs text-gray-500 font-medium">Sortieren nach:</span>
+        <div className="flex flex-wrap gap-1.5">
+          {([
+            { value: "date" as AdminSortKey, label: "Neueste zuerst" },
+            { value: "name" as AdminSortKey, label: "Name A–Z" },
+            { value: "programme" as AdminSortKey, label: "Study Programme A–Z" },
+            { value: "semester" as AdminSortKey, label: "Semester" },
+            { value: "title" as AdminSortKey, label: "Thema A–Z" },
+            { value: "status" as AdminSortKey, label: "Status" },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSortKey(opt.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                sortKey === opt.value
+                  ? "bg-[#76B900] text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {!filtered?.length ? (
+        {!sorted?.length ? (
           <div className="text-center py-12 text-gray-500 text-sm">Keine Anfragen gefunden.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Titel</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Fachbereich</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Thema / Studierende:r</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Study Programme</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Zielsemester</th>
                   <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Status</th>
                   <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((req) => (
+                {sorted.map((req) => (
                   <tr key={req.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                     <td className="px-5 py-4">
-                      <div className="font-medium text-gray-900 text-sm truncate max-w-xs">{req.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5 md:hidden">{req.department}</div>
+                      <div className="font-medium text-gray-900 text-sm truncate max-w-xs">{req.title || "(kein Titel)"}</div>
+                      {req.studentName && <div className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</div>}
+                      <div className="text-xs text-gray-500 mt-0.5 md:hidden">{req.programmeAbbreviation ?? req.programmeName ?? req.department}</div>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-600">{req.department}</span>
+                      <span className="text-sm text-gray-600">{req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "–"}</span>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell">
+                      <span className="text-sm text-gray-600">{req.targetSemester ?? "–"}</span>
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={req.status} />
