@@ -1057,14 +1057,26 @@ function MyRequests() {
               <span className="text-xs text-amber-700 font-medium">
                 Deadline: {new Date((req as unknown as { deadline: Date | string }).deadline).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
               </span>
-              <a
-                href={`/api/thesis/${req.id}/deadline.ics`}
-                download
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/thesis/${req.id}/deadline.ics`, { credentials: 'include' });
+                    if (!res.ok) { toast.error('Kalender-Export fehlgeschlagen'); return; }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `deadline-${req.id}.ics`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success('Kalender-Termin wurde heruntergeladen.');
+                  } catch { toast.error('Kalender-Export fehlgeschlagen'); }
+                }}
                 className="ml-auto px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors"
                 title="Deadline in Kalender importieren (.ics)"
               >
                 Kalender
-              </a>
+              </button>
             </div>
           )}
           {/* Zweitgutachter-Auswahl nach Erstgutachter-Zusage */}
@@ -1097,6 +1109,7 @@ function MyRequests() {
                   a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${req.id}.pdf`;
                   document.body.appendChild(a); a.click(); document.body.removeChild(a);
                   URL.revokeObjectURL(url);
+                  toast.success('Anmeldedokument wurde erfolgreich heruntergeladen.');
                 } catch { toast.error('Download fehlgeschlagen'); }
               }}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"

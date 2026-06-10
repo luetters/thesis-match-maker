@@ -696,7 +696,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${req.id}.pdf`;
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
               URL.revokeObjectURL(url);
-            } catch { alert('Download fehlgeschlagen'); }
+              toast.success('Anmeldedokument wurde erfolgreich heruntergeladen.');
+            } catch { toast.error('Download fehlgeschlagen'); }
           }}
           className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors w-fit"
           title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"

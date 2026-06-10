@@ -589,7 +589,8 @@ function AdminWorkflowTab() {
                         a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${thesis.id}.pdf`;
                         document.body.appendChild(a); a.click(); document.body.removeChild(a);
                         URL.revokeObjectURL(url);
-                      } catch { alert('Download fehlgeschlagen'); }
+                        toast.success('Anmeldedokument wurde erfolgreich heruntergeladen.');
+                      } catch { toast.error('Download fehlgeschlagen'); }
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
                     title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"

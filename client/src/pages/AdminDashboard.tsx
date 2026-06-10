@@ -352,14 +352,26 @@ function AllRequests() {
                           {req.deadline ? "📅" : "Deadline"}
                         </button>
                         {req.deadline && (
-                          <a
-                            href={`/api/thesis/${req.id}/deadline.ics`}
-                            download
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/thesis/${req.id}/deadline.ics`, { credentials: 'include' });
+                                if (!res.ok) { toast.error('Kalender-Export fehlgeschlagen'); return; }
+                                const blob = await res.blob();
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `deadline-${req.id}.ics`;
+                                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                toast.success('Kalender-Termin wurde heruntergeladen.');
+                              } catch { toast.error('Kalender-Export fehlgeschlagen'); }
+                            }}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                             title="Kalender-Export (.ics)"
                           >
                             .ics
-                          </a>
+                          </button>
                         )}
                         <select
                           value={req.status}
