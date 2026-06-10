@@ -2,6 +2,7 @@ import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { buildFullName } from "@shared/const";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const ROLE_CONFIG: Record<string, { label: string; labelEn: string; color: string; bg: string; border: string }> = {
@@ -159,13 +160,10 @@ export default function PublicProfile() {
             <div className="flex items-end gap-4 -mt-14 mb-4">
               {/* Avatar */}
               <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-md overflow-hidden flex-shrink-0">
-                <UserAvatar name={profile.name} email={profile.email} avatarUrl={avatarSrc} size="xl" className="w-full h-full rounded-2xl" />
+                <UserAvatar name={buildFullName({ firstName: (profile as any).firstName, lastName: (profile as any).lastName, academicTitle: profile.academicTitle, name: profile.name })} email={profile.email} avatarUrl={avatarSrc} size="xl" className="w-full h-full rounded-2xl" />
               </div>
               <div className="flex-1 min-w-0 pb-1">
-                <h1 className="text-xl font-bold text-gray-900 truncate">{profile.name ?? (isDE ? "Unbekannt" : "Unknown")}</h1>
-                {isExaminer && profile.academicTitle && (
-                  <p className="text-sm text-gray-500">{profile.academicTitle}</p>
-                )}
+                <h1 className="text-xl font-bold text-gray-900 truncate">{buildFullName({ firstName: (profile as any).firstName, lastName: (profile as any).lastName, academicTitle: profile.academicTitle, name: profile.name }) || (isDE ? "Unbekannt" : "Unknown")}</h1>
               </div>
             </div>
 

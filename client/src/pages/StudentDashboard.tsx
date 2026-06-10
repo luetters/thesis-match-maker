@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
+import { buildFullName } from "@shared/const";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -330,7 +331,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
             <div className="sm:col-span-2">
               <dt className="text-xs text-gray-500">{t.student.preferredExaminer}</dt>
               <dd className="text-sm font-medium text-gray-900 mt-0.5">
-                {selectedExaminer ? `${selectedExaminer.name} (${selectedExaminer.title})` : <span className="text-gray-400 italic">{t.student.notSelected}</span>}
+                {selectedExaminer ? buildFullName({ firstName: selectedExaminer.firstName, lastName: selectedExaminer.lastName, academicTitle: selectedExaminer.academicTitle ?? selectedExaminer.title, name: selectedExaminer.name }) : <span className="text-gray-400 italic">{t.student.notSelected}</span>}
               </dd>
             </div>
             <div>
@@ -697,14 +698,14 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               {(() => {
                 // Alphabetisch nach Nachname sortieren und Buchstabentrenner einfügen
                 const sorted = [...(firstExaminers as any[])].sort((a: any, b: any) => {
-                  const lastA = (a.name ?? "").trim().split(" ").pop() ?? "";
-                  const lastB = (b.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
                   return lastA.localeCompare(lastB, "de");
                 });
                 const result: React.ReactNode[] = [];
                 let currentLetter = "";
                 sorted.forEach((examiner: any) => {
-                  const lastName = (examiner.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastName = examiner.lastName ?? (examiner.name ?? "").trim().split(" ").pop() ?? "";
                   const letter = lastName.charAt(0).toUpperCase();
                   if (letter !== currentLetter) {
                     currentLetter = letter;
@@ -719,9 +720,10 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                           ? ` \u2014 ${t.student.capacityAlmost}`
                         : ""
                     : "";
+                  const displayName = buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.academicTitle ?? examiner.title, name: examiner.name });
                   result.push(
                     <option key={examiner.id} value={examiner.id} disabled={max != null && active != null && active >= max}>
-                      {examiner.name}{examiner.title ? ` (${examiner.title})` : ""}{statusHint}
+                      {displayName}{statusHint}
                     </option>
                   );
                 });
@@ -898,14 +900,14 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
               const sorted = [...(secondExaminers as any[])]
                 .filter((e: any) => e.id !== wantedExaminerId)
                 .sort((a: any, b: any) => {
-                  const lastA = (a.name ?? "").trim().split(" ").pop() ?? "";
-                  const lastB = (b.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
                   return lastA.localeCompare(lastB, "de");
                 });
               const result: React.ReactNode[] = [];
               let currentLetter = "";
               sorted.forEach((e: any) => {
-                const lastName = (e.name ?? "").trim().split(" ").pop() ?? "";
+                const lastName = e.lastName ?? (e.name ?? "").trim().split(" ").pop() ?? "";
                 const letter = lastName.charAt(0).toUpperCase();
                 if (letter !== currentLetter) {
                   currentLetter = letter;
@@ -920,9 +922,10 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
                         ? ` \u2014 ${t.student.capacityAlmost}`
                       : ""
                   : "";
+                const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
                 result.push(
                   <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
-                    {e.name}{e.title ? ` (${e.title})` : ""}{eHint}
+                    {displayName}{eHint}
                   </option>
                 );
               });
@@ -939,7 +942,7 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
         </div>
         {wantedSecondExaminerId && wantedSecondExaminerId > 0 && (
           <p className="mt-1.5 text-xs text-blue-700">
-            {t.student.currentPref}: {(secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId)?.name ?? `ID ${wantedSecondExaminerId}`}
+            {t.student.currentPref}: {(() => { const e = (secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId); return e ? buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }) : `ID ${wantedSecondExaminerId}`; })()}
           </p>
         )}
       </div>
@@ -1167,7 +1170,7 @@ function ExaminerList() {
   const [search, setSearch] = useState("");
 
   const filtered = examiners?.filter((e) => {
-    const name = e.user.name?.toLowerCase() ?? "";
+    const name = buildFullName({ firstName: e.user.firstName, lastName: e.user.lastName, academicTitle: e.user.academicTitle, name: e.user.name }).toLowerCase();
     const dept = e.profile?.department?.toLowerCase() ?? "";
     const q = search.toLowerCase();
     return name.includes(q) || dept.includes(q);
@@ -1207,10 +1210,10 @@ function ExaminerList() {
           {filtered.map(({ user, profile }) => (
             <div key={user.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-3">
-                <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="lg" />
+                <UserAvatar name={buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name })} email={user.email} avatarUrl={user.avatarUrl} size="lg" />
                 <div className="min-w-0">
                   <div className="font-semibold text-gray-900 text-sm">
-                    {profile?.title ? `${profile.title} ` : ""}{user.name}
+                    {buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle ?? profile?.title, name: user.name })}
                   </div>
                   {profile?.department && (
                     <div className="text-xs text-gray-500 truncate">{profile.department}</div>
@@ -1756,13 +1759,13 @@ function FavoritesList() {
         return (
           <div key={fav.examinerId} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4">
             <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#76B900]/10 flex items-center justify-center text-[#76B900] font-bold text-lg">
-              {(ex.user?.name ?? "?").charAt(0).toUpperCase()}
+              {(ex.user?.firstName?.charAt(0) ?? ex.user?.lastName?.charAt(0) ?? ex.user?.name?.charAt(0) ?? "?").toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {profile?.title ? `${profile.title} ` : ""}{ex.user?.name ?? "Unbekannt"}
+                    {buildFullName({ firstName: ex.user?.firstName, lastName: ex.user?.lastName, academicTitle: ex.user?.academicTitle ?? profile?.title, name: ex.user?.name }) || "Unbekannt"}
                   </h3>
                   {profile?.department && (
                     <p className="text-sm text-gray-500">{profile.department}</p>

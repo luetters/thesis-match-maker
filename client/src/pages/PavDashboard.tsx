@@ -5,6 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
+import { buildFullName } from "@shared/const";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -970,7 +971,7 @@ function ProposeDialog({
                 })
                 .map((ex) => (
                   <option key={ex.user?.id} value={ex.user?.id ?? 0}>
-                    {ex.profile?.title ? `${ex.profile.title} ` : ""}{ex.user?.name ?? "–"}
+                    {buildFullName({ firstName: (ex.user as any)?.firstName, lastName: (ex.user as any)?.lastName, academicTitle: (ex.user as any)?.academicTitle ?? ex.profile?.title, name: ex.user?.name }) || "–"}
                   </option>
                 ))}
             </select>
@@ -1063,7 +1064,7 @@ function DirectAssignDialog({
                 })
                 .map((ex) => (
                   <option key={ex.user?.id} value={ex.user?.id ?? 0}>
-                    {ex.profile?.title ? `${ex.profile.title} ` : ""}{ex.user?.name ?? "–"}
+                    {buildFullName({ firstName: (ex.user as any)?.firstName, lastName: (ex.user as any)?.lastName, academicTitle: (ex.user as any)?.academicTitle ?? ex.profile?.title, name: ex.user?.name }) || "–"}
                   </option>
                 ))}
             </select>
@@ -1250,7 +1251,7 @@ export default function PavDashboard() {
               <p className="text-xs text-gray-500">Prüfungsausschuss-Dashboard</p>
             </div>
           </div>
-          <span className="text-sm text-gray-500">{user.name}</span>
+          <span className="text-sm text-gray-500">{buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name })}</span>
         </div>
       </div>
 
@@ -1345,7 +1346,7 @@ export default function PavDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{request.title || "(kein Titel)"}</p>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {student.name ?? "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
+                        {buildFullName({ firstName: (student as any).firstName, lastName: (student as any).lastName, academicTitle: (student as any).academicTitle, name: student.name }) || "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         Eingereicht: {formatDate(request.createdAt)} · {request.degreeType === "master" ? "Master" : "Bachelor"}
@@ -1355,7 +1356,7 @@ export default function PavDashboard() {
                       onClick={() => setEligibilityFor({
                         id: request.id,
                         title: request.title || "(kein Titel)",
-                        studentName: student.name ?? "–",
+                        studentName: buildFullName({ firstName: (student as any).firstName, lastName: (student as any).lastName, academicTitle: (student as any).academicTitle, name: student.name }) || "–",
                         type: "enrollment",
                       })}
                       className="shrink-0 px-4 py-2 rounded-xl bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600 transition-colors"
@@ -1393,7 +1394,7 @@ export default function PavDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">{request.title || "(kein Titel)"}</p>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {student.name ?? "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
+                        {buildFullName({ firstName: (student as any).firstName, lastName: (student as any).lastName, academicTitle: (student as any).academicTitle, name: student.name }) || "–"} · {student.matrikelNr ? `Matr.-Nr. ${student.matrikelNr}` : "keine Matr.-Nr."}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         Eingereicht: {formatDate(request.createdAt)} · {request.degreeType === "master" ? "Master" : "Bachelor"}

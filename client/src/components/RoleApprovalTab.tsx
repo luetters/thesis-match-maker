@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { buildFullName } from "@shared/const";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Studierende:r",
@@ -195,7 +196,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900 truncate">
-                      {user.name ?? user.email ?? `Nutzer #${user.id}`}
+                      {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email || `Nutzer #${user.id}`}
                     </span>
                     <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
                       <Clock className="w-3 h-3 mr-1" />
@@ -285,7 +286,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
               Passen Sie die Rolle für{" "}
-              <strong>{editRoleDialog.user?.name ?? editRoleDialog.user?.email}</strong> vor der
+              <strong>{buildFullName({ firstName: (editRoleDialog.user as any)?.firstName, lastName: (editRoleDialog.user as any)?.lastName, academicTitle: (editRoleDialog.user as any)?.academicTitle, name: editRoleDialog.user?.name }) || editRoleDialog.user?.email}</strong> vor der
               endgültigen Freischaltung an.
             </p>
             <div className="space-y-1.5">
@@ -337,7 +338,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
               Möchten Sie die Registrierung von{" "}
-              <strong>{rejectDialog.user?.name ?? rejectDialog.user?.email}</strong> ablehnen?
+              <strong>{buildFullName({ firstName: (rejectDialog.user as any)?.firstName, lastName: (rejectDialog.user as any)?.lastName, academicTitle: (rejectDialog.user as any)?.academicTitle, name: rejectDialog.user?.name }) || rejectDialog.user?.email}</strong> ablehnen?
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="reject-reason">Begründung (optional)</Label>

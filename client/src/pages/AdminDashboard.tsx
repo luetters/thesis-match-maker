@@ -9,6 +9,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Cart
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+import { buildFullName } from "@shared/const";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -97,10 +98,10 @@ function AssignExaminerModal({
                 }`}
                 style={selectedExaminer === user.id ? { backgroundColor: "#76B900" } : undefined}
               >
-                <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="md" />
+                <UserAvatar name={buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name })} email={user.email} avatarUrl={user.avatarUrl} size="md" />
                 <div className="min-w-0">
                   <div className={`text-sm font-medium truncate ${selectedExaminer === user.id ? "text-white" : "text-gray-900"}`}>
-                    {profile?.title ? `${profile.title} ` : ""}{user.name}
+                    {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name })}
                   </div>
                   {profile?.department && (
                     <div className={`text-xs truncate ${selectedExaminer === user.id ? "text-white/70" : "text-gray-500"}`}>
@@ -516,7 +517,7 @@ function AuditLogView() {
 // ─── Create Examiner Modal ──────────────────────────────────────────────────────────────────
 function CreateExaminerModal({ onClose }: { onClose: () => void }) {
   const utils = trpc.useUtils();
-  const [form, setForm] = useState({ name: "", email: "", title: "", department: "", bio: "", maxSupervisions: 5 });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", title: "", department: "", bio: "", maxSupervisions: 5 });
   const createExaminer = trpc.admin.createExaminer.useMutation({
     onSuccess: () => {
       toast.success("Prüfer:in erfolgreich angelegt!");
@@ -539,23 +540,27 @@ function CreateExaminerModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
-              <input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Prof. Dr. Muster" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+              <label className="block text-xs font-medium text-gray-700 mb-1">Vorname *</label>
+              <input value={form.firstName} onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))} placeholder="Maria" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Nachname *</label>
+              <input value={form.lastName} onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Muster" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Akademischer Titel</label>
+              <input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Prof. Dr." className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">E-Mail *</label>
               <input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="muster@htw-berlin.de" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Titel</label>
-              <input value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Prof. Dr." className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Fachbereich</label>
-              <input value={form.department} onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))} placeholder="FB 4 – Informatik" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Fachbereich</label>
+            <input value={form.department} onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))} placeholder="FB 4 – Informatik" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Kurzbiografie</label>
@@ -568,8 +573,8 @@ function CreateExaminerModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button
-            onClick={() => createExaminer.mutate(form)}
-            disabled={createExaminer.isPending || !form.name || !form.email}
+            onClick={() => createExaminer.mutate({ ...form, name: [form.title, form.firstName, form.lastName].filter(Boolean).join(' ') })}
+            disabled={createExaminer.isPending || !form.firstName || !form.lastName || !form.email}
             className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50"
             style={{ backgroundColor: "#76B900" }}
           >
@@ -748,7 +753,7 @@ function UserManagement() {
     if (!matchesTab) return false;
     if (!query) return true;
     return (
-      (user.name ?? "").toLowerCase().includes(query) ||
+      buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }).toLowerCase().includes(query) ||
       (user.email ?? "").toLowerCase().includes(query)
     );
   }) ?? [];
@@ -854,9 +859,9 @@ function UserManagement() {
                 <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <UserAvatar name={user.name} email={user.email} avatarUrl={user.avatarUrl} size="md" />
+                      <UserAvatar name={buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name })} email={user.email} avatarUrl={user.avatarUrl} size="md" />
                       <div>
-                        <span className="text-sm font-medium text-gray-900">{user.name ?? "—"}</span>
+                        <span className="text-sm font-medium text-gray-900">{buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name }) || "—"}</span>
                         {profile?.department && <div className="text-xs text-gray-400">{profile.department}</div>}
                       </div>
                     </div>
@@ -934,7 +939,7 @@ function UserManagement() {
                       )}
                       <button
                         onClick={() => {
-                          if (confirm(`Nutzer:in "${user.name}" wirklich löschen?`)) {
+                          if (confirm(`Nutzer:in "${buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email}" wirklich löschen?`)) {
                             deleteUser.mutate({ userId: user.id });
                           }
                         }}
@@ -1163,7 +1168,7 @@ function Overview() {
               {(pendingRoles ?? []).filter(u => u.roleStatus === "pending").slice(0, 10).map(u => (
                 <div key={u.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-amber-100 gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: (u as any).firstName, lastName: (u as any).lastName, academicTitle: (u as any).academicTitle, name: u.name }) || u.email}</p>
                     <p className="text-xs text-gray-500 truncate">{u.email}</p>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium whitespace-nowrap shrink-0">

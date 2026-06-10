@@ -271,6 +271,9 @@ export const users = mysqlTable("users", {
 	matrikelNr: varchar("matrikel_nr", { length: 32 }),
 	thesisType: mysqlEnum("thesis_type", ['bachelor','master']),
 	enrollmentSemester: varchar("enrollment_semester", { length: 32 }),
+	// Name-Felder (getrennt)
+	firstName: varchar("first_name", { length: 128 }),
+	lastName: varchar("last_name", { length: 128 }),
 	// Prüfer:innen (Kurzfelder; Details in examinerProfiles)
 	academicTitle: varchar("academic_title", { length: 64 }),
 	officeRoom: varchar("office_room", { length: 64 }),

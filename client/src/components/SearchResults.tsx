@@ -2,11 +2,15 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { buildFullName } from "@shared/const";
 
 interface SearchResult {
   id: number;
   title?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
+  academicTitle?: string;
   email?: string;
   status?: string;
   type: "thesis" | "examiner" | "student";
@@ -70,7 +74,7 @@ export function SearchResults({
         return result.title || "Anfrage";
       case "examiner":
       case "student":
-        return `${result.name} (${result.email})`;
+        return `${buildFullName({ firstName: result.firstName, lastName: result.lastName, academicTitle: result.academicTitle, name: result.name })} (${result.email})`;
       default:
         return "Ergebnis";
     }

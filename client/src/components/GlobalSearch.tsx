@@ -2,11 +2,15 @@ import { useState, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { buildFullName } from "@shared/const";
 
 interface SearchResult {
   id: number;
   title?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
+  academicTitle?: string;
   email?: string;
   type: "thesis" | "examiner" | "student";
 }
@@ -48,6 +52,9 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
       ...(examinerResults || []).map((r: any) => ({
         id: r.userId,
         name: r.users?.name,
+        firstName: r.users?.firstName,
+        lastName: r.users?.lastName,
+        academicTitle: r.users?.academicTitle,
         email: r.users?.email,
         type: "examiner" as const,
       })),
@@ -67,9 +74,9 @@ export function GlobalSearch({ onClose }: GlobalSearchProps) {
       case "thesis":
         return result.title || "Anfrage";
       case "examiner":
-        return `${result.name} (${result.email})`;
+        return `${buildFullName({ firstName: result.firstName, lastName: result.lastName, academicTitle: result.academicTitle, name: result.name })} (${result.email})`;
       case "student":
-        return `${result.name} (${result.email})`;
+        return `${buildFullName({ firstName: result.firstName, lastName: result.lastName, academicTitle: result.academicTitle, name: result.name })} (${result.email})`;
       default:
         return "Ergebnis";
     }

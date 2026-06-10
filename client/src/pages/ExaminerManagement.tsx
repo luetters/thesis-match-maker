@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { toast } from "sonner";
+import { buildFullName } from "@shared/const";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
@@ -362,7 +363,7 @@ function CapacityPanel({ examiner, onClose }: { examiner: any; onClose: () => vo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart2 className="w-5 h-5" />
-            Semesterkapazitäten – {examiner.title ? `${examiner.title} ` : ""}{examiner.name}
+            Semesterkapazitäten – {buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.title, name: examiner.name })}
           </DialogTitle>
         </DialogHeader>
 
@@ -652,8 +653,7 @@ export default function ExaminerManagement() {
                 {examiners.map((examiner: any) => (
                   <tr key={examiner.id} className="border-b hover:bg-muted/50 transition-colors">
                     <td className="p-3 font-medium">
-                      {examiner.title ? <span className="text-gray-500 mr-1">{examiner.title}</span> : null}
-                      {examiner.name || "—"}
+                      {buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.title, name: examiner.name }) || "—"}
                     </td>
                     <td className="p-3 text-gray-500">{examiner.email}</td>
                     <td className="p-3">{examiner.department || "—"}</td>

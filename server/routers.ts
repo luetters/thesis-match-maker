@@ -261,6 +261,8 @@ const profileRouterDef = router({
   update: protectedProcedure
     .input(z.object({
       name: z.string().min(1).max(128).optional(),
+      firstName: z.string().max(128).optional(),
+      lastName: z.string().max(128).optional(),
       bio: z.string().max(1000).optional(),
       phone: z.string().max(64).optional(),
       department: z.string().max(255).optional(),
@@ -459,6 +461,8 @@ export const appRouter = router({
       .input(
         z.object({
           name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein."),
+          firstName: z.string().max(128).optional(),
+          lastName: z.string().max(128).optional(),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
@@ -510,6 +514,8 @@ export const appRouter = router({
           openId,
           email: input.email.toLowerCase(),
           name: input.name,
+          ...(input.firstName ? { firstName: input.firstName } : {}),
+          ...(input.lastName ? { lastName: input.lastName } : {}),
           role: "user" as any,
           requestedRole: input.role as any,
           roleStatus: "pending" as any,
@@ -1049,6 +1055,8 @@ export const appRouter = router({
         return {
           id: user.id,
           name: user.name,
+          firstName: user.firstName ?? null,
+          lastName: user.lastName ?? null,
           email: user.email,
           role: user.role,
           department: user.department,

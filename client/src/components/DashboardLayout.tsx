@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { buildFullName } from "@shared/const";
 import { LayoutDashboard, LogOut, PanelLeft, Users, ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -245,12 +246,12 @@ function DashboardLayoutContent({
                 >
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
+                      {(buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || "-").charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
+                      {buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
                       {user?.role === "superadmin" ? rolesCycle[currentRoleIndex] : user?.email || "-"}

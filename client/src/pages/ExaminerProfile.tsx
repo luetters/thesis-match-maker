@@ -5,6 +5,7 @@ import { useState, useRef } from "react";
 import { Link, useParams } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { buildFullName } from "@shared/const";
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
@@ -584,13 +585,13 @@ export default function ExaminerProfile() {
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md flex-shrink-0">
-                  <UserAvatar name={user.name} email={user.email} avatarUrl={photoUrl ?? user.avatarUrl} size="xl" className="w-full h-full" />
+                  <UserAvatar name={buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: profile?.academicTitle, name: user.name })} email={user.email} avatarUrl={photoUrl ?? user.avatarUrl} size="xl" className="w-full h-full" />
                 </div>
               )}
               <div className="pb-1 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold text-gray-900">
-                    {profile?.academicTitle ? `${profile.academicTitle} ` : ""}{user.name ?? E.unknownName}
+                    {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: profile?.academicTitle, name: user.name }) || E.unknownName}
                   </h1>
                 </div>
                 {profile?.department && (
@@ -748,7 +749,7 @@ export default function ExaminerProfile() {
 
             {/* Anfrage stellen CTA */}
             {(() => {
-              const examinerName = `${profile?.academicTitle ? `${profile.academicTitle} ` : ""}${user.name}`;
+              const examinerName = buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: profile?.academicTitle, name: user.name });
               const requestUrl = `/student/new?examiner=${userId}`;
               const isExaminerRole = currentUser?.role === "examiner" || currentUser?.role === "second_examiner";
               // Prüfer:innen sehen keinen CTA

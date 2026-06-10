@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
+import { buildFullName } from "@shared/const";
 import {
   DndContext,
   DragOverlay,
@@ -42,10 +43,9 @@ function CandidateTooltip({ candidate }: { candidate: any }) {
     <div className="absolute z-50 left-full top-0 ml-3 w-64 rounded-2xl bg-white border border-gray-200 shadow-xl p-4 pointer-events-none">
       <div className="absolute -left-2 top-4 w-3 h-3 rotate-45 bg-white border-l border-b border-gray-200" />
       <div className="flex items-center gap-3 mb-3">
-        <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="lg" />
+        <UserAvatar name={buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="lg" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{candidate.name}</p>
-          {candidate.title && <p className="text-xs text-gray-500 truncate">{candidate.title}</p>}
+          <p className="text-sm font-semibold text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
         </div>
       </div>
       {candidate.department && (
@@ -122,10 +122,9 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
+      <UserAvatar name={buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
-        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onAdd(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-[#76B900]/10 hover:bg-[#76B900]/30 flex items-center justify-center transition-colors" title="Hinzufügen">
@@ -165,10 +164,9 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
         </svg>
       </div>
       <span className="flex-shrink-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ backgroundColor: "#76B900" }}>{index + 1}</span>
-      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
+      <UserAvatar name={buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
-        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onRemove(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors" title="Entfernen">
@@ -226,7 +224,7 @@ export function CommissionPreferences() {
   const selected = selectedIds.map((id) => candidateMap.get(id)).filter(Boolean) as any[];
   const available = (allCandidates as any[]).filter((c: any) => {
     const inSelected = selectedIds.includes(c.id);
-    const matchesSearch = !searchQuery || c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || c.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || buildFullName({ firstName: c.firstName, lastName: c.lastName, academicTitle: c.academicTitle ?? c.title, name: c.name }).toLowerCase().includes(searchQuery.toLowerCase());
     return !inSelected && matchesSearch;
   });
 
@@ -402,10 +400,9 @@ export function CommissionPreferences() {
         <DragOverlay>
           {activeCandidate ? (
             <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${activeType === "available" ? "bg-white border-gray-200" : "bg-[#76B900]/10 border-[#76B900]/40"}`}>
-              <UserAvatar name={activeCandidate.name} email={activeCandidate.email} avatarUrl={activeCandidate.photoUrl ?? activeCandidate.avatarUrl} size="md" />
+              <UserAvatar name={buildFullName({ firstName: activeCandidate.firstName, lastName: activeCandidate.lastName, academicTitle: activeCandidate.academicTitle ?? activeCandidate.title, name: activeCandidate.name })} email={activeCandidate.email} avatarUrl={activeCandidate.photoUrl ?? activeCandidate.avatarUrl} size="md" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">{activeCandidate.name}</p>
-                {activeCandidate.title && <p className="text-xs text-gray-400 truncate">{activeCandidate.title}</p>}
+                <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: activeCandidate.firstName, lastName: activeCandidate.lastName, academicTitle: activeCandidate.academicTitle ?? activeCandidate.title, name: activeCandidate.name })}</p>
               </div>
             </div>
           ) : null}

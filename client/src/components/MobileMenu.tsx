@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { buildFullName } from "@shared/const";
 import { useLocation } from "wouter";
 
 interface MobileMenuProps {
@@ -89,7 +90,7 @@ export function MobileMenu({ items }: MobileMenuProps) {
               <div className="px-4 py-2">
                 <p className="text-xs text-gray-500">Angemeldet als</p>
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.name || user.email}
+                  {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email}
                 </p>
               </div>
             </div>

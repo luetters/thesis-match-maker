@@ -4,6 +4,7 @@ import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
+import { buildFullName } from "@shared/const";
 
 // ─── App-Logo mit Fallback ────────────────────────────────────────────────────
 function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
@@ -450,7 +451,7 @@ export function ThesisDashboardLayout({
       <Sidebar
         navItems={navItems}
         role={user?.role ?? "user"}
-        userName={user?.name ?? user?.email ?? "Nutzer:in"}
+        userName={buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || user?.email || "Nutzer:in"}
         userAvatarUrl={user?.avatarUrl}
         onLogout={() => logoutMutation.mutate()}
         mobileOpen={mobileOpen}
@@ -490,7 +491,7 @@ export function ThesisDashboardLayout({
                 onClick={() => setShowProfileMenu((v) => !v)}
                 className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <UserAvatar name={user?.name} email={user?.email} avatarUrl={user?.avatarUrl} size="sm" />
+                <UserAvatar name={buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name })} email={user?.email} avatarUrl={user?.avatarUrl} size="sm" />
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -498,7 +499,7 @@ export function ThesisDashboardLayout({
               {showProfileMenu && (
                 <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user?.name ?? "Nutzer:in"}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || "Nutzer:in"}</p>
                     <p className="text-xs text-gray-500 truncate">{user?.email ?? ""}</p>
                   </div>
                   {/* Profil-Link: nur für Rollen ohne eigenen Profil-navItem (Admin, PAV, Dekan) */}

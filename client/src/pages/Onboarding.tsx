@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useState } from "react";
+import { buildFullName } from "@shared/const";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -53,7 +54,7 @@ export default function Onboarding() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Willkommen beim Thesis Match Maker</h1>
         <p className="text-gray-500 max-w-md">
-          Hallo{user?.name ? `, ${user.name}` : ""}! Bitte wählen Sie Ihre Rolle, um fortzufahren.
+          Hallo{buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) ? `, ${buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name })}` : ""}! Bitte wählen Sie Ihre Rolle, um fortzufahren.
           Diese Einstellung kann später von einem Administrator geändert werden.
         </p>
       </div>

@@ -1731,6 +1731,9 @@ export async function getSecondExaminers(department: string) {
     id: examinerProfiles.id,
     userId: examinerProfiles.userId,
     name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
     email: users.email,
     title: examinerProfiles.title,
     department: examinerProfiles.department,
@@ -3885,7 +3888,7 @@ export async function getProfile(userId: number) {
 export async function updateProfile(
   userId: number,
   data: {
-    name?: string; bio?: string; phone?: string; department?: string;
+    name?: string; firstName?: string; lastName?: string; bio?: string; phone?: string; department?: string;
     matrikelNr?: string; thesisType?: 'bachelor' | 'master'; enrollmentSemester?: string; targetSemester?: string;
     academicTitle?: string; officeRoom?: string; officeHours?: string; researchTags?: string;
     staffId?: string; responsibilityArea?: string; officeLocation?: string;
@@ -3898,6 +3901,8 @@ export async function updateProfile(
   try {
     const sets: string[] = [];
     if (data.name !== undefined) sets.push(`name = '${data.name.replace(/'/g, "''")}'`);
+    if (data.firstName !== undefined) sets.push(`first_name = '${data.firstName.replace(/'/g, "''")}'`);
+    if (data.lastName !== undefined) sets.push(`last_name = '${data.lastName.replace(/'/g, "''")}'`);
     if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
     if (data.phone !== undefined) sets.push(`phone = '${data.phone.replace(/'/g, "''")}'`);
     if (data.department !== undefined) sets.push(`department = '${data.department.replace(/'/g, "''")}'`);
@@ -3989,6 +3994,9 @@ export async function getFirstExaminers() {
   const result = await db.select({
     id: users.id,
     name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
     email: users.email,
     title: examinerProfiles.title,
     department: examinerProfiles.department,

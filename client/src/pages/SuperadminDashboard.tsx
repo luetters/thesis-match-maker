@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
+import { buildFullName } from "@shared/const";
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -49,7 +50,7 @@ function UserManagementTab() {
     return users.filter((u) => {
       const matchSearch =
         !search ||
-        u.user.name?.toLowerCase().includes(search.toLowerCase()) ||
+        buildFullName({ firstName: (u.user as any).firstName, lastName: (u.user as any).lastName, academicTitle: (u.user as any).academicTitle, name: u.user.name }).toLowerCase().includes(search.toLowerCase()) ||
         u.user.email?.toLowerCase().includes(search.toLowerCase());
       const matchRole = filterRole === "all" || u.user.role === filterRole;
       return matchSearch && matchRole;
@@ -1004,7 +1005,7 @@ export default function SuperadminDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">{t.superadmin.title}</h1>
         </div>
         <p className="text-sm text-gray-500">
-          Exklusiver Bereich für <strong>{user?.name ?? user?.email}</strong> – vollständige Systemverwaltung.
+          Exklusiver Bereich für <strong>{buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || user?.email}</strong> – vollständige Systemverwaltung.
         </p>
       </div>
 

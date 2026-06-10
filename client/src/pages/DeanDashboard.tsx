@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { buildFullName } from "@shared/const";
 
 // --- Hilfsfunktionen ---
 function formatDate(d: Date | string | null | undefined) {
@@ -412,7 +413,7 @@ export default function DeanDashboard() {
                             <span className="text-xs text-gray-400">Kein eigenes Thema</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{student.name ?? "–"}</td>
+                        <td className="px-4 py-3 text-gray-600">{buildFullName({ firstName: (student as any).firstName, lastName: (student as any).lastName, academicTitle: (student as any).academicTitle, name: student.name }) || "–"}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs">{request.department}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs capitalize">{request.degreeType}</td>
                         <td className="px-4 py-3">

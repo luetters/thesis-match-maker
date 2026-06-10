@@ -11,6 +11,7 @@ import { Link, useLocation } from "wouter";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { CommissionPreferences } from "@/components/CommissionPreferences";
+import { buildFullName } from "@shared/const";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -441,7 +442,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const utils = trpc.useUtils();
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({
-    name: "", bio: "", phone: "", department: "",
+    name: "", firstName: "", lastName: "", bio: "", phone: "", department: "",
     allowedDepartments: [] as string[],
     matrikelNr: "", thesisType: "" as "" | "bachelor" | "master", enrollmentSemester: "", targetSemester: "",
     academicTitle: "", officeRoom: "", officeHours: "",
@@ -545,7 +546,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         : null);
     }
     setForm({
-      name: profile.name ?? "", bio: profile.bio ?? "", phone: profile.phone ?? "", department: profile.department ?? "",
+      name: profile.name ?? "", firstName: (profile as any).firstName ?? "", lastName: (profile as any).lastName ?? "", bio: profile.bio ?? "", phone: profile.phone ?? "", department: profile.department ?? "",
       allowedDepartments: (profile as any).allowedDepartments ?? (profile.department ? [profile.department] : []),
       matrikelNr: profile.matrikelNr ?? "", thesisType: (profile.thesisType as "" | "bachelor" | "master") ?? "",
       enrollmentSemester: profile.enrollmentSemester ?? "", targetSemester: profile.targetSemester ?? "",
@@ -578,7 +579,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
       ? (examinerProgrammeIds === null ? [] : examinerProgrammeIds)
       : undefined;
     updateMutation.mutate({
-      name: form.name || undefined, bio: form.bio || undefined, phone: form.phone || undefined, department: form.department || undefined,
+      name: [form.academicTitle, form.firstName, form.lastName].filter(Boolean).join(' ') || form.name || undefined,
+      firstName: form.firstName || undefined, lastName: form.lastName || undefined,
+      bio: form.bio || undefined, phone: form.phone || undefined, department: form.department || undefined,
       matrikelNr: form.matrikelNr || undefined, thesisType: (form.thesisType as "bachelor" | "master") || undefined,
       enrollmentSemester: form.enrollmentSemester || undefined, targetSemester: form.targetSemester || undefined,
       academicTitle: form.academicTitle || undefined, officeRoom: form.officeRoom || undefined, officeHours: form.officeHours || undefined,
@@ -662,7 +665,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
 
   const roleConf = ROLE_CONFIG[profile.role] ?? { label: profile.role, color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" };
   const avatarSrc = avatarPreview ?? profile.avatarUrl ?? user?.avatarUrl;
-  const initials = getInitials(profile.name, profile.email);
+  const fullName = buildFullName({ firstName: (profile as any).firstName, lastName: (profile as any).lastName, academicTitle: profile.academicTitle, name: profile.name });
+  const initials = getInitials(fullName || profile.name, profile.email);
   const backLink = profile.role === "student" ? "/student" : profile.role === "examiner" ? "/examiner" : (profile.role === "admin" || profile.role === "superadmin") ? "/admin" : "/";
   const isStudent  = profile.role === "student";
   const isExaminer = profile.role === "examiner" || profile.role === "second_examiner";
@@ -822,7 +826,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 )}
               </div>
               <div className="flex-1 min-w-0 pb-1">
-                <h1 className="text-xl font-bold text-gray-900 truncate">{profile.name ?? profile.email ?? "Unbekannt"}</h1>
+                <h1 className="text-xl font-bold text-gray-900 truncate">{fullName || profile.email || "Unbekannt"}</h1>
                 <p className="text-sm text-gray-500 truncate">{profile.email}</p>
               </div>
             </div>
@@ -852,9 +856,14 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             {p.sectionPersonal}
           </h2>
           <div className="space-y-4">
-            {editMode
-              ? <FieldInput label={p.fieldFullName} value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} placeholder={p.fieldNamePlaceholder} />
-              : <FieldView label={p.fieldFullName} value={profile.name} notSpecified={p.notSpecified} />}
+            {editMode ? (
+              <div className="grid grid-cols-2 gap-4">
+                <FieldInput label="Vorname" value={form.firstName} onChange={(v) => setForm((f) => ({ ...f, firstName: v }))} placeholder="Maria" />
+                <FieldInput label="Nachname" value={form.lastName} onChange={(v) => setForm((f) => ({ ...f, lastName: v }))} placeholder="Muster" />
+              </div>
+            ) : (
+              <FieldView label={p.fieldFullName} value={fullName || profile.name} notSpecified={p.notSpecified} />
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldEmail}</label>
               <div className="flex items-center gap-2">
@@ -1138,7 +1147,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                             <div className="flex items-start gap-3 mb-4">
                               <div className="flex-shrink-0">
                                 <UserAvatar
-                                  name={examiner.name ?? "?"}
+                                  name={buildFullName({ firstName: (examiner as any).firstName, lastName: (examiner as any).lastName, academicTitle: examiner.academicTitle, name: examiner.name }) || "?"}
                                   avatarUrl={examiner.avatarUrl}
                                   size="xl"
                                   rounded="2xl"
@@ -1146,7 +1155,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-900 truncate">
-                                  {examiner.academicTitle ? `${examiner.academicTitle} ` : ""}{examiner.name ?? "—"}
+                                  {buildFullName({ firstName: (examiner as any).firstName, lastName: (examiner as any).lastName, academicTitle: examiner.academicTitle, name: examiner.name }) || "—"}
                                 </p>
                                 <span
                                   className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-medium"

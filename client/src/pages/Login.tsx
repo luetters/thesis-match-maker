@@ -96,7 +96,8 @@ export default function Login() {
   const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | null>(null);
 
   // Registrierungs-State
-  const [regName, setRegName] = useState("");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
@@ -176,7 +177,7 @@ export default function Login() {
 
   function handleRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!regName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
+    if (!regFirstName.trim() || !regLastName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
     if ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) {
       toast.error(L.matrikelNrRequired);
       return;
@@ -207,7 +208,9 @@ export default function Login() {
       }
     }
     const regPayload: Parameters<typeof registerMutation.mutate>[0] = {
-      name: regName.trim(),
+      name: [regFirstName.trim(), regLastName.trim()].filter(Boolean).join(' '),
+      firstName: regFirstName.trim(),
+      lastName: regLastName.trim(),
       email: regEmail.trim(),
       password: regPassword,
       role: selectedRole ?? "student",
@@ -226,7 +229,8 @@ export default function Login() {
     setSelectedRole(null);
     setLoginEmail("");
     setLoginPassword("");
-    setRegName("");
+    setRegFirstName("");
+    setRegLastName("");
     setRegEmail("");
     setRegPassword("");
     setRegPasswordConfirm("");
@@ -698,23 +702,39 @@ export default function Login() {
                       </>
                     )}
                     <div className="space-y-2">
-                      <Label className="text-white/70 text-sm">{L.fullName}</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                        <Input
-                          type="text"
-                          placeholder={L.fullNamePlaceholder}
-                          value={regName}
-                          onChange={(e) => setRegName(e.target.value)}
-                          required
-                          autoComplete="name"
-                          autoFocus
-                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
-                        />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-white/70 text-sm">Vorname</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                            <Input
+                              type="text"
+                              placeholder="Maria"
+                              value={regFirstName}
+                              onChange={(e) => setRegFirstName(e.target.value)}
+                              required
+                              autoComplete="given-name"
+                              autoFocus
+                              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-white/70 text-sm">Nachname</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                            <Input
+                              type="text"
+                              placeholder="Muster"
+                              value={regLastName}
+                              onChange={(e) => setRegLastName(e.target.value)}
+                              required
+                              autoComplete="family-name"
+                              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      {(selectedRole === "examiner" || selectedRole === "second_examiner") && (
-                        <p className="text-xs text-white/40 mt-1">just your full name without academic titles</p>
-                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">{L.emailLabel}</Label>
@@ -792,7 +812,8 @@ export default function Login() {
                       type="submit"
                       disabled={
                         registerMutation.isPending ||
-                        !regName.trim() ||
+                        !regFirstName.trim() ||
+                        !regLastName.trim() ||
                         !regEmail.trim() ||
                         !regPassword ||
                         !regPasswordConfirm ||

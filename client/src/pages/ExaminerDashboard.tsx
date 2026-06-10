@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { buildFullName } from "@shared/const";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1980,10 +1981,9 @@ function CandidateTooltip({ candidate }: { candidate: any }) {
 
       {/* Kopfzeile */}
       <div className="flex items-center gap-3 mb-3">
-        <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="lg" />
+        <UserAvatar name={buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="lg" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{candidate.name}</p>
-          {candidate.title && <p className="text-xs text-gray-500 truncate">{candidate.title}</p>}
+          <p className="text-sm font-semibold text-gray-900 truncate">{buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })}</p>
         </div>
       </div>
 
@@ -2081,10 +2081,9 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
+      <UserAvatar name={buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
-        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })}</p>
         <WorkloadBadge
           active={candidate.activeSupervisions}
           max={candidate.maxSupervisions}
@@ -2147,10 +2146,9 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
         </svg>
       </div>
-      <UserAvatar name={candidate.name} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
+      <UserAvatar name={buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{candidate.name}</p>
-        {candidate.title && <p className="text-xs text-gray-400 truncate">{candidate.title}</p>}
+        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: (candidate as any).firstName, lastName: (candidate as any).lastName, academicTitle: (candidate as any).academicTitle ?? candidate.title, name: candidate.name })}</p>
         <WorkloadBadge
           active={candidate.activeSupervisions}
           max={candidate.maxSupervisions}

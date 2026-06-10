@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState, useMemo } from "react";
+import { buildFullName } from "@shared/const";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
@@ -16,6 +17,9 @@ type ExaminerListItem = {
   user: {
     id: number;
     name: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    academicTitle?: string | null;
     email: string | null;
     role: string;
     isFictitiousExample?: number | null;
@@ -74,7 +78,7 @@ function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }:
           {/* Avatar */}
           <div className="flex-shrink-0">
             <UserAvatar
-              name={examiner.user?.name}
+              name={buildFullName({ firstName: examiner.user?.firstName, lastName: examiner.user?.lastName, academicTitle: examiner.user?.academicTitle, name: examiner.user?.name })}
               email={examiner.user?.email}
               avatarUrl={profile?.photoUrl ?? (examiner.user as any)?.avatarUrl}
               size="xl"
@@ -86,7 +90,7 @@ function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }:
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="font-semibold text-gray-900 leading-tight">
-                  {profile?.title ? `${profile.title} ` : ""}{examiner.user?.name ?? D.unknownName}
+                  {buildFullName({ firstName: examiner.user?.firstName, lastName: examiner.user?.lastName, academicTitle: examiner.user?.academicTitle ?? profile?.title, name: examiner.user?.name }) || D.unknownName}
                 </h3>
                 {profile?.department && (
                   <p className="text-sm text-gray-500 mt-0.5">{profile.department}</p>
@@ -370,7 +374,7 @@ export default function ExaminerDirectory() {
   }
 
   const filtered = (examiners ?? []).filter((ex) => {
-    const name = ex.user?.name ?? "";
+    const name = buildFullName({ firstName: ex.user?.firstName, lastName: ex.user?.lastName, academicTitle: ex.user?.academicTitle, name: ex.user?.name });
     const dept = ex.profile?.department ?? "";
     const bio = ex.profile?.bio ?? "";
     const researchFocus = ex.profile?.researchFocus ?? "";
@@ -417,8 +421,8 @@ export default function ExaminerDirectory() {
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       if (sortBy === "name") {
-        const na = a.user?.name ?? "";
-        const nb = b.user?.name ?? "";
+        const na = buildFullName({ firstName: a.user?.firstName, lastName: a.user?.lastName, academicTitle: a.user?.academicTitle, name: a.user?.name });
+        const nb = buildFullName({ firstName: b.user?.firstName, lastName: b.user?.lastName, academicTitle: b.user?.academicTitle, name: b.user?.name });
         return na.localeCompare(nb, "de");
       }
       // Kapazität: freie Slots = max - aktiv
