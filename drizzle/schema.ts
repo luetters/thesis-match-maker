@@ -435,5 +435,6 @@ export const thesisDocTokens = mysqlTable("thesis_doc_tokens", {
   targetSemester: varchar("target_semester", { length: 32 }),
   degreeType: varchar("degree_type", { length: 16 }),
   createdAt: timestamp({ mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+  revoked: int().default(0).notNull(),
 });
 export type InsertThesisDocToken = InferInsertModel<typeof thesisDocTokens>;

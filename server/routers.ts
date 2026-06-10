@@ -165,6 +165,7 @@ import {
   updateDraftRequest,
   withdrawDraftRequest,
   getStudentThesisHistory,
+  invalidateDocTokensForRequest,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -2449,6 +2450,8 @@ export const appRouter = router({
           action: "THESIS_WITHDRAWN",
           toStatus: "WITHDRAWN",
         });
+        // Alle Verifikations-Token für diesen Antrag widerrufen
+        await invalidateDocTokensForRequest(input.thesisRequestId);
         return { success: true };
       }),
 
@@ -3204,11 +3207,14 @@ export const appRouter = router({
         if (!isExaminer && !isPav && !isAdmin) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung." });
         }
-        return withdrawDraftRequest({
+        const result = await withdrawDraftRequest({
           requestId: input.requestId,
           callerId: ctx.user.id,
           isAdmin: isPav || isAdmin,
         });
+        // Alle Verifikations-Token für diesen Antrag widerrufen
+        await invalidateDocTokensForRequest(input.requestId);
+        return result;
       }),
   }),
 });

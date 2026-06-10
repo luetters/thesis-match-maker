@@ -5295,3 +5295,16 @@ export async function getThesisDocTokenByToken(token: string) {
     .limit(1);
   return rows[0] ?? null;
 }
+
+/**
+ * Markiert alle Verifikations-Token eines Antrags als ungültig (revoked = 1).
+ * Wird aufgerufen, wenn ein Antrag storniert oder zurückgezogen wird.
+ */
+export async function invalidateDocTokensForRequest(thesisRequestId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(thesisDocTokens)
+    .set({ revoked: 1 } as any)
+    .where(eq(thesisDocTokens.thesisRequestId, thesisRequestId));
+}

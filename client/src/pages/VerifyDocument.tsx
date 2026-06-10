@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 
 interface VerifyResult {
   valid: boolean;
+  revoked?: boolean;
   studentName: string;
   matrikelNr: string | null;
   programmeName: string | null;
@@ -12,12 +13,14 @@ interface VerifyResult {
   targetSemester: string | null;
   degreeType: string | null;
   issuedAt: string;
+  error?: string;
 }
 
 export default function VerifyDocument() {
   const params = useParams<{ token: string }>();
   const token = params.token;
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [revoked, setRevoked] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,13 +28,18 @@ export default function VerifyDocument() {
     if (!token) return;
     fetch(`/api/verify/${token}`)
       .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 410 && body.revoked) {
+          // Token wurde widerrufen
+          setRevoked(body.error ?? "Dieses Dokument wurde widerrufen.");
+          return null;
+        }
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? "Dokument konnte nicht verifiziert werden.");
         }
-        return res.json() as Promise<VerifyResult>;
+        return body as VerifyResult;
       })
-      .then((data) => setResult(data))
+      .then((data) => { if (data) setResult(data); })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [token]);
@@ -62,6 +70,24 @@ export default function VerifyDocument() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
             <span className="text-sm">Dokument wird verifiziert …</span>
+          </div>
+        )}
+
+        {!loading && revoked && (
+          <div className="p-8 flex flex-col items-center gap-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+              <svg className="w-7 h-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-red-700 text-base mb-1">Dokument widerrufen</p>
+              <p className="text-sm text-gray-600 max-w-sm">{revoked}</p>
+              <p className="text-xs text-gray-400 mt-3">
+                Dieses Anmeldedokument ist nicht mehr gültig. Die Betreuungszusage wurde nachträglich zurückgezogen oder storniert.
+                Bitte wenden Sie sich an die zuständige Verwaltung des Fachbereichs 3.
+              </p>
+            </div>
           </div>
         )}
 

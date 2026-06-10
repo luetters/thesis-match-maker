@@ -72,18 +72,39 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     // ── Header-Balken ──────────────────────────────────────────────────────────
     doc.rect(0, 0, doc.page.width, 8).fill(HTW_GREEN);
 
-    // ── Logo-Bereich ───────────────────────────────────────────────────────────
+    // ── Logo-Platzhalter (links) + Hochschulname + Fachbereich (rechts) ─────────
     doc.moveDown(0.5);
+
+    // Logo-Platzhalter: Rahmen mit Kreuz-Diagonalen
+    const logoX = 60;
+    const logoY = 18;
+    const logoW = 110;
+    const logoH = 52;
+    doc.rect(logoX, logoY, logoW, logoH).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
+    doc.moveTo(logoX, logoY).lineTo(logoX + logoW, logoY + logoH).strokeColor("#d1fae5").lineWidth(0.5).stroke();
+    doc.moveTo(logoX + logoW, logoY).lineTo(logoX, logoY + logoH).strokeColor("#d1fae5").lineWidth(0.5).stroke();
     doc
-      .fontSize(22)
+      .fontSize(7)
+      .font("Helvetica")
+      .fillColor(HTW_GREEN)
+      .text("[Hochschul-Logo]", logoX, logoY + logoH / 2 - 4, { width: logoW, align: "center" });
+
+    // Hochschulname und Fachbereich rechts neben dem Logo
+    doc
+      .fontSize(18)
       .font("Helvetica-Bold")
       .fillColor(HTW_GREEN)
-      .text("HTW Berlin", 60, 28);
+      .text("HTW Berlin", logoX + logoW + 14, logoY + 2);
     doc
-      .fontSize(9)
+      .fontSize(8.5)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Hochschule für Technik und Wirtschaft Berlin", 60, 52);
+      .text("Hochschule für Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 24);
+    doc
+      .fontSize(8.5)
+      .font("Helvetica-Bold")
+      .fillColor(HTW_DARK)
+      .text("Fachbereich 3 – Wirtschaftswissenschaften", logoX + logoW + 14, logoY + 38);
 
     // ── Titel ──────────────────────────────────────────────────────────────────
     doc

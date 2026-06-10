@@ -352,6 +352,10 @@ export function registerUploadRoutes(app: Express) {
     try {
       const doc = await getThesisDocTokenByToken(token);
       if (!doc) { res.status(404).json({ error: "Token nicht gefunden oder ungültig." }); return; }
+      if ((doc as any).revoked) {
+        res.status(410).json({ valid: false, revoked: true, error: "Dieses Dokument wurde widerrufen. Die Betreuungszusage wurde nachträglich zurückgezogen oder storniert." });
+        return;
+      }
       res.json({
         valid: true,
         studentName: doc.studentName,
