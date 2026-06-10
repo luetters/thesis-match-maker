@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { Link } from "wouter";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
@@ -37,7 +37,7 @@ type ExaminerListItem = {
   programmes?: Array<{ id: number; name: string; abbreviation: string; level: string; pictogramUrl?: string | null }>;
 };
 
-function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
+function ExaminerCard({ examiner, highlightTags }: { examiner: ExaminerListItem; highlightTags?: string[] }) {
   const { t } = useLanguage();
   const D = t.directory;
   const profile = examiner.profile;
@@ -47,11 +47,14 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
   const isSecondExaminer = (profile as { isSecondExaminer?: number } | null | undefined)?.isSecondExaminer === 1;
   const activeSupervisions = (examiner as any).activeSupervisions as number | undefined;
   const isFictitious = (examiner.user as any)?.isFictitiousExample === 1;
+  const [expanded, setExpanded] = useState(false);
+
+  const hasVitaContent = profile?.bio || profile?.researchFocus || (tags.length > 0);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="p-5 pb-4">
+      <div className="p-5 pb-4 flex-1">
         {isFictitious && (
           <div className="mb-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 w-fit">
             <svg className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,56 +103,134 @@ function ExaminerCard({ examiner }: { examiner: ExaminerListItem }) {
           </div>
         </div>
 
-        {/* Bio */}
+        {/* Bio (immer sichtbar, 2 Zeilen) */}
         {profile?.bio && (
           <p className="text-sm text-gray-600 mt-3 line-clamp-2">{profile.bio}</p>
         )}
 
-        {/* Research Focus */}
-        {profile?.researchFocus && (
-          <p className="text-xs text-gray-500 mt-2 italic line-clamp-1">
-            {D.researchFocusLabel} {profile.researchFocus}
-          </p>
+        {/* Tags (hervorgehoben wenn gefiltert) */}
+        {tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {tags.slice(0, 4).map((tag) => {
+              const isHighlighted = highlightTags?.some(
+                (h) => tag.toLowerCase().includes(h.toLowerCase())
+              );
+              return (
+                <span
+                  key={tag}
+                  className="px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: isHighlighted ? "#76B900" : "#F1F8E9",
+                    color: isHighlighted ? "#fff" : "#4A7C00",
+                  }}
+                >
+                  {tag}
+                </span>
+              );
+            })}
+            {tags.length > 4 && (
+              <span className="px-2 py-0.5 rounded-full text-xs text-gray-400 bg-gray-50">
+                +{tags.length - 4}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Studiengänge */}
+        {programmes.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {programmes.slice(0, 4).map((p) => (
+              <span
+                key={p.id}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
+                title={p.name}
+              >
+                <ProgrammeLogo abbreviation={p.abbreviation} pictogramUrl={p.pictogramUrl} size="xs" />
+                {p.abbreviation}
+              </span>
+            ))}
+            {programmes.length > 4 && (
+              <span className="px-2 py-0.5 rounded-full text-xs text-gray-400 bg-gray-50">
+                +{programmes.length - 4}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
-          {tags.slice(0, 4).map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 rounded-full text-xs font-medium"
-              style={{ backgroundColor: "#F1F8E9", color: "#4A7C00" }}
+      {/* Aufklappbare Vita / Forschungsgebiete */}
+      {hasVitaContent && (
+        <div className="border-t border-gray-50">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Vita &amp; Forschungsgebiete
+            </span>
+            <svg
+              className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
-              {tag}
-            </span>
-          ))}
-          {tags.length > 4 && (
-            <span className="px-2 py-0.5 rounded-full text-xs text-gray-400 bg-gray-50">
-              +{tags.length - 4}
-            </span>
-          )}
-        </div>
-      )}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-      {/* Studiengänge */}
-      {programmes.length > 0 && (
-        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
-          {programmes.slice(0, 4).map((p) => (
-            <span
-              key={p.id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
-              title={p.name}
-            >
-              <ProgrammeLogo abbreviation={p.abbreviation} pictogramUrl={p.pictogramUrl} size="xs" />
-              {p.abbreviation}
-            </span>
-          ))}
-          {programmes.length > 4 && (
-            <span className="px-2 py-0.5 rounded-full text-xs text-gray-400 bg-gray-50">
-              +{programmes.length - 4}
-            </span>
+          {expanded && (
+            <div className="px-5 pb-4 space-y-3 bg-gray-50 border-t border-gray-100">
+              {/* Vollständige Bio */}
+              {profile?.bio && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 mt-3">Kurzbiografie</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{profile.bio}</p>
+                </div>
+              )}
+
+              {/* Forschungsgebiete */}
+              {profile?.researchFocus && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Forschungsgebiete</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{profile.researchFocus}</p>
+                </div>
+              )}
+
+              {/* Alle Tags */}
+              {tags.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Themengebiete &amp; Schlagworte</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => {
+                      const isHighlighted = highlightTags?.some(
+                        (h) => tag.toLowerCase().includes(h.toLowerCase())
+                      );
+                      return (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{
+                            backgroundColor: isHighlighted ? "#76B900" : "#F1F8E9",
+                            color: isHighlighted ? "#fff" : "#4A7C00",
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Sprechstunde */}
+              {profile?.officeHours && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Sprechstunde</p>
+                  <p className="text-sm text-gray-700">{profile.officeHours}</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -226,11 +307,16 @@ export default function ExaminerDirectory() {
   const [filterProgramme, setFilterProgramme] = useState<number | "">("");
   const [filterCapacity, setFilterCapacity] = useState<"all" | "available" | "partial">("all");
   const [filterRole, setFilterRole] = useState<"all" | "first" | "second">("all");
+  const [filterTag, setFilterTag] = useState<string>("");
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery(undefined, {
     enabled: !!user,
   });
   const { data: programmes } = trpc.programmes.list.useQuery(undefined, {
+    enabled: !!user,
+  });
+  const { data: allTags } = trpc.examiner.allTags.useQuery(undefined, {
     enabled: !!user,
   });
 
@@ -250,6 +336,7 @@ export default function ExaminerDirectory() {
     const name = ex.user?.name ?? "";
     const dept = ex.profile?.department ?? "";
     const bio = ex.profile?.bio ?? "";
+    const researchFocus = ex.profile?.researchFocus ?? "";
     const tags = Array.isArray(ex.profile?.tags) ? (ex.profile.tags as string[]).join(" ") : "";
     const searchLower = search.toLowerCase();
 
@@ -257,7 +344,8 @@ export default function ExaminerDirectory() {
       name.toLowerCase().includes(searchLower) ||
       dept.toLowerCase().includes(searchLower) ||
       bio.toLowerCase().includes(searchLower) ||
-      tags.toLowerCase().includes(searchLower);
+      tags.toLowerCase().includes(searchLower) ||
+      researchFocus.toLowerCase().includes(searchLower);
 
     const matchesProgramme = !filterProgramme ||
       (ex as ExaminerListItem).programmes?.some((p) => p.id === filterProgramme);
@@ -269,17 +357,31 @@ export default function ExaminerDirectory() {
       filterCapacity === "all" ||
       (filterCapacity === "available" && ratio !== null && ratio < 0.8) ||
       (filterCapacity === "partial" && ratio !== null && ratio >= 0.5 && ratio < 0.8);
+
     const isSecond = (ex.profile as { isSecondExaminer?: number } | null)?.isSecondExaminer === 1;
     const matchesRole =
       filterRole === "all" ||
       (filterRole === "first" && !isSecond) ||
       (filterRole === "second" && isSecond);
 
-    return matchesSearch && matchesProgramme && matchesCapacity && matchesRole;
+    const matchesTag = !filterTag ||
+      (Array.isArray(ex.profile?.tags) &&
+        (ex.profile.tags as string[]).some((tag) =>
+          tag.toLowerCase().includes(filterTag.toLowerCase())
+        )) ||
+      (ex.profile?.researchFocus ?? "").toLowerCase().includes(filterTag.toLowerCase());
+
+    return matchesSearch && matchesProgramme && matchesCapacity && matchesRole && matchesTag;
   });
 
-  const bachelorProgrammes = (programmes ?? []).filter((p) => p.level === "bachelor");
-  const masterProgrammes = (programmes ?? []).filter((p) => p.level === "master");
+  const hasActiveFilters = search || filterProgramme || filterCapacity !== "all" || filterRole !== "all" || filterTag;
+
+  // Tags für Dropdown filtern (Suche im Tag-Dropdown)
+  const [tagSearch, setTagSearch] = useState("");
+  const filteredTagOptions = useMemo(() =>
+    (allTags ?? []).filter((t) => !tagSearch || t.toLowerCase().includes(tagSearch.toLowerCase())),
+    [allTags, tagSearch]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -329,91 +431,208 @@ export default function ExaminerDirectory() {
 
       {/* Filters */}
       <div className="bg-white border-b border-gray-100 py-4 px-4">
-        <div className="max-w-6xl mx-auto flex flex-wrap gap-3 items-center">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={D.searchPlaceholder}
-              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            />
-          </div>
+        <div className="max-w-6xl mx-auto space-y-3">
+          {/* Zeile 1: Freitextsuche + Studiengang */}
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={D.searchPlaceholder}
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
 
-          {/* Studiengang Filter */}
-          {(programmes ?? []).length > 0 && (
-            <ProgrammeSelect
-              options={(programmes ?? []).map((p) => ({
-                id: p.id,
-                name: p.name,
-                abbreviation: p.abbreviation ?? p.name.slice(0, 4),
-                level: p.level,
-                pictogramUrl: (p as any).pictogramUrl,
-              }))}
-              value={filterProgramme}
-              onChange={(id) => setFilterProgramme(id)}
-              placeholder={D.allProgrammesOpt}
-              grouped
-              className="w-56"
-            />
-          )}
+            {/* Studiengang Filter */}
+            {(programmes ?? []).length > 0 && (
+              <ProgrammeSelect
+                options={(programmes ?? []).map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  abbreviation: p.abbreviation ?? p.name.slice(0, 4),
+                  level: p.level,
+                  pictogramUrl: (p as any).pictogramUrl,
+                }))}
+                value={filterProgramme}
+                onChange={(id) => setFilterProgramme(id)}
+                placeholder={D.allProgrammesOpt}
+                grouped
+                className="w-56"
+              />
+            )}
 
-          {/* Rollenfilter */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-            {(["all", "first", "second"] as const).map((r) => (
+            {/* Tag / Forschungsgebiet Filter */}
+            <div className="relative">
               <button
-                key={r}
-                onClick={() => setFilterRole(r)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  filterRole === r
-                    ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-primary text-white shadow"
-                    : "text-gray-500 hover:text-gray-700"
+                onClick={() => setShowTagDropdown((v) => !v)}
+                className={`flex items-center gap-2 px-3 py-2.5 border rounded-xl text-sm transition-all ${
+                  filterTag
+                    ? "border-[#76B900] bg-[#F1F8E9] text-[#4A7C00] font-medium"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
                 }`}
               >
-                {r === "all" ? D.roleAll : r === "first" ? D.roleFirst : D.roleSecond}
-              </button>
-            ))}
-          </div>
-
-          {/* Kapazitäts-Filter */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-            {([
-              { value: "all" as const, label: D.allCapacities },
-              { value: "available" as const, label: D.freeCapacity },
-              { value: "partial" as const, label: D.partialCapacity },
-            ]).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilterCapacity(opt.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                  filterCapacity === opt.value
-                    ? opt.value === "available"
-                      ? "bg-primary text-white shadow"
-                      : opt.value === "partial"
-                        ? "bg-amber-500 text-white shadow"
-                        : "bg-white text-gray-800 shadow"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {(opt.value === "available" || opt.value === "partial") && (
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span className="max-w-[120px] truncate">
+                  {filterTag || "Themengebiet / Schlagwort"}
+                </span>
+                {filterTag ? (
+                  <span
+                    className="ml-1 text-[#76B900] hover:text-red-500 font-bold"
+                    onClick={(e) => { e.stopPropagation(); setFilterTag(""); }}
+                  >×</span>
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 )}
-                {opt.label}
               </button>
-            ))}
+
+              {showTagDropdown && (
+                <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-xl border border-gray-200 shadow-lg z-20">
+                  <div className="p-2 border-b border-gray-100">
+                    <input
+                      type="text"
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      placeholder="Schlagwort suchen…"
+                      className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#76B900]"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-52 overflow-y-auto py-1">
+                    <button
+                      onClick={() => { setFilterTag(""); setShowTagDropdown(false); setTagSearch(""); }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
+                    >
+                      Alle Themengebiete
+                    </button>
+                    {filteredTagOptions.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-gray-400">Keine Schlagworte gefunden</p>
+                    ) : (
+                      filteredTagOptions.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => { setFilterTag(tag); setShowTagDropdown(false); setTagSearch(""); }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
+                            filterTag === tag ? "font-semibold text-[#4A7C00]" : "text-gray-700"
+                          }`}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: "#76B900" }}
+                          />
+                          {tag}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Result count */}
-          <span className="text-sm text-gray-400 ml-auto">
-            {filtered.length} {filtered.length !== 1 ? D.resultsPlural : D.results}
-          </span>
+          {/* Zeile 2: Rolle + Kapazität + Ergebniszahl */}
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Rollenfilter */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              {(["all", "first", "second"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setFilterRole(r)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filterRole === r
+                      ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-primary text-white shadow"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {r === "all" ? D.roleAll : r === "first" ? D.roleFirst : D.roleSecond}
+                </button>
+              ))}
+            </div>
+
+            {/* Kapazitäts-Filter */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              {([
+                { value: "all" as const, label: D.allCapacities },
+                { value: "available" as const, label: D.freeCapacity },
+                { value: "partial" as const, label: D.partialCapacity },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilterCapacity(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    filterCapacity === opt.value
+                      ? opt.value === "available"
+                        ? "bg-primary text-white shadow"
+                        : opt.value === "partial"
+                          ? "bg-amber-500 text-white shadow"
+                          : "bg-white text-gray-800 shadow"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {(opt.value === "available" || opt.value === "partial") && (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1.5 align-middle" />
+                  )}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Result count + Reset */}
+            <div className="ml-auto flex items-center gap-3">
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    setSearch(""); setFilterProgramme(""); setFilterCapacity("all");
+                    setFilterRole("all"); setFilterTag("");
+                  }}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Filter zurücksetzen
+                </button>
+              )}
+              <span className="text-sm text-gray-400">
+                {filtered.length} {filtered.length !== 1 ? D.resultsPlural : D.results}
+              </span>
+            </div>
+          </div>
+
+          {/* Aktive Filter-Chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2">
+              {search && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                  Suche: „{search}"
+                  <button onClick={() => setSearch("")} className="hover:text-red-500 ml-0.5">×</button>
+                </span>
+              )}
+              {filterTag && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-[#F1F8E9] text-[#4A7C00]">
+                  Thema: {filterTag}
+                  <button onClick={() => setFilterTag("")} className="hover:text-red-500 ml-0.5">×</button>
+                </span>
+              )}
+              {filterProgramme && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
+                  Studiengang: {(programmes ?? []).find((p) => p.id === filterProgramme)?.abbreviation ?? filterProgramme}
+                  <button onClick={() => setFilterProgramme("")} className="hover:text-red-500 ml-0.5">×</button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -434,13 +653,14 @@ export default function ExaminerDirectory() {
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">{D.noExaminers}</h3>
             <p className="text-sm text-gray-500">
-              {search || filterProgramme || filterCapacity !== "all" || filterRole !== "all"
-                ? D.noExaminersFiltered
-                : D.noExaminersEmpty}
+              {hasActiveFilters ? D.noExaminersFiltered : D.noExaminersEmpty}
             </p>
-            {(search || filterProgramme || filterCapacity !== "all") && (
+            {hasActiveFilters && (
               <button
-                onClick={() => { setSearch(""); setFilterProgramme(""); setFilterCapacity("all"); setFilterRole("all"); }}
+                onClick={() => {
+                  setSearch(""); setFilterProgramme(""); setFilterCapacity("all");
+                  setFilterRole("all"); setFilterTag("");
+                }}
                 className="mt-4 text-sm font-medium transition-opacity hover:opacity-80"
                 style={{ color: "#76B900" }}
               >
@@ -451,11 +671,23 @@ export default function ExaminerDirectory() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((ex) => (
-              <ExaminerCard key={ex.user.id} examiner={ex as ExaminerListItem} />
+              <ExaminerCard
+                key={ex.user.id}
+                examiner={ex as ExaminerListItem}
+                highlightTags={filterTag ? [filterTag] : search ? [search] : undefined}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Dropdown schließen bei Klick außerhalb */}
+      {showTagDropdown && (
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => setShowTagDropdown(false)}
+        />
+      )}
     </div>
   );
 }

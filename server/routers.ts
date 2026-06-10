@@ -910,6 +910,17 @@ export const appRouter = router({
       return getAllExaminers();
     }),
 
+    // Aggregierte Tags / Forschungsschlagworte aller Prüfer:innen
+    allTags: protectedProcedure.query(async () => {
+      const examiners = await getAllExaminers();
+      const tagSet = new Set<string>();
+      for (const ex of examiners) {
+        const tags = Array.isArray(ex.profile?.tags) ? ex.profile.tags as string[] : [];
+        for (const t of tags) tagSet.add(t);
+      }
+      return Array.from(tagSet).sort();
+    }),
+
     // Prüfer: Eigenes Profil abrufen
     myProfile: anyExaminerProcedure.query(async ({ ctx }) => {
       return getExaminerProfileByUserId(ctx.user.id);
