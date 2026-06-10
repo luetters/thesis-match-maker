@@ -4,9 +4,18 @@
  */
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+// Logo als Buffer einlesen (einmalig beim Modulstart)
+let logoBuffer: Buffer | null = null;
+try {
+  logoBuffer = readFileSync(join(__dirname, "ThesisMatchMaker.jpg"));
+} catch {
+  logoBuffer = null;
+}
 
 export interface ThesisPdfData {
-  // Inhaltsdaten
   studentName: string;
   matrikelNr?: string | null;
   programmeName?: string | null;
@@ -17,7 +26,6 @@ export interface ThesisPdfData {
   secondExaminerName?: string | null;
   targetSemester?: string | null;
   language?: string | null;
-  // Verifikation
   verifyUrl: string;
   verifyToken: string;
   createdAt: Date;
@@ -37,12 +45,11 @@ function formatDate(d: Date): string {
 }
 
 function degreeLabel(type?: string | null): string {
-  if (!type) return "–";
+  if (!type) return "-";
   return type === "master" ? "Master" : "Bachelor";
 }
 
 export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
-  // QR-Code als PNG-Buffer erzeugen
   const qrBuffer = await QRCode.toBuffer(data.verifyUrl, {
     errorCorrectionLevel: "H",
     width: 120,
@@ -56,7 +63,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       margins: { top: 60, bottom: 60, left: 60, right: 60 },
       info: {
         Title: "Thesis-Anmeldedokument / Thesis Registration Document",
-        Author: "HTW Berlin – Thesis-Management",
+        Author: "HTW Berlin - Thesis-Management",
         Subject: data.title,
         Keywords: "HTW Berlin, Abschlussarbeit, Thesis",
       },
@@ -67,27 +74,27 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const pageWidth = doc.page.width - 120; // usable width
+    const pageWidth = doc.page.width - 120;
 
-    // ── Header-Balken ──────────────────────────────────────────────────────────
+    // Header-Balken (gruener Streifen oben)
     doc.rect(0, 0, doc.page.width, 8).fill(HTW_GREEN);
 
-    // ── Logo-Platzhalter (links) + Hochschulname + Fachbereich (rechts) ─────────
-    doc.moveDown(0.5);
-
-    // Logo-Platzhalter: Rahmen mit Kreuz-Diagonalen
+    // Logo links
     const logoX = 60;
-    const logoY = 18;
+    const logoY = 14;
     const logoW = 110;
-    const logoH = 52;
-    doc.rect(logoX, logoY, logoW, logoH).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
-    doc.moveTo(logoX, logoY).lineTo(logoX + logoW, logoY + logoH).strokeColor("#d1fae5").lineWidth(0.5).stroke();
-    doc.moveTo(logoX + logoW, logoY).lineTo(logoX, logoY + logoH).strokeColor("#d1fae5").lineWidth(0.5).stroke();
-    doc
-      .fontSize(7)
-      .font("Helvetica")
-      .fillColor(HTW_GREEN)
-      .text("[Hochschul-Logo]", logoX, logoY + logoH / 2 - 4, { width: logoW, align: "center" });
+    const logoH = 56;
+
+    if (logoBuffer) {
+      doc.image(logoBuffer, logoX, logoY, { width: logoW, height: logoH });
+    } else {
+      doc.rect(logoX, logoY, logoW, logoH).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
+      doc
+        .fontSize(7)
+        .font("Helvetica")
+        .fillColor(HTW_GREEN)
+        .text("[Logo]", logoX, logoY + logoH / 2 - 4, { width: logoW, align: "center" });
+    }
 
     // Hochschulname und Fachbereich rechts neben dem Logo
     doc
@@ -99,14 +106,14 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(8.5)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Hochschule für Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 24);
+      .text("Hochschule fur Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 24);
     doc
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Fachbereich 3 – Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 38);
+      .text("Fachbereich 3 - Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 38);
 
-    // ── Titel ──────────────────────────────────────────────────────────────────
+    // Titel
     doc
       .fontSize(16)
       .font("Helvetica-Bold")
@@ -121,7 +128,6 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     // Trennlinie
     doc.moveTo(60, 132).lineTo(60 + pageWidth, 132).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
 
-    // ── Thema ──────────────────────────────────────────────────────────────────
     doc.moveDown(0.5);
     let y = 148;
 
@@ -145,7 +151,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(11)
         .font("Helvetica-Bold")
         .fillColor(HTW_DARK)
-        .text(value || "–", 64, currentY + 11, { width: pageWidth - 8 });
+        .text(value || "-", 64, currentY + 11, { width: pageWidth - 8 });
       return currentY + bgHeight + 6;
     }
 
@@ -166,7 +172,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(10)
         .font("Helvetica")
         .fillColor(HTW_DARK)
-        .text(value || "–", 64, currentY + 11, { width: halfW });
+        .text(value || "-", 64, currentY + 11, { width: halfW });
 
       if (col2) {
         const x2 = 64 + halfW + 12;
@@ -179,7 +185,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
           .fontSize(10)
           .font("Helvetica")
           .fillColor(HTW_DARK)
-          .text(col2.value || "–", x2, currentY + 11, { width: halfW });
+          .text(col2.value || "-", x2, currentY + 11, { width: halfW });
       }
       return currentY + 32;
     }
@@ -196,7 +202,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       {
         labelDe: "Matrikelnummer",
         labelEn: "Matriculation No.",
-        value: data.matrikelNr ?? "–",
+        value: data.matrikelNr ?? "-",
       }
     );
 
@@ -204,7 +210,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     y = drawRow(
       "Studiengang",
       "Programme",
-      data.programmeName ?? "–",
+      data.programmeName ?? "-",
       y,
       {
         labelDe: "Abschluss",
@@ -217,12 +223,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     y = drawRow(
       "Erstgutachter:in",
       "First Supervisor",
-      data.firstExaminerName ?? "–",
+      data.firstExaminerName ?? "-",
       y,
       {
         labelDe: "Zweitgutachter:in",
         labelEn: "Second Supervisor",
-        value: data.secondExaminerName ?? "–",
+        value: data.secondExaminerName ?? "-",
       }
     );
 
@@ -230,7 +236,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     y = drawRow(
       "Semester der Thesis",
       "Semester of Thesis",
-      data.targetSemester ?? "–",
+      data.targetSemester ?? "-",
       y,
       {
         labelDe: "Sprache der Thesis",
@@ -247,28 +253,26 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       y
     );
 
-    // ── Trennlinie vor Verifikation ────────────────────────────────────────────
+    // Trennlinie vor Verifikation
     doc.moveTo(60, y + 4).lineTo(60 + pageWidth, y + 4).strokeColor("#e5e7eb").lineWidth(0.5).stroke();
     y += 16;
 
-    // ── Verifikations-Abschnitt ────────────────────────────────────────────────
-    // QR-Code rechts
+    // Verifikations-Abschnitt
     const qrX = 60 + pageWidth - 120;
     const qrY = y;
     doc.image(qrBuffer, qrX, qrY, { width: 100, height: 100 });
 
-    // Text links
     doc
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Echtheitsprüfung / Document Verification", 64, y);
+      .text("Echtheitsprufung / Document Verification", 64, y);
     doc
       .fontSize(8)
       .font("Helvetica")
       .fillColor(GRAY)
       .text(
-        "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:\n" +
+        "Dieses Dokument kann durch Scannen des QR-Codes oder uber folgenden Link verifiziert werden:\n" +
           "This document can be verified by scanning the QR code or via the following link:",
         64,
         y + 14,
@@ -280,14 +284,13 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fillColor(HTW_GREEN)
       .text(data.verifyUrl, 64, y + 50, { width: qrX - 80 });
 
-    // Token-Anzeige
     doc
       .fontSize(7)
       .font("Helvetica")
       .fillColor(GRAY)
       .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 66, { width: qrX - 80 });
 
-    // ── Footer-Balken ──────────────────────────────────────────────────────────
+    // Footer-Balken
     const footerY = doc.page.height - 40;
     doc.rect(0, footerY, doc.page.width, 40).fill(HTW_DARK);
     doc
@@ -295,7 +298,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .font("Helvetica")
       .fillColor("#ffffff")
       .text(
-        "HTW Berlin – Hochschule für Technik und Wirtschaft Berlin  |  FB 3 Wirtschafts- und Rechtswissenschaften  |  thesis.htw-berlin.com",
+        "HTW Berlin - Hochschule fur Technik und Wirtschaft Berlin  |  FB 3 Wirtschafts- und Rechtswissenschaften  |  thesis.htw-berlin.com",
         60,
         footerY + 14,
         { align: "center", width: pageWidth }
