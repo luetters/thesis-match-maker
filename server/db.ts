@@ -214,8 +214,10 @@ export async function getThesisRequestById(id: number) {
 export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
-  // Alias für den LEFT JOIN auf den Erstbetreuer
+  // Aliase für LEFT JOINs auf Prüfer:innen
   const wantedExaminerAlias = aliasedTable(users, "wanted_examiner");
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_tbs");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_tbs");
   return db
     .select({
       id: thesisRequests.id,
@@ -235,13 +237,26 @@ export async function getThesisRequestsByStudent(studentId: number) {
       secondExaminerId: thesisRequests.secondExaminerId,
       studentId: thesisRequests.studentId,
       wantedExaminerId: thesisRequests.wantedExaminerId,
+      // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
       wantedExaminerLastName: wantedExaminerAlias.lastName,
       wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
+      // Zugewiesene Erstprüfer:in
+      firstExaminerName: firstExaminerAlias.name,
+      firstExaminerFirstName: firstExaminerAlias.firstName,
+      firstExaminerLastName: firstExaminerAlias.lastName,
+      firstExaminerAcademicTitle: firstExaminerAlias.academicTitle,
+      // Zugewiesene Zweitprüfer:in
+      secondExaminerName: secondExaminerAlias.name,
+      secondExaminerFirstName: secondExaminerAlias.firstName,
+      secondExaminerLastName: secondExaminerAlias.lastName,
+      secondExaminerAcademicTitle: secondExaminerAlias.academicTitle,
     })
     .from(thesisRequests)
     .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(eq(thesisRequests.studentId, studentId))
     .orderBy(desc(thesisRequests.createdAt));
 }
@@ -1625,6 +1640,9 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
     id: examinerProfiles.id,
     userId: examinerProfiles.userId,
     name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
     email: users.email,
     role: users.role,
     title: examinerProfiles.title,
@@ -1708,6 +1726,9 @@ export async function getQualifiedExaminers(department: string) {
     id: examinerProfiles.id,
     userId: examinerProfiles.userId,
     name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
     email: users.email,
     title: examinerProfiles.title,
     department: examinerProfiles.department,
@@ -4050,6 +4071,9 @@ export async function getAllSecondExaminerCandidates() {
   const candidates = await db.select({
     id: users.id,
     name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
     email: users.email,
     title: examinerProfiles.title,
     department: examinerProfiles.department,
@@ -4794,11 +4818,13 @@ export async function getAssignedExaminers(studentId: number) {
     .select({
       id: users.id,
       name: users.name,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      academicTitle: users.academicTitle,
       email: users.email,
       avatarUrl: users.avatarUrl,
       phone: users.phone,
       department: users.department,
-      academicTitle: users.academicTitle,
       officeRoom: users.officeRoom,
       officeHours: users.officeHours,
       website: users.website,

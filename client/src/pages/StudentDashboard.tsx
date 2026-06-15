@@ -998,25 +998,66 @@ function MyRequests() {
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                {/* Angefragte Prüfer:in – immer anzeigen */}
-                {((req as any).wantedExaminerId || req.examinerId) && (
+                {/* Angefragte Prüfer:in (wantedExaminer) – immer anzeigen */}
+                {(req as any).wantedExaminerId && (
                   <span className="flex items-center gap-1 text-xs text-gray-600">
                     <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
+                    <span className="text-gray-400 text-xs">Anfrage an:</span>
                     <Link
-                      href={`/profile/${(req as any).wantedExaminerId ?? req.examinerId}`}
+                      href={`/profile/${(req as any).wantedExaminerId}`}
                       className="text-[#2563eb] hover:underline font-medium"
                     >
                       {buildFullName({
                         firstName: (req as any).wantedExaminerFirstName,
                         lastName: (req as any).wantedExaminerLastName,
                         academicTitle: (req as any).wantedExaminerAcademicTitle,
-                        name: (req as any).wantedExaminerName ?? (req as any).examinerName,
-                      }) || `Prüfer:in #${(req as any).wantedExaminerId ?? req.examinerId}`}
+                        name: (req as any).wantedExaminerName,
+                      }) || `Prüfer:in #${(req as any).wantedExaminerId}`}
                     </Link>
                   </span>
                 )}
+                {/* Zugewiesene Erstprüfer:in */}
+                {req.examinerId && (req as any).firstExaminerFirstName || (req as any).firstExaminerName ? (
+                  <span className="flex items-center gap-1 text-xs text-gray-600">
+                    <svg className="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-gray-400 text-xs">1. Prüfer:in:</span>
+                    <Link
+                      href={`/profile/${req.examinerId}`}
+                      className="text-[#2563eb] hover:underline font-medium"
+                    >
+                      {buildFullName({
+                        firstName: (req as any).firstExaminerFirstName,
+                        lastName: (req as any).firstExaminerLastName,
+                        academicTitle: (req as any).firstExaminerAcademicTitle,
+                        name: (req as any).firstExaminerName,
+                      }) || `Prüfer:in #${req.examinerId}`}
+                    </Link>
+                  </span>
+                ) : null}
+                {/* Zugewiesene Zweitprüfer:in */}
+                {req.secondExaminerId && (req as any).secondExaminerFirstName || (req as any).secondExaminerName ? (
+                  <span className="flex items-center gap-1 text-xs text-gray-600">
+                    <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-gray-400 text-xs">2. Prüfer:in:</span>
+                    <Link
+                      href={`/profile/${req.secondExaminerId}`}
+                      className="text-[#2563eb] hover:underline font-medium"
+                    >
+                      {buildFullName({
+                        firstName: (req as any).secondExaminerFirstName,
+                        lastName: (req as any).secondExaminerLastName,
+                        academicTitle: (req as any).secondExaminerAcademicTitle,
+                        name: (req as any).secondExaminerName,
+                      }) || `Prüfer:in #${req.secondExaminerId}`}
+                    </Link>
+                  </span>
+                ) : null}
                 {/* Datum der Anfrage – immer anzeigen */}
                 {req.createdAt && (
                   <span className="flex items-center gap-1 text-xs text-gray-400">
