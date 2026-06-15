@@ -102,6 +102,8 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
   const [showPreview, setShowPreview] = useState(false);
   const [examinerSearch, setExaminerSearch] = useState("");
   const [examinerSort, setExaminerSort] = useState<"alpha" | "available" | "capacity">("alpha");
+  const [examinerDropdownOpen, setExaminerDropdownOpen] = useState(false);
+  const examinerDropdownRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -120,6 +122,18 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
     { firstExaminerId: form.wantedExaminerId },
     { enabled: form.wantedExaminerId > 0 }
   );
+
+  // Click-Outside-Handler für Prüfer-Dropdown
+  useEffect(() => {
+    if (!examinerDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (examinerDropdownRef.current && !examinerDropdownRef.current.contains(e.target as Node)) {
+        setExaminerDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [examinerDropdownOpen]);
 
   // Gespeicherten Entwurf beim ersten Laden prüfen
   useEffect(() => {
@@ -749,86 +763,131 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                 </button>
               )}
             </div>
-            <select
-              required
-              value={form.wantedExaminerId}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                setForm((f) => ({ ...f, wantedExaminerId: val }));
-                if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" }));
-              }}
-              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
-                errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
-              }`}
-              size={examinerSearch ? Math.min(8, (firstExaminers as any[]).filter((e: any) => {
-                const q = examinerSearch.toLowerCase();
+            {/* Custom Dropdown mit Fortschrittsbalken */}
+            {(() => {
+              // Suchfilter anwenden
+              const q = examinerSearch.toLowerCase();
+              const filtered = (firstExaminers as any[]).filter((e: any) => {
+                if (!q) return true;
                 const name = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }).toLowerCase();
                 const dept = (e.department ?? "").toLowerCase();
                 return name.includes(q) || dept.includes(q);
-              }).length + 1) : 1}
-            >
-              <option value={0}>{t.student.pleaseSelect}</option>
-              {(() => {
-                // Suchfilter anwenden
-                const q = examinerSearch.toLowerCase();
-                const filtered = (firstExaminers as any[]).filter((e: any) => {
-                  if (!q) return true;
-                  const name = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }).toLowerCase();
-                  const dept = (e.department ?? "").toLowerCase();
-                  return name.includes(q) || dept.includes(q);
-                });
-                if (filtered.length === 0) {
-                  return [<option key="no-result" disabled value="">Keine Treffer für "{examinerSearch}"</option>];
+              });
+              const sorted = [...filtered].sort((a: any, b: any) => {
+                if (examinerSort === "available") {
+                  const aFull = (a.maxSupervisions != null && a.activeSupervisions != null && a.activeSupervisions >= a.maxSupervisions);
+                  const bFull = (b.maxSupervisions != null && b.activeSupervisions != null && b.activeSupervisions >= b.maxSupervisions);
+                  if (aFull !== bFull) return aFull ? 1 : -1;
+                } else if (examinerSort === "capacity") {
+                  const aFree = (a.maxSupervisions ?? 5) - (a.activeSupervisions ?? 0);
+                  const bFree = (b.maxSupervisions ?? 5) - (b.activeSupervisions ?? 0);
+                  if (aFree !== bFree) return bFree - aFree;
                 }
-                // Sortierung anwenden
-                const sorted = [...filtered].sort((a: any, b: any) => {
-                  if (examinerSort === "available") {
-                    // Verfügbare zuerst (nicht ausgelastet), dann alphabetisch
-                    const aFull = (a.maxSupervisions != null && a.activeSupervisions != null && a.activeSupervisions >= a.maxSupervisions);
-                    const bFull = (b.maxSupervisions != null && b.activeSupervisions != null && b.activeSupervisions >= b.maxSupervisions);
-                    if (aFull !== bFull) return aFull ? 1 : -1;
-                  } else if (examinerSort === "capacity") {
-                    // Nach freier Kapazität absteigend (meiste freie Plätze zuerst)
-                    const aFree = (a.maxSupervisions ?? 5) - (a.activeSupervisions ?? 0);
-                    const bFree = (b.maxSupervisions ?? 5) - (b.activeSupervisions ?? 0);
-                    if (aFree !== bFree) return bFree - aFree;
-                  }
-                  // Alphabetisch nach Nachname (Primär- oder Fallback-Sortierung)
-                  const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
-                  const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
-                  return lastA.localeCompare(lastB, "de");
-                });
-                const result: React.ReactNode[] = [];
-                let currentLetter = "";
-                sorted.forEach((examiner: any) => {
-                  const lastName = examiner.lastName ?? (examiner.name ?? "").trim().split(" ").pop() ?? "";
-                  const letter = lastName.charAt(0).toUpperCase();
-                  // Buchstaben-Trenner nur bei alphabetischer Sortierung
-                  if (examinerSort === "alpha" && letter !== currentLetter) {
-                    currentLetter = letter;
-                    result.push(<option key={`sep-${letter}`} disabled value="">── {letter} ──</option>);
-                  }
-                  const active = (examiner as any).activeSupervisions as number | undefined;
-                  const max = (examiner as any).maxSupervisions as number | undefined;
-                  const isFull = max != null && active != null && active >= max;
-                  const isAlmost = !isFull && max != null && active != null && active / max >= 0.8;
-                  const capacityText = max != null && active != null
-                    ? isFull
-                      ? ` \u2014 \u26d4 ${t.student.capacityFull} (${active}/${max})`
-                      : isAlmost
-                        ? ` \u2014 \u26a0\ufe0f ${t.student.capacityAlmost} (${active}/${max})`
-                        : ` \u2014 \u2705 ${active}/${max}`
-                    : "";
-                  const displayName = buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.academicTitle ?? examiner.title, name: examiner.name });
-                  result.push(
-                    <option key={examiner.id} value={examiner.id} disabled={isFull}>
-                      {displayName}{examiner.department ? ` | ${examiner.department}` : ""}{capacityText}
-                    </option>
-                  );
-                });
-                return result;
-              })()}
-            </select>
+                const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
+                const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
+                return lastA.localeCompare(lastB, "de");
+              });
+              const selectedExaminer = (firstExaminers as any[]).find((e: any) => e.id === form.wantedExaminerId);
+              const selectedName = selectedExaminer
+                ? buildFullName({ firstName: selectedExaminer.firstName, lastName: selectedExaminer.lastName, academicTitle: selectedExaminer.academicTitle ?? selectedExaminer.title, name: selectedExaminer.name })
+                : t.student.pleaseSelect;
+              return (
+                <div ref={examinerDropdownRef} className="relative">
+                  {/* Trigger-Button */}
+                  <button
+                    type="button"
+                    onClick={() => setExaminerDropdownOpen((o) => !o)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 border rounded-xl text-sm bg-white transition-all focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 ${
+                      errors.wantedExaminerId ? "border-red-400" : examinerDropdownOpen ? "border-[#76B900]" : "border-gray-200"
+                    }`}
+                  >
+                    <span className={form.wantedExaminerId ? "text-gray-800" : "text-gray-400"}>{selectedName}</span>
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform ${examinerDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {/* Dropdown-Panel */}
+                  {examinerDropdownOpen && (
+                    <div
+                      className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+                      style={{ maxHeight: "320px", overflowY: "auto" }}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      {sorted.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-400 italic">Keine Treffer für „{examinerSearch}“</div>
+                      ) : (() => {
+                        const items: React.ReactNode[] = [];
+                        let currentLetter = "";
+                        sorted.forEach((examiner: any) => {
+                          const lastName = examiner.lastName ?? (examiner.name ?? "").trim().split(" ").pop() ?? "";
+                          const letter = lastName.charAt(0).toUpperCase();
+                          if (examinerSort === "alpha" && letter !== currentLetter) {
+                            currentLetter = letter;
+                            items.push(
+                              <div key={`sep-${letter}`} className="px-3 py-1 text-xs font-semibold text-gray-400 bg-gray-50 border-b border-gray-100 sticky top-0">
+                                {letter}
+                              </div>
+                            );
+                          }
+                          const active = examiner.activeSupervisions as number | undefined;
+                          const max = examiner.maxSupervisions as number | undefined;
+                          const isFull = max != null && active != null && active >= max;
+                          const isAlmost = !isFull && max != null && active != null && active / max >= 0.8;
+                          const pct = max != null && active != null ? Math.min(100, Math.round((active / max) * 100)) : null;
+                          const barColor = isFull ? "bg-red-500" : isAlmost ? "bg-amber-400" : "bg-[#76B900]";
+                          const displayName = buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.academicTitle ?? examiner.title, name: examiner.name });
+                          const isSelected = form.wantedExaminerId === examiner.id;
+                          items.push(
+                            <button
+                              key={examiner.id}
+                              type="button"
+                              disabled={isFull}
+                              onClick={() => {
+                                setForm((f) => ({ ...f, wantedExaminerId: examiner.id }));
+                                if (errors.wantedExaminerId) setErrors((er) => ({ ...er, wantedExaminerId: "" }));
+                                setExaminerDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 border-b border-gray-50 last:border-0 transition-colors ${
+                                isFull ? "opacity-50 cursor-not-allowed bg-gray-50" :
+                                isSelected ? "bg-[#76B900]/10" :
+                                "hover:bg-gray-50 cursor-pointer"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className={`text-sm font-medium truncate ${isFull ? "text-gray-400" : "text-gray-800"}`}>
+                                  {isSelected && <span className="text-[#76B900] mr-1">✓</span>}
+                                  {displayName}
+                                </span>
+                                <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+                                  {examiner.department ?? ""}
+                                </span>
+                              </div>
+                              {pct !== null && max != null && active != null && (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${barColor}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className={`text-xs font-medium whitespace-nowrap ${
+                                    isFull ? "text-red-500" : isAlmost ? "text-amber-500" : "text-[#76B900]"
+                                  }`}>
+                                    {active}/{max}
+                                    {isFull ? " ⛔" : isAlmost ? " ⚠️" : ""}
+                                  </span>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        });
+                        return items;
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {errors.wantedExaminerId && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
