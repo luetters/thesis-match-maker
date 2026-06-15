@@ -50,10 +50,16 @@ export function buildFullName(opts: {
   academicTitle?: string | null;
   name?: string | null;
 }): string {
+  const hasFirst = !!opts.firstName?.trim();
+  const hasLast = !!opts.lastName?.trim();
+  // Wenn weder Vorname noch Nachname vorhanden: name-Feld als Fallback nutzen
+  // (Legacy-Datensätze haben nur das name-Feld befüllt)
+  if (!hasFirst && !hasLast) {
+    return opts.name?.trim() ?? "";
+  }
   const parts: string[] = [];
   if (opts.academicTitle?.trim()) parts.push(opts.academicTitle.trim());
-  if (opts.firstName?.trim()) parts.push(opts.firstName.trim());
-  if (opts.lastName?.trim()) parts.push(opts.lastName.trim());
-  if (parts.length > 0) return parts.join(" ");
-  return opts.name?.trim() ?? "";
+  if (hasFirst) parts.push(opts.firstName!.trim());
+  if (hasLast) parts.push(opts.lastName!.trim());
+  return parts.join(" ");
 }
