@@ -100,6 +100,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
   const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [examinerSearch, setExaminerSearch] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -682,6 +683,31 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
           <p className="text-xs text-gray-500 -mt-2">{t.student.firstExaminerDesc}</p>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.student.firstExaminerLabel} <span className="text-red-500">*</span></label>
+            {/* Suchfeld für Prüfer:innen-Filterung */}
+            <div className="relative mb-2">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={examinerSearch}
+                onChange={(e) => setExaminerSearch(e.target.value)}
+                placeholder="Name oder Fachbereich suchen …"
+                className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 bg-white"
+              />
+              {examinerSearch && (
+                <button
+                  type="button"
+                  onClick={() => setExaminerSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Suche zurücksetzen"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <select
               required
               value={form.wantedExaminerId}
@@ -693,11 +719,28 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white ${
                 errors.wantedExaminerId ? "border-red-400" : "border-gray-200"
               }`}
+              size={examinerSearch ? Math.min(8, (firstExaminers as any[]).filter((e: any) => {
+                const q = examinerSearch.toLowerCase();
+                const name = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }).toLowerCase();
+                const dept = (e.department ?? "").toLowerCase();
+                return name.includes(q) || dept.includes(q);
+              }).length + 1) : 1}
             >
               <option value={0}>{t.student.pleaseSelect}</option>
               {(() => {
+                // Suchfilter anwenden
+                const q = examinerSearch.toLowerCase();
+                const filtered = (firstExaminers as any[]).filter((e: any) => {
+                  if (!q) return true;
+                  const name = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }).toLowerCase();
+                  const dept = (e.department ?? "").toLowerCase();
+                  return name.includes(q) || dept.includes(q);
+                });
+                if (filtered.length === 0) {
+                  return [<option key="no-result" disabled value="">Keine Treffer für "{examinerSearch}"</option>];
+                }
                 // Alphabetisch nach Nachname sortieren und Buchstabentrenner einfügen
-                const sorted = [...(firstExaminers as any[])].sort((a: any, b: any) => {
+                const sorted = [...filtered].sort((a: any, b: any) => {
                   const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
                   const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
                   return lastA.localeCompare(lastB, "de");
@@ -715,15 +758,15 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                   const max = (examiner as any).maxSupervisions as number | undefined;
                   const statusHint = max != null
                     ? active != null && active >= max
-                        ? ` \u2014 ${t.student.capacityFull}`
+                        ? ` — ${t.student.capacityFull}`
                         : active != null && active / max >= 0.8
-                          ? ` \u2014 ${t.student.capacityAlmost}`
+                          ? ` — ${t.student.capacityAlmost}`
                         : ""
                     : "";
                   const displayName = buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.academicTitle ?? examiner.title, name: examiner.name });
                   result.push(
                     <option key={examiner.id} value={examiner.id} disabled={max != null && active != null && active >= max}>
-                      {displayName}{statusHint}
+                      {displayName}{examiner.department ? ` | ${examiner.department}` : ""}{statusHint}
                     </option>
                   );
                 });
