@@ -756,17 +756,19 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                   }
                   const active = (examiner as any).activeSupervisions as number | undefined;
                   const max = (examiner as any).maxSupervisions as number | undefined;
-                  const statusHint = max != null
-                    ? active != null && active >= max
-                        ? ` — ${t.student.capacityFull}`
-                        : active != null && active / max >= 0.8
-                          ? ` — ${t.student.capacityAlmost}`
-                        : ""
+                  const isFull = max != null && active != null && active >= max;
+                  const isAlmost = !isFull && max != null && active != null && active / max >= 0.8;
+                  const capacityText = max != null && active != null
+                    ? isFull
+                      ? ` \u2014 \u26d4 ${t.student.capacityFull} (${active}/${max})`
+                      : isAlmost
+                        ? ` \u2014 \u26a0\ufe0f ${t.student.capacityAlmost} (${active}/${max})`
+                        : ` \u2014 \u2705 ${active}/${max}`
                     : "";
                   const displayName = buildFullName({ firstName: examiner.firstName, lastName: examiner.lastName, academicTitle: examiner.academicTitle ?? examiner.title, name: examiner.name });
                   result.push(
-                    <option key={examiner.id} value={examiner.id} disabled={max != null && active != null && active >= max}>
-                      {displayName}{examiner.department ? ` | ${examiner.department}` : ""}{statusHint}
+                    <option key={examiner.id} value={examiner.id} disabled={isFull}>
+                      {displayName}{examiner.department ? ` | ${examiner.department}` : ""}{capacityText}
                     </option>
                   );
                 });
