@@ -104,6 +104,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
   const [examinerSort, setExaminerSort] = useState<"alpha" | "available" | "capacity">("alpha");
   const [examinerDropdownOpen, setExaminerDropdownOpen] = useState(false);
   const examinerDropdownRef = useRef<HTMLDivElement>(null);
+  const [hideFullExaminers, setHideFullExaminers] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -699,7 +700,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.student.firstExaminerLabel} <span className="text-red-500">*</span></label>
             {/* Such- und Sortierleiste */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs">
                 <button
                   type="button"
@@ -738,6 +739,22 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                   Kapazität
                 </button>
               </div>
+              {/* Filter-Toggle: Ausgelastete ausblenden */}
+              <button
+                type="button"
+                onClick={() => setHideFullExaminers((v) => !v)}
+                title={hideFullExaminers ? "Ausgelastete wieder anzeigen" : "Ausgelastete Prüfer:innen ausblenden"}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-colors ${
+                  hideFullExaminers
+                    ? "bg-red-50 border-red-300 text-red-600"
+                    : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                Ausgelastet
+              </button>
             </div>
             <div className="relative mb-2">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -765,9 +782,14 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
             </div>
             {/* Custom Dropdown mit Fortschrittsbalken */}
             {(() => {
-              // Suchfilter anwenden
+              // Suchfilter + Ausgelastet-Filter anwenden
               const q = examinerSearch.toLowerCase();
               const filtered = (firstExaminers as any[]).filter((e: any) => {
+                // Ausgelastete ausblenden wenn Toggle aktiv
+                if (hideFullExaminers) {
+                  const isFull = e.maxSupervisions != null && e.activeSupervisions != null && e.activeSupervisions >= e.maxSupervisions;
+                  if (isFull) return false;
+                }
                 if (!q) return true;
                 const name = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }).toLowerCase();
                 const dept = (e.department ?? "").toLowerCase();
