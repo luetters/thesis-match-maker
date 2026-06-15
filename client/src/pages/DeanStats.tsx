@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
+import { getStatusBadge } from "@shared/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import {
@@ -18,20 +19,10 @@ import {
   Line,
 } from "recharts";
 
-// ─── Farben ───────────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#F59E0B",
-  MATCHED: "#3B82F6",
-  ACCEPTED: "#10B981",
-  REJECTED: "#EF4444",
-};
-// STATUS_LABELS werden dynamisch in der Komponente erzeugt
-const STATUS_LABELS_DE: Record<string, string> = {
-  PENDING: "Ausstehend",
-  MATCHED: "Zugeteilt",
-  ACCEPTED: "Angenommen",
-  REJECTED: "Abgelehnt",
-};
+// ─── Farben/Labels – zentral aus shared/const ──────────────────────────────────
+const STATUS_LABELS_DE: Record<string, string> = new Proxy({}, {
+  get: (_t, key: string) => getStatusBadge(key).label,
+}) as Record<string, string>;
 const DEPT_COLORS = [
   "#76B900", "#76B900", "#3B82F6", "#8B5CF6", "#F59E0B",
   "#EF4444", "#10B981", "#EC4899", "#14B8A6", "#F97316",
@@ -95,7 +86,7 @@ export default function DeanStats() {
   const pieData = (stats?.byStatus ?? []).map((s) => ({
     name: STATUS_LABELS[s.status] ?? s.status,
     value: s.count,
-    color: STATUS_COLORS[s.status] ?? "#9CA3AF",
+    color: getStatusBadge(s.status).hex,
   }));
 
   return (

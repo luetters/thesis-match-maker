@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CheckCircle, XCircle, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { getStatusBadge } from "@shared/const";
 
 interface RequestDetailModalProps {
   isOpen: boolean;
@@ -84,18 +85,6 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING_FIRST_EXAMINER":
-        return "bg-yellow-100 text-yellow-800";
-      case "FIRST_EXAMINER_ACCEPTED":
-        return "bg-primary/15 text-primary";
-      case "FIRST_EXAMINER_REJECTED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
 
   const canAccept = request.status === "PENDING_FIRST_EXAMINER";
   const canReject = request.status === "PENDING_FIRST_EXAMINER";
@@ -109,10 +98,8 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
             <DialogTitle>{request.title}</DialogTitle>
             <DialogDescription>
               <div className="flex items-center gap-2 mt-2">
-                <Badge className={getStatusColor(request.status)}>
-                  {request.status === "PENDING_FIRST_EXAMINER" && "Ausstehend"}
-                  {request.status === "FIRST_EXAMINER_ACCEPTED" && "Akzeptiert"}
-                  {request.status === "FIRST_EXAMINER_REJECTED" && "Abgelehnt"}
+                <Badge className={getStatusBadge(request.status).className}>
+                  {getStatusBadge(request.status).label}
                 </Badge>
                 <span className="text-sm text-gray-600">
                   Eingereicht: {new Date(request.createdAt).toLocaleDateString("de-DE")}

@@ -3,26 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { getStatusBadge } from "@shared/const";
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
+// ─── Status Badge ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    PENDING: "badge-pending",
-    ACCEPTED: "badge-accepted",
-    REJECTED: "badge-rejected",
-    MATCHED: "badge-matched",
-  };
-  const labels: Record<string, string> = {
-    PENDING: "Ausstehend",
-    ACCEPTED: "Angenommen",
-    REJECTED: "Abgelehnt",
-    MATCHED: "Matched",
-  };
+  const { label, className } = getStatusBadge(status);
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-100 text-gray-700"}`}
-    >
-      {labels[status] ?? status}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      {label}
     </span>
   );
 }

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle, CheckCircle, XCircle, Clock } from "lucide-react";
+import { getStatusBadge as getStatusBadgeData } from "@shared/const";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { AdvancedFilters } from "@/components/AdvancedFilters";
@@ -39,31 +40,8 @@ export function ExaminerRequestDashboard() {
   if (!user) return null;
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "PENDING_FIRST_EXAMINER":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <Clock className="w-3 h-3 mr-1" />
-            {t.status?.PENDING || "Ausstehend"}
-          </Badge>
-        );
-      case "FIRST_EXAMINER_ACCEPTED":
-        return (
-          <Badge className="bg-primary/15 text-primary">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            {t.status?.ACCEPTED || "Akzeptiert"}
-          </Badge>
-        );
-      case "FIRST_EXAMINER_REJECTED":
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <XCircle className="w-3 h-3 mr-1" />
-            {t.status?.REJECTED || "Abgelehnt"}
-          </Badge>
-        );
-      default:
-        return <Badge>{status}</Badge>;
-    }
+    const { label, className } = getStatusBadgeData(status);
+    return <Badge className={className}>{label}</Badge>;
   };
 
   const handleViewRequest = (request: any) => {

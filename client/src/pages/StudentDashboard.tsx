@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getStatusBadge } from "@shared/const";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -995,19 +995,49 @@ function MyRequests() {
       {requests.map((req) => (
         <div key={req.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-4 mb-3">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
-              <p className="text-sm text-gray-500 mt-0.5">{req.department}</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                {/* Angefragte Prüfer:in – immer anzeigen */}
+                {((req as any).wantedExaminerId || req.examinerId) && (
+                  <span className="flex items-center gap-1 text-xs text-gray-600">
+                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <Link
+                      href={`/profile/${(req as any).wantedExaminerId ?? req.examinerId}`}
+                      className="text-[#2563eb] hover:underline font-medium"
+                    >
+                      {buildFullName({
+                        firstName: (req as any).wantedExaminerFirstName,
+                        lastName: (req as any).wantedExaminerLastName,
+                        academicTitle: (req as any).wantedExaminerAcademicTitle,
+                        name: (req as any).wantedExaminerName ?? (req as any).examinerName,
+                      }) || `Prüfer:in #${(req as any).wantedExaminerId ?? req.examinerId}`}
+                    </Link>
+                  </span>
+                )}
+                {/* Datum der Anfrage – immer anzeigen */}
+                {req.createdAt && (
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
+                )}
+                {(req as any).programmeName && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#76B900]/10 text-[#76B900]">
+                    {(req as any).programmeAbbreviation ?? (req as any).programmeName}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col items-end gap-1.5">
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
               <StatusBadge status={req.status} />
-              {(req as any).programmeName && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#76B900]/10 text-[#76B900]">
-                  {(req as any).programmeAbbreviation ?? (req as any).programmeName}
-                </span>
-              )}
             </div>
           </div>
+<<<<<<< Updated upstream
           {/* Prüfer:in-Link + Anfragedatum – immer anzeigen wenn ein Prüfer gewählt wurde */}
           {((req as any).wantedExaminerId || req.examinerId) && (() => {
             const profileId = req.examinerId ?? (req as any).wantedExaminerId;
@@ -1037,6 +1067,8 @@ function MyRequests() {
               </div>
             );
           })()}
+=======
+>>>>>>> Stashed changes
           <p className="text-sm text-gray-600 line-clamp-2 mb-3">{req.description}</p>
           <div className="flex flex-wrap gap-3 text-xs text-gray-500">
             {req.targetSemester && (
@@ -1394,21 +1426,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   STUDENT_CONFIRMED: "Einladung bestätigt",
 };
 
-// Status-Badges
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "Ausstehend", color: "bg-amber-100 text-amber-800" },
-  PENDING_FIRST_EXAMINER: { label: "Wartet auf Erstgutachter:in", color: "bg-blue-100 text-blue-800" },
-  PENDING_SECOND_EXAMINER: { label: "Wartet auf Zweitgutachter:in", color: "bg-blue-100 text-blue-800" },
-  PENDING_STUDENT_CONFIRMATION: { label: "Wartet auf Ihre Bestätigung", color: "bg-amber-100 text-amber-800" },
-  FIRST_EXAMINER_ACCEPTED: { label: "Erstgutachter:in zugestimmt", color: "bg-green-100 text-green-800" },
-  FIRST_EXAMINER_REJECTED: { label: "Erstgutachter:in abgelehnt", color: "bg-red-100 text-red-800" },
-  ACCEPTED: { label: "Angenommen", color: "bg-green-100 text-green-800" },
-  REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
-  MATCHED: { label: "Zugewiesen", color: "bg-green-100 text-green-800" },
-  WITHDRAWN: { label: "Zurückgezogen", color: "bg-gray-100 text-gray-600" },
-  COMPLETED: { label: "Abgeschlossen", color: "bg-emerald-100 text-emerald-800" },
-  DRAFT_BY_EXAMINER: { label: "Entwurf", color: "bg-gray-100 text-gray-600" },
-};
+// Status-Badges – zentral aus shared/const
 
 function StatusHistory() {
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
@@ -1498,10 +1516,8 @@ function StatusHistory() {
                 )}
               </div>
             </div>
-            <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${
-              STATUS_LABELS[selectedRequest.status]?.color ?? "bg-gray-100 text-gray-600"
-            }`}>
-              {STATUS_LABELS[selectedRequest.status]?.label ?? selectedRequest.status}
+            <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${getStatusBadge(selectedRequest.status).className}`}>
+              {getStatusBadge(selectedRequest.status).label}
             </span>
           </div>
 
@@ -1585,18 +1601,14 @@ function StatusHistory() {
                             </p>
                             {entry.fromStatus && entry.toStatus && (
                               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  STATUS_LABELS[entry.fromStatus]?.color ?? "bg-gray-100 text-gray-600"
-                                }`}>
-                                  {STATUS_LABELS[entry.fromStatus]?.label ?? entry.fromStatus}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(entry.fromStatus).className}`}>
+                                  {getStatusBadge(entry.fromStatus).label}
                                 </span>
                                 <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  STATUS_LABELS[entry.toStatus]?.color ?? "bg-gray-100 text-gray-600"
-                                }`}>
-                                  {STATUS_LABELS[entry.toStatus]?.label ?? entry.toStatus}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(entry.toStatus).className}`}>
+                                  {getStatusBadge(entry.toStatus).label}
                                 </span>
                               </div>
                             )}

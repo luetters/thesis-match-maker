@@ -4,7 +4,7 @@ import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getStatusBadge } from "@shared/const";
 
 // ─── App-Logo mit Fallback ────────────────────────────────────────────────────
 function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
@@ -96,6 +96,7 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export function StatusBadge({ status }: { status: string }) {
+<<<<<<< Updated upstream
   const config: Record<string, { label: string; className: string }> = {
     PENDING: { label: "Ausstehend", className: "bg-amber-100 text-amber-800 border border-amber-200" },
     PENDING_FIRST_EXAMINER: { label: "Wartet auf Erstgutachter:in", className: "bg-blue-100 text-blue-800 border border-blue-200" },
@@ -113,6 +114,9 @@ export function StatusBadge({ status }: { status: string }) {
     DRAFT_BY_EXAMINER: { label: "Entwurf", className: "bg-gray-100 text-gray-600 border border-gray-200" },
   };
   const { label, className } = config[status] ?? { label: status, className: "bg-gray-100 text-gray-700 border border-gray-200" };
+=======
+  const { label, className } = getStatusBadge(status);
+>>>>>>> Stashed changes
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`}>
       {label}

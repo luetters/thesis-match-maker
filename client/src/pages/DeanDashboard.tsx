@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getStatusBadge } from "@shared/const";
 
 // --- Hilfsfunktionen ---
 function formatDate(d: Date | string | null | undefined) {
@@ -11,12 +11,6 @@ function formatDate(d: Date | string | null | undefined) {
   return new Date(d).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  PENDING:  { label: "Ausstehend", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  ACCEPTED: { label: "Angenommen", cls: "bg-primary/5 text-primary border-primary/20" },
-  REJECTED: { label: "Abgelehnt",  cls: "bg-red-50 text-red-700 border-red-200" },
-  MATCHED:  { label: "Zugeteilt",  cls: "bg-blue-50 text-blue-700 border-blue-200" },
-};
 
 // --- Detailansicht-Seitenleiste ---
 function RequestDetailSheet({
@@ -64,9 +58,9 @@ function RequestDetailSheet({
                   {data.request.title || <span className="text-gray-400 italic">Kein Thema angegeben</span>}
                 </h3>
                 {(() => {
-                  const s = STATUS_MAP[data.request.status] ?? { label: data.request.status, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+                  const s = getStatusBadge(data.request.status);
                   return (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${s.cls}`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${s.className}`}>
                       {s.label}
                     </span>
                   );
@@ -400,7 +394,7 @@ export default function DeanDashboard() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {filtered.map(({ request, student }) => {
-                    const s = STATUS_MAP[request.status] ?? { label: request.status, cls: "bg-gray-50 text-gray-600 border-gray-200" };
+                    const s = getStatusBadge(request.status);
                     return (
                       <tr
                         key={request.id}
@@ -417,7 +411,7 @@ export default function DeanDashboard() {
                         <td className="px-4 py-3 text-gray-500 text-xs">{request.department}</td>
                         <td className="px-4 py-3 text-gray-500 text-xs capitalize">{request.degreeType}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}>
                             {s.label}
                           </span>
                         </td>

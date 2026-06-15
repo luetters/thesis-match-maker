@@ -17,22 +17,10 @@ import {
   Legend,
   ComposedChart,
 } from "recharts";
+import { getStatusBadge } from "@shared/const";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Download } from "lucide-react";
-
-// ─── Farben ───────────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#F59E0B",
-  MATCHED: "#3B82F6",
-  ACCEPTED: "#10B981",
-  REJECTED: "#EF4444",
-  PENDING_FIRST_EXAMINER: "#F59E0B",
-  FIRST_EXAMINER_ACCEPTED: "#10B981",
-  FIRST_EXAMINER_REJECTED: "#EF4444",
-  PENDING_SECOND_EXAMINER: "#8B5CF6",
-  COMPLETED: "#06B6D4",
-};
 
 // ─── KPI-Kachel ───────────────────────────────────────────────────────────────
 function KpiCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
@@ -144,7 +132,7 @@ export default function ReportingDashboard() {
   const pieData = (statsByStatus || []).map((s) => ({
     name: s.status,
     value: s.count,
-    color: STATUS_COLORS[s.status] ?? "#9CA3AF",
+    color: getStatusBadge(s.status).hex,
   }));
 
   const barData = (statsByFaculty || [])

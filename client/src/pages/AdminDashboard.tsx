@@ -9,7 +9,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Cart
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getStatusBadge } from "@shared/const";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -1346,12 +1346,10 @@ function SettingsView() {
 }
 
 // ─── Statistics ───────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#F59E0B",
-  ACCEPTED: "#76B900",
-  MATCHED: "#0082D1",
-  REJECTED: "#EF4444",
-};
+// STATUS_COLORS – hex-Werte aus zentraler Quelle
+const STATUS_COLORS: Record<string, string> = new Proxy({}, {
+  get: (_t, key: string) => getStatusBadge(key).hex,
+}) as Record<string, string>;
 function StatisticsView() {
   const { data: stats, isLoading } = trpc.admin.stats.useQuery();
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
@@ -1361,8 +1359,8 @@ function StatisticsView() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.byStatus.map((s) => (
           <div key={s.name} className="rounded-2xl p-5 border border-gray-100 bg-white shadow-sm">
-            <div className="text-3xl font-bold" style={{ color: STATUS_COLORS[s.name] ?? "#76B900" }}>{s.value}</div>
-            <div className="text-xs text-gray-500 mt-1 font-medium">{s.name}</div>
+            <div className="text-3xl font-bold" style={{ color: getStatusBadge(s.name).hex }}>{s.value}</div>
+            <div className="text-xs text-gray-500 mt-1 font-medium">{getStatusBadge(s.name).label}</div>
           </div>
         ))}
       </div>
