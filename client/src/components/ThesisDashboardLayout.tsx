@@ -98,11 +98,21 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 export function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
     PENDING: { label: "Ausstehend", className: "bg-amber-100 text-amber-800 border border-amber-200" },
+    PENDING_FIRST_EXAMINER: { label: "Wartet auf Erstgutachter:in", className: "bg-blue-100 text-blue-800 border border-blue-200" },
+    PENDING_SECOND_EXAMINER: { label: "Wartet auf Zweitgutachter:in", className: "bg-blue-100 text-blue-800 border border-blue-200" },
+    PENDING_STUDENT_CONFIRMATION: { label: "Wartet auf Ihre Bestätigung", className: "bg-amber-100 text-amber-800 border border-amber-200" },
+    FIRST_EXAMINER_ACCEPTED: { label: "Erstgutachter:in zugestimmt", className: "bg-green-100 text-green-800 border border-green-200" },
+    FIRST_EXAMINER_REJECTED: { label: "Erstgutachter:in abgelehnt", className: "bg-red-100 text-red-800 border border-red-200" },
+    SECOND_EXAMINER_ASSIGNED: { label: "Zweitgutachter:in zugewiesen", className: "bg-green-100 text-green-800 border border-green-200" },
     ACCEPTED: { label: "Angenommen", className: "bg-primary/15 text-primary border border-primary/20" },
     REJECTED: { label: "Abgelehnt", className: "bg-red-100 text-red-800 border border-red-200" },
-    MATCHED: { label: "Matched", className: "bg-blue-100 text-blue-800 border border-blue-200" },
+    MATCHED: { label: "Zugewiesen", className: "bg-blue-100 text-blue-800 border border-blue-200" },
+    WITHDRAWN: { label: "Zurückgezogen", className: "bg-gray-100 text-gray-600 border border-gray-200" },
+    COMPLETED: { label: "Abgeschlossen", className: "bg-emerald-100 text-emerald-800 border border-emerald-200" },
+    REGISTERED: { label: "Angemeldet", className: "bg-emerald-100 text-emerald-800 border border-emerald-200" },
+    DRAFT_BY_EXAMINER: { label: "Entwurf", className: "bg-gray-100 text-gray-600 border border-gray-200" },
   };
-  const { label, className } = config[status] ?? { label: status, className: "bg-gray-100 text-gray-700" };
+  const { label, className } = config[status] ?? { label: status, className: "bg-gray-100 text-gray-700 border border-gray-200" };
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`}>
       {label}

@@ -236,6 +236,9 @@ export async function getThesisRequestsByStudent(studentId: number) {
       studentId: thesisRequests.studentId,
       wantedExaminerId: thesisRequests.wantedExaminerId,
       wantedExaminerName: wantedExaminerAlias.name,
+      wantedExaminerFirstName: wantedExaminerAlias.firstName,
+      wantedExaminerLastName: wantedExaminerAlias.lastName,
+      wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
     })
     .from(thesisRequests)
     .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
