@@ -101,6 +101,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
   const [examinerSearch, setExaminerSearch] = useState("");
+  const [examinerSort, setExaminerSort] = useState<"alpha" | "available" | "capacity">("alpha");
 
   const [form, setForm] = useState({
     title: "",
@@ -683,7 +684,47 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
           <p className="text-xs text-gray-500 -mt-2">{t.student.firstExaminerDesc}</p>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">{t.student.firstExaminerLabel} <span className="text-red-500">*</span></label>
-            {/* Suchfeld für Prüfer:innen-Filterung */}
+            {/* Such- und Sortierleiste */}
+            <div className="flex gap-2 mb-2">
+              <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setExaminerSort("alpha")}
+                  className={`px-2.5 py-1.5 font-medium transition-colors ${
+                    examinerSort === "alpha"
+                      ? "bg-[#76B900] text-white"
+                      : "bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
+                  title="Alphabetisch sortieren"
+                >
+                  A–Z
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExaminerSort("available")}
+                  className={`px-2.5 py-1.5 font-medium transition-colors border-l border-gray-200 ${
+                    examinerSort === "available"
+                      ? "bg-[#76B900] text-white"
+                      : "bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
+                  title="Verfügbare zuerst"
+                >
+                  ✅ Frei
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExaminerSort("capacity")}
+                  className={`px-2.5 py-1.5 font-medium transition-colors border-l border-gray-200 ${
+                    examinerSort === "capacity"
+                      ? "bg-[#76B900] text-white"
+                      : "bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
+                  title="Nach freier Kapazität sortieren"
+                >
+                  Kapazität
+                </button>
+              </div>
+            </div>
             <div className="relative mb-2">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -739,8 +780,20 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                 if (filtered.length === 0) {
                   return [<option key="no-result" disabled value="">Keine Treffer für "{examinerSearch}"</option>];
                 }
-                // Alphabetisch nach Nachname sortieren und Buchstabentrenner einfügen
+                // Sortierung anwenden
                 const sorted = [...filtered].sort((a: any, b: any) => {
+                  if (examinerSort === "available") {
+                    // Verfügbare zuerst (nicht ausgelastet), dann alphabetisch
+                    const aFull = (a.maxSupervisions != null && a.activeSupervisions != null && a.activeSupervisions >= a.maxSupervisions);
+                    const bFull = (b.maxSupervisions != null && b.activeSupervisions != null && b.activeSupervisions >= b.maxSupervisions);
+                    if (aFull !== bFull) return aFull ? 1 : -1;
+                  } else if (examinerSort === "capacity") {
+                    // Nach freier Kapazität absteigend (meiste freie Plätze zuerst)
+                    const aFree = (a.maxSupervisions ?? 5) - (a.activeSupervisions ?? 0);
+                    const bFree = (b.maxSupervisions ?? 5) - (b.activeSupervisions ?? 0);
+                    if (aFree !== bFree) return bFree - aFree;
+                  }
+                  // Alphabetisch nach Nachname (Primär- oder Fallback-Sortierung)
                   const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
                   const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
                   return lastA.localeCompare(lastB, "de");
@@ -750,7 +803,8 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                 sorted.forEach((examiner: any) => {
                   const lastName = examiner.lastName ?? (examiner.name ?? "").trim().split(" ").pop() ?? "";
                   const letter = lastName.charAt(0).toUpperCase();
-                  if (letter !== currentLetter) {
+                  // Buchstaben-Trenner nur bei alphabetischer Sortierung
+                  if (examinerSort === "alpha" && letter !== currentLetter) {
                     currentLetter = letter;
                     result.push(<option key={`sep-${letter}`} disabled value="">── {letter} ──</option>);
                   }
