@@ -525,16 +525,10 @@ export const appRouter = router({
           ...(input.matrikelNr ? { matrikelNr: input.matrikelNr.trim() } : {}),
           ...(input.department ? { department: input.department } : {}),
           ...(input.thesisType ? { thesisType: input.thesisType } : {}),
+          ...(input.programmeId ? { programmeId: input.programmeId } : {}),
         } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
-        // Studiengang direkt bei Registrierung setzen (für Studierende)
-        if (input.role === "student" && input.programmeId) {
-          const mysql2 = await import('mysql2/promise');
-          const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
-          await conn.execute('UPDATE users SET programme_id = ? WHERE openId = ?', [input.programmeId, openId]);
-          await conn.end();
-        }
         // Eintrag in user_roles anlegen (Multi-Rollen-Modell)
         // Erst Nutzer-ID ermitteln, dann Rolle eintragen
         const newUser = await getUserByEmail(input.email);
