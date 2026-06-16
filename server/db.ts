@@ -5426,7 +5426,17 @@ import { thesisDocTokens, InsertThesisDocToken } from "../drizzle/schema";
 export async function createThesisDocToken(data: Omit<InsertThesisDocToken, "id" | "createdAt">): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.insert(thesisDocTokens).values(data as InsertThesisDocToken);
+  // Leere Strings in optionalen Feldern auf null normalisieren (MySQL lehnt '' in NOT NULL-ähnlichen Kontexten ab)
+  const safe: InsertThesisDocToken = {
+    ...data,
+    matrikelNr: data.matrikelNr?.trim() || null,
+    programmeName: data.programmeName?.trim() || null,
+    firstExaminerName: data.firstExaminerName?.trim() || null,
+    secondExaminerName: data.secondExaminerName?.trim() || null,
+    targetSemester: data.targetSemester?.trim() || null,
+    degreeType: data.degreeType?.trim() || null,
+  } as InsertThesisDocToken;
+  await db.insert(thesisDocTokens).values(safe);
 }
 
 export async function getThesisDocTokenByToken(token: string) {

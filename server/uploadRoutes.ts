@@ -312,8 +312,8 @@ export function registerUploadRoutes(app: Express) {
         title: thesis.title,
         firstExaminerName: firstExaminer ? (buildFullName({ firstName: (firstExaminer as any)?.firstName, lastName: (firstExaminer as any)?.lastName, academicTitle: (firstExaminer as any)?.academicTitle, name: firstExaminer?.name }) || null) : null,
         secondExaminerName: secondExaminer ? (buildFullName({ firstName: (secondExaminer as any)?.firstName, lastName: (secondExaminer as any)?.lastName, academicTitle: (secondExaminer as any)?.academicTitle, name: secondExaminer?.name }) || null) : null,
-        targetSemester: thesis.targetSemester ?? null,
-        degreeType: thesis.degreeType ?? null,
+        targetSemester: thesis.targetSemester?.trim() || null,
+        degreeType: thesis.degreeType?.trim() || null,
       });
 
       // Disclaimer-Texte aus den System-Einstellungen laden
