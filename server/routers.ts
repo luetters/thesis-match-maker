@@ -532,7 +532,7 @@ export const appRouter = router({
         if (input.role === "student" && input.programmeId) {
           const mysql2 = await import('mysql2/promise');
           const conn = await mysql2.createConnection(process.env.DATABASE_URL!);
-          await conn.execute('UPDATE users SET programme_id = ? WHERE open_id = ?', [input.programmeId, openId]);
+          await conn.execute('UPDATE users SET programme_id = ? WHERE openId = ?', [input.programmeId, openId]);
           await conn.end();
         }
         // Eintrag in user_roles anlegen (Multi-Rollen-Modell)

@@ -197,7 +197,7 @@ export default function Login() {
     const emailLower = regEmail.trim().toLowerCase();
     const role = selectedRole ?? "student";
     if (role === "student") {
-      if (!emailLower.endsWith("@student.htw-berlin.de")) {
+      if (!emailLower.endsWith("@student.htw-berlin.de") && !emailLower.endsWith("@htw-berlin.de")) {
         toast.error(L.emailDomainErrorStudent);
         return;
       }
@@ -287,48 +287,57 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setStep("login")}
-                className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                className="w-full text-left rounded-xl border-2 transition-all duration-200 p-4 flex items-center gap-4 hover:scale-[1.01]"
+                style={{ background: "rgba(118,185,0,0.06)", borderColor: "#76b900" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = "rgba(118,185,0,0.08)";
-                  el.style.borderColor = "#76b900";
+                  el.style.background = "rgba(118,185,0,0.12)";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = "rgba(255,255,255,0.04)";
-                  el.style.borderColor = "rgba(255,255,255,0.1)";
+                  el.style.background = "rgba(118,185,0,0.06)";
                 }}
               >
                 <div
                   className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(118,185,0,0.08)", color: "#76b900" }}
+                  style={{ background: "rgba(118,185,0,0.15)", color: "#76b900" }}
                 >
                   <LogIn className="w-7 h-7" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white text-sm">{L.signInBtn}</div>
-                  <div className="text-white/50 text-xs mt-0.5 leading-relaxed">
-                    {L.alreadyHaveAccount ?? "Sie haben bereits ein Konto"}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-base">{L.signInBtn}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(118,185,0,0.2)", color: "#76b900" }}>Bereits registriert</span>
+                  </div>
+                  <div className="text-white/60 text-xs mt-1 leading-relaxed">
+                    Sie haben bereits ein Konto und möchten sich anmelden.
                   </div>
                 </div>
+                <div className="text-white/30 text-lg">→</div>
               </button>
+
+              {/* Trennlinie */}
+              <div className="flex items-center gap-3 py-1">
+                <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+                <span className="text-white/30 text-xs">oder</span>
+                <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+              </div>
 
               {/* Registrieren */}
               <button
                 type="button"
                 onClick={() => setStep("role")}
-                className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 group hover:scale-[1.01]"
-                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 hover:scale-[1.01]"
+                style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.12)" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget as HTMLButtonElement;
                   el.style.background = "rgba(59,130,246,0.08)";
-                  el.style.borderColor = "#3b82f6";
+                  el.style.borderColor = "rgba(59,130,246,0.5)";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = "rgba(255,255,255,0.04)";
-                  el.style.borderColor = "rgba(255,255,255,0.1)";
+                  el.style.background = "rgba(255,255,255,0.03)";
+                  el.style.borderColor = "rgba(255,255,255,0.12)";
                 }}
               >
                 <div
@@ -338,11 +347,15 @@ export default function Login() {
                   <UserPlus className="w-7 h-7" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white text-sm">{L.createAccount}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white/90 text-sm">{L.createAccount}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}>Erstmalig</span>
+                  </div>
                   <div className="text-white/50 text-xs mt-0.5 leading-relaxed">
-                    {L.noAccountYet ?? "Noch kein Konto? Jetzt registrieren"}
+                    Noch kein Konto? Jetzt registrieren – Freischaltung durch die Verwaltung erforderlich.
                   </div>
                 </div>
+                <div className="text-white/20 text-lg">→</div>
               </button>
             </div>
           </div>
