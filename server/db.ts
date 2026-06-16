@@ -5426,17 +5426,22 @@ import { thesisDocTokens, InsertThesisDocToken } from "../drizzle/schema";
 export async function createThesisDocToken(data: Omit<InsertThesisDocToken, "id" | "createdAt">): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  // Leere Strings in optionalen Feldern auf null normalisieren (MySQL lehnt '' in NOT NULL-ähnlichen Kontexten ab)
-  const safe: InsertThesisDocToken = {
-    ...data,
-    matrikelNr: data.matrikelNr?.trim() || null,
-    programmeName: data.programmeName?.trim() || null,
-    firstExaminerName: data.firstExaminerName?.trim() || null,
-    secondExaminerName: data.secondExaminerName?.trim() || null,
-    targetSemester: data.targetSemester?.trim() || null,
-    degreeType: data.degreeType?.trim() || null,
-  } as InsertThesisDocToken;
-  await db.insert(thesisDocTokens).values(safe);
+  // Normalisierungsfunktion: leere Strings und undefined -> null
+  const n = (v: string | null | undefined): string | null => (v && v.trim()) ? v.trim() : null;
+  // Expliziter INSERT ohne undefined-Werte (MySQL STRICT_TRANS_TABLES-kompatibel)
+  await db.insert(thesisDocTokens).values({
+    token: data.token,
+    thesisRequestId: data.thesisRequestId,
+    studentName: data.studentName,
+    matrikelNr: n(data.matrikelNr),
+    programmeName: n(data.programmeName),
+    title: data.title,
+    firstExaminerName: n(data.firstExaminerName),
+    secondExaminerName: n(data.secondExaminerName),
+    targetSemester: n(data.targetSemester),
+    degreeType: n(data.degreeType),
+    revoked: 0,
+  });
 }
 
 export async function getThesisDocTokenByToken(token: string) {
