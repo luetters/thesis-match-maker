@@ -792,6 +792,13 @@ export default function Login() {
                           {showRegPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      <div
+                        className="flex items-start gap-2 px-3 py-2 rounded-lg text-xs"
+                        style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
+                      >
+                        <span className="mt-0.5 flex-shrink-0">⚠️</span>
+                        <span><strong>Sicherheitshinweis:</strong> Nutzen Sie auf keinen Fall Ihr HTW Berlin Passwort!</span>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">{L.confirmPassword}</Label>
