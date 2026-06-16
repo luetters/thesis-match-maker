@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { buildFullName } from "@shared/const";
+import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -487,6 +488,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [showRegPreview, setShowRegPreview] = useState(false);
   const [emailDialog, setEmailDialog] = useState<{ action: "accept" | "reject" | "fully_booked" | "requirements"; subject: string; body: string } | null>(null);
   const [requirementsDialog, setRequirementsDialog] = useState<{ subject: string; body: string } | null>(null);
   const [requirementsSubject, setRequirementsSubject] = useState("");
@@ -681,33 +683,24 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         {req.degreeType && <span>🎓 {req.degreeType === "bachelor" ? (t.pav?.bachelor ?? "Bachelor") : (t.pav?.master ?? "Master")}</span>}
       </div>
 
-      {/* Anmeldedokument-Download – ab FIRST_EXAMINER_ACCEPTED oder höher (auch ohne Zweitgutachter) */}
+      {/* Anmeldedokument – Vorschau + Download */}
       {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
-        <button
-          onClick={async () => {
-            try {
-              const res = await fetch(`/api/thesis/${req.id}/registration.pdf`, { credentials: 'include' });
-              if (!res.ok) { const err = await res.json().catch(() => ({})); alert((err as any).error ?? 'Download fehlgeschlagen'); return; }
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              const cd = res.headers.get('content-disposition') ?? '';
-              const match = cd.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
-              a.download = match ? decodeURIComponent(match[1].replace(/"/g, '')) : `anmeldung-${req.id}.pdf`;
-              document.body.appendChild(a); a.click(); document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              toast.success('Anmeldedokument wurde erfolgreich heruntergeladen.');
-            } catch { toast.error('Download fehlgeschlagen'); }
-          }}
-          className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors w-fit"
-          title="Anmeldedokument als PDF herunterladen (mit Verifikations-QR-Code)"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Anmeldedokument (PDF)
-        </button>
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowRegPreview(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
+            title="Anmeldedokument im Browser ansehen"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Anmeldedokument ansehen
+          </button>
+        </div>
+      )}
+      {showRegPreview && (
+        <RegistrationPdfPreviewModal thesisId={req.id} onClose={() => setShowRegPreview(false)} />
       )}
 
       {isPending && (

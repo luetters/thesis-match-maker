@@ -346,7 +346,10 @@ export function registerUploadRoutes(app: Express) {
       const filename = `${safeName}_${safeProg}_${safeSem}.pdf`;
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      // ?preview=1 → inline (Browser-Vorschau), sonst attachment (Download)
+      const isPreview = req.query.preview === "1";
+      const disposition = isPreview ? "inline" : "attachment";
+      res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
       res.send(pdfBuffer);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "PDF-Generierung fehlgeschlagen";
