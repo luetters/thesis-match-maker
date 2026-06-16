@@ -230,7 +230,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       {
         labelDe: "Zweitgutachter:in",
         labelEn: "Second Supervisor",
-        value: data.secondExaminerName ?? "-",
+        value: data.secondExaminerName?.trim() || (data.language === "en" ? "Not yet assigned" : "Noch nicht festgelegt"),
       }
     );
 

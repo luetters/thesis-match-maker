@@ -4,6 +4,7 @@ import { toast } from "sonner";
 interface Props {
   thesisId: number;
   onClose: () => void;
+  hasSecondExaminer?: boolean;
 }
 
 /**
@@ -12,7 +13,7 @@ interface Props {
  * in einem <iframe> dargestellt, damit keine separaten Authentifizierungsprobleme
  * beim direkten iframe-src-Aufruf entstehen.
  */
-export function RegistrationPdfPreviewModal({ thesisId, onClose }: Props) {
+export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExaminer }: Props) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +109,18 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Hinweis: Zweitgutachter fehlt noch */}
+        {hasSecondExaminer === false && (
+          <div className="mx-5 mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <strong>Hinweis:</strong> Dieses Dokument ist noch unvollständig. Vor der finalen Abgabe muss ein:e Zweitgutachter:in eingetragen werden. Bitte reichen Sie das Dokument erst ein, wenn beide Betreuungspersonen bestätigt sind.
+            </p>
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 overflow-hidden rounded-b-2xl bg-gray-50">

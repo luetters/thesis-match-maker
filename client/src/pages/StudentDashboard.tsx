@@ -1394,7 +1394,11 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
             )}
           </div>
           {showRegPreview && (
-            <RegistrationPdfPreviewModal thesisId={req.id} onClose={() => setShowRegPreview(false)} />
+            <RegistrationPdfPreviewModal
+              thesisId={req.id}
+              onClose={() => setShowRegPreview(false)}
+              hasSecondExaminer={!!(req as any).secondExaminerId}
+            />
           )}
         </div>
   );

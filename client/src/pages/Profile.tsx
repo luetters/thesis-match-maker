@@ -866,9 +866,11 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             )}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldEmail}</label>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-800">{profile.email ?? "—"}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">{p.notChangeable}</span>
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0 overflow-x-auto rounded-lg bg-gray-50 px-3 py-1.5" style={{ maxHeight: "3.5rem" }}>
+                  <p className="text-sm text-gray-800 whitespace-nowrap">{profile.email ?? "—"}</p>
+                </div>
+                <span className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 mt-1">{p.notChangeable}</span>
               </div>
             </div>
             {editMode ? (
