@@ -681,8 +681,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         {req.degreeType && <span>🎓 {req.degreeType === "bachelor" ? (t.pav?.bachelor ?? "Bachelor") : (t.pav?.master ?? "Master")}</span>}
       </div>
 
-      {/* Anmeldedokument-Download – ab FIRST_EXAMINER_ACCEPTED oder höher */}
-      {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED"] as string[]).includes(req.status) && (
+      {/* Anmeldedokument-Download – ab FIRST_EXAMINER_ACCEPTED oder höher (auch ohne Zweitgutachter) */}
+      {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
         <button
           onClick={async () => {
             try {

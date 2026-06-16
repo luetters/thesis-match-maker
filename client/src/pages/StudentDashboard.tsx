@@ -1333,8 +1333,8 @@ function MyRequests() {
               currentUrl={(req as { exposeUrl?: string | null }).exposeUrl}
               onSuccess={() => utils.thesis.myRequests.invalidate()}
             />
-          {/* Anmeldedokument herunterladen – ab MATCHED oder REGISTERED */}
-          {(["MATCHED", "REGISTERED", "FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED"] as string[]).includes(req.status) && (
+          {/* Anmeldedokument herunterladen – ab FIRST_EXAMINER_ACCEPTED (auch ohne Zweitgutachter) */}
+          {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
             <button
               onClick={async () => {
                 try {

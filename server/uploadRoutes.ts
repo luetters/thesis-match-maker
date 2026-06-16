@@ -269,11 +269,12 @@ export function registerUploadRoutes(app: Express) {
       const thesis = await getThesisRequestById(thesisId);
       if (!thesis) { res.status(404).json({ error: "Thesis nicht gefunden" }); return; }
 
-      // Nur Student der Thesis oder Admin/PAV darf herunterladen
+      // Student, zugewiesene Gutachter oder Admin/PAV dürfen herunterladen
       const allowedRoles = ["admin", "superadmin", "pav", "dean", "vice_dean"];
       const userRolesArr: string[] = (user as any).roles ?? [];
       const hasAdminRole = allowedRoles.some(r => userRolesArr.includes(r)) || (user as any).role === "admin";
-      if (thesis.studentId !== user.id && !hasAdminRole) {
+      const isAssignedExaminer = thesis.examinerId === user.id || thesis.secondExaminerId === user.id;
+      if (thesis.studentId !== user.id && !hasAdminRole && !isAssignedExaminer) {
         res.status(403).json({ error: "Keine Berechtigung." }); return;
       }
 
