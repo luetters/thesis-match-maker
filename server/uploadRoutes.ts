@@ -7,7 +7,7 @@ import { generateThesisPdf } from "./thesisPdf";
 import crypto from "crypto";
 import { generateDeadlineIcs } from "./icsHelper";
 import { storagePut } from "./storage";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, buildFullName } from "@shared/const";
 
 /** Authentifiziert einen Request anhand des Session-Cookies ohne upsertUser-Seiteneffekte */
 async function getUserFromRequest(req: Request) {
@@ -305,12 +305,12 @@ export function registerUploadRoutes(app: Express) {
       await createThesisDocToken({
         token: docToken,
         thesisRequestId: thesisId,
-        studentName: student?.name ?? "Unbekannt",
+        studentName: buildFullName({ firstName: (student as any)?.firstName, lastName: (student as any)?.lastName, academicTitle: (student as any)?.academicTitle, name: student?.name }) || "Unbekannt",
         matrikelNr: (student as any)?.matrikelNr ?? null,
         programmeName,
         title: thesis.title,
-        firstExaminerName: firstExaminer?.name ?? null,
-        secondExaminerName: secondExaminer?.name ?? null,
+        firstExaminerName: firstExaminer ? (buildFullName({ firstName: (firstExaminer as any)?.firstName, lastName: (firstExaminer as any)?.lastName, academicTitle: (firstExaminer as any)?.academicTitle, name: firstExaminer?.name }) || null) : null,
+        secondExaminerName: secondExaminer ? (buildFullName({ firstName: (secondExaminer as any)?.firstName, lastName: (secondExaminer as any)?.lastName, academicTitle: (secondExaminer as any)?.academicTitle, name: secondExaminer?.name }) || null) : null,
         targetSemester: thesis.targetSemester ?? null,
         degreeType: thesis.degreeType ?? null,
       });
@@ -322,13 +322,13 @@ export function registerUploadRoutes(app: Express) {
       const disclaimerEn = disclaimerEnRow?.value ?? "The Thesis Match Maker is a tool designed to help organize your thesis supervision. Please note that any arrangements made here take place outside of HTW Berlin's official administrative processes. A successful match via the platform does not guarantee enrollment in your thesis for the planned semester. For this, official admission from your department's degree program administration is required, which must be requested after a match has been made.";
 
       const pdfBuffer = await generateThesisPdf({
-        studentName: student?.name ?? "Unbekannt",
+        studentName: buildFullName({ firstName: (student as any)?.firstName, lastName: (student as any)?.lastName, academicTitle: (student as any)?.academicTitle, name: student?.name }) || "Unbekannt",
         matrikelNr: (student as any)?.matrikelNr ?? null,
         programmeName,
         degreeType: thesis.degreeType ?? null,
         title: thesis.title,
-        firstExaminerName: firstExaminer?.name ?? null,
-        secondExaminerName: secondExaminer?.name ?? null,
+        firstExaminerName: firstExaminer ? (buildFullName({ firstName: (firstExaminer as any)?.firstName, lastName: (firstExaminer as any)?.lastName, academicTitle: (firstExaminer as any)?.academicTitle, name: firstExaminer?.name }) || null) : null,
+        secondExaminerName: secondExaminer ? (buildFullName({ firstName: (secondExaminer as any)?.firstName, lastName: (secondExaminer as any)?.lastName, academicTitle: (secondExaminer as any)?.academicTitle, name: secondExaminer?.name }) || null) : null,
         targetSemester: thesis.targetSemester ?? null,
         language: thesis.language ?? "de",
         verifyUrl,
@@ -339,7 +339,7 @@ export function registerUploadRoutes(app: Express) {
       });
 
       // Dateiname: Name_Studiengang_Semester.pdf
-      const safeName = (student?.name ?? "Student").replace(/[^\w\säöüÄÖÜß-]/g, "").replace(/\s+/g, "_");
+      const safeName = (buildFullName({ firstName: (student as any)?.firstName, lastName: (student as any)?.lastName, academicTitle: (student as any)?.academicTitle, name: student?.name }) || "Student").replace(/[^\w\säöüÄÖÜß-]/g, "").replace(/\s+/g, "_");
       const safeProg = (programmeName ?? "Studiengang").replace(/[^a-zA-Z0-9]/g, "");
       const safeSem = (thesis.targetSemester ?? "Semester").replace(/[^a-zA-Z0-9]/g, "");
       const filename = `${safeName}_${safeProg}_${safeSem}.pdf`;
