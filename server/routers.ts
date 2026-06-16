@@ -169,6 +169,11 @@ import {
   toggleFavorite,
   getFavoritesByStudent,
   updateFavoriteNote,
+  createStudentRegistrationInvitation,
+  getStudentRegistrationInvitation,
+  markStudentRegistrationInvitationUsed,
+  getExaminerRegistrationInvitations,
+  revokeStudentRegistrationInvitation,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -471,6 +476,7 @@ export const appRouter = router({
           department: z.string().optional(),
           thesisType: z.enum(["bachelor", "master"]).optional(),
           origin: z.string().url().optional(),
+          inviteToken: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
@@ -535,6 +541,27 @@ export const appRouter = router({
         const newUser = await getUserByEmail(input.email);
         if (newUser) {
           await addUserRole(newUser.id, input.role as AppRole);
+          // Automatische Freischaltung bei gültigem Einladungs-Token
+          if (input.inviteToken) {
+            try {
+              const inv = await getStudentRegistrationInvitation(input.inviteToken);
+              const isValidInvite = inv && !inv.revoked && !inv.usedAt &&
+                new Date() <= new Date(inv.expiresAt) &&
+                inv.studentEmail.toLowerCase() === input.email.toLowerCase();
+              if (isValidInvite) {
+                const drizzleDb2 = await getDb();
+                if (drizzleDb2) {
+                  const { users: usersTable } = await import("../drizzle/schema");
+                  await drizzleDb2.update(usersTable)
+                    .set({ roleStatus: "approved" as any })
+                    .where((await import("drizzle-orm")).eq(usersTable.id, newUser.id));
+                  await markStudentRegistrationInvitationUsed({ token: input.inviteToken, userId: newUser.id });
+                }
+              }
+            } catch (invErr) {
+              console.warn("[Register] Einladungs-Token-Verarbeitung fehlgeschlagen:", invErr);
+            }
+          }
         }
         await createAuditLogEntry({
           action: "USER_REGISTERED",
@@ -3337,6 +3364,144 @@ export const appRouter = router({
         await invalidateDocTokensForRequest(input.requestId);
         return result;
       }),
+
+    /**
+     * Prüfer lädt Studierende per E-Mail zur Registrierung ein (nur E-Mail-Adresse nötig).
+     * Wer über diesen Token registriert, wird automatisch freigeschaltet.
+     */
+    sendRegistrationInvite: protectedProcedure
+      .input(z.object({
+        studentEmail: z.string().email(),
+        emailLang: z.enum(["de", "en"]).default("de"),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isExaminer = userHasRole(ctx.user, "examiner");
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isExaminer && !isAdmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen können Studierende einladen." });
+        }
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString().slice(0, 19).replace("T", " ");
+        await createStudentRegistrationInvitation({
+          token,
+          examinerId: ctx.user.id,
+          studentEmail: input.studentEmail,
+          emailLang: input.emailLang,
+          expiresAt,
+        });
+        const { buildFullName } = await import("@shared/const");
+        const examinerName = buildFullName({
+          firstName: (ctx.user as any).firstName,
+          lastName: (ctx.user as any).lastName,
+          academicTitle: (ctx.user as any).academicTitle,
+          name: ctx.user.name,
+        });
+        const registerUrl = `${input.origin}/register?inviteToken=${token}`;
+        const logoUrl = `${input.origin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
+        const isDE = input.emailLang !== "en";
+        const subject = isDE
+          ? `Einladung zur Registrierung – HTW Berlin Thesis Match Maker`
+          : `Invitation to register – HTW Berlin Thesis Match Maker`;
+        const html = isDE ? `<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+      <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
+        <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
+        <span style="color:#ffffff;font-size:18px;font-weight:bold">Thesis Match Maker</span><br>
+        <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Fachbereich 3</span>
+      </td></tr>
+      <tr><td style="padding:32px">
+        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Einladung zur Registrierung</h2>
+        <p style="color:#374151;font-size:14px;margin:0 0 16px 0">Sehr geehrte:r Studierende:r,</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 16px 0"><strong>${examinerName}</strong> hat Sie eingeladen, sich im HTW Berlin Thesis Match Maker zu registrieren, um Ihren Abschlussarbeits-Antrag zu stellen.</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 24px 0">Bitte klicken Sie auf den folgenden Button, um sich zu registrieren. Alle weiteren Angaben nehmen Sie selbst vor.</p>
+        <p style="margin:0 0 32px 0;text-align:center">
+          <a href="${registerUrl}" style="background:#76B900;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-size:15px;font-weight:bold">Jetzt registrieren</a>
+        </p>
+        <p style="color:#6b7280;font-size:13px;margin:0 0 8px 0">Dieser Einladungslink ist 30 Tage g&uuml;ltig.</p>
+        <p style="color:#6b7280;font-size:13px;margin:0 0 24px 0">Falls Sie diesen Link nicht angefordert haben, k&ouml;nnen Sie diese E-Mail ignorieren.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
+        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">&#9888; <strong>Hinweis:</strong> Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>` : `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+      <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
+        <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
+        <span style="color:#ffffff;font-size:18px;font-weight:bold">Thesis Match Maker</span><br>
+        <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Department 3</span>
+      </td></tr>
+      <tr><td style="padding:32px">
+        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Invitation to Register</h2>
+        <p style="color:#374151;font-size:14px;margin:0 0 16px 0">Dear Student,</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 16px 0"><strong>${examinerName}</strong> has invited you to register on the HTW Berlin Thesis Match Maker to submit your thesis application.</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 24px 0">Please click the button below to register. You will fill in all further details yourself.</p>
+        <p style="margin:0 0 32px 0;text-align:center">
+          <a href="${registerUrl}" style="background:#76B900;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-size:15px;font-weight:bold">Register now</a>
+        </p>
+        <p style="color:#6b7280;font-size:13px;margin:0 0 8px 0">This invitation link is valid for 30 days.</p>
+        <p style="color:#6b7280;font-size:13px;margin:0 0 24px 0">If you did not request this, you can safely ignore this email.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
+        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">&#9888; <strong>Note:</strong> This is an unofficial tool at HTW Berlin, installed for testing purposes.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+        await sendEmail({ to: input.studentEmail, subject, html });
+        return { success: true, token };
+      }),
+
+    /** Gibt alle Registrierungs-Einladungen des eingeloggten Prüfers zurück. */
+    getMyRegistrationInvites: examinerProcedure.query(async ({ ctx }) => {
+      return getExaminerRegistrationInvitations(ctx.user.id);
+    }),
+
+    /** Widerruft eine Registrierungs-Einladung. */
+    revokeRegistrationInvite: protectedProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        await revokeStudentRegistrationInvitation({ token: input.token, callerId: ctx.user.id, isAdmin });
+        return { success: true };
+      }),
+
+    /**
+     * Öffentlich: Prüft ob ein Registrierungs-Einladungs-Token gültig ist.
+     */
+    validateRegistrationInvite: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const inv = await getStudentRegistrationInvitation(input.token);
+        if (!inv) throw new TRPCError({ code: "NOT_FOUND", message: "Einladungs-Token nicht gefunden." });
+        if (inv.revoked) throw new TRPCError({ code: "FORBIDDEN", message: "Diese Einladung wurde widerrufen." });
+        const now = new Date();
+        const expires = new Date(inv.expiresAt);
+        if (now > expires) throw new TRPCError({ code: "FORBIDDEN", message: "Diese Einladung ist abgelaufen." });
+        if (inv.usedAt) throw new TRPCError({ code: "FORBIDDEN", message: "Diese Einladung wurde bereits verwendet." });
+        const examiner = await getUserById(inv.examinerId);
+        const { buildFullName } = await import("@shared/const");
+        const examinerName = examiner ? buildFullName({
+          firstName: (examiner as any).firstName,
+          lastName: (examiner as any).lastName,
+          academicTitle: (examiner as any).academicTitle,
+          name: examiner.name,
+        }) : "";
+        return { valid: true, studentEmail: inv.studentEmail, examinerName, emailLang: inv.emailLang };
+      }),
+
   }),
 });
 export type AppRouter = typeof appRouter;

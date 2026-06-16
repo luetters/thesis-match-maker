@@ -379,6 +379,13 @@
       "when": 1781098945952,
       "tag": "0053_orange_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1781608509543,
+      "tag": "0054_cool_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

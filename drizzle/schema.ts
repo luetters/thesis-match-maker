@@ -451,3 +451,19 @@ export const examinerFavorites = mysqlTable("examiner_favorites", {
   createdAt: timestamp({ mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 export type InsertExaminerFavorite = typeof examinerFavorites.$inferInsert;
+
+// ─── Student Registration Invitations ────────────────────────────────────────
+export const studentRegistrationInvitations = mysqlTable("student_registration_invitations", {
+  id: int().autoincrement().notNull().primaryKey(),
+  token: varchar({ length: 128 }).notNull().unique(),
+  examinerId: int("examiner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  studentEmail: varchar("student_email", { length: 320 }).notNull(),
+  emailLang: varchar("email_lang", { length: 4 }).notNull().default("de"),
+  usedAt: datetime("used_at", { mode: "string" }),
+  usedByUserId: int("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: datetime("expires_at", { mode: "string" }).notNull(),
+  revoked: tinyint().default(0).notNull(),
+});
+export type InsertStudentRegistrationInvitation = typeof studentRegistrationInvitations.$inferInsert;
+

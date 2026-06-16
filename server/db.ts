@@ -5500,3 +5500,67 @@ export async function updateFavoriteNote(studentId: number, examinerId: number, 
     .set({ note })
     .where(and(eq(examinerFavorites.studentId, studentId), eq(examinerFavorites.examinerId, examinerId)));
 }
+
+// ─── Student Registration Invitations ────────────────────────────────────────
+import { studentRegistrationInvitations as _sri } from "../drizzle/schema";
+
+/** Erstellt eine neue Registrierungs-Einladung durch einen Prüfer. */
+export async function createStudentRegistrationInvitation(params: {
+  token: string;
+  examinerId: number;
+  studentEmail: string;
+  emailLang: "de" | "en";
+  expiresAt: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.insert(_sri).values({
+    token: params.token,
+    examinerId: params.examinerId,
+    studentEmail: params.studentEmail,
+    emailLang: params.emailLang,
+    expiresAt: params.expiresAt,
+    revoked: 0,
+  });
+}
+
+/** Holt eine Einladung anhand des Tokens. */
+export async function getStudentRegistrationInvitation(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(_sri).where(eq(_sri.token, token)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Markiert eine Einladung als verwendet. */
+export async function markStudentRegistrationInvitationUsed(params: {
+  token: string;
+  userId: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(_sri).set({ usedAt: now, usedByUserId: params.userId }).where(eq(_sri.token, params.token));
+}
+
+/** Gibt alle Einladungen eines Prüfers zurück. */
+export async function getExaminerRegistrationInvitations(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(_sri).where(eq(_sri.examinerId, examinerId)).orderBy(_sri.createdAt);
+}
+
+/** Widerruft eine Einladung. */
+export async function revokeStudentRegistrationInvitation(params: {
+  token: string;
+  callerId: number;
+  isAdmin: boolean;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const rows = await db.select({ examinerId: _sri.examinerId }).from(_sri).where(eq(_sri.token, params.token)).limit(1);
+  const inv = rows[0];
+  if (!inv) throw new Error("Einladung nicht gefunden.");
+  if (!params.isAdmin && inv.examinerId !== params.callerId) throw new Error("Keine Berechtigung.");
+  await db.update(_sri).set({ revoked: 1 }).where(eq(_sri.token, params.token));
+}

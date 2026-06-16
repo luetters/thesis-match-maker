@@ -91,25 +91,19 @@ const DEPT_OPTIONS = [
 function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [studentEmail, setStudentEmail] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [department, setDepartment] = useState("");
-  const [targetSemester, setTargetSemester] = useState("");
-  const [language, setLanguage] = useState<"de" | "en">("de");
-  const [degreeType, setDegreeType] = useState<"bachelor" | "master">("bachelor");
+  const [emailLang, setEmailLang] = useState<"de" | "en">("de");
 
-  const createDraft = trpc.invite.createDraft.useMutation({
+  const sendInvite = trpc.invite.sendRegistrationInvite.useMutation({
     onSuccess: () => {
-      toast.success("Einladung wurde erfolgreich versandt. Der Studierende erhält eine E-Mail zur Bestätigung.");
+      toast.success("Einladung wurde erfolgreich versandt. Der Studierende erhält eine E-Mail mit einem direkten Registrierungslink.");
       setOpen(false);
-      setStudentEmail(""); setTitle(""); setDescription(""); setDepartment(""); setTargetSemester("");
+      setStudentEmail("");
       onSuccess?.();
     },
     onError: (err) => toast.error(err.message ?? "Fehler beim Versenden der Einladung."),
   });
 
-  const semesters = getNextSemesters();
-  const canSubmit = studentEmail && title.trim().length >= 3 && description.trim().length >= 10 && department && targetSemester;
+  const canSubmit = studentEmail.trim().length > 0;
 
   if (!open) {
     return (
@@ -127,75 +121,44 @@ function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold" style={{ color: "#76B900" }}>Studierenden zur Antragstellung einladen</h3>
+        <h3 className="font-bold" style={{ color: "#76B900" }}>Studierenden zur Registrierung einladen</h3>
         <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
       </div>
       <p className="text-sm text-gray-500">
-        Tragen Sie die E-Mail-Adresse des Studierenden und die Eckdaten der Abschlussarbeit ein.
-        Der Studierende erhält eine E-Mail und kann die Angaben ergänzen und bestätigen.
-        Erst nach der Bestätigung beginnt die Suche nach einer Zweitgutachter:in.
+        Tragen Sie die E-Mail-Adresse des Studierenden ein. Der Studierende erhält eine E-Mail mit einem direkten Registrierungslink
+        und wird nach der Registrierung automatisch freigeschaltet. Alle weiteren Angaben nimmt der Studierende selbst vor.
       </p>
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold text-gray-700">E-Mail-Adresse des Studierenden <span className="text-red-500">*</span></Label>
-          <Input type="email" value={studentEmail} onChange={e => setStudentEmail(e.target.value)} placeholder="vorname.nachname@htw-berlin.de" className="text-sm" />
+          <Input
+            type="email"
+            value={studentEmail}
+            onChange={e => setStudentEmail(e.target.value)}
+            placeholder="vorname.nachname@student.htw-berlin.de"
+            className="text-sm"
+          />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold text-gray-700">Thema der Abschlussarbeit <span className="text-red-500">*</span></Label>
-          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Vorläufiger Titel" className="text-sm" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-semibold text-gray-700">Aufgabenstellung / Beschreibung <span className="text-red-500">*</span></Label>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Kurze Beschreibung der Aufgabenstellung" rows={3} className="text-sm resize-none" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold text-gray-700">Fachbereich <span className="text-red-500">*</span></Label>
-            <Select value={department} onValueChange={setDepartment}>
-              <SelectTrigger className="text-sm"><SelectValue placeholder="Fachbereich wählen" /></SelectTrigger>
-              <SelectContent>{DEPT_OPTIONS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold text-gray-700">Zielsemester <span className="text-red-500">*</span></Label>
-            <Select value={targetSemester} onValueChange={setTargetSemester}>
-              <SelectTrigger className="text-sm"><SelectValue placeholder="Semester wählen" /></SelectTrigger>
-              <SelectContent>{semesters.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold text-gray-700">Abschlussart</Label>
-            <Select value={degreeType} onValueChange={v => setDegreeType(v as "bachelor" | "master")}>
-              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bachelor">Bachelor</SelectItem>
-                <SelectItem value="master">Master</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-semibold text-gray-700">Sprache der Arbeit</Label>
-            <Select value={language} onValueChange={v => setLanguage(v as "de" | "en")}>
-              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="de">Deutsch</SelectItem>
-                <SelectItem value="en">Englisch</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Label className="text-sm font-semibold text-gray-700">Sprache der Einladungs-E-Mail</Label>
+          <Select value={emailLang} onValueChange={v => setEmailLang(v as "de" | "en")}>
+            <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+              <SelectItem value="en">🇬🇧 English</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex gap-3 justify-end pt-2">
         <Button variant="outline" onClick={() => setOpen(false)} className="text-sm">Abbrechen</Button>
         <Button
-          disabled={!canSubmit || createDraft.isPending}
-          onClick={() => createDraft.mutate({ studentEmail, title: title.trim(), description: description.trim(), department, targetSemester, language, degreeType, origin: window.location.origin })}
+          disabled={!canSubmit || sendInvite.isPending}
+          onClick={() => sendInvite.mutate({ studentEmail: studentEmail.trim(), emailLang, origin: window.location.origin })}
           className="text-sm text-white"
           style={{ backgroundColor: "#76B900" }}
         >
-          {createDraft.isPending ? "Wird gesendet…" : "Einladung versenden"}
+          {sendInvite.isPending ? "Wird gesendet…" : "Einladung versenden"}
         </Button>
       </div>
     </div>

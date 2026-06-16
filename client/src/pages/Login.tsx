@@ -114,6 +114,7 @@ export default function Login() {
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get("returnTo") ?? "/";
   const urlError = params.get("error");
+  const inviteToken = params.get("inviteToken") ?? undefined;
 
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
@@ -219,6 +220,7 @@ export default function Login() {
       department: (selectedRole === "student") ? regFachbereich : undefined,
       thesisType: (selectedRole === "student") ? regDegreeType : undefined,
       origin: window.location.origin,
+      ...(inviteToken ? { inviteToken } : {}),
     };
     registerMutation.mutate(regPayload);
   }
