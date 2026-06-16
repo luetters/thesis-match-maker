@@ -218,6 +218,7 @@ export default function Login() {
       programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
       department: (selectedRole === "student") ? regFachbereich : undefined,
       thesisType: (selectedRole === "student") ? regDegreeType : undefined,
+      origin: window.location.origin,
     };
     registerMutation.mutate(regPayload);
   }
