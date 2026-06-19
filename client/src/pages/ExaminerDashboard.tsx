@@ -1114,6 +1114,7 @@ function sortRequests<T extends { studentName?: string | null; programmeName?: s
 
 function RequestsView() {
   const [sortKey, setSortKey] = useState<RequestSortKey>("date");
+  const [filterMissingSecond, setFilterMissingSecond] = useState(false);
   const { data: assignedRequests, isLoading: loadingAssigned } = trpc.thesis.examinerRequests.useQuery();
   const { data: pendingRequests, isLoading: loadingPending } = trpc.examiner.getPendingRequests.useQuery();
   const isLoading = loadingAssigned || loadingPending;
@@ -1150,9 +1151,13 @@ function RequestsView() {
     );
   }
 
-  const awaitingApproval = sortRequests(allRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
-  const pending = sortRequests(allRequests.filter((r) => r.status === "PENDING"), sortKey);
-  const others = sortRequests(allRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER"), sortKey);
+  // Filter: nur Anfragen ohne Zweitgutachter
+  const filteredRequests = filterMissingSecond
+    ? allRequests.filter((r: any) => !r.secondExaminerName || r.secondExaminerName.trim() === "")
+    : allRequests;
+  const awaitingApproval = sortRequests(filteredRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
+  const pending = sortRequests(filteredRequests.filter((r) => r.status === "PENDING"), sortKey);
+  const others = sortRequests(filteredRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER"), sortKey);
 
   const sortOptions: { value: RequestSortKey; label: string }[] = [
     { value: "date", label: "Neueste zuerst" },
@@ -1166,6 +1171,21 @@ function RequestsView() {
     <div className="space-y-6">
       {/* Sortier-Leiste */}
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Filter: Zweitgutachter fehlt */}
+        <button
+          onClick={() => setFilterMissingSecond((v) => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+            filterMissingSecond
+              ? "bg-amber-100 text-amber-700 border-amber-300"
+              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          {filterMissingSecond ? "Zweitgutachter fehlt ✓" : "Zweitgutachter fehlt"}
+        </button>
+        <span className="text-xs text-gray-300">|</span>
         <span className="text-xs text-gray-500 font-medium">Sortieren nach:</span>
         <div className="flex flex-wrap gap-1.5">
           {sortOptions.map((opt) => (
