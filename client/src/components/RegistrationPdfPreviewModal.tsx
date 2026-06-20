@@ -18,9 +18,13 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filename, setFilename] = useState(`anmeldung-${thesisId}.pdf`);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let objectUrl: string | null = null;
+    setLoading(true);
+    setError(null);
+    setBlobUrl(null);
 
     async function load() {
       try {
@@ -52,7 +56,7 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [thesisId]);
+  }, [thesisId, retryKey]);
 
   // Herunterladen über die bereits geladene Blob-URL
   function handleDownload() {
@@ -134,11 +138,22 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
             </div>
           )}
           {error && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-red-600 px-8 text-center">
-              <svg className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <p className="text-sm font-medium">{error}</p>
+            <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
+              <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-1">Dokument konnte nicht geladen werden</p>
+                <p className="text-sm text-gray-500 max-w-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setRetryKey(k => k + 1)}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
+              >
+                Erneut versuchen
+              </button>
             </div>
           )}
           {blobUrl && !loading && (

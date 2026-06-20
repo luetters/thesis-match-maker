@@ -352,9 +352,14 @@ export function registerUploadRoutes(app: Express) {
       res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
       res.send(pdfBuffer);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "PDF-Generierung fehlgeschlagen";
       console.error("[PDF] Fehler:", err);
-      res.status(500).json({ error: message });
+      // SQL-Fehler und interne Fehler nicht an den Client weitergeben
+      const raw = err instanceof Error ? err.message : String(err);
+      const isSqlError = raw.toLowerCase().includes("insert") || raw.toLowerCase().includes("query") || raw.toLowerCase().includes("sql") || raw.toLowerCase().includes("database");
+      const userMessage = isSqlError
+        ? "Das Anmeldedokument konnte nicht erstellt werden. Bitte wenden Sie sich an die Verwaltung."
+        : "Das Anmeldedokument konnte nicht generiert werden. Bitte versuchen Sie es erneut.";
+      res.status(500).json({ error: userMessage });
     }
   });
 
