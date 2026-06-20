@@ -5428,20 +5428,28 @@ export async function createThesisDocToken(data: Omit<InsertThesisDocToken, "id"
   if (!db) return;
   // Normalisierungsfunktion: leere Strings und undefined -> null
   const n = (v: string | null | undefined): string | null => (v && v.trim()) ? v.trim() : null;
-  // Expliziter INSERT ohne undefined-Werte (MySQL STRICT_TRANS_TABLES-kompatibel)
-  await db.insert(thesisDocTokens).values({
+  // Pflichtfelder
+  const row: Record<string, unknown> = {
     token: data.token,
     thesisRequestId: data.thesisRequestId,
     studentName: data.studentName,
-    matrikelNr: n(data.matrikelNr),
-    programmeName: n(data.programmeName),
     title: data.title,
-    firstExaminerName: n(data.firstExaminerName),
-    secondExaminerName: n(data.secondExaminerName),
-    targetSemester: n(data.targetSemester),
-    degreeType: n(data.degreeType),
     revoked: 0,
-  });
+  };
+  // Optionale Felder nur einfügen wenn sie einen Wert haben (kein leerer String / null)
+  const matrikelNr = n(data.matrikelNr);
+  if (matrikelNr) row.matrikelNr = matrikelNr;
+  const programmeName = n(data.programmeName);
+  if (programmeName) row.programmeName = programmeName;
+  const firstExaminerName = n(data.firstExaminerName);
+  if (firstExaminerName) row.firstExaminerName = firstExaminerName;
+  const secondExaminerName = n(data.secondExaminerName);
+  if (secondExaminerName) row.secondExaminerName = secondExaminerName;
+  const targetSemester = n(data.targetSemester);
+  if (targetSemester) row.targetSemester = targetSemester;
+  const degreeType = n(data.degreeType);
+  if (degreeType) row.degreeType = degreeType;
+  await db.insert(thesisDocTokens).values(row as any);
 }
 
 export async function getThesisDocTokenByToken(token: string) {
