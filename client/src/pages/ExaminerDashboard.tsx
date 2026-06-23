@@ -4,7 +4,7 @@ import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -446,6 +446,50 @@ function PdfPreviewModal({ url, onClose }: { url: string; onClose: () => void })
   );
 }
 
+/** Kleine Formatierungs-Toolbar für Notiz-Textareas */
+function FormatToolbar({ onBold, onItalic, onBullet }: { onBold: () => void; onItalic: () => void; onBullet: () => void }) {
+  return (
+    <div className="flex items-center gap-0.5 border border-gray-200 rounded-t-lg bg-gray-50 px-2 py-1">
+      <button
+        type="button"
+        onMouseDown={(e) => { e.preventDefault(); onBold(); }}
+        title="Fett (Strg+B)"
+        className="p-1 rounded hover:bg-gray-200 transition-colors text-gray-600 font-bold text-xs w-6 h-6 flex items-center justify-center"
+      >B</button>
+      <button
+        type="button"
+        onMouseDown={(e) => { e.preventDefault(); onItalic(); }}
+        title="Kursiv (Strg+I)"
+        className="p-1 rounded hover:bg-gray-200 transition-colors text-gray-600 italic text-xs w-6 h-6 flex items-center justify-center"
+      >I</button>
+      <div className="w-px h-4 bg-gray-300 mx-0.5" />
+      <button
+        type="button"
+        onMouseDown={(e) => { e.preventDefault(); onBullet(); }}
+        title="Aufzählungszeichen"
+        className="p-1 rounded hover:bg-gray-200 transition-colors text-gray-600 text-xs w-6 h-6 flex items-center justify-center"
+      >•</button>
+      <span className="ml-auto text-[10px] text-gray-400 select-none">Markdown</span>
+    </div>
+  );
+}
+
+/** Rendert einfaches Markdown (Fett, Kursiv, Aufzählungen) als HTML */
+function MarkdownNote({ content }: { content: string }) {
+  const html = content
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .split("\n")
+    .map((line) => {
+      const isBullet = line.trimStart().startsWith("- ");
+      let l = isBullet ? line.replace(/^(\s*)- /, "$1") : line;
+      l = l.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      l = l.replace(/_(.+?)_/g, "<em>$1</em>");
+      return isBullet ? `<li class="ml-4 list-disc">${l}</li>` : `<span>${l}</span>`;
+    })
+    .join("\n");
+  return <div className="text-sm text-gray-800 space-y-0.5 [&_li]:list-disc [&_li]:ml-4" dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
@@ -466,7 +510,39 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const newCommentRef = useRef<HTMLTextAreaElement>(null);
+  const editCommentRef = useRef<HTMLTextAreaElement>(null);
   const utils = trpc.useUtils();
+
+  /** Fügt Markdown-Formatierung um den selektierten Text ein. */
+  const insertFormat = useCallback((marker: string, setter: (v: string) => void, getValue: () => string, ref: React.RefObject<HTMLTextAreaElement | null>) => {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const val = getValue();
+    const selected = val.slice(start, end);
+    const replacement = selected ? `${marker}${selected}${marker}` : `${marker}Text${marker}`;
+    const next = val.slice(0, start) + replacement + val.slice(end);
+    setter(next);
+    setTimeout(() => {
+      el.focus();
+      const newCursor = selected ? start + replacement.length : start + marker.length;
+      el.setSelectionRange(newCursor - (selected ? 0 : marker.length + 4), newCursor - (selected ? 0 : marker.length));
+    }, 0);
+  }, []);
+
+  /** Fügt ein Aufzählungszeichen am Zeilenanfang ein. */
+  const insertBullet = useCallback((setter: (v: string) => void, getValue: () => string, ref: React.RefObject<HTMLTextAreaElement | null>) => {
+    const el = ref.current;
+    if (!el) return;
+    const val = getValue();
+    const start = el.selectionStart;
+    const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+    const next = val.slice(0, lineStart) + "- " + val.slice(lineStart);
+    setter(next);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + 2, start + 2); }, 0);
+  }, []);
 
   const { data: comments, isLoading: commentsLoading } = trpc.examinerComments.list.useQuery(
     { thesisRequestId: req.id },
@@ -750,12 +826,18 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 {comments.map((c) => (
                   <div key={c.id} className="bg-gray-50 rounded-xl p-3">
                     {editingCommentId === c.id ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
+                        <FormatToolbar
+                          onBold={() => insertFormat("**", setEditingContent, () => editingContent, editCommentRef)}
+                          onItalic={() => insertFormat("_", setEditingContent, () => editingContent, editCommentRef)}
+                          onBullet={() => insertBullet(setEditingContent, () => editingContent, editCommentRef)}
+                        />
                         <textarea
+                          ref={editCommentRef}
                           value={editingContent}
                           onChange={(e) => setEditingContent(e.target.value)}
                           rows={3}
-                          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40"
+                          className="w-full text-sm border border-gray-200 rounded-b-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 font-mono"
                         />
                         <div className="flex gap-2">
                           <button
@@ -776,7 +858,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                       </div>
                     ) : (
                       <>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.content}</p>
+                        <MarkdownNote content={c.content} />
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-gray-400">
                             {new Date(c.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -808,13 +890,19 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             )}
 
             {/* Neue Notiz hinzufügen */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
+              <FormatToolbar
+                onBold={() => insertFormat("**", setNewComment, () => newComment, newCommentRef)}
+                onItalic={() => insertFormat("_", setNewComment, () => newComment, newCommentRef)}
+                onBullet={() => insertBullet(setNewComment, () => newComment, newCommentRef)}
+              />
               <textarea
+                ref={newCommentRef}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Neue Notiz hinzufügen…"
-                rows={2}
-                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40"
+                rows={3}
+                className="w-full text-sm border border-gray-200 rounded-b-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 font-mono"
               />
               <button
                 onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment })}
