@@ -1528,25 +1528,36 @@ function ProfileEdit() {
   });
   const upcomingSemesters = generateUpcomingSemesters();
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
-  const [capacitiesInitialized, setCapacitiesInitialized] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  // Beim ersten Laden (und nur dann) die gespeicherten Werte in den lokalen State übernehmen
   useEffect(() => {
-    // Warten bis die echten Daten geladen sind (nicht nur isLoading=false wegen Cache)
+    // Warten bis die echten Daten vom Server geladen sind
     if (capsLoading) return;
-    if (isLoading) return;
+    // Nicht überschreiben während wir gerade speichern (Race Condition vermeiden)
+    if (isSaving) return;
     const merged = upcomingSemesters.map((sem) => {
       const saved = (savedCapacities as SemesterCapacity[]).find((c) => c.semester === sem);
       return { semester: sem, maxFirst: saved?.maxFirst ?? 0, maxSecond: saved?.maxSecond ?? 0 };
     });
     setCapacities(merged);
-    setCapacitiesInitialized(true);
-  }, [savedCapacities, capsLoading, isLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCapacities, capsLoading]);
   const handleSaveCapacities = async () => {
-    for (const cap of capacities) {
-      await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
+    setIsSaving(true);
+    try {
+      // Optimistisch den Cache direkt setzen (verhindert Reset auf 0)
+      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
+      for (const cap of capacities) {
+        await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
+      }
+      toast.success("Kapazitäten gespeichert!");
+      // Jetzt erst den echten Server-Stand laden (isSaving noch true → kein Überschreiben)
+      await utils.examiner.getSemesterCapacities.invalidate();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Fehler beim Speichern");
+    } finally {
+      setIsSaving(false);
     }
-    // Cache nach Speichern invalidieren damit beim nächsten Laden die echten Werte kommen
-    await utils.examiner.getSemesterCapacities.invalidate();
-    toast.success("Kapazitäten gespeichert!");
   };
 
   const [form, setForm] = useState({
