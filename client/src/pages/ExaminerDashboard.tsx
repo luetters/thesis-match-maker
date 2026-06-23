@@ -1498,18 +1498,18 @@ type SemesterCapacity = { semester: string; maxFirst: number; maxSecond: number 
 
 function ProfileEdit() {
   const { t } = useLanguage();
-  const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
-  const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
+    const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
+  const { data: savedCapacities = [], isLoading: capsLoading } = trpc.examiner.getSemesterCapacities.useQuery();
+  const utils = trpc.useUtils();
   const upsertCapacity = trpc.examiner.upsertSemesterCapacity.useMutation({
     onError: (err) => toast.error(err.message),
   });
-
   const upcomingSemesters = generateUpcomingSemesters();
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
   const [capacitiesInitialized, setCapacitiesInitialized] = useState(false);
-
   useEffect(() => {
-    if (capacitiesInitialized) return;
+    // Warten bis die echten Daten geladen sind (nicht nur isLoading=false wegen Cache)
+    if (capsLoading) return;
     if (isLoading) return;
     const merged = upcomingSemesters.map((sem) => {
       const saved = (savedCapacities as SemesterCapacity[]).find((c) => c.semester === sem);
@@ -1517,12 +1517,13 @@ function ProfileEdit() {
     });
     setCapacities(merged);
     setCapacitiesInitialized(true);
-  }, [savedCapacities, isLoading, capacitiesInitialized]);
-
+  }, [savedCapacities, capsLoading, isLoading]);
   const handleSaveCapacities = async () => {
     for (const cap of capacities) {
       await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
     }
+    // Cache nach Speichern invalidieren damit beim nächsten Laden die echten Werte kommen
+    await utils.examiner.getSemesterCapacities.invalidate();
     toast.success("Kapazitäten gespeichert!");
   };
 
