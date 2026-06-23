@@ -191,6 +191,7 @@ import {
 import { createIcsEvent } from "./icsHelper";
 import { storagePut } from "./storage";
 import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
+import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, defenseEligibilityEmail, directAssignmentEmail, defaultExaminerTemplate, type Lang } from "./emailTemplates";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -876,11 +877,20 @@ export const appRouter = router({
             const ex = await getUserById(exId);
             if (!ex?.email) continue;
             const exEmailTo = (await resolveExaminerEmail(exId)) ?? ex.email;
-            await sendEmail({
-              to: exEmailTo,
-              subject: `Thesis Match: Statusänderung – ${existing.title}`,
-              html: `<p>Guten Tag ${ex.name ?? "Prüfer:in"},</p><p>der Status der Abschlussarbeit <strong>${existing.title}</strong> hat sich geändert: <strong>${input.status}</strong>.</p>${input.reason ? `<p>Begründung: ${input.reason}</p>` : ""}<p>Weitere Details finden Sie im <a href="${origin}/examiner">Prüfer:innen-Dashboard</a>.</p>`,
+            const exLang: Lang = (ex.preferredLanguage as Lang) ?? "de";
+            const statusLabel = input.status === "ACCEPTED" ? (exLang === "en" ? "Accepted" : "Angenommen")
+              : input.status === "REJECTED" ? (exLang === "en" ? "Rejected" : "Abgelehnt")
+              : input.status === "MATCHED" ? "Matched"
+              : input.status;
+            const statusBodyText = exLang === "en"
+              ? `The status of the thesis "${existing.title}" has changed to: ${statusLabel}.${input.reason ? " Reason: " + input.reason : ""} View details in the <a href="${origin}/examiner">examiner dashboard</a>.`
+              : `Der Status der Abschlussarbeit "${existing.title}" hat sich geändert: ${statusLabel}.${input.reason ? " Begründung: " + input.reason : ""} Weitere Details im <a href="${origin}/examiner">Prüfer:innen-Dashboard</a>.`;
+            const exStatusTpl = statusChangeEmail(exLang, {
+              studentName: ex.name,
+              thesisTitle: existing.title ?? "",
+              statusText: statusBodyText,
             });
+            await sendEmail({ to: exEmailTo, subject: exStatusTpl.subject, html: exStatusTpl.html });
           }
         }
         return { success: true };
@@ -2085,22 +2095,32 @@ export const appRouter = router({
           actionToken: token,
           emailSentAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         });
-        // E-Mail an Prüfer:in
+        // E-Mail an Prüfer:in (zweisprachig)
         const examinerEmail = await resolveExaminerEmail(input.examinerId);
         const thesis = await getThesisRequestById(input.thesisRequestId);
         if (examinerEmail && thesis) {
           const { sendEmail } = await import("./emailHelper");
+          const examinerUser = await getUserById(input.examinerId);
+          const examinerLang: Lang = (examinerUser?.preferredLanguage as Lang) ?? "de";
           const acceptUrl = `${input.origin}/pav/respond?token=${token}&action=accept`;
           const declineUrl = `${input.origin}/pav/respond?token=${token}&action=decline`;
+          const tpl = examinerRequestEmail(examinerLang, {
+            examinerName: examinerUser?.name,
+            role: input.examinerRole,
+            thesisTitle: thesis.title ?? "Abschlussarbeit",
+            studentName: "",
+            actionUrl: acceptUrl,
+          });
+          const acceptLabel = examinerLang === "en" ? "Accept request" : "Anfrage annehmen";
+          const declineLabel = examinerLang === "en" ? "Decline request" : "Anfrage ablehnen";
+          const ctaHtml = `<p style="margin:20px 0 0 0">
+            <a href="${acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px">${acceptLabel}</a>
+            <a href="${declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600">${declineLabel}</a>
+          </p>`;
           await sendEmail({
             to: examinerEmail,
-            subject: `HTW Berlin – Anfrage als ${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}: ${thesis.title}`,
-            html: `<p>Sehr geehrte Damen und Herren,</p>
-<p>der Prüfungsausschuss hat Sie als <strong>${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}</strong> für folgende Abschlussarbeit vorgeschlagen:</p>
-<p><strong>${thesis.title}</strong></p>
-<p>Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:</p>
-<p><a href="${acceptUrl}">Anfrage annehmen</a> &nbsp;|&nbsp; <a href="${declineUrl}">Anfrage ablehnen</a></p>
-<p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsausschuss</p>`,
+            subject: tpl.subject,
+            html: tpl.html.replace("</td></tr>", ctaHtml + "</td></tr>"),
           });
         }
         return { success: true };
@@ -2154,14 +2174,14 @@ export const appRouter = router({
         }
         const student = await getUserById(thesis.studentId);
         if (student?.email) {
-          const statusText = input.eligibility === "approved"
-            ? "Ihre Anmeldefähigkeit wurde bestätigt. Ihr Antrag wird nun weiterbearbeitet."
-            : `Ihre Anmeldefähigkeit wurde nicht bestätigt. Ihr Antrag wurde abgelehnt.${input.note ? " Begründung: " + input.note : ""}`;
-          await sendEmail({
-            to: student.email,
-            subject: `HTW Berlin – Anmeldefähigkeit: ${thesis.title}`,
-            html: `<p>Sehr geehrte/r ${student.name ?? "Studierende/r"},</p><p>${statusText}</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
+          const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
+          const tpl = enrollmentEligibilityEmail(studentLang, {
+            studentName: student.name,
+            thesisTitle: thesis.title ?? "Abschlussarbeit",
+            eligible: input.eligibility === "approved",
+            note: input.note,
           });
+          await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
         }
         await createAuditLogEntry({
           thesisRequestId: input.thesisRequestId,
@@ -2185,14 +2205,14 @@ export const appRouter = router({
         await setDefenseEligibility(input.thesisRequestId, input.eligibility, ctx.user.id, input.note);
         const student = await getUserById(thesis.studentId);
         if (student?.email) {
-          const statusText = input.eligibility === "approved"
-            ? "Sie sind prüfungsfähig. Ihr Kolloquium kann geplant werden."
-            : `Sie sind derzeit nicht prüfungsfähig (Student not legally qualified to take final exam).${input.note ? " Begründung: " + input.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
-          await sendEmail({
-            to: student.email,
-            subject: `HTW Berlin – Prüfungsfähigkeit: ${thesis.title}`,
-            html: `<p>Sehr geehrte/r ${student.name ?? "Studierende/r"},</p><p>${statusText}</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
+          const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
+          const tpl = defenseEligibilityEmail(studentLang, {
+            studentName: student.name,
+            thesisTitle: thesis.title ?? "Abschlussarbeit",
+            eligible: input.eligibility === "approved",
+            note: input.note,
           });
+          await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
         }
         await createAuditLogEntry({
           thesisRequestId: input.thesisRequestId,
@@ -2236,22 +2256,17 @@ export const appRouter = router({
           action: "EXAMINER_ASSIGNED",
           metadata: { examinerId: input.examinerId, slot: input.examinerRole, assignedByPav: true, directAssignment: true },
         });
-        // Benachrichtigungs-E-Mail an Prüfer:in
+        // Benachrichtigungs-E-Mail an Prüfer:in (zweisprachig)
         const examinerEmail = await resolveExaminerEmail(input.examinerId);
         if (examinerEmail) {
-          await sendEmail({
-            to: examinerEmail,
-            subject: `HTW Berlin – Sie wurden als ${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"} zugewiesen: ${thesis.title ?? "Abschlussarbeit"}`,
-            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
-<div style="background:#006937;padding:24px;text-align:center"><h1 style="color:white;margin:0;font-size:20px">HTW Berlin – Thesis Match Maker</h1></div>
-<div style="padding:32px;background:#f9f9f9">
-<p>Sehr geehrte Damen und Herren,</p>
-<p>der Prüfungsausschuss hat Sie als <strong>${input.examinerRole === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}</strong> für folgende Abschlussarbeit direkt zugewiesen:</p>
-<p><strong>${thesis.title ?? "Abschlussarbeit"}</strong></p>
-<p>Diese Zuweisung ist verbindlich und erfordert keine weitere Bestätigung Ihrerseits. Bei Rückfragen wenden Sie sich bitte an den Prüfungsausschuss.</p>
-<p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsausschuss</p>
-</div></div>`,
+          const examinerUser = await getUserById(input.examinerId);
+          const examinerLang: Lang = (examinerUser?.preferredLanguage as Lang) ?? "de";
+          const tpl = directAssignmentEmail(examinerLang, {
+            examinerName: examinerUser?.name,
+            role: input.examinerRole,
+            thesisTitle: thesis.title ?? "Abschlussarbeit",
           });
+          await sendEmail({ to: examinerEmail, subject: tpl.subject, html: tpl.html });
         }
         return { success: true };
       }),
@@ -3085,11 +3100,13 @@ export const appRouter = router({
         const templates = await getExaminerEmailTemplates(input.examinerId);
         const tpl = templates[input.templateType];
         let vars: { name?: string; thema?: string; semester?: string; studiengang?: string } = {};
+        let studentLang: Lang = "de";
         if (input.thesisRequestId) {
           const { getThesisRequestById: getTR, getUserById: getU } = await import("./db");
           const req = await getTR(input.thesisRequestId);
           if (req) {
             const student = await getU(req.studentId);
+            studentLang = (student?.preferredLanguage as Lang) ?? "de";
             vars = {
               name: student?.name ?? "",
               thema: req.title ?? "",
@@ -3097,6 +3114,21 @@ export const appRouter = router({
               studiengang: req.department ?? "",
             };
           }
+        }
+        // Wenn kein benutzerdefiniertes Template gespeichert: Standardvorlage in Empfängersprache
+        if (!tpl.subject && !tpl.body && input.templateType !== "requirements") {
+          const examinerUser = await getUserById(input.examinerId);
+          const defTpl = defaultExaminerTemplate(
+            studentLang,
+            input.templateType as "acceptance" | "rejection" | "fully_booked",
+            {
+              ...vars,
+              examinerName: examinerUser?.name ?? "",
+              examinerTitle: examinerUser?.academicTitle ?? "",
+              bookingUrl: examinerUser?.bookingUrl ?? "",
+            }
+          );
+          return { subject: defTpl.subject, body: defTpl.body };
         }
         return resolveEmailTemplate(tpl, vars);
       }),
@@ -3211,22 +3243,31 @@ export const appRouter = router({
           degreeType: input.degreeType,
           inviteToken: token,
         });
-        // Einladungs-E-Mail senden
+        // Einladungs-E-Mail senden (zweisprachig – Sprache des Einladenden)
         const confirmUrl = `${input.origin}/thesis/confirm?token=${token}`;
         const examinerName = ctx.user.name ?? "Ihre Prüfer:in";
-        await sendEmail({
-          to: input.studentEmail,
-          subject: `Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`,
-          html: `
-            <p>Sehr geehrte:r Studierende:r,</p>
-            <p><strong>${examinerName}</strong> hat einen Antrag für Ihre Abschlussarbeit angelegt:</p>
-            <p><strong>Thema:</strong> ${input.title}</p>
-            <p>Bitte überprüfen Sie die Angaben, ergänzen Sie Ihre Informationen und bestätigen Sie den Antrag unter folgendem Link:</p>
-            <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
-            <p>Dieser Link ist 14 Tage gültig.</p>
-            <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
-          `,
-        });
+        const inviteLang: Lang = (ctx.user.preferredLanguage as Lang) ?? "de";
+        const inviteSubject = inviteLang === "en"
+          ? `Invitation to confirm your thesis application – HTW Berlin`
+          : `Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`;
+        const inviteBody = inviteLang === "en" ? `
+          <p>Dear Student,</p>
+          <p><strong>${examinerName}</strong> has created a thesis application for you:</p>
+          <p><strong>Title:</strong> ${input.title}</p>
+          <p>Please review the details, add your information, and confirm the application:</p>
+          <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Confirm application</a></p>
+          <p>This link is valid for 14 days.</p>
+          <p>Kind regards,<br>HTW Berlin – Examination Office</p>
+        ` : `
+          <p>Sehr geehrte:r Studierende:r,</p>
+          <p><strong>${examinerName}</strong> hat einen Antrag für Ihre Abschlussarbeit angelegt:</p>
+          <p><strong>Thema:</strong> ${input.title}</p>
+          <p>Bitte überprüfen Sie die Angaben, ergänzen Sie Ihre Informationen und bestätigen Sie den Antrag unter folgendem Link:</p>
+          <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
+          <p>Dieser Link ist 14 Tage gültig.</p>
+          <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
+        `;
+        await sendEmail({ to: input.studentEmail, subject: inviteSubject, html: inviteBody });
         return { success: true, token };
       }),
 
@@ -3324,18 +3365,26 @@ export const appRouter = router({
           if (targetEmail) {
             const confirmUrl = `${input.origin}/thesis/confirm?token=${result.token}`;
             const examinerName = ctx.user.name ?? "Ihre Prüfer:in";
-            await sendEmail({
-              to: targetEmail,
-              subject: `Aktualisierte Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`,
-              html: `
-                <p>Sehr geehrte:r Studierende:r,</p>
-                <p><strong>${examinerName}</strong> hat Ihren Antrag für die Abschlussarbeit aktualisiert.</p>
-                ${input.title ? `<p><strong>Thema:</strong> ${input.title}</p>` : ""}
-                <p>Bitte überprüfen Sie die aktualisierten Angaben und bestätigen Sie den Antrag:</p>
-                <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
-                <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
-              `,
-            });
+            const resendLang: Lang = (ctx.user.preferredLanguage as Lang) ?? "de";
+            const resendSubject = resendLang === "en"
+              ? `Updated invitation to confirm your thesis application – HTW Berlin`
+              : `Aktualisierte Einladung zur Antragsbestätigung – Abschlussarbeit HTW Berlin`;
+            const resendBody = resendLang === "en" ? `
+              <p>Dear Student,</p>
+              <p><strong>${examinerName}</strong> has updated your thesis application.</p>
+              ${input.title ? `<p><strong>Title:</strong> ${input.title}</p>` : ""}
+              <p>Please review the updated details and confirm the application:</p>
+              <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Confirm application</a></p>
+              <p>Kind regards,<br>HTW Berlin – Examination Office</p>
+            ` : `
+              <p>Sehr geehrte:r Studierende:r,</p>
+              <p><strong>${examinerName}</strong> hat Ihren Antrag für die Abschlussarbeit aktualisiert.</p>
+              ${input.title ? `<p><strong>Thema:</strong> ${input.title}</p>` : ""}
+              <p>Bitte überprüfen Sie die aktualisierten Angaben und bestätigen Sie den Antrag:</p>
+              <p><a href="${confirmUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;">Antrag bestätigen</a></p>
+              <p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsamt</p>
+            `;
+            await sendEmail({ to: targetEmail, subject: resendSubject, html: resendBody });
           }
         }
         return { success: true };
