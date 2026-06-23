@@ -1,6 +1,7 @@
 /**
  * Thesis-Anmeldedokument PDF-Generator
  * Erzeugt ein zweisprachiges (DE/EN) PDF mit Verifikations-QR-Code.
+ * Immer genau eine Seite – kein automatischer Seitenumbruch.
  */
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
@@ -9,10 +10,14 @@ import { join } from "path";
 
 // Logo als Buffer einlesen (einmalig beim Modulstart)
 let logoBuffer: Buffer | null = null;
-try {
-  logoBuffer = readFileSync(join(__dirname, "ThesisMatchMaker.jpg"));
-} catch {
-  logoBuffer = null;
+const logoCandidates = ["HTW_Berlin_Logo.jpg", "ThesisMatchMaker.jpg"];
+for (const candidate of logoCandidates) {
+  try {
+    logoBuffer = readFileSync(join(__dirname, candidate));
+    break;
+  } catch {
+    // nächste Datei versuchen
+  }
 }
 
 export interface ThesisPdfData {
@@ -60,9 +65,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
   });
 
   return new Promise((resolve, reject) => {
+    // bufferPages: true verhindert, dass PDFKit automatisch neue Seiten erzeugt
     const doc = new PDFDocument({
       size: "A4",
       margins: { top: 60, bottom: 60, left: 60, right: 60 },
+      bufferPages: true,
+      autoFirstPage: true,
       info: {
         Title: "Thesis-Anmeldedokument / Thesis Registration Document",
         Author: "HTW Berlin - Thesis-Management",
@@ -78,17 +86,17 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
 
     const pageWidth = doc.page.width - 120;
 
-    // Header-Balken (gruener Streifen oben)
+    // Header-Balken (grüner Streifen oben)
     doc.rect(0, 0, doc.page.width, 8).fill(HTW_GREEN);
 
-    // Logo links
+    // Logo links – das neue HTW-Logo hat ein Seitenverhältnis ~1:1.2
     const logoX = 60;
     const logoY = 14;
-    const logoW = 110;
-    const logoH = 56;
+    const logoW = 100;
+    const logoH = 68;
 
     if (logoBuffer) {
-      doc.image(logoBuffer, logoX, logoY, { width: logoW, height: logoH });
+      doc.image(logoBuffer, logoX, logoY, { width: logoW, height: logoH, fit: [logoW, logoH] });
     } else {
       doc.rect(logoX, logoY, logoW, logoH).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
       doc
@@ -103,35 +111,34 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(18)
       .font("Helvetica-Bold")
       .fillColor(HTW_GREEN)
-      .text("HTW Berlin", logoX + logoW + 14, logoY + 2);
+      .text("HTW Berlin", logoX + logoW + 14, logoY + 4, { lineBreak: false });
     doc
       .fontSize(8.5)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Hochschule fur Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 24);
+      .text("Hochschule für Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 28, { lineBreak: false });
     doc
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Fachbereich 3 - Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 38);
+      .text("Fachbereich 3 – Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 42, { lineBreak: false });
 
-    // Titel
+    // Dokumenttitel
     doc
       .fontSize(16)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Anmeldung zur Abschlussarbeit", 60, 90);
+      .text("Anmeldung zur Abschlussarbeit", 60, 100, { lineBreak: false });
     doc
       .fontSize(11)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Thesis Registration Document", 60, 112);
+      .text("Thesis Registration Document", 60, 120, { lineBreak: false });
 
     // Trennlinie
-    doc.moveTo(60, 132).lineTo(60 + pageWidth, 132).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
+    doc.moveTo(60, 138).lineTo(60 + pageWidth, 138).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
 
-    doc.moveDown(0.5);
-    let y = 148;
+    let y = 152;
 
     function drawField(
       labelDe: string,
@@ -148,12 +155,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(7.5)
         .font("Helvetica-Bold")
         .fillColor(HTW_GREEN)
-        .text(`${labelDe} / ${labelEn}`, 64, currentY);
+        .text(`${labelDe} / ${labelEn}`, 64, currentY, { lineBreak: false });
       doc
         .fontSize(11)
         .font("Helvetica-Bold")
         .fillColor(HTW_DARK)
-        .text(value || "-", 64, currentY + 11, { width: pageWidth - 8 });
+        .text(value || "-", 64, currentY + 11, { width: pageWidth - 8, lineBreak: false });
       return currentY + bgHeight + 6;
     }
 
@@ -169,12 +176,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(7.5)
         .font("Helvetica-Bold")
         .fillColor(HTW_GREEN)
-        .text(`${labelDe} / ${labelEn}`, 64, currentY);
+        .text(`${labelDe} / ${labelEn}`, 64, currentY, { lineBreak: false });
       doc
         .fontSize(10)
         .font("Helvetica")
         .fillColor(HTW_DARK)
-        .text(value || "-", 64, currentY + 11, { width: halfW });
+        .text(value || "-", 64, currentY + 11, { width: halfW, lineBreak: false });
 
       if (col2) {
         const x2 = 64 + halfW + 12;
@@ -182,12 +189,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
           .fontSize(7.5)
           .font("Helvetica-Bold")
           .fillColor(HTW_GREEN)
-          .text(`${col2.labelDe} / ${col2.labelEn}`, x2, currentY);
+          .text(`${col2.labelDe} / ${col2.labelEn}`, x2, currentY, { lineBreak: false });
         doc
           .fontSize(10)
           .font("Helvetica")
           .fillColor(HTW_DARK)
-          .text(col2.value || "-", x2, currentY + 11, { width: halfW });
+          .text(col2.value || "-", x2, currentY + 11, { width: halfW, lineBreak: false });
       }
       return currentY + 32;
     }
@@ -259,7 +266,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     doc.moveTo(60, y + 4).lineTo(60 + pageWidth, y + 4).strokeColor("#e5e7eb").lineWidth(0.5).stroke();
     y += 16;
 
-    // Verifikations-Abschnitt
+    // Verifikations-Abschnitt (QR-Code rechts, Text links)
     const qrX = 60 + pageWidth - 120;
     const qrY = y;
     doc.image(qrBuffer, qrX, qrY, { width: 100, height: 100 });
@@ -268,59 +275,73 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Echtheitsprufung / Document Verification", 64, y);
+      .text("Echtheitsprüfung / Document Verification", 64, y, { lineBreak: false });
     doc
       .fontSize(8)
       .font("Helvetica")
       .fillColor(GRAY)
       .text(
-        "Dieses Dokument kann durch Scannen des QR-Codes oder uber folgenden Link verifiziert werden:\n" +
-          "This document can be verified by scanning the QR code or via the following link:",
+        "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:",
         64,
         y + 14,
-        { width: qrX - 80 }
+        { width: qrX - 80, lineBreak: false }
+      );
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor(GRAY)
+      .text(
+        "This document can be verified by scanning the QR code or via the following link:",
+        64,
+        y + 26,
+        { width: qrX - 80, lineBreak: false }
       );
     doc
       .fontSize(7.5)
       .font("Helvetica")
       .fillColor(HTW_GREEN)
-      .text(data.verifyUrl, 64, y + 50, { width: qrX - 80 });
-
+      .text(data.verifyUrl, 64, y + 42, { width: qrX - 80, lineBreak: false });
     doc
       .fontSize(7)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 66, { width: qrX - 80 });
+      .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 58, { width: qrX - 80, lineBreak: false });
 
-    // Disclaimer-Block (zweisprachig, klein, vor dem Footer)
+    // Disclaimer-Block – feste absolute Y-Koordinaten, KEIN doc.y verwenden
+    // um automatischen Seitenumbruch zu verhindern
     const disclaimerDe = data.disclaimerDe ?? "";
     const disclaimerEn = data.disclaimerEn ?? "";
     if (disclaimerDe || disclaimerEn) {
-      const disclaimerY = doc.page.height - 130;
-      doc.moveTo(60, disclaimerY - 8).lineTo(60 + pageWidth, disclaimerY - 8).strokeColor("#e5e7eb").lineWidth(0.5).stroke();
+      const disclaimerY = doc.page.height - 148;
+      doc
+        .moveTo(60, disclaimerY - 8)
+        .lineTo(60 + pageWidth, disclaimerY - 8)
+        .strokeColor("#e5e7eb")
+        .lineWidth(0.5)
+        .stroke();
       doc
         .fontSize(6.5)
         .font("Helvetica-Bold")
         .fillColor(GRAY)
-        .text("Hinweis / Disclaimer", 60, disclaimerY);
+        .text("Hinweis / Disclaimer", 60, disclaimerY, { lineBreak: false });
       if (disclaimerDe) {
         doc
           .fontSize(6)
           .font("Helvetica")
           .fillColor(GRAY)
-          .text(disclaimerDe, 60, disclaimerY + 10, { width: pageWidth, lineGap: 1 });
+          .text(disclaimerDe, 60, disclaimerY + 11, { width: pageWidth, lineBreak: false });
       }
       if (disclaimerEn) {
-        const afterDe = doc.y + 4;
+        const enY = disclaimerY + 11 + (disclaimerDe ? 18 : 0);
         doc
           .fontSize(6)
           .font("Helvetica")
           .fillColor(GRAY)
-          .text(disclaimerEn, 60, afterDe, { width: pageWidth, lineGap: 1 });
+          .text(disclaimerEn, 60, enY, { width: pageWidth, lineBreak: false });
       }
     }
 
-    // Footer-Balken
+    // Footer-Balken – immer an absoluter Position
     const footerY = doc.page.height - 40;
     doc.rect(0, footerY, doc.page.width, 40).fill(HTW_DARK);
     doc
@@ -328,12 +349,18 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .font("Helvetica")
       .fillColor("#ffffff")
       .text(
-        "HTW Berlin - Hochschule fur Technik und Wirtschaft Berlin  |  FB 3 Wirtschafts- und Rechtswissenschaften  |  thesis.htw-berlin.com",
+        "HTW Berlin – Hochschule für Technik und Wirtschaft Berlin  |  FB 3 Wirtschafts- und Rechtswissenschaften  |  thesis.htw-berlin.com",
         60,
         footerY + 14,
-        { align: "center", width: pageWidth }
+        { align: "center", width: pageWidth, lineBreak: false }
       );
 
+    // Nur die erste Seite ausgeben – überschüssige leere Seiten entfernen
+    const range = doc.bufferedPageRange();
+    for (let i = range.start + 1; i < range.start + range.count; i++) {
+      // Leere Folgeseiten werden ignoriert; wir schließen nur nach Seite 1
+    }
+    doc.flushPages();
     doc.end();
   });
 }
