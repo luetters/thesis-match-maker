@@ -69,12 +69,12 @@ export function examinerRequestEmail(opts: {
   const ctaDE = opts.acceptUrl && opts.declineUrl ? `
     <p style="margin:20px 0 12px 0">
       <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Anfrage annehmen</a>
-      <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Anfrage ablehnen</a>
+      <a href="${opts.declineUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Anfrage ablehnen</a>
     </p>` : "";
   const ctaEN = opts.acceptUrl && opts.declineUrl ? `
     <p style="margin:20px 0 12px 0">
       <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Accept request</a>
-      <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
+      <a href="${opts.declineUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
     </p>` : "";
 
   const body = `

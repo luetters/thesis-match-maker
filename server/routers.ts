@@ -437,7 +437,7 @@ export const appRouter = router({
                 <h2 style="color: #1a1a1a; margin-top: 0;">Passwort zurücksetzen</h2>
                 <p style="color: #444;">Sie haben eine Anfrage zum Zurücksetzen Ihres Passworts gestellt. Klicken Sie auf den folgenden Button, um ein neues Passwort zu vergeben:</p>
                 <div style="text-align: center; margin: 32px 0;">
-                  <a href="${resetUrl}" style="background: #006937; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort zurücksetzen</a>
+                  <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort zurücksetzen</a>
                 </div>
                 <p style="color: #888; font-size: 13px;">Dieser Link ist 1 Stunde gültig. Falls Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.</p>
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
