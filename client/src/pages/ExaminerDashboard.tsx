@@ -2005,14 +2005,15 @@ function ExaminerStatusHistory() {
     )
   ).sort();
   // Gefilterte Zuweisungen (Semester + Suche)
-  const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>)
+  const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null; programmeAbbreviation?: string | null }>)
     .filter((r) => semesterFilter === "all" || r.targetSemester === semesterFilter)
     .filter((r) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
         (r.studentName ?? "").toLowerCase().includes(q) ||
-        (r.title ?? "").toLowerCase().includes(q)
+        (r.title ?? "").toLowerCase().includes(q) ||
+        (r.programmeAbbreviation ?? "").toLowerCase().includes(q)
       );
     });
   const actionLabel: Record<string, string> = {
@@ -2072,7 +2073,9 @@ function ExaminerStatusHistory() {
             <option value="">-- Bitte wählen --</option>
             {filteredAssignments.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.studentName ? `${r.studentName} – ${r.title}` : r.title}
+                {r.studentName
+                  ? `${r.studentName}${r.programmeAbbreviation ? ` (${r.programmeAbbreviation})` : ""} – ${r.title}`
+                  : r.title}
               </option>
             ))}
           </select>
