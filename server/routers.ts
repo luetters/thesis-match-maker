@@ -174,6 +174,10 @@ import {
   markStudentRegistrationInvitationUsed,
   getExaminerRegistrationInvitations,
   revokeStudentRegistrationInvitation,
+  getExaminerComments,
+  createExaminerComment,
+  updateExaminerComment,
+  deleteExaminerComment,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -3526,5 +3530,54 @@ export const appRouter = router({
       }),
 
   }),
+
+  // ─── Examiner Comments ────────────────────────────────────────────────────────
+  examinerComments: router({
+    /** Gibt alle eigenen Kommentare für einen Thesis-Antrag zurück. */
+    list: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return getExaminerComments(input.thesisRequestId, ctx.user.id);
+      }),
+
+    /** Erstellt einen neuen Kommentar. */
+    create: protectedProcedure
+      .input(z.object({
+        thesisRequestId: z.number(),
+        content: z.string().min(1).max(4000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createExaminerComment({
+          thesisRequestId: input.thesisRequestId,
+          examinerId: ctx.user.id,
+          content: input.content,
+        });
+        return { id };
+      }),
+
+    /** Aktualisiert einen bestehenden Kommentar (nur Ersteller). */
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        content: z.string().min(1).max(4000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateExaminerComment({
+          id: input.id,
+          examinerId: ctx.user.id,
+          content: input.content,
+        });
+        return { success: true };
+      }),
+
+    /** Löscht einen Kommentar (nur Ersteller). */
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteExaminerComment({ id: input.id, examinerId: ctx.user.id });
+        return { success: true };
+      }),
+  }),
+
 });
 export type AppRouter = typeof appRouter;

@@ -5577,3 +5577,78 @@ export async function revokeStudentRegistrationInvitation(params: {
   if (!params.isAdmin && inv.examinerId !== params.callerId) throw new Error("Keine Berechtigung.");
   await db.update(_sri).set({ revoked: 1 }).where(eq(_sri.token, params.token));
 }
+
+
+// ─── Examiner Comments ────────────────────────────────────────────────────────
+import { examinerComments } from "../drizzle/schema";
+
+/** Gibt alle Kommentare eines Prüfers für einen bestimmten Thesis-Antrag zurück. */
+export async function getExaminerComments(thesisRequestId: number, examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerComments)
+    .where(
+      and(
+        eq(examinerComments.thesisRequestId, thesisRequestId),
+        eq(examinerComments.examinerId, examinerId)
+      )
+    )
+    .orderBy(examinerComments.createdAt);
+}
+
+/** Erstellt einen neuen Kommentar. */
+export async function createExaminerComment(params: {
+  thesisRequestId: number;
+  examinerId: number;
+  content: string;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(examinerComments).values({
+    thesisRequestId: params.thesisRequestId,
+    examinerId: params.examinerId,
+    content: params.content,
+  });
+  return (result[0] as any).insertId as number;
+}
+
+/** Aktualisiert den Inhalt eines Kommentars (nur durch den Ersteller). */
+export async function updateExaminerComment(params: {
+  id: number;
+  examinerId: number;
+  content: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const rows = await db
+    .select({ id: examinerComments.id, examinerId: examinerComments.examinerId })
+    .from(examinerComments)
+    .where(eq(examinerComments.id, params.id))
+    .limit(1);
+  if (!rows[0]) throw new Error("Kommentar nicht gefunden.");
+  if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
+  await db
+    .update(examinerComments)
+    .set({ content: params.content, updatedAt: now })
+    .where(eq(examinerComments.id, params.id));
+}
+
+/** Löscht einen Kommentar (nur durch den Ersteller). */
+export async function deleteExaminerComment(params: {
+  id: number;
+  examinerId: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const rows = await db
+    .select({ id: examinerComments.id, examinerId: examinerComments.examinerId })
+    .from(examinerComments)
+    .where(eq(examinerComments.id, params.id))
+    .limit(1);
+  if (!rows[0]) throw new Error("Kommentar nicht gefunden.");
+  if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
+  await db.delete(examinerComments).where(eq(examinerComments.id, params.id));
+}

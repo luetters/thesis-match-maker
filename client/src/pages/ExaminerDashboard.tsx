@@ -462,7 +462,35 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
   const utils = trpc.useUtils();
+
+  const { data: comments, isLoading: commentsLoading } = trpc.examinerComments.list.useQuery(
+    { thesisRequestId: req.id },
+    { enabled: showComments }
+  );
+  const createComment = trpc.examinerComments.create.useMutation({
+    onSuccess: () => {
+      setNewComment("");
+      utils.examinerComments.list.invalidate({ thesisRequestId: req.id });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const updateComment = trpc.examinerComments.update.useMutation({
+    onSuccess: () => {
+      setEditingCommentId(null);
+      setEditingContent("");
+      utils.examinerComments.list.invalidate({ thesisRequestId: req.id });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const deleteComment = trpc.examinerComments.delete.useMutation({
+    onSuccess: () => utils.examinerComments.list.invalidate({ thesisRequestId: req.id }),
+    onError: (err) => toast.error(err.message),
+  });
 
   const examinerRespond = trpc.thesis.examinerRespond.useMutation({
     onSuccess: (_, vars) => {
@@ -686,6 +714,120 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       {showRegPreview && (
         <RegistrationPdfPreviewModal thesisId={req.id} onClose={() => setShowRegPreview(false)} />
       )}
+
+      {/* ─── Private Kommentare ─────────────────────────────────────────── */}
+      <div className="mt-3 border-t border-gray-100 pt-3">
+        <button
+          onClick={() => setShowComments((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+          Meine Notizen
+          {showComments ? (
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+          ) : (
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          )}
+        </button>
+
+        {showComments && (
+          <div className="mt-3 space-y-3">
+            {/* Hinweis: nur für mich sichtbar */}
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Diese Notizen sind nur für Sie sichtbar.
+            </p>
+
+            {/* Bestehende Kommentare */}
+            {commentsLoading ? (
+              <div className="text-xs text-gray-400 py-2">Wird geladen…</div>
+            ) : comments && comments.length > 0 ? (
+              <div className="space-y-2">
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-gray-50 rounded-xl p-3">
+                    {editingCommentId === c.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editingContent}
+                          onChange={(e) => setEditingContent(e.target.value)}
+                          rows={3}
+                          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updateComment.mutate({ id: c.id, content: editingContent })}
+                            disabled={updateComment.isPending || !editingContent.trim()}
+                            className="px-3 py-1 text-xs font-semibold text-white rounded-lg disabled:opacity-50"
+                            style={{ backgroundColor: "#76B900" }}
+                          >
+                            Speichern
+                          </button>
+                          <button
+                            onClick={() => { setEditingCommentId(null); setEditingContent(""); }}
+                            className="px-3 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.content}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-400">
+                            {new Date(c.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {c.updatedAt !== c.createdAt && " (bearbeitet)"}
+                          </span>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }}
+                              className="text-xs text-gray-400 hover:text-gray-600 px-2 py-0.5 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              onClick={() => deleteComment.mutate({ id: c.id })}
+                              disabled={deleteComment.isPending}
+                              className="text-xs text-red-400 hover:text-red-600 px-2 py-0.5 rounded hover:bg-red-50 transition-colors"
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic">Noch keine Notizen vorhanden.</p>
+            )}
+
+            {/* Neue Notiz hinzufügen */}
+            <div className="space-y-2">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Neue Notiz hinzufügen…"
+                rows={2}
+                className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40"
+              />
+              <button
+                onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment })}
+                disabled={createComment.isPending || !newComment.trim()}
+                className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {createComment.isPending ? "Wird gespeichert…" : "Notiz speichern"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {isPending && (
         <div className="space-y-3">
