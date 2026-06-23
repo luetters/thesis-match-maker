@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   thesisId: number;
@@ -14,6 +15,8 @@ interface Props {
  * beim direkten iframe-src-Aufruf entstehen.
  */
 export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExaminer }: Props) {
+  const { t } = useLanguage();
+  const p = t.pdfPreview;
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +36,9 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error((body as any).error ?? "Vorschau konnte nicht geladen werden.");
+          const rawErr: string = (body as any).error ?? "";
+          const isAdminErr = rawErr.toLowerCase().includes("verwaltung") || rawErr.toLowerCase().includes("administration") || rawErr.toLowerCase().includes("erstellt werden") || rawErr.toLowerCase().includes("created");
+          throw new Error(isAdminErr ? p.errorMsgAdmin : (rawErr || p.errorMsgRetry));
         }
         // Dateiname aus Content-Disposition auslesen
         const cd = res.headers.get("content-disposition") ?? "";
@@ -44,8 +49,8 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
         objectUrl = URL.createObjectURL(blob);
         setBlobUrl(objectUrl);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Unbekannter Fehler");
-        toast.error("Vorschau fehlgeschlagen");
+        setError(err instanceof Error ? err.message : p.errorMsgRetry);
+        toast.error(p.errorTitle);
       } finally {
         setLoading(false);
       }
@@ -67,7 +72,7 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    toast.success("Anmeldedokument wurde erfolgreich heruntergeladen.");
+        toast.success(p.download);
   }
 
   return (
@@ -86,7 +91,7 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
             <svg className="w-4 h-4 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span className="font-semibold text-gray-900 text-sm">Anmeldedokument – Vorschau</span>
+            <span className="font-semibold text-gray-900 text-sm">{p.title}</span>
           </div>
           <div className="flex items-center gap-2">
             {blobUrl && (
@@ -94,12 +99,12 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
                 onClick={handleDownload}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 style={{ backgroundColor: "#F1F8E9", color: "#76B900" }}
-                title="Herunterladen"
+                title={p.download}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Herunterladen
+                {p.download}
               </button>
             )}
             <button
@@ -121,7 +126,7 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
             <p className="text-xs text-amber-800 leading-relaxed">
-              <strong>Hinweis:</strong> Dieses Dokument ist noch unvollständig. Vor der finalen Abgabe muss ein:e Zweitgutachter:in eingetragen werden. Bitte reichen Sie das Dokument erst ein, wenn beide Betreuungspersonen bestätigt sind.
+              {p.missingSecondExaminer}
             </p>
           </div>
         )}
@@ -134,7 +139,7 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              <span className="text-sm">Dokument wird geladen …</span>
+              <span className="text-sm">{p.loading}</span>
             </div>
           )}
           {error && (
@@ -145,14 +150,14 @@ export function RegistrationPdfPreviewModal({ thesisId, onClose, hasSecondExamin
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800 mb-1">Dokument konnte nicht geladen werden</p>
+                <p className="text-sm font-semibold text-gray-800 mb-1">{p.errorTitle}</p>
                 <p className="text-sm text-gray-500 max-w-sm">{error}</p>
               </div>
               <button
                 onClick={() => setRetryKey(k => k + 1)}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
               >
-                Erneut versuchen
+                {p.retry}
               </button>
             </div>
           )}

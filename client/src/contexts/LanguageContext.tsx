@@ -773,6 +773,17 @@ const translations = {
       examinerContactBooking: "Termin buchen",
       examinerContactViewProfile: "Profil ansehen",
     },
+    // PDF-Vorschau Modal
+    pdfPreview: {
+      title: "Anmeldedokument – Vorschau",
+      download: "Herunterladen",
+      loading: "Dokument wird geladen …",
+      errorTitle: "Dokument konnte nicht geladen werden",
+      errorMsgAdmin: "Das Anmeldedokument konnte nicht erstellt werden. Bitte wenden Sie sich an die Verwaltung.",
+      errorMsgRetry: "Das Anmeldedokument konnte nicht generiert werden. Bitte versuchen Sie es erneut.",
+      retry: "Erneut versuchen",
+      missingSecondExaminer: "Dieses Dokument ist noch unvollständig. Vor der finalen Abgabe muss ein:e Zweitgutachter:in eingetragen werden. Bitte reichen Sie das Dokument erst ein, wenn beide Betreuungspersonen bestätigt sind.",
+    },
   },
   en: {
     // Navigation & Layout
@@ -1544,6 +1555,17 @@ const translations = {
       examinerContactWebsite: "Website",
       examinerContactBooking: "Book Appointment",
       examinerContactViewProfile: "View Profile",
+    },
+    // PDF Preview Modal
+    pdfPreview: {
+      title: "Registration Document – Preview",
+      download: "Download",
+      loading: "Loading document …",
+      errorTitle: "Document could not be loaded",
+      errorMsgAdmin: "The registration document could not be created. Please contact the administration.",
+      errorMsgRetry: "The registration document could not be generated. Please try again.",
+      retry: "Try again",
+      missingSecondExaminer: "This document is incomplete. Before final submission, a second examiner must be assigned. Please do not submit the document until both supervisors have confirmed.",
     },
   },
 } as const;
