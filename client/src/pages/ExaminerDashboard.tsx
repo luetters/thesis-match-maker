@@ -1985,6 +1985,7 @@ function ExaminerStatusHistory() {
   const { data: assignments, isLoading } = trpc.thesis.examinerRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [semesterFilter, setSemesterFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
@@ -2003,10 +2004,17 @@ function ExaminerStatusHistory() {
         .filter((s): s is string => !!s)
     )
   ).sort();
-  // Gefilterte Zuweisungen
-  const filteredAssignments = semesterFilter === "all"
-    ? (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>)
-    : (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>).filter((r) => r.targetSemester === semesterFilter);
+  // Gefilterte Zuweisungen (Semester + Suche)
+  const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>)
+    .filter((r) => semesterFilter === "all" || r.targetSemester === semesterFilter)
+    .filter((r) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (r.studentName ?? "").toLowerCase().includes(q) ||
+        (r.title ?? "").toLowerCase().includes(q)
+      );
+    });
   const actionLabel: Record<string, string> = {
     THESIS_CREATED: t.examiner.auditThesisCreated ?? "Anfrage eingereicht",
     STATUS_CHANGED: t.examiner.auditStatusChanged ?? "Status geändert",
@@ -2019,6 +2027,25 @@ function ExaminerStatusHistory() {
   };
   return (
     <div className="space-y-5">
+      {/* Suchfeld */}
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
+        <input
+          type="text"
+          placeholder="Nach Name oder Titel suchen..."
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setSelectedId(null); }}
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white"
+          style={{ '--tw-ring-color': '#76B900' } as React.CSSProperties}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => { setSearchQuery(""); setSelectedId(null); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >×</button>
+        )}
+      </div>
       <div className="flex flex-wrap gap-4 items-end">
         {/* Semesterfilter */}
         <div>
