@@ -1984,6 +1984,7 @@ function ExaminerStatusHistory() {
   const { t } = useLanguage();
   const { data: assignments, isLoading } = trpc.thesis.examinerRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [semesterFilter, setSemesterFilter] = useState<string>("all");
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
@@ -1994,6 +1995,18 @@ function ExaminerStatusHistory() {
       <p className="text-sm text-gray-500">Keine betreuten Abschlussarbeiten vorhanden.</p>
     </div>
   );
+  // Alle verfügbaren Semester aus den Zuweisungen extrahieren
+  const allSemesters = Array.from(
+    new Set(
+      (assignments as Array<{ targetSemester?: string | null }>)
+        .map((r) => r.targetSemester)
+        .filter((s): s is string => !!s)
+    )
+  ).sort();
+  // Gefilterte Zuweisungen
+  const filteredAssignments = semesterFilter === "all"
+    ? (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>)
+    : (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null }>).filter((r) => r.targetSemester === semesterFilter);
   const actionLabel: Record<string, string> = {
     THESIS_CREATED: t.examiner.auditThesisCreated ?? "Anfrage eingereicht",
     STATUS_CHANGED: t.examiner.auditStatusChanged ?? "Status geändert",
@@ -2006,22 +2019,41 @@ function ExaminerStatusHistory() {
   };
   return (
     <div className="space-y-5">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Abschlussarbeit auswählen</label>
-        <select
-          value={selectedId ?? ""}
-          onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
-          className="w-full max-w-md px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
-        >
-          <option value="">-- Bitte wählen --</option>
-          {assignments.map((r: { id: number; title: string }) => (
-            <option key={r.id} value={r.id}>{r.title}</option>
-          ))}
-        </select>
+      <div className="flex flex-wrap gap-4 items-end">
+        {/* Semesterfilter */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Semester</label>
+          <select
+            value={semesterFilter}
+            onChange={(e) => { setSemesterFilter(e.target.value); setSelectedId(null); }}
+            className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
+          >
+            <option value="all">Alle Semester</option>
+            {allSemesters.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        {/* Thesis-Auswahl */}
+        <div className="flex-1 min-w-[260px]">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Abschlussarbeit</label>
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
+          >
+            <option value="">-- Bitte wählen --</option>
+            {filteredAssignments.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.studentName ? `${r.studentName} – ${r.title}` : r.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       {selectedId && (
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-5">Verlauf</h3>
+          <h3 className="font-semibold text-gray-900 mb-5">{t.examiner.history ?? "Thesis Status"}</h3>
           {!logs?.length ? (
             <p className="text-sm text-gray-500">Noch keine Einträge.</p>
           ) : (
