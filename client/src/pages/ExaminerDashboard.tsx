@@ -1345,6 +1345,7 @@ function sortRequests<T extends { studentName?: string | null; programmeName?: s
 function RequestsView() {
   const [sortKey, setSortKey] = useState<RequestSortKey>("date");
   const [filterMissingSecond, setFilterMissingSecond] = useState(false);
+  const [semesterFilter, setSemesterFilter] = useState<string>("all");
   const { data: assignedRequests, isLoading: loadingAssigned } = trpc.thesis.examinerRequests.useQuery();
   const { data: pendingRequests, isLoading: loadingPending } = trpc.examiner.getPendingRequests.useQuery();
   const isLoading = loadingAssigned || loadingPending;
@@ -1357,16 +1358,22 @@ function RequestsView() {
     );
   }
 
-  // Ausstehende Freigaben (PENDING_FIRST_EXAMINER) – noch nicht in assignedRequests enthalten
+    // Ausstehende Freigaben (PENDING_FIRST_EXAMINER) – noch nicht in assignedRequests enthalten
   const assignedIds = new Set(((assignedRequests ?? []) as any[]).map((r: any) => r.id));
   const newPending = ((pendingRequests ?? []) as any[]).filter((r: any) => !assignedIds.has(r.id));
-
   // Alle Anfragen zusammenführen: zuerst ausstehende Freigaben, dann zugewiesene
   const allRequests = [
     ...newPending.map((r) => ({ ...r, exposeUrl: (r as any).exposeUrl ?? null, degreeType: (r as any).degreeType ?? null, language: (r as any).language ?? null })),
     ...(assignedRequests ?? []),
   ];
-
+  // Alle verfügbaren Semester extrahieren
+  const allSemesters = Array.from(
+    new Set((allRequests as any[]).map((r: any) => r.targetSemester).filter(Boolean))
+  ).sort() as string[];
+  // Semester-gefilterte Anfragen
+  const semesterFiltered = semesterFilter === "all"
+    ? allRequests
+    : allRequests.filter((r: any) => r.targetSemester === semesterFilter);
   if (!allRequests.length) {
     return (
       <div className="text-center py-16">
@@ -1381,10 +1388,10 @@ function RequestsView() {
     );
   }
 
-  // Filter: nur Anfragen ohne Zweitgutachter
+  // Filter: nur Anfragen ohne Zweitgutachter + Semester
   const filteredRequests = filterMissingSecond
-    ? allRequests.filter((r: any) => !r.secondExaminerName || r.secondExaminerName.trim() === "")
-    : allRequests;
+    ? semesterFiltered.filter((r: any) => !r.secondExaminerName || r.secondExaminerName.trim() === "")
+    : semesterFiltered;
   const awaitingApproval = sortRequests(filteredRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
   const pending = sortRequests(filteredRequests.filter((r) => r.status === "PENDING"), sortKey);
   const others = sortRequests(filteredRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER"), sortKey);
@@ -1399,8 +1406,20 @@ function RequestsView() {
 
   return (
     <div className="space-y-6">
-      {/* Sortier-Leiste */}
+      {/* Semesterfilter + Sortier-Leiste */}
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Semesterfilter */}
+        <select
+          value={semesterFilter}
+          onChange={(e) => setSemesterFilter(e.target.value)}
+          className="px-3 py-1.5 border border-gray-200 rounded-full text-xs font-medium bg-white text-gray-600 focus:outline-none"
+        >
+          <option value="all">Alle Semester</option>
+          {allSemesters.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <span className="text-xs text-gray-300">|</span>
         {/* Filter: Zweitgutachter fehlt */}
         <button
           onClick={() => setFilterMissingSecond((v) => !v)}
@@ -1834,6 +1853,8 @@ function ProgrammeSettings() {
 function Overview() {
   const { t } = useLanguage();
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
+  const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
+  const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
   const requestsAny = (requests ?? []) as any[];
   const stats = {
     total: requestsAny.length,
@@ -1841,6 +1862,24 @@ function Overview() {
     accepted: requestsAny.filter((r: any) => r.status === "ACCEPTED").length,
     matched: requestsAny.filter((r: any) => r.status === "MATCHED").length,
   };
+  // Auslastung: nur Semester mit gespeicherten Kapazitäten oder aktiver Nutzung
+  const capacityRows = (() => {
+    const allSems = new Set([
+      ...(savedCapacities as Array<{ semester: string; maxFirst: number; maxSecond: number }>).map((c) => c.semester),
+      ...(usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>).map((u) => u.semester),
+    ]);
+    return Array.from(allSems).sort().map((sem) => {
+      const cap = (savedCapacities as Array<{ semester: string; maxFirst: number; maxSecond: number }>).find((c) => c.semester === sem);
+      const usage = (usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>).find((u) => u.semester === sem);
+      return {
+        semester: sem,
+        maxFirst: cap?.maxFirst ?? 0,
+        maxSecond: cap?.maxSecond ?? 0,
+        usedFirst: usage?.usedFirst ?? 0,
+        usedSecond: usage?.usedSecond ?? 0,
+      };
+    });
+  })();
 
   const utils = trpc.useUtils();
 
@@ -1870,6 +1909,49 @@ function Overview() {
           </div>
         ))}
       </div>
+
+      {/* Auslastungsübersicht */}
+      {capacityRows.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h2 className="font-semibold text-gray-900 mb-4">Betreuungsauslastung</h2>
+          <div className="space-y-2">
+            {/* Header */}
+            <div className="grid grid-cols-5 gap-2 px-4 pb-1">
+              <span className="text-xs font-medium text-gray-400 col-span-1">Semester</span>
+              <span className="text-xs font-medium text-gray-400 text-center">Erst belegt</span>
+              <span className="text-xs font-medium text-gray-400 text-center">Erst max.</span>
+              <span className="text-xs font-medium text-gray-400 text-center">Zweit belegt</span>
+              <span className="text-xs font-medium text-gray-400 text-center">Zweit max.</span>
+            </div>
+            {capacityRows.map((row) => {
+              const freeFirst = Math.max(0, row.maxFirst - row.usedFirst);
+              const freeSecond = Math.max(0, row.maxSecond - row.usedSecond);
+              const overFirst = row.usedFirst > row.maxFirst && row.maxFirst > 0;
+              const overSecond = row.usedSecond > row.maxSecond && row.maxSecond > 0;
+              return (
+                <div key={row.semester} className="grid grid-cols-5 gap-2 items-center bg-gray-50 rounded-xl px-4 py-3">
+                  <span className="text-sm font-medium text-gray-800 col-span-1">{row.semester}</span>
+                  <div className="flex flex-col items-center">
+                    <span className={`text-sm font-semibold ${overFirst ? 'text-red-600' : 'text-gray-700'}`}>{row.usedFirst}</span>
+                    <span className="text-xs text-gray-400">{freeFirst} frei</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm font-semibold text-gray-500">{row.maxFirst}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className={`text-sm font-semibold ${overSecond ? 'text-red-600' : 'text-gray-700'}`}>{row.usedSecond}</span>
+                    <span className="text-xs text-gray-400">{freeSecond} frei</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm font-semibold text-gray-500">{row.maxSecond}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-400 mt-3 px-1">Kapazitäten können unter Mein Profil angepasst werden.</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
