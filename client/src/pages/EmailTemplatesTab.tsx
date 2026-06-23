@@ -270,7 +270,8 @@ export function EmailTemplatesTab() {
                       setEditForm((f) => f ? { ...f, textBody: e.target.value } : f)
                     }
                     rows={10}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                    style={{ maxHeight: "16rem", overflowY: "auto" }}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
                 </div>
               )}

@@ -1046,11 +1046,12 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
                     <textarea
-                      rows={8}
+                      rows={10}
                       value={requirementsBody}
                       onChange={(e) => setRequirementsBody(e.target.value)}
                       placeholder="Ihr persönlicher Hinweistext..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y font-mono"
+                      style={{ maxHeight: "16rem", overflowY: "auto" }}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none font-mono"
                     />
                     {!requirementsSubject && !requirementsBody && (
                       <p className="text-xs text-amber-600 mt-1">
@@ -1270,10 +1271,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">E-Mail-Text</label>
                 <textarea
-                  rows={7}
+                  rows={10}
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
                   placeholder="Ihr persönlicher Text an die/den Studierenden..."
+                  style={{ maxHeight: "16rem", overflowY: "auto" }}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 resize-none font-mono"
                 />
                 {!emailSubject && !emailBody && (

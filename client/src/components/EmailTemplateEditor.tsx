@@ -310,7 +310,8 @@ export function EmailTemplateEditor() {
                     value={localTemplates[type].body}
                     onChange={(e) => handleChange(type, "body", e.target.value)}
                     rows={10}
-                    className="font-mono text-sm resize-y"
+                    className="font-mono text-sm resize-none overflow-y-auto"
+                    style={{ maxHeight: "16rem" }}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {localTemplates[type].body.length} Zeichen
