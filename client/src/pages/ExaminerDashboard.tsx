@@ -1500,6 +1500,7 @@ function ProfileEdit() {
   const { t } = useLanguage();
     const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
   const { data: savedCapacities = [], isLoading: capsLoading } = trpc.examiner.getSemesterCapacities.useQuery();
+  const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
   const utils = trpc.useUtils();
   const upsertCapacity = trpc.examiner.upsertSemesterCapacity.useMutation({
     onError: (err) => toast.error(err.message),
@@ -1741,44 +1742,58 @@ function ProfileEdit() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {/* Tabellenheader */}
-          <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">
-            <span>Semester</span>
-            <span className="text-center">Max. Erstbetreuungen</span>
-            <span className="text-center">Max. Zweitbetreuungen</span>
+                    {/* Tabellenheader */}
+          <div className="grid grid-cols-5 gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">
+            <span className="col-span-1">Semester</span>
+            <span className="text-center col-span-2">Erstbetreuungen</span>
+            <span className="text-center col-span-2">Zweitbetreuungen</span>
           </div>
-
-          {capacities.map((cap, idx) => (
-            <div key={cap.semester} className="grid grid-cols-3 gap-3 items-center bg-gray-50 rounded-xl px-4 py-3">
-              <span className="text-sm font-medium text-gray-800">{semesterLabel(cap.semester)}</span>
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.max(0, c.maxFirst - 1) } : c))}
-                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-                >−</button>
-                <span className="w-8 text-center text-sm font-semibold text-gray-900">{cap.maxFirst}</span>
-                <button
-                  type="button"
-                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.min(50, c.maxFirst + 1) } : c))}
-                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-                >+</button>
+          {/* Unterheader */}
+          <div className="grid grid-cols-5 gap-2 text-xs text-gray-400 px-1 -mt-2">
+            <span />
+            <span className="text-center">Belegt</span>
+            <span className="text-center">Max.</span>
+            <span className="text-center">Belegt</span>
+            <span className="text-center">Max.</span>
+          </div>
+          {capacities.map((cap, idx) => {
+            const usage = (usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>).find((u) => u.semester === cap.semester);
+            const usedFirst = usage?.usedFirst ?? 0;
+            const usedSecond = usage?.usedSecond ?? 0;
+            const freeFirst = Math.max(0, cap.maxFirst - usedFirst);
+            const freeSecond = Math.max(0, cap.maxSecond - usedSecond);
+            const overFirst = usedFirst > cap.maxFirst;
+            const overSecond = usedSecond > cap.maxSecond;
+            return (
+            <div key={cap.semester} className="grid grid-cols-5 gap-2 items-center bg-gray-50 rounded-xl px-4 py-3">
+              <span className="text-sm font-medium text-gray-800 col-span-1">{semesterLabel(cap.semester)}</span>
+              {/* Erstbetreuungen: belegt */}
+              <div className="flex flex-col items-center">
+                <span className={`text-sm font-semibold ${overFirst ? 'text-red-600' : 'text-gray-700'}`}>{usedFirst}</span>
+                <span className="text-xs text-gray-400">{freeFirst} frei</span>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.max(0, c.maxSecond - 1) } : c))}
-                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-                >−</button>
-                <span className="w-8 text-center text-sm font-semibold text-gray-900">{cap.maxSecond}</span>
-                <button
-                  type="button"
-                  onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.min(50, c.maxSecond + 1) } : c))}
-                  className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
-                >+</button>
+              {/* Erstbetreuungen: max (editierbar) */}
+              <div className="flex items-center justify-center gap-1">
+                <button type="button" onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.max(0, c.maxFirst - 1) } : c))} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-xs">−</button>
+                <span className="w-7 text-center text-sm font-semibold text-gray-900">{cap.maxFirst}</span>
+                <button type="button" onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxFirst: Math.min(50, c.maxFirst + 1) } : c))} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-xs">+</button>
+              </div>
+              {/* Zweitbetreuungen: belegt */}
+              <div className="flex flex-col items-center">
+                <span className={`text-sm font-semibold ${overSecond ? 'text-red-600' : 'text-gray-700'}`}>{usedSecond}</span>
+                <span className="text-xs text-gray-400">{freeSecond} frei</span>
+              </div>
+              {/* Zweitbetreuungen: max (editierbar) */}
+              <div className="flex items-center justify-center gap-1">
+                <button type="button" onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.max(0, c.maxSecond - 1) } : c))} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-xs">−</button>
+                <span className="w-7 text-center text-sm font-semibold text-gray-900">{cap.maxSecond}</span>
+                <button type="button" onClick={() => setCapacities((cs) => cs.map((c, i) => i === idx ? { ...c, maxSecond: Math.min(50, c.maxSecond + 1) } : c))} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-xs">+</button>
               </div>
             </div>
-          ))}
+            );
+          })}
+          {/* Legende */}
+          <p className="text-xs text-gray-400 px-1">Belegt = aktive Zuweisungen · Frei = verbleibende Plätze · Max. = eingestelltes Maximum</p>
         </div>
 
         <div className="mt-5 flex items-center gap-3">

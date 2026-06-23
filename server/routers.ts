@@ -1303,6 +1303,41 @@ export const appRouter = router({
         await upsertSemesterCapacity(ctx.user.id, input.semester, input.maxFirst, input.maxSecond);
         return { success: true };
       }),
+    // Auslastung pro Semester: wie viele aktive Erst-/Zweitbetreuungen gibt es pro Semester?
+    getCapacityUsage: anyExaminerProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      const { thesisRequests: trTable } = await import("../drizzle/schema");
+      const { inArray } = await import("drizzle-orm");
+      const activeStatuses = [
+        "PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
+        "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+        "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED",
+        "SECOND_EXAMINER_SET", "MATCHED", "ACCEPTED",
+      ] as const;
+      const rows = await db
+        .select({
+          examinerId: trTable.examinerId,
+          secondExaminerId: trTable.secondExaminerId,
+          targetSemester: trTable.targetSemester,
+        })
+        .from(trTable)
+        .where(inArray(trTable.status, activeStatuses));
+      // Aggregieren pro Semester
+      const usageMap: Record<string, { usedFirst: number; usedSecond: number }> = {};
+      for (const r of rows) {
+        if (r.examinerId === ctx.user.id && r.targetSemester) {
+          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0 };
+          usageMap[r.targetSemester].usedFirst++;
+        }
+        if (r.secondExaminerId === ctx.user.id && r.targetSemester) {
+          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0 };
+          usageMap[r.targetSemester].usedSecond++;
+        }
+      }
+      return Object.entries(usageMap).map(([semester, usage]) => ({ semester, ...usage }));
+    }),
   }),
 
   // --- Favorites -----------------------------------------------------------
