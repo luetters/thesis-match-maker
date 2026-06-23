@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles } from "./db";
 import { generateThesisPdf } from "./thesisPdf";
 import crypto from "crypto";
 import { generateDeadlineIcs } from "./icsHelper";
@@ -271,8 +271,8 @@ export function registerUploadRoutes(app: Express) {
 
       // Student, zugewiesene Gutachter oder Admin/PAV dürfen herunterladen
       const allowedRoles = ["admin", "superadmin", "pav", "dean", "vice_dean"];
-      const userRolesArr: string[] = (user as any).roles ?? [];
-      const hasAdminRole = allowedRoles.some(r => userRolesArr.includes(r)) || (user as any).role === "admin";
+      const userRolesArr: string[] = await getUserRoles(user.id);
+      const hasAdminRole = allowedRoles.some(r => userRolesArr.includes(r)) || user.role === "admin" || user.role === "superadmin" || user.role === "pav" || user.role === "dean" || user.role === "vice_dean";
       const isAssignedExaminer = thesis.examinerId === user.id || thesis.secondExaminerId === user.id;
       if (thesis.studentId !== user.id && !hasAdminRole && !isAssignedExaminer) {
         res.status(403).json({ error: "Keine Berechtigung." }); return;

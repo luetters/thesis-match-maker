@@ -190,7 +190,7 @@ import {
 } from "./db";
 import { createIcsEvent } from "./icsHelper";
 import { storagePut } from "./storage";
-import { sendExaminerCTAEmail, sendStatusChangeEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
+import { sendExaminerCTAEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, defenseEligibilityEmail, directAssignmentEmail, defaultExaminerTemplate, type Lang } from "./emailTemplates";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -862,14 +862,15 @@ export const appRouter = router({
           const student = await getUserById(existing.studentId);
           const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
           if (student?.email) {
-            await sendStatusChangeEmail({
-              to: student.email,
-              studentName: student.name ?? "Studierende:r",
-              thesisTitle: existing.title,
-              newStatus: input.status as "ACCEPTED" | "REJECTED" | "MATCHED",
-              reason: input.reason,
-              dashboardUrl: `${origin}/student`,
+            const statusLabelDE2: Record<string, string> = { ACCEPTED: "Angenommen", REJECTED: "Abgelehnt", MATCHED: "Matched" };
+            const statusLabelEN2: Record<string, string> = { ACCEPTED: "Accepted", REJECTED: "Rejected", MATCHED: "Matched" };
+            const studentStatusTpl = statusChangeEmail({
+              recipientName: student.name,
+              thesisTitle: existing.title ?? "",
+              statusTextDE: `Der Status Ihrer Anfrage &ldquo;${existing.title}&rdquo; hat sich ge&auml;ndert: ${statusLabelDE2[input.status] ?? input.status}.${input.reason ? " Begr\u00fcndung: " + input.reason : ""} Weitere Details finden Sie in Ihrem <a href="${origin}/student">Dashboard</a>.`,
+              statusTextEN: `The status of your application &ldquo;${existing.title}&rdquo; has changed to: ${statusLabelEN2[input.status] ?? input.status}.${input.reason ? " Reason: " + input.reason : ""} View details in your <a href="${origin}/student">dashboard</a>.`,
             });
+            await sendEmail({ to: student.email, subject: studentStatusTpl.subject, html: studentStatusTpl.html });
           }
           // Prüfer:innen benachrichtigen (resolveExaminerEmail bevorzugt alternativeEmail)
           const examinerIds = [existing.examinerId, existing.secondExaminerId].filter(Boolean) as number[];
@@ -877,18 +878,19 @@ export const appRouter = router({
             const ex = await getUserById(exId);
             if (!ex?.email) continue;
             const exEmailTo = (await resolveExaminerEmail(exId)) ?? ex.email;
-            const exLang: Lang = (ex.preferredLanguage as Lang) ?? "de";
-            const statusLabel = input.status === "ACCEPTED" ? (exLang === "en" ? "Accepted" : "Angenommen")
-              : input.status === "REJECTED" ? (exLang === "en" ? "Rejected" : "Abgelehnt")
+            const statusLabelDE = input.status === "ACCEPTED" ? "Angenommen"
+              : input.status === "REJECTED" ? "Abgelehnt"
               : input.status === "MATCHED" ? "Matched"
               : input.status;
-            const statusBodyText = exLang === "en"
-              ? `The status of the thesis "${existing.title}" has changed to: ${statusLabel}.${input.reason ? " Reason: " + input.reason : ""} View details in the <a href="${origin}/examiner">examiner dashboard</a>.`
-              : `Der Status der Abschlussarbeit "${existing.title}" hat sich geändert: ${statusLabel}.${input.reason ? " Begründung: " + input.reason : ""} Weitere Details im <a href="${origin}/examiner">Prüfer:innen-Dashboard</a>.`;
-            const exStatusTpl = statusChangeEmail(exLang, {
-              studentName: ex.name,
+            const statusLabelEN = input.status === "ACCEPTED" ? "Accepted"
+              : input.status === "REJECTED" ? "Rejected"
+              : input.status === "MATCHED" ? "Matched"
+              : input.status;
+            const exStatusTpl = statusChangeEmail({
+              recipientName: ex.name,
               thesisTitle: existing.title ?? "",
-              statusText: statusBodyText,
+              statusTextDE: `Der Status der Abschlussarbeit &ldquo;${existing.title}&rdquo; hat sich ge&auml;ndert: ${statusLabelDE}.${input.reason ? " Begr&uuml;ndung: " + input.reason : ""} Weitere Details im <a href="${origin}/examiner">Pr&uuml;fer:innen-Dashboard</a>.`,
+              statusTextEN: `The status of the thesis &ldquo;${existing.title}&rdquo; has changed to: ${statusLabelEN}.${input.reason ? " Reason: " + input.reason : ""} View details in the <a href="${origin}/examiner">examiner dashboard</a>.`,
             });
             await sendEmail({ to: exEmailTo, subject: exStatusTpl.subject, html: exStatusTpl.html });
           }
@@ -2104,24 +2106,14 @@ export const appRouter = router({
           const examinerLang: Lang = (examinerUser?.preferredLanguage as Lang) ?? "de";
           const acceptUrl = `${input.origin}/pav/respond?token=${token}&action=accept`;
           const declineUrl = `${input.origin}/pav/respond?token=${token}&action=decline`;
-          const tpl = examinerRequestEmail(examinerLang, {
+          const tpl = examinerRequestEmail({
             examinerName: examinerUser?.name,
             role: input.examinerRole,
             thesisTitle: thesis.title ?? "Abschlussarbeit",
-            studentName: "",
-            actionUrl: acceptUrl,
+            acceptUrl,
+            declineUrl,
           });
-          const acceptLabel = examinerLang === "en" ? "Accept request" : "Anfrage annehmen";
-          const declineLabel = examinerLang === "en" ? "Decline request" : "Anfrage ablehnen";
-          const ctaHtml = `<p style="margin:20px 0 0 0">
-            <a href="${acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px">${acceptLabel}</a>
-            <a href="${declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600">${declineLabel}</a>
-          </p>`;
-          await sendEmail({
-            to: examinerEmail,
-            subject: tpl.subject,
-            html: tpl.html.replace("</td></tr>", ctaHtml + "</td></tr>"),
-          });
+          await sendEmail({ to: examinerEmail, subject: tpl.subject, html: tpl.html });
         }
         return { success: true };
       }),
@@ -2175,7 +2167,7 @@ export const appRouter = router({
         const student = await getUserById(thesis.studentId);
         if (student?.email) {
           const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
-          const tpl = enrollmentEligibilityEmail(studentLang, {
+          const tpl = enrollmentEligibilityEmail({
             studentName: student.name,
             thesisTitle: thesis.title ?? "Abschlussarbeit",
             eligible: input.eligibility === "approved",
@@ -2206,7 +2198,7 @@ export const appRouter = router({
         const student = await getUserById(thesis.studentId);
         if (student?.email) {
           const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
-          const tpl = defenseEligibilityEmail(studentLang, {
+          const tpl = defenseEligibilityEmail({
             studentName: student.name,
             thesisTitle: thesis.title ?? "Abschlussarbeit",
             eligible: input.eligibility === "approved",
@@ -2261,7 +2253,7 @@ export const appRouter = router({
         if (examinerEmail) {
           const examinerUser = await getUserById(input.examinerId);
           const examinerLang: Lang = (examinerUser?.preferredLanguage as Lang) ?? "de";
-          const tpl = directAssignmentEmail(examinerLang, {
+          const tpl = directAssignmentEmail({
             examinerName: examinerUser?.name,
             role: input.examinerRole,
             thesisTitle: thesis.title ?? "Abschlussarbeit",
@@ -3449,61 +3441,43 @@ export const appRouter = router({
           name: ctx.user.name,
         });
         const registerUrl = `${input.origin}/register?inviteToken=${token}`;
-        const logoUrl = `${input.origin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
-        const isDE = input.emailLang !== "en";
-        const subject = isDE
-          ? `Einladung zur Registrierung – HTW Berlin Thesis Match Maker`
-          : `Invitation to register – HTW Berlin Thesis Match Maker`;
-        const html = isDE ? `<!DOCTYPE html>
-<html lang="de"><head><meta charset="UTF-8"></head>
+        const logoUrl = "https://storage.manus.space/public/manus-webdev-static/thesis-match-logo-1746007561.png";
+        const subject = `Einladung zur Registrierung / Invitation to register – HTW Berlin Thesis Match Maker`;
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
   <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-      <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
-        <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
-        <span style="color:#ffffff;font-size:18px;font-weight:bold">Thesis Match Maker</span><br>
-        <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Fachbereich 3</span>
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:560px">
+      <tr><td style="background:#006937;padding:24px 32px;text-align:center">
+        <img src="${logoUrl}" alt="Thesis Match Maker" style="height:48px;max-width:200px;object-fit:contain" />
+        <p style="color:#ffffff;margin:8px 0 0 0;font-size:13px;opacity:0.85">HTW Berlin &ndash; Thesis Match Maker</p>
+      </td></tr>
+      <tr><td style="padding:8px 32px 8px 32px;background:#f0f7e6;border-bottom:1px solid #d4edaa">
+        <p style="color:#5a7a00;font-size:12px;margin:0;font-style:italic">&#127468;&#127463; English below</p>
       </td></tr>
       <tr><td style="padding:32px">
-        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Einladung zur Registrierung</h2>
-        <p style="color:#374151;font-size:14px;margin:0 0 16px 0">Sehr geehrte:r Studierende:r,</p>
-        <p style="color:#374151;font-size:14px;margin:0 0 16px 0"><strong>${examinerName}</strong> hat Sie eingeladen, sich im HTW Berlin Thesis Match Maker zu registrieren, um Ihren Abschlussarbeits-Antrag zu stellen.</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 12px 0">Sehr geehrte:r Studierende:r,</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 12px 0"><strong>${examinerName}</strong> hat Sie eingeladen, sich im HTW Berlin Thesis Match Maker zu registrieren, um Ihren Abschlussarbeits-Antrag zu stellen.</p>
         <p style="color:#374151;font-size:14px;margin:0 0 24px 0">Bitte klicken Sie auf den folgenden Button, um sich zu registrieren. Alle weiteren Angaben nehmen Sie selbst vor.</p>
-        <p style="margin:0 0 32px 0;text-align:center">
+        <p style="margin:0 0 12px 0;text-align:center">
           <a href="${registerUrl}" style="background:#76B900;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-size:15px;font-weight:bold">Jetzt registrieren</a>
         </p>
         <p style="color:#6b7280;font-size:13px;margin:0 0 8px 0">Dieser Einladungslink ist 30 Tage g&uuml;ltig.</p>
-        <p style="color:#6b7280;font-size:13px;margin:0 0 24px 0">Falls Sie diesen Link nicht angefordert haben, k&ouml;nnen Sie diese E-Mail ignorieren.</p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
-        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">&#9888; <strong>Hinweis:</strong> Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde.</p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body></html>` : `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
-  <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-      <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
-        <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
-        <span style="color:#ffffff;font-size:18px;font-weight:bold">Thesis Match Maker</span><br>
-        <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Department 3</span>
-      </td></tr>
-      <tr><td style="padding:32px">
-        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Invitation to Register</h2>
-        <p style="color:#374151;font-size:14px;margin:0 0 16px 0">Dear Student,</p>
-        <p style="color:#374151;font-size:14px;margin:0 0 16px 0"><strong>${examinerName}</strong> has invited you to register on the HTW Berlin Thesis Match Maker to submit your thesis application.</p>
+        <p style="color:#374151;font-size:14px;margin:16px 0 4px 0">Mit freundlichen Gr&uuml;&szlig;en<br>HTW Berlin &ndash; Pr&uuml;fungsamt</p>
+        <hr style="border:none;border-top:2px solid #e5e7eb;margin:28px 0" />
+        <p style="color:#374151;font-size:14px;margin:0 0 12px 0">Dear Student,</p>
+        <p style="color:#374151;font-size:14px;margin:0 0 12px 0"><strong>${examinerName}</strong> has invited you to register on the HTW Berlin Thesis Match Maker to submit your thesis application.</p>
         <p style="color:#374151;font-size:14px;margin:0 0 24px 0">Please click the button below to register. You will fill in all further details yourself.</p>
-        <p style="margin:0 0 32px 0;text-align:center">
+        <p style="margin:0 0 12px 0;text-align:center">
           <a href="${registerUrl}" style="background:#76B900;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;display:inline-block;font-size:15px;font-weight:bold">Register now</a>
         </p>
         <p style="color:#6b7280;font-size:13px;margin:0 0 8px 0">This invitation link is valid for 30 days.</p>
-        <p style="color:#6b7280;font-size:13px;margin:0 0 24px 0">If you did not request this, you can safely ignore this email.</p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
-        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">&#9888; <strong>Note:</strong> This is an unofficial tool at HTW Berlin, installed for testing purposes.</p>
+        <p style="color:#374151;font-size:14px;margin:16px 0 4px 0">Kind regards,<br>HTW Berlin &ndash; Examination Office</p>
+      </td></tr>
+      <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
+        <p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">&#9888;&#65039; Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde.</p>
+        <p style="color:#9ca3af;font-size:11px;margin:0">&#9888;&#65039; This is an unofficial tool at HTW Berlin, installed for testing purposes.</p>
       </td></tr>
     </table>
   </td></tr>

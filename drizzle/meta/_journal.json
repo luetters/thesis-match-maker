@@ -386,6 +386,13 @@
       "when": 1781608509543,
       "tag": "0054_cool_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1782201359107,
+      "tag": "0055_chubby_avengers",
+      "breakpoints": true
     }
   ]
 }
