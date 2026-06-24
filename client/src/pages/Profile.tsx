@@ -302,9 +302,7 @@ function SemesterCapacityBlock() {
 
   // Kapazitäten direkt aus der dedizierten Prozedur laden (nicht aus myProfile)
   const { data: savedCaps = [], isLoading } = trpc.examiner.getSemesterCapacities.useQuery();
-  const updateCapacityMutation = trpc.examiner.upsertSemesterCapacity.useMutation({
-    onSuccess: () => { utils.examiner.getSemesterCapacities.invalidate(); },
-  });
+  const updateCapacityMutation = trpc.examiner.upsertSemesterCapacity.useMutation();
 
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
   // hasHydrated: verhindert, dass der useEffect nach dem Speichern den lokalen State überschreibt
@@ -339,14 +337,25 @@ function SemesterCapacityBlock() {
 
   const handleSave = async () => {
     if (capacities.length === 0) return;
-    // Optimistisch den Cache setzen, damit kein Rücksetzen auf 0 passiert
-    utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
-    for (const cap of capacities) {
-      await updateCapacityMutation.mutateAsync(cap);
+    try {
+      // Optimistisch den Cache auf den aktuellen lokalen Stand setzen,
+      // damit isDirty sofort false wird und kein Dirty-Warning aufflackert.
+      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
+      // hasHydrated zurücksetzen: nach dem Refetch soll useEffect den State
+      // neu aus den Server-Daten initialisieren (verhindert isDirty=true).
+      hasHydrated.current = false;
+      for (const cap of capacities) {
+        await updateCapacityMutation.mutateAsync(cap);
+      }
+      toast.success("Kapazitäten gespeichert");
+    } catch (err: any) {
+      // Bei Fehler hasHydrated wieder setzen, damit kein ungewollter Reset
+      hasHydrated.current = true;
+      toast.error(err?.message ?? "Fehler beim Speichern der Kapazitäten");
+    } finally {
+      // Einmalig nach dem gesamten Loop invalidieren
+      utils.examiner.getSemesterCapacities.invalidate();
     }
-    toast.success("Kapazitäten gespeichert");
-    // Cache im Hintergrund aktualisieren – hasHydrated bleibt true
-    utils.examiner.getSemesterCapacities.invalidate();
   };
 
   const handleReset = () => {
