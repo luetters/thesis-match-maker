@@ -34,7 +34,7 @@ type Role = "student" | "examiner" | "second_examiner" | "admin";
  *  Schritt 3  "register" → Registrierungsformular
  */
 export default function Login() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const L = t.login;
 
   const ROLE_OPTIONS: {
@@ -661,7 +661,7 @@ export default function Login() {
                         {/* Studiengang-Auswahl */}
                         <div className="space-y-3">
                           <Label className="text-white/70 text-sm">
-                            Studiengang <span className="text-red-400">*</span>
+                            {L.programmesLabel} <span className="text-red-400">*</span>
                           </Label>
                           {/* Abschlussart */}
                           <div className="flex gap-2">
@@ -706,7 +706,7 @@ export default function Login() {
                               required
                               className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
                             >
-                              <option value="" className="bg-gray-900">-- Studiengang wählen --</option>
+                              <option value="" className="bg-gray-900">{L.selectProgramme}</option>
                               {(programmesQuery.data ?? []).filter((p: any) => p.level === regDegreeType && (p.fachbereich === regFachbereich || (!p.fachbereich && regFachbereich === 'FB3'))).map((p: any) => (
                                 <option key={p.id} value={p.id} className="bg-gray-900">
                                   {p.abbreviation ? `${p.abbreviation} – ${p.name}` : p.name}
@@ -800,7 +800,7 @@ export default function Login() {
                         style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
                       >
                         <span className="mt-0.5 flex-shrink-0">⚠️</span>
-                        <span><strong>Sicherheitshinweis:</strong> Nutzen Sie auf keinen Fall Ihr HTW Berlin Passwort!</span>
+                        <span><strong>{lang === 'de' ? 'Sicherheitshinweis' : 'Security notice'}:</strong> {L.securityHint.replace(/^[^:]+:\s*/, '')}</span>
                       </div>
                     </div>
                     <div className="space-y-2">

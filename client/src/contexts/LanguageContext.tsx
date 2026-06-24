@@ -606,6 +606,9 @@ const translations = {
       emailPlaceholderSecondExaminer: "ihre.email@beispiel.de",
       emailPlaceholderLogin: "vorname.nachname@htw-berlin.de",
       passwordPlaceholder: "Ihr Passwort",
+      selectProgramme: "-- Studiengang wählen --",
+      securityHint: "Sicherheitshinweis: Nutzen Sie auf keinen Fall Ihr HTW Berlin Passwort!",
+      programmesLabel: "Studiengang",
     },
     // Admin Dashboard
     admin: {
@@ -1390,6 +1393,9 @@ const translations = {
       emailPlaceholderSecondExaminer: "your.email@example.com",
       emailPlaceholderLogin: "firstname.lastname@htw-berlin.de",
       passwordPlaceholder: "Your password",
+      selectProgramme: "-- Select Study Programme --",
+      securityHint: "Security notice: Do not use your HTW Berlin password!",
+      programmesLabel: "Study Programme",
     },
     // Admin Dashboard
     admin: {
