@@ -1372,9 +1372,9 @@ function RequestsView() {
     ...(assignedRequests ?? []),
   ];
   // Alle verfügbaren Semester extrahieren
-  const allSemesters = Array.from(
-    new Set((allRequests as any[]).map((r: any) => r.targetSemester).filter(Boolean))
-  ).sort() as string[];
+  const allSemesters = sortSemesters(
+    Array.from(new Set((allRequests as any[]).map((r: any) => r.targetSemester).filter(Boolean)))
+  ) as string[];
   // Semester-gefilterte Anfragen
   const semesterFiltered = semesterFilter === "all"
     ? allRequests
@@ -1492,6 +1492,26 @@ function RequestsView() {
   );
 }
 
+// ─── Semester-Sortierfunktion ────────────────────────────────────────────────
+/**
+ * Sortiert Semester-Strings chronologisch: WS kommt nach SoSe desselben Jahres.
+ * Format: "SoSe2026" (April–Sept) < "WS2026" (Okt–März) < "SoSe2027" < "WS2027" ...
+ */
+function semesterSortKey(s: string): number {
+  if (s.startsWith("WS")) {
+    const y = parseInt(s.slice(2));
+    return y * 10 + 1; // WS2026 → 20261
+  }
+  if (s.startsWith("SoSe")) {
+    const y = parseInt(s.slice(4));
+    return y * 10 + 0; // SoSe2026 → 20260
+  }
+  return 0;
+}
+function sortSemesters(sems: string[]): string[] {
+  return [...sems].sort((a, b) => semesterSortKey(a) - semesterSortKey(b));
+}
+
 // ─── Profile Edit ─────────────────────────────────────────────────────────────
 /** Aktuelle und nächste 3 Semester generieren */
 function generateUpcomingSemesters(): string[] {
@@ -1531,13 +1551,13 @@ function ProfileEdit() {
   });
   const upcomingSemesters = generateUpcomingSemesters();
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  // Beim ersten Laden (und nur dann) die gespeicherten Werte in den lokalen State übernehmen
+  // hasHydrated: verhindert, dass der useEffect nach dem Speichern den lokalen State überschreibt
+  const hasHydrated = useRef(false);
+  // Beim ersten Laden die gespeicherten Werte in den lokalen State übernehmen (nur einmalig)
   useEffect(() => {
-    // Warten bis die echten Daten vom Server geladen sind
     if (capsLoading) return;
-    // Nicht überschreiben während wir gerade speichern (Race Condition vermeiden)
-    if (isSaving) return;
+    if (hasHydrated.current) return;
+    hasHydrated.current = true;
     const merged = upcomingSemesters.map((sem) => {
       const saved = (savedCapacities as SemesterCapacity[]).find((c) => c.semester === sem);
       return { semester: sem, maxFirst: saved?.maxFirst ?? 0, maxSecond: saved?.maxSecond ?? 0 };
@@ -1546,7 +1566,6 @@ function ProfileEdit() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedCapacities, capsLoading]);
   const handleSaveCapacities = async () => {
-    setIsSaving(true);
     try {
       // Optimistisch den Cache direkt setzen (verhindert Reset auf 0)
       utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
@@ -1554,12 +1573,10 @@ function ProfileEdit() {
         await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
       }
       toast.success("Kapazitäten gespeichert!");
-      // Jetzt erst den echten Server-Stand laden (isSaving noch true → kein Überschreiben)
-      await utils.examiner.getSemesterCapacities.invalidate();
+      // Cache im Hintergrund aktualisieren – hasHydrated bleibt true, kein Überschreiben
+      utils.examiner.getSemesterCapacities.invalidate();
     } catch (err: any) {
       toast.error(err?.message ?? "Fehler beim Speichern");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -1886,11 +1903,13 @@ function Overview() {
   const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
   const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
   const requestsAny = (requests ?? []) as any[];
+  const ACCEPTED_STATUSES = ["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "ACCEPTED", "MATCHED", "REGISTERED", "COMPLETED"];
+  const PENDING_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"];
   const stats = {
     total: requestsAny.length,
-    pending: requestsAny.filter((r: any) => r.status === "PENDING").length,
-    accepted: requestsAny.filter((r: any) => r.status === "ACCEPTED").length,
-    matched: requestsAny.filter((r: any) => r.status === "MATCHED").length,
+    pending: requestsAny.filter((r: any) => PENDING_STATUSES.includes(r.status)).length,
+    accepted: requestsAny.filter((r: any) => ACCEPTED_STATUSES.includes(r.status)).length,
+    matched: requestsAny.filter((r: any) => r.status === "MATCHED" || r.status === "SECOND_EXAMINER_ASSIGNED").length,
   };
   // Auslastung: nur Semester mit gespeicherten Kapazitäten oder aktiver Nutzung
   const capacityRows = (() => {
@@ -1898,7 +1917,7 @@ function Overview() {
       ...(savedCapacities as Array<{ semester: string; maxFirst: number; maxSecond: number }>).map((c) => c.semester),
       ...(usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>).map((u) => u.semester),
     ]);
-    return Array.from(allSems).sort().map((sem) => {
+    return sortSemesters(Array.from(allSems)).map((sem) => {
       const cap = (savedCapacities as Array<{ semester: string; maxFirst: number; maxSecond: number }>).find((c) => c.semester === sem);
       const usage = (usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>).find((u) => u.semester === sem);
       return {
@@ -2108,14 +2127,16 @@ function ExaminerStatusHistory() {
       <p className="text-sm text-gray-500">Keine betreuten Abschlussarbeiten vorhanden.</p>
     </div>
   );
-  // Alle verfügbaren Semester aus den Zuweisungen extrahieren
-  const allSemesters = Array.from(
-    new Set(
-      (assignments as Array<{ targetSemester?: string | null }>)
-        .map((r) => r.targetSemester)
-        .filter((s): s is string => !!s)
+  // Alle verfügbaren Semester aus den Zuweisungen extrahieren (chronologisch sortiert)
+  const allSemesters = sortSemesters(
+    Array.from(
+      new Set(
+        (assignments as Array<{ targetSemester?: string | null }>)
+          .map((r) => r.targetSemester)
+          .filter((s): s is string => !!s)
+      )
     )
-  ).sort();
+  );
   // Gefilterte Zuweisungen (Semester + Suche)
   const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null; programmeAbbreviation?: string | null }>)
     .filter((r) => semesterFilter === "all" || r.targetSemester === semesterFilter)

@@ -288,6 +288,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
       secondExaminerName: secondExaminerAlias.name,
+      wantedExaminerId: thesisRequests.wantedExaminerId,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
@@ -297,7 +298,9 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
     .where(
       or(
         eq(thesisRequests.examinerId, examinerId),
-        eq(thesisRequests.secondExaminerId, examinerId)
+        eq(thesisRequests.secondExaminerId, examinerId),
+        // Auch Anfragen anzeigen, die dem Prüfer:in zugeteilt wurden (wantedExaminerId)
+        eq(thesisRequests.wantedExaminerId, examinerId)
       )
     )
     .orderBy(desc(thesisRequests.createdAt));
