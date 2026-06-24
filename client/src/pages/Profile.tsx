@@ -776,6 +776,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
       {/* ── Inhalt ── */}
       <div className={embedded ? "space-y-6" : "max-w-3xl mx-auto px-4 py-8 space-y-6"}>
 
+        {/* ── Betreuungskapazitäten (nur für Prüfer:innen) ── */}
+        {isExaminer && <SemesterCapacityBlock />}
+
         {/* ── Profilkarte ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="h-24 w-full" style={{ background: `linear-gradient(135deg, ${roleConf.color}22, ${roleConf.color}44)` }} />
@@ -1825,9 +1828,6 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             <EmailTemplateEditor />
           </div>
         )}
-
-        {/* ── Betreuungskapazitäten (nur für Prüfer:innen) ── */}
-        {isExaminer && <SemesterCapacityBlock />}
 
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
