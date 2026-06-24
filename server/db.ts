@@ -4128,9 +4128,11 @@ export async function getAllSecondExaminerCandidates() {
     .where(
       and(
         eq(users.roleStatus, "approved"),
+        // Erstgutachter (examiner) können ebenfalls als Zweitgutachter fungieren,
+        // daher werden alle freigeschalteten Prüfer:innen angezeigt.
         or(
           eq(users.role, "second_examiner"),
-          and(eq(users.role, "examiner"), eq(examinerProfiles.isSecondExaminer, 1))
+          eq(users.role, "examiner")
         )
       )
     );
