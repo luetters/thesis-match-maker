@@ -3696,8 +3696,10 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    if (confirmedByRole === "admin" && requestedRole !== "student" && requestedRole !== "second_examiner") {
-      return { success: false, error: "Verwaltung darf nur Studierende und Zweitprüfer:innen bestätigen" };
+    // Verwaltung darf Studierende, Zweitprüfer:innen und Erstprüfer:innen freischalten
+    const adminAllowedRoles = ["student", "examiner", "second_examiner"];
+    if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
+      return { success: false, error: "Verwaltung darf nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen" };
     }
     await db.execute(
       `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`

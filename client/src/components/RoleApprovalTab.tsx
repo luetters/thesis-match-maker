@@ -269,6 +269,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
         <p>
           Bei jeder neuen Registrierung erhalten Sie automatisch eine E-Mail-Benachrichtigung.
+          Die Verwaltung kann <strong>Studierende</strong>, <strong>Erstprüfer:innen</strong> und <strong>Zweitprüfer:innen</strong> freischalten.
           Die gewünschte Rolle kann vor der Freischaltung über das Stift-Symbol angepasst werden.
           Nach der Freischaltung wird die Person per E-Mail informiert.
         </p>
