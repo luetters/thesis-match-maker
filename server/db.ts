@@ -3753,21 +3753,14 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
       };
       const dashboardLink = dashboardLinks[requestedRole] ?? "/";
       try {
-        const template = await getEmailTemplateByKey("role_approved");
         const { sendEmail } = await import("./emailHelper");
-        const subject = (template?.subject ?? "Ihre Rolle wurde bestätigt – HTW Berlin Thesis Match Maker")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{dashboardLink\}\}/g, dashboardLink);
-        const html = (template?.htmlBody ?? "")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{dashboardLink\}\}/g, dashboardLink);
-        const text = (template?.textBody ?? "")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{dashboardLink\}\}/g, dashboardLink);
-        await sendEmail({ to: user.email as string, subject, html, text });
+        const { roleApprovedEmail } = await import("./emailTemplates");
+        const emailData = roleApprovedEmail({
+          userName: user.name ?? "Nutzende:r",
+          roleLabel,
+          dashboardPath: dashboardLink,
+        });
+        await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {
         console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err);
       }
@@ -3809,24 +3802,14 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
         ? `<p style="color:#474747;line-height:1.6"><strong>Begründung:</strong> ${reason}</p>`
         : "";
       try {
-        const template = await getEmailTemplateByKey("role_rejected");
         const { sendEmail } = await import("./emailHelper");
-        const subject = (template?.subject ?? "Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{reason\}\}/g, reason ?? "")
-          .replace(/\{\{reasonBlock\}\}/g, reasonBlock);
-        const html = (template?.htmlBody ?? "")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{reason\}\}/g, reason ?? "")
-          .replace(/\{\{reasonBlock\}\}/g, reasonBlock);
-        const text = (template?.textBody ?? "")
-          .replace(/\{\{userName\}\}/g, user.name ?? "Nutzende:r")
-          .replace(/\{\{roleLabel\}\}/g, roleLabel)
-          .replace(/\{\{reason\}\}/g, reason ?? "")
-          .replace(/\{\{reasonBlock\}\}/g, reasonBlock);
-        await sendEmail({ to: user.email as string, subject, html, text });
+        const { roleRejectedEmail } = await import("./emailTemplates");
+        const emailData = roleRejectedEmail({
+          userName: user.name ?? "Nutzende:r",
+          roleLabel,
+          reason,
+        });
+        await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {
         console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err);
       }

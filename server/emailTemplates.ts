@@ -290,3 +290,66 @@ ${signature}`,
       };
   }
 }
+
+// ─── Freischaltungs-E-Mails ───────────────────────────────────────────────────
+// SITE_URL kann per Umgebungsvariable überschrieben werden (z.B. für spätere Domain-Änderungen)
+const SITE_URL = process.env.SITE_URL ?? "https://thesis.htw-berlin.com";
+
+export function roleApprovedEmail(opts: {
+  userName: string;
+  roleLabel: string;
+  dashboardPath: string; // z.B. "/examiner"
+}): { subject: string; html: string; text: string } {
+  const dashboardUrl = `${SITE_URL}${opts.dashboardPath}`;
+  const subject = `Ihre Rolle wurde freigeschaltet – HTW Berlin Thesis Match Maker / Your role has been activated`;
+  const body = `
+    <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Freischaltung bestätigt / Role Activated</h2>
+    ${p(`Sehr geehrte:r ${opts.userName},`)}
+    ${p(`Ihre Rolle als <strong style="color:#006937">${opts.roleLabel}</strong> wurde soeben durch die Verwaltung freigeschaltet. Sie können sich nun vollständig im System anmelden und alle Funktionen nutzen.`)}
+    <p style="margin:20px 0 24px 0">
+      <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a>
+    </p>
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+    ${divider()}
+    ${p(`Dear ${opts.userName},`)}
+    ${p(`Your role as <strong style="color:#006937">${opts.roleLabel}</strong> has been activated by the administration. You can now log in and use all features.`)}
+    <p style="margin:20px 0 24px 0">
+      <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a>
+    </p>
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  return {
+    subject,
+    html: htmlWrapper(body),
+    text: `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.\nZum Dashboard: ${dashboardUrl}\n\nYour role as ${opts.roleLabel} has been activated.\nGo to dashboard: ${dashboardUrl}`,
+  };
+}
+
+export function roleRejectedEmail(opts: {
+  userName: string;
+  roleLabel: string;
+  reason?: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker / Your role request was declined`;
+  const reasonBlockDE = opts.reason ? p(`<strong>Begründung:</strong> ${opts.reason}`) : "";
+  const reasonBlockEN = opts.reason ? p(`<strong>Reason:</strong> ${opts.reason}`) : "";
+  const body = `
+    <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Rollenanfrage abgelehnt / Role Request Declined</h2>
+    ${p(`Sehr geehrte:r ${opts.userName},`)}
+    ${p(`Ihre Anfrage zur Rolle <strong>${opts.roleLabel}</strong> wurde leider abgelehnt.`)}
+    ${reasonBlockDE}
+    ${p(`Bei Fragen wenden Sie sich bitte an das Prüfungsamt: <a href="mailto:pruefungsamt@htw-berlin.de" style="color:#006937">pruefungsamt@htw-berlin.de</a>`)}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+    ${divider()}
+    ${p(`Dear ${opts.userName},`)}
+    ${p(`Your request for the role <strong>${opts.roleLabel}</strong> has been declined.`)}
+    ${reasonBlockEN}
+    ${p(`If you have questions, please contact the examination office: <a href="mailto:pruefungsamt@htw-berlin.de" style="color:#006937">pruefungsamt@htw-berlin.de</a>`)}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  return {
+    subject,
+    html: htmlWrapper(body),
+    text: `Ihre Rollenanfrage als ${opts.roleLabel} wurde abgelehnt.${opts.reason ? " Begründung: " + opts.reason : ""}\n\nYour role request as ${opts.roleLabel} was declined.${opts.reason ? " Reason: " + opts.reason : ""}`,
+  };
+}

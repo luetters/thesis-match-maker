@@ -1800,7 +1800,7 @@ export const appRouter = router({
         const allProgs = await getAllProgrammes();
         const prog = allProgs.find((p) => p.id === input.programmeId);
         if (pavUser?.email && prog) {
-          const dashboardUrl = `${input.origin ?? "https://thesismatch.manus.space"}/pav`;
+          const dashboardUrl = `${input.origin ?? "https://thesis.htw-berlin.com"}/pav`;
           await sendPavProgrammeAssignmentEmail({
             to: pavUser.email,
             pavName: pavUser.name ?? pavUser.email,
@@ -1822,7 +1822,7 @@ export const appRouter = router({
         const allProgs = await getAllProgrammes();
         const prog = allProgs.find((p) => p.id === input.programmeId);
         if (pavUser?.email && prog) {
-          const dashboardUrl = `${input.origin ?? "https://thesismatch.manus.space"}/pav`;
+          const dashboardUrl = `${input.origin ?? "https://thesis.htw-berlin.com"}/pav`;
           await sendPavProgrammeAssignmentEmail({
             to: pavUser.email,
             pavName: pavUser.name ?? pavUser.email,
