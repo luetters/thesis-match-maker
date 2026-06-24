@@ -2086,6 +2086,8 @@ function Overview() {
   const { data: acceptedStudents = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
   const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
+  const { data: myProfile } = trpc.examiner.myProfile.useQuery();
+  const roleStatus = (myProfile as any)?.roleStatus ?? 'approved';
   const requestsAny = (requests ?? []) as any[];
   const ACCEPTED_STATUSES = ["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "ACCEPTED", "MATCHED", "REGISTERED", "COMPLETED"];
   const PENDING_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"];
@@ -2118,6 +2120,43 @@ function Overview() {
 
   return (
     <div className="space-y-6">
+      {/* Freischaltungs-Hinweis */}
+      {roleStatus === 'pending' && (
+        <div className="flex items-start gap-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-6 h-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-amber-800 text-sm">Profil wartet auf Freischaltung</p>
+            <p className="text-amber-700 text-sm mt-1">
+              Ihr Profil wurde erfolgreich eingerichtet und der Verwaltung zur Prüfung vorgelegt.
+              Sobald Ihr Konto freigeschaltet wurde, erhalten Sie eine Bestätigungs-E-Mail und können
+              Betreuungsanfragen von Studierenden entgegennehmen.
+            </p>
+          </div>
+        </div>
+      )}
+      {roleStatus === 'rejected' && (
+        <div className="flex items-start gap-4 rounded-2xl border-2 border-red-300 bg-red-50 p-5">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-red-800 text-sm">Freischaltung abgelehnt</p>
+            <p className="text-red-700 text-sm mt-1">
+              Ihre Freischaltungsanfrage wurde leider abgelehnt. Bitte wenden Sie sich an die Verwaltung
+              unter{' '}
+              <a href="mailto:pruefungsamt@htw-berlin.de" className="underline font-medium">pruefungsamt@htw-berlin.de</a>{' '}
+              für weitere Informationen.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Einladungsformular */}
       <div className="flex justify-end">
         <InviteStudentForm onSuccess={() => {

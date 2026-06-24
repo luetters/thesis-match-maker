@@ -130,12 +130,20 @@ export async function upsertExaminerProfile(profile: InsertExaminerProfile) {
 export async function getExaminerProfileByUserId(userId: number) {
   const db = await getDb();
   if (!db) return null;
+  // Profil laden
   const result = await db
     .select()
     .from(examinerProfiles)
     .where(eq(examinerProfiles.userId, userId))
     .limit(1);
-  return result[0] || null;
+  if (!result[0]) return null;
+  // roleStatus aus users-Tabelle separat laden
+  const userRow = await db
+    .select({ roleStatus: users.roleStatus })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return { ...result[0], roleStatus: userRow[0]?.roleStatus ?? 'approved' };
 }
 
 export async function getAllExaminers() {
