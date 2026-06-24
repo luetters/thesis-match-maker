@@ -300,25 +300,36 @@ function SemesterCapacityBlock() {
   const utils = trpc.useUtils();
   const upcomingSemesters = generateUpcomingSemesters();
 
-  const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
+  // Kapazitäten direkt aus der dedizierten Prozedur laden (nicht aus myProfile)
+  const { data: savedCaps = [], isLoading } = trpc.examiner.getSemesterCapacities.useQuery();
   const updateCapacityMutation = trpc.examiner.upsertSemesterCapacity.useMutation({
-    onSuccess: () => { utils.examiner.myProfile.invalidate(); },
+    onSuccess: () => { utils.examiner.getSemesterCapacities.invalidate(); },
   });
 
   const [capacities, setCapacities] = useState<SemesterCapacity[]>([]);
-  const [savedCapacities, setSavedCapacities] = useState<SemesterCapacity[]>([]);
+  // hasHydrated: verhindert, dass der useEffect nach dem Speichern den lokalen State überschreibt
+  const hasHydrated = useRef(false);
   const [showCapDirtyWarning, setShowCapDirtyWarning] = useState(false);
 
   useEffect(() => {
-    if (!profile) return;
-    const existing: SemesterCapacity[] = ((profile as any).semesterCapacities ?? []) as SemesterCapacity[];
+    if (isLoading) return;
+    // Nur einmalig beim ersten Laden initialisieren
+    if (hasHydrated.current) return;
+    hasHydrated.current = true;
+    const existing = savedCaps as SemesterCapacity[];
     const merged = upcomingSemesters.map((sem) => {
       const found = existing.find((c) => c.semester === sem);
       return found ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
     });
     setCapacities(merged);
-    setSavedCapacities(merged);
-  }, [profile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCaps, isLoading]);
+
+  // savedCapacities: aktueller Stand aus dem Server-Cache (für isDirty-Vergleich)
+  const savedCapacities = upcomingSemesters.map((sem) => {
+    const found = (savedCaps as SemesterCapacity[]).find((c) => c.semester === sem);
+    return found ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
+  });
 
   const isDirty = JSON.stringify(capacities) !== JSON.stringify(savedCapacities);
 
@@ -328,11 +339,14 @@ function SemesterCapacityBlock() {
 
   const handleSave = async () => {
     if (capacities.length === 0) return;
+    // Optimistisch den Cache setzen, damit kein Rücksetzen auf 0 passiert
+    utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
     for (const cap of capacities) {
       await updateCapacityMutation.mutateAsync(cap);
     }
-    setSavedCapacities(capacities);
     toast.success("Kapazitäten gespeichert");
+    // Cache im Hintergrund aktualisieren – hasHydrated bleibt true
+    utils.examiner.getSemesterCapacities.invalidate();
   };
 
   const handleReset = () => {
