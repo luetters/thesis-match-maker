@@ -1564,6 +1564,7 @@ function ProfileEdit() {
     title: "",
     department: "",
     bio: "",
+    researchFocus: "",
     tags: "",
     languages: "",
     studyPrograms: "",
@@ -1571,13 +1572,15 @@ function ProfileEdit() {
   });
   const [alternativeEmail, setAlternativeEmail] = useState("");
   const [isSecondExaminer, setIsSecondExaminer] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  if (profile && !initialized) {
+  // Profil-Daten in den lokalen State laden (useEffect statt setState im Render-Body)
+  useEffect(() => {
+    if (!profile) return;
     setForm({
       title: profile.title ?? "",
       department: profile.department ?? "",
       bio: profile.bio ?? "",
+      researchFocus: (profile as any).researchFocus ?? "",
       tags: (Array.isArray(profile.tags) ? profile.tags : []).join(", "),
       languages: (Array.isArray(profile.languages) ? profile.languages : []).join(", "),
       studyPrograms: (Array.isArray(profile.studyPrograms) ? profile.studyPrograms : []).join(", "),
@@ -1585,8 +1588,8 @@ function ProfileEdit() {
     });
     setAlternativeEmail((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "");
     setIsSecondExaminer((profile as { isSecondExaminer?: number }).isSecondExaminer === 1);
-    setInitialized(true);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.userId ?? (profile as any)?.id]);
 
   const updateProfile = trpc.examiner.updateProfile.useMutation({
     onSuccess: () => toast.success(t.examiner.toastProfileSaved ?? "Profil gespeichert!"),
@@ -1609,6 +1612,7 @@ function ProfileEdit() {
       title: form.title || undefined,
       department: form.department || undefined,
       bio: form.bio || undefined,
+      researchFocus: form.researchFocus || undefined,
       tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       languages: form.languages.split(",").map((l) => l.trim()).filter(Boolean),
       studyPrograms: form.studyPrograms.split(",").map((s) => s.trim()).filter(Boolean),
@@ -1662,7 +1666,17 @@ function ProfileEdit() {
                 rows={3}
                 value={form.bio}
                 onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                placeholder="Forschungsschwerpunkte, Betreuungspräferenzen..."
+                placeholder="Kurze Vorstellung Ihrer Person und Betreuungspräferenzen..."
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Forschungsschwerpunkte</label>
+              <textarea
+                rows={3}
+                value={form.researchFocus}
+                onChange={(e) => setForm((f) => ({ ...f, researchFocus: e.target.value }))}
+                placeholder="z.B. Künstliche Intelligenz, Nachhaltigkeit, Marketing..."
                 className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
               />
             </div>

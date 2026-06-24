@@ -1002,6 +1002,7 @@ export const appRouter = router({
           title: z.string().optional(),
           department: z.string().optional(),
           bio: z.string().optional(),
+          researchFocus: z.string().optional(),
           tags: z.array(z.string()).optional(),
           languages: z.array(z.string()).optional(),
           studyPrograms: z.array(z.string()).optional(),
