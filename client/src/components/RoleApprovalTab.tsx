@@ -42,6 +42,15 @@ type PendingUser = {
   roleStatus: string;
   createdAt: Date;
   loginMethod: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  academicTitle?: string | null;
+  department?: string | null;
+  matrikelNr?: string | null;
+  thesisType?: string | null;
+  targetSemester?: string | null;
+  staffId?: string | null;
+  phone?: string | null;
 };
 
 type RejectDialogState = {
@@ -203,7 +212,10 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                       Ausstehend
                     </Badge>
                   </div>
+                  {/* E-Mail */}
                   <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
+
+                  {/* Detailzeile 1: Rolle + Datum */}
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
                     <span className="flex items-center gap-1">
                       Gewünschte Rolle:
@@ -231,6 +243,71 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
                       <>
                         <span>·</span>
                         <span>{user.loginMethod}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Detailzeile 2: rollenspezifische Zusatzinfos */}
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                    {/* Prüfer:innen: Fachbereich + Personalnummer */}
+                    {(user.requestedRole === "examiner" || user.requestedRole === "second_examiner") && (
+                      <>
+                        {user.department && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="font-medium text-gray-600">FB:</span> {user.department}
+                          </span>
+                        )}
+                        {user.staffId && (
+                          <>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Personal-Nr.:</span> {user.staffId}
+                            </span>
+                          </>
+                        )}
+                        {user.phone && (
+                          <>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Tel.:</span> {user.phone}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {/* Studierende: Matrikelnummer + Studiengang + Semester */}
+                    {user.requestedRole === "student" && (
+                      <>
+                        {user.matrikelNr && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="font-medium text-gray-600">Matr.-Nr.:</span> {user.matrikelNr}
+                          </span>
+                        )}
+                        {user.department && (
+                          <>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Studiengang:</span> {user.department}
+                            </span>
+                          </>
+                        )}
+                        {user.thesisType && (
+                          <>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Abschluss:</span>{" "}
+                              {user.thesisType === "master" ? "Master" : "Bachelor"}
+                            </span>
+                          </>
+                        )}
+                        {user.targetSemester && (
+                          <>
+                            <span>·</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Geplantes Semester:</span> {user.targetSemester}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </div>

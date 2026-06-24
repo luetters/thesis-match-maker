@@ -3668,7 +3668,10 @@ export async function getPendingRoleUsers() {
   if (!db) return [];
   try {
     const rows = await db.execute(
-      `SELECT id, name, email, role, requestedRole, roleStatus, createdAt, loginMethod FROM users WHERE roleStatus = 'pending' ORDER BY createdAt DESC`
+      `SELECT id, name, email, role, requestedRole, roleStatus, createdAt, loginMethod,
+              first_name, last_name, academic_title, department, matrikel_nr, thesis_type,
+              target_semester, staff_id, phone
+       FROM users WHERE roleStatus = 'pending' ORDER BY createdAt DESC`
     );
     return (rows[0] as unknown as any[]).map((r: any) => ({
       id: r.id as number,
@@ -3679,6 +3682,15 @@ export async function getPendingRoleUsers() {
       roleStatus: r.roleStatus as string,
       createdAt: r.createdAt as Date,
       loginMethod: r.loginMethod as string | null,
+      firstName: r.first_name as string | null,
+      lastName: r.last_name as string | null,
+      academicTitle: r.academic_title as string | null,
+      department: r.department as string | null,
+      matrikelNr: r.matrikel_nr as string | null,
+      thesisType: r.thesis_type as string | null,
+      targetSemester: r.target_semester as string | null,
+      staffId: r.staff_id as string | null,
+      phone: r.phone as string | null,
     }));
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Abrufen ausstehender Nutzer:", error);
