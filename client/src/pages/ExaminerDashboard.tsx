@@ -965,7 +965,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#76B900" }} />
                 <span className="font-semibold text-gray-900">Persönliche Hinweise/Anforderungen senden</span>
               </div>
               <div className="flex items-center gap-2">
@@ -975,9 +975,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                     onClick={() => setRequirementsPreviewMode(false)}
                     className={`px-3 py-1.5 transition-colors ${
                       !requirementsPreviewMode
-                        ? 'bg-blue-600 text-white font-medium'
+                        ? 'text-white font-medium'
                         : 'text-gray-500 hover:bg-gray-50'
                     }`}
+                    style={!requirementsPreviewMode ? { backgroundColor: "#76B900" } : undefined}
                   >
                     Bearbeiten
                   </button>
@@ -985,9 +986,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                     onClick={() => setRequirementsPreviewMode(true)}
                     className={`px-3 py-1.5 transition-colors border-l border-gray-200 ${
                       requirementsPreviewMode
-                        ? 'bg-blue-600 text-white font-medium'
+                        ? 'text-white font-medium'
                         : 'text-gray-500 hover:bg-gray-50'
                     }`}
+                    style={requirementsPreviewMode ? { backgroundColor: "#76B900" } : undefined}
                   >
                     Vorschau
                   </button>
@@ -1201,7 +1203,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   });
                 }}
                 disabled={sendRequirementsMail.isPending}
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                style={{ backgroundColor: "#76B900" }}
               >
                 {sendRequirementsMail.isPending ? "Wird gesendet..." : "Hinweise senden"}
               </button>

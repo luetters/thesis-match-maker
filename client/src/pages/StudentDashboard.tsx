@@ -1116,7 +1116,8 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-3 py-2 rounded-lg text-xs font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            className="px-3 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition-colors"
+            style={{ backgroundColor: "#76B900" }}
           >
             {saving ? "..." : t.student.save}
           </button>

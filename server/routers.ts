@@ -864,7 +864,7 @@ export const appRouter = router({
             type: "status_change",
           });
           const student = await getUserById(existing.studentId);
-          const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
+          const origin = input.origin ?? "https://thesis.htw-berlin.com";
           if (student?.email) {
             const statusLabelDE2: Record<string, string> = { ACCEPTED: "Angenommen", REJECTED: "Abgelehnt", MATCHED: "Matched" };
             const statusLabelEN2: Record<string, string> = { ACCEPTED: "Accepted", REJECTED: "Rejected", MATCHED: "Matched" };
@@ -949,7 +949,7 @@ export const appRouter = router({
             studentName: student?.name ?? "Studierende:r",
             thesisTitle: thesis.title,
           });
-          const origin = input.origin ?? "https://thesis-match.htw-berlin.de";
+          const origin = input.origin ?? "https://thesis.htw-berlin.com";
           await sendExaminerCTAEmail({
             to: emailTo,
             examinerName: examiner.name ?? "Prüfer:in",

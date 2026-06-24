@@ -336,7 +336,7 @@ export function EmailTemplateEditor() {
                             .replace(/\{\{semester\}\}/g, "SoSe 2026")
                             .replace(/\{\{studiengang\}\}/g, "Informatik (B.Sc.)")}
                         </div>
-                        <div className="border-t pt-1 whitespace-pre-wrap text-muted-foreground">
+                        <div className="border-t pt-1 whitespace-pre-wrap text-muted-foreground overflow-y-auto" style={{ maxHeight: "12rem" }}>
                           {localTemplates[type].body
                             .replace(/\{\{name\}\}/g, "Max Mustermann")
                             .replace(/\{\{thema\}\}/g, "KI in der Bildung")

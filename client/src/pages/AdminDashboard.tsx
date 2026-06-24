@@ -380,6 +380,7 @@ function AllRequests() {
                             updateStatus.mutate({
                               id: req.id,
                               status: e.target.value as "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED",
+                              origin: window.location.origin,
                             })
                           }
                           className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 bg-white focus:outline-none cursor-pointer"
@@ -831,7 +832,7 @@ function UserManagement() {
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
-            style={{ backgroundColor: "oklch(38.5% 0.12 152)" }}
+            style={{ backgroundColor: "#76B900" }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             Prüfer:in anlegen
@@ -998,7 +999,7 @@ function UserManagement() {
                         ? "text-white shadow-sm"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    style={safePage === p ? { backgroundColor: "oklch(38.5% 0.12 152)" } : {}}
+                    style={safePage === p ? { backgroundColor: "#76B900" } : {}}
                   >
                     {p}
                   </button>
