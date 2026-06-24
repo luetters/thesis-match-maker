@@ -1523,7 +1523,7 @@ function generateUpcomingSemesters(): string[] {
   const semesters: string[] = [];
   let y = year;
   let ws = isWinter;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     semesters.push(ws ? `WS${y}` : `SoSe${y}`);
     if (ws) { y++; ws = false; } else { ws = true; }
   }
@@ -2084,8 +2084,8 @@ function Overview() {
   const { t } = useLanguage();
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
   const { data: acceptedStudents = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
-  const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
-  const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
+  const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery(undefined, { refetchOnMount: 'always' });
+  const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery(undefined, { refetchOnMount: 'always' });
   const { data: myProfile } = trpc.examiner.myProfile.useQuery();
   const roleStatus = (myProfile as any)?.roleStatus ?? 'approved';
   const requestsAny = (requests ?? []) as any[];
