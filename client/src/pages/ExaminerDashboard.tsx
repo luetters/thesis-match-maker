@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { RequestDetailModal } from "@/components/RequestDetailModal";
 import Profile from "@/pages/Profile";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
@@ -1896,6 +1897,188 @@ function ProgrammeSettings() {
   );
 }
 
+// ─── AcceptedStudentsSection ────────────────────────────────────────────────
+function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[] }) {
+  const [filterSemester, setFilterSemester] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "semester" | "status" | "name">("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: refreshed = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
+  const list: any[] = (refreshed as any[]).length > 0 ? (refreshed as any[]) : acceptedStudents;
+
+  const STATUS_LABELS: Record<string, string> = {
+    FIRST_EXAMINER_ACCEPTED: "Erstprüfer:in zugestimmt",
+    SECOND_EXAMINER_ASSIGNED: "Zweitprüfer:in zugewiesen",
+    SECOND_EXAMINER_SET: "Zweitprüfer:in gesetzt",
+    MATCHED: "Matched",
+    ACCEPTED: "Genehmigt",
+    REGISTERED: "Angemeldet",
+    COMPLETED: "Abgeschlossen",
+  };
+
+  const semesters = Array.from(new Set(list.map((r: any) => r.targetSemester).filter(Boolean))) as string[];
+  const statuses = Array.from(new Set(list.map((r: any) => r.status).filter(Boolean))) as string[];
+
+  const filtered = list.filter((r: any) => {
+    if (filterSemester !== "all" && r.targetSemester !== filterSemester) return false;
+    if (filterStatus !== "all" && r.status !== filterStatus) return false;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a: any, b: any) => {
+    let cmp = 0;
+    if (sortBy === "date") cmp = (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+    else if (sortBy === "semester") cmp = (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "");
+    else if (sortBy === "status") cmp = (a.status ?? "").localeCompare(b.status ?? "");
+    else if (sortBy === "name") cmp = (a.studentName ?? "").localeCompare(b.studentName ?? "");
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const handleExportCSV = () => {
+    const headers = ["Titel", "Studierende:r", "E-Mail", "Studiengang", "Semester", "Status", "Eingereicht am"];
+    const rows = sorted.map((r: any) => [
+      `"${(r.title ?? "").replace(/"/g, '""')}"`,
+      `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
+      `"${(r.studentEmail ?? "").replace(/"/g, '""')}"`,
+      `"${(r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "").replace(/"/g, '""')}"`,
+      `"${(r.targetSemester ?? "").replace(/"/g, '""')}"`,
+      `"${(STATUS_LABELS[r.status] ?? r.status ?? "").replace(/"/g, '""')}"`,
+      `"${r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : ""}"`,
+    ]);
+    const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `betreute-studierende-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleSort = (field: "date" | "semester" | "status" | "name") => {
+    if (sortBy === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(field); setSortDir("asc"); }
+  };
+  const SortIcon = ({ field }: { field: string }) => (
+    <span className="ml-1 text-gray-400">{sortBy === field ? (sortDir === "asc" ? "▲" : "▼") : "△"}</span>
+  );
+
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <h2 className="font-semibold text-gray-900">Betreute Studierende</h2>
+          <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{sorted.length}</span>
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#76B900] text-[#76B900] hover:bg-[#76B900] hover:text-white transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          CSV exportieren
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select
+          value={filterSemester}
+          onChange={(e) => setFilterSemester(e.target.value)}
+          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#76B900]"
+        >
+          <option value="all">Alle Semester</option>
+          {sortSemesters(semesters).map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#76B900]"
+        >
+          <option value="all">Alle Status</option>
+          {statuses.map((s) => <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>)}
+        </select>
+        <div className="flex items-center gap-1 ml-auto">
+          <span className="text-xs text-gray-400">Sortieren:</span>
+          {(["name", "semester", "status", "date"] as const).map((field) => (
+            <button
+              key={field}
+              onClick={() => toggleSort(field)}
+              className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
+                sortBy === field ? "border-[#76B900] bg-[#76B900]/10 text-[#76B900] font-medium" : "border-gray-200 text-gray-500 hover:border-gray-300"
+              }`}
+            >
+              {{ name: "Name", semester: "Semester", status: "Status", date: "Datum" }[field]}
+              <SortIcon field={field} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!sorted.length ? (
+        <p className="text-sm text-gray-500">
+          {list.length === 0 ? "Noch keine angenommenen Anfragen vorhanden." : "Keine Einträge für die gewählten Filter."}
+        </p>
+      ) : (
+        <div className="space-y-1">
+          {sorted.map((req: any) => (
+            <button
+              key={req.id}
+              onClick={() => { setSelectedRequest(req); setIsModalOpen(true); }}
+              className="w-full text-left py-3 px-3 border-b border-gray-50 last:border-0 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-[#76B900] transition-colors">
+                    {req.title || "(kein Titel)"}
+                  </p>
+                  {req.studentName && (
+                    <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                    {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium">Studiengang:</span>{" "}
+                        {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                      </span>
+                    )}
+                    {req.targetSemester && (
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                      </span>
+                    )}
+                    {req.createdAt && (
+                      <span className="text-xs text-gray-400">
+                        {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                  {req.studentEmail && (
+                    <p className="text-xs text-gray-400 mt-0.5">{req.studentEmail}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={req.status} />
+                  <svg className="w-4 h-4 text-gray-300 group-hover:text-[#76B900] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selectedRequest && (
+        <RequestDetailModal
+          isOpen={isModalOpen}
+          onClose={() => { setIsModalOpen(false); setSelectedRequest(null); }}
+          request={selectedRequest}
+          onStatusChange={() => (trpc.examiner as any).getAcceptedRequests?.invalidate?.()}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview() {
   const { t } = useLanguage();
@@ -2004,52 +2187,7 @@ function Overview() {
       )}
 
       {/* Betreute Studierende */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">Betreute Studierende</h2>
-          <span className="text-xs text-gray-400">{(acceptedStudents as any[]).length} Einträge</span>
-        </div>
-        {!(acceptedStudents as any[]).length ? (
-          <p className="text-sm text-gray-500">Noch keine angenommenen Anfragen vorhanden.</p>
-        ) : (
-          <div className="space-y-3">
-            {(acceptedStudents as any[]).map((req: any) => (
-              <div key={req.id} className="py-3 border-b border-gray-50 last:border-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{req.title || "(kein Titel)"}</p>
-                    {req.studentName && (
-                      <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
-                    )}
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                      {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
-                        <span className="text-xs text-gray-500">
-                          <span className="font-medium">Studiengang:</span>{" "}
-                          {req.programmeAbbreviation ?? req.programmeName ?? req.department}
-                        </span>
-                      )}
-                      {req.targetSemester && (
-                        <span className="text-xs text-gray-500">
-                          <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
-                        </span>
-                      )}
-                      {req.createdAt && (
-                        <span className="text-xs text-gray-400">
-                          {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
-                        </span>
-                      )}
-                    </div>
-                    {req.studentEmail && (
-                      <p className="text-xs text-gray-400 mt-0.5">{req.studentEmail}</p>
-                    )}
-                  </div>
-                  <StatusBadge status={req.status} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <AcceptedStudentsSection acceptedStudents={acceptedStudents as any[]} />
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
