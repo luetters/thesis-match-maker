@@ -3941,9 +3941,24 @@ export async function updateProfile(
   if (!db) return false;
   try {
     const sets: string[] = [];
-    if (data.name !== undefined) sets.push(`name = '${data.name.replace(/'/g, "''")}'`);
     if (data.firstName !== undefined) sets.push(`first_name = '${data.firstName.replace(/'/g, "''")}'`);
     if (data.lastName !== undefined) sets.push(`last_name = '${data.lastName.replace(/'/g, "''")}'`);
+    // name automatisch aus Titel + Vor- + Nachname zusammensetzen wenn Namensfelder geändert werden
+    if (data.firstName !== undefined || data.lastName !== undefined || data.academicTitle !== undefined) {
+      try {
+        const [curRows] = await db.execute(`SELECT first_name, last_name, academic_title FROM users WHERE id = ${userId}`) as any;
+        const cur = Array.isArray(curRows) ? curRows[0] : null;
+        if (cur) {
+          const title = (data.academicTitle ?? cur.academic_title ?? '').trim();
+          const first = (data.firstName ?? cur.first_name ?? '').trim();
+          const last = (data.lastName ?? cur.last_name ?? '').trim();
+          const fullName = [title, first, last].filter(Boolean).join(' ');
+          if (fullName) sets.push(`name = '${fullName.replace(/'/g, "''")}'`);
+        }
+      } catch (_) { /* Fallback: name bleibt unverändert */ }
+    } else if (data.name !== undefined) {
+      sets.push(`name = '${data.name.replace(/'/g, "''")}'`);
+    }
     if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
     if (data.phone !== undefined) sets.push(`phone = '${data.phone.replace(/'/g, "''")}'`);
     if (data.department !== undefined) sets.push(`department = '${data.department.replace(/'/g, "''")}'`);

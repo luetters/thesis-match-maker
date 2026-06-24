@@ -307,6 +307,10 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fillColor(GRAY)
       .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 58, { width: qrX - 80, lineBreak: false });
 
+    // doc.y-Cursor manuell auf sicheren Wert setzen, damit PDFKit keinen Seitenumbruch erzeugt
+    // (PDFKit kann doc.y intern weiter verschieben als die absoluten Koordinaten vermuten lassen)
+    (doc as any).y = y + 110;
+
     // Disclaimer-Block – feste absolute Y-Koordinaten, KEIN doc.y verwenden
     // um automatischen Seitenumbruch zu verhindern
     const disclaimerDe = data.disclaimerDe ?? "";
