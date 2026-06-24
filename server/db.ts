@@ -2104,8 +2104,22 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
       and(
-        eq(thesisRequests.wantedExaminerId, examinerId),
-        eq(thesisRequests.status, "FIRST_EXAMINER_ACCEPTED")
+        // Alle Status, in denen die Anfrage als "angenommen" gilt
+        inArray(thesisRequests.status, [
+          "FIRST_EXAMINER_ACCEPTED",
+          "SECOND_EXAMINER_ASSIGNED",
+          "SECOND_EXAMINER_SET",
+          "MATCHED",
+          "ACCEPTED",
+          "REGISTERED",
+          "COMPLETED",
+        ] as any),
+        // Prüfer:in ist Erst-, Zweit- oder Wunschprüfer:in
+        or(
+          eq(thesisRequests.examinerId, examinerId),
+          eq(thesisRequests.secondExaminerId, examinerId),
+          eq(thesisRequests.wantedExaminerId, examinerId),
+        )
       )
     )
     .orderBy(desc(thesisRequests.createdAt));

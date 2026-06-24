@@ -1900,6 +1900,7 @@ function ProgrammeSettings() {
 function Overview() {
   const { t } = useLanguage();
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
+  const { data: acceptedStudents = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery();
   const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
   const requestsAny = (requests ?? []) as any[];
@@ -2001,6 +2002,54 @@ function Overview() {
           <p className="text-xs text-gray-400 mt-3 px-1">Kapazitäten können unter Mein Profil angepasst werden.</p>
         </div>
       )}
+
+      {/* Betreute Studierende */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Betreute Studierende</h2>
+          <span className="text-xs text-gray-400">{(acceptedStudents as any[]).length} Einträge</span>
+        </div>
+        {!(acceptedStudents as any[]).length ? (
+          <p className="text-sm text-gray-500">Noch keine angenommenen Anfragen vorhanden.</p>
+        ) : (
+          <div className="space-y-3">
+            {(acceptedStudents as any[]).map((req: any) => (
+              <div key={req.id} className="py-3 border-b border-gray-50 last:border-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{req.title || "(kein Titel)"}</p>
+                    {req.studentName && (
+                      <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
+                    )}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                      {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium">Studiengang:</span>{" "}
+                          {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                        </span>
+                      )}
+                      {req.targetSemester && (
+                        <span className="text-xs text-gray-500">
+                          <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                        </span>
+                      )}
+                      {req.createdAt && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                    {req.studentEmail && (
+                      <p className="text-xs text-gray-400 mt-0.5">{req.studentEmail}</p>
+                    )}
+                  </div>
+                  <StatusBadge status={req.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
