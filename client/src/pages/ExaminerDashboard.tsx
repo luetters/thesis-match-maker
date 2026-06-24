@@ -2846,7 +2846,12 @@ export default function ExaminerDashboard() {
   // (nur für echte Prüfer:innen, nicht für Superadmins)
   const { data: profile, isLoading: profileLoading } = trpc.examiner.myProfile.useQuery();
   useEffect(() => {
-    if ((hasRole("examiner") || hasRole("second_examiner")) && !profileLoading) {
+    // Nur weiterleiten wenn:
+    // 1. Nutzer:in ist Prüfer:in (nicht Superadmin)
+    // 2. Profil ist vollständig geladen (nicht loading)
+    // 3. Profil-Daten sind vorhanden (nicht undefined) – verhindert Race Condition nach Onboarding
+    // 4. onboardingCompleted ist explizit NICHT 1
+    if ((hasRole("examiner") || hasRole("second_examiner")) && !profileLoading && profile !== undefined) {
       const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
       if (!completed) navigate("/examiner/onboarding");
     }
