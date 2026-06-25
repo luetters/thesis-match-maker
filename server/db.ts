@@ -4122,6 +4122,7 @@ export async function getAllSecondExaminerCandidates() {
     tags: examinerProfiles.tags,
     photoUrl: examinerProfiles.photoUrl,
     avatarUrl: users.avatarUrl,
+    role: users.role,
   })
     .from(users)
     .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))

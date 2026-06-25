@@ -96,6 +96,33 @@ function CandidateTooltip({ candidate }: { candidate: any }) {
   );
 }
 
+// ─── RoleBadge ───────────────────────────────────────────────────────────────
+function RoleBadge({ candidate }: { candidate: any }) {
+  const isSecond = candidate.role === "second_examiner" ||
+    (candidate.role === "examiner" && candidate.isSecondExaminer === 1);
+  const isPrimarilyFirst = candidate.role === "examiner" && !isSecond;
+  if (isPrimarilyFirst) {
+    return (
+      <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
+        Erstgutachter:in
+      </span>
+    );
+  }
+  if (candidate.role === "second_examiner") {
+    return (
+      <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-600 border border-purple-100">
+        Zweitgutachter:in
+      </span>
+    );
+  }
+  // examiner mit isSecondExaminer-Flag: beide Rollen
+  return (
+    <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-100">
+      Erst- &amp; Zweit
+    </span>
+  );
+}
+
 // ─── AvailableItem ────────────────────────────────────────────────────────────
 function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: number) => void }) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -124,7 +151,10 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
       </div>
       <UserAvatar name={buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
+          <RoleBadge candidate={candidate} />
+        </div>
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onAdd(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-[#76B900]/10 hover:bg-[#76B900]/30 flex items-center justify-center transition-colors" title="Hinzufügen">
@@ -166,7 +196,10 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
       <span className="flex-shrink-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ backgroundColor: "#76B900" }}>{index + 1}</span>
       <UserAvatar name={buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })} email={candidate.email} avatarUrl={candidate.photoUrl ?? candidate.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
+          <RoleBadge candidate={candidate} />
+        </div>
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onRemove(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors" title="Entfernen">
