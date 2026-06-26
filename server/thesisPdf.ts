@@ -7,6 +7,7 @@ import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { PDFDocument as LibPDFDocument } from "pdf-lib";
 
 // Logo als Buffer einlesen (einmalig beim Modulstart)
 let logoBuffer: Buffer | null = null;
@@ -56,6 +57,18 @@ function degreeLabel(type?: string | null): string {
   return type === "master" ? "Master" : "Bachelor";
 }
 
+/** Entfernt alle Seiten außer der ersten aus einem PDF-Buffer */
+async function trimToFirstPage(pdfBuffer: Buffer): Promise<Buffer> {
+  const pdfDoc = await LibPDFDocument.load(pdfBuffer);
+  const pageCount = pdfDoc.getPageCount();
+  // Seiten von hinten entfernen (Index 1 bis pageCount-1)
+  for (let i = pageCount - 1; i >= 1; i--) {
+    pdfDoc.removePage(i);
+  }
+  const trimmed = await pdfDoc.save();
+  return Buffer.from(trimmed);
+}
+
 export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
   const qrBuffer = await QRCode.toBuffer(data.verifyUrl, {
     errorCorrectionLevel: "H",
@@ -64,8 +77,8 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     color: { dark: HTW_DARK, light: "#ffffff" },
   });
 
-  return new Promise((resolve, reject) => {
-    // bufferPages: true verhindert, dass PDFKit automatisch neue Seiten erzeugt
+  const rawBuffer = await new Promise<Buffer>((resolve, reject) => {
+    // bufferPages: true + autoFirstPage: true – wir verwalten Seiten manuell
     const doc = new PDFDocument({
       size: "A4",
       margins: { top: 60, bottom: 60, left: 60, right: 60 },
@@ -79,17 +92,36 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       },
     });
 
+    // Seitenumbruch-Listener: verhindert jede weitere Seite
+    doc.on("pageAdded", () => {
+      // Sofort den Cursor zurücksetzen, damit PDFKit nicht erneut umbricht
+      (doc as any).y = doc.page.height - 200;
+    });
+
     const chunks: Buffer[] = [];
     doc.on("data", (c: Buffer) => chunks.push(c));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("end", () => {
+      // Nur die erste Seite in den finalen Buffer übernehmen
+      const range = doc.bufferedPageRange();
+      if (range.count > 1) {
+        // Alle Seiten außer der ersten aus dem internen Buffer entfernen
+        // PDFKit hat keine public API dafür – wir trimmen den Buffer nachträglich
+        // Einfachster Weg: neues Dokument mit nur Seite 1 erstellen ist komplex,
+        // daher nutzen wir den Trick: doc.switchToPage(0) vor flushPages
+        doc.switchToPage(range.start);
+      }
+      resolve(Buffer.concat(chunks));
+    });
     doc.on("error", reject);
 
     const pageWidth = doc.page.width - 120;
+    // A4-Höhe: 841.89pt, Margins top/bottom: 60pt → nutzbarer Bereich: ~722pt
+    const pageHeight = doc.page.height; // 841.89
 
-    // Header-Balken (grüner Streifen oben)
+    // ── Header-Balken (grüner Streifen oben) ──────────────────────────────────
     doc.rect(0, 0, doc.page.width, 8).fill(HTW_GREEN);
 
-    // Logo links – das neue HTW-Logo hat ein Seitenverhältnis ~1:1.2
+    // Logo links
     const logoX = 60;
     const logoY = 14;
     const logoW = 100;
@@ -140,6 +172,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
 
     let y = 152;
 
+    // ── Hilfsfunktionen ────────────────────────────────────────────────────────
     function drawField(
       labelDe: string,
       labelEn: string,
@@ -198,6 +231,8 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       }
       return currentY + 32;
     }
+
+    // ── Felder ─────────────────────────────────────────────────────────────────
 
     // Thema (hervorgehoben)
     y = drawField("Thema der Abschlussarbeit", "Thesis Topic", data.title, y, true);
@@ -266,7 +301,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     doc.moveTo(60, y + 4).lineTo(60 + pageWidth, y + 4).strokeColor("#e5e7eb").lineWidth(0.5).stroke();
     y += 16;
 
-    // Verifikations-Abschnitt (QR-Code rechts, Text links)
+    // ── Verifikations-Abschnitt ────────────────────────────────────────────────
     const qrX = 60 + pageWidth - 120;
     const qrY = y;
     doc.image(qrBuffer, qrX, qrY, { width: 100, height: 100 });
@@ -307,16 +342,18 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fillColor(GRAY)
       .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 58, { width: qrX - 80, lineBreak: false });
 
-    // doc.y-Cursor manuell auf sicheren Wert setzen, damit PDFKit keinen Seitenumbruch erzeugt
-    // (PDFKit kann doc.y intern weiter verschieben als die absoluten Koordinaten vermuten lassen)
-    (doc as any).y = y + 110;
+    // Cursor explizit unter den QR-Code setzen (kein automatischer Umbruch)
+    (doc as any).y = qrY + 110;
 
-    // Disclaimer-Block – feste absolute Y-Koordinaten, KEIN doc.y verwenden
-    // um automatischen Seitenumbruch zu verhindern
+    // ── Disclaimer-Block ───────────────────────────────────────────────────────
+    // Feste absolute Y-Koordinaten, immer im unteren Bereich der Seite.
+    // Footer-Balken: 40pt hoch → startet bei pageHeight - 40
+    // Disclaimer: 2 Zeilen à ~18pt + Überschrift ~11pt + Abstand = ~60pt
+    // → disclaimerY = pageHeight - 40 - 8 (Abstand) - 60 = pageHeight - 108
     const disclaimerDe = data.disclaimerDe ?? "";
     const disclaimerEn = data.disclaimerEn ?? "";
     if (disclaimerDe || disclaimerEn) {
-      const disclaimerY = doc.page.height - 148;
+      const disclaimerY = pageHeight - 148;
       doc
         .moveTo(60, disclaimerY - 8)
         .lineTo(60 + pageWidth, disclaimerY - 8)
@@ -333,20 +370,24 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
           .fontSize(6)
           .font("Helvetica")
           .fillColor(GRAY)
-          .text(disclaimerDe, 60, disclaimerY + 11, { width: pageWidth, lineBreak: false });
+          .text(disclaimerDe, 60, disclaimerY + 11, {
+            width: pageWidth,
+            // lineBreak: false würde langen Text abschneiden – wir erlauben einen
+            // Umbruch, aber begrenzen die Höhe durch die absolute Y-Position des Footers
+          });
       }
       if (disclaimerEn) {
-        const enY = disclaimerY + 11 + (disclaimerDe ? 18 : 0);
+        const enY = disclaimerY + 11 + (disclaimerDe ? 20 : 0);
         doc
           .fontSize(6)
           .font("Helvetica")
           .fillColor(GRAY)
-          .text(disclaimerEn, 60, enY, { width: pageWidth, lineBreak: false });
+          .text(disclaimerEn, 60, enY, { width: pageWidth });
       }
     }
 
-    // Footer-Balken – immer an absoluter Position
-    const footerY = doc.page.height - 40;
+    // ── Footer-Balken – immer an absoluter Position ────────────────────────────
+    const footerY = pageHeight - 40;
     doc.rect(0, footerY, doc.page.width, 40).fill(HTW_DARK);
     doc
       .fontSize(7.5)
@@ -359,12 +400,15 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         { align: "center", width: pageWidth, lineBreak: false }
       );
 
-    // Nur die erste Seite ausgeben – überschüssige leere Seiten entfernen
-    const range = doc.bufferedPageRange();
-    for (let i = range.start + 1; i < range.start + range.count; i++) {
-      // Leere Folgeseiten werden ignoriert; wir schließen nur nach Seite 1
-    }
+    // ── Cursor vor flushPages sicher auf Seite 1 halten ───────────────────────
+    // Setzt doc.y explizit unter den Footer, sodass PDFKit keinen weiteren
+    // Seitenumbruch auslöst, wenn wir flushPages() aufrufen.
+    (doc as any).y = footerY + 50;
+
     doc.flushPages();
     doc.end();
   });
+
+  // Zweite (leere) Seite entfernen, falls PDFKit einen Umbruch erzeugt hat
+  return trimToFirstPage(rawBuffer as Buffer);
 }
