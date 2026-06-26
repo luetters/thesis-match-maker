@@ -116,7 +116,7 @@ function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }:
 
         {/* Bio (immer sichtbar, 2 Zeilen) */}
         {profile?.bio && (
-          <p className="text-sm text-gray-600 mt-3 line-clamp-2">{profile.bio}</p>
+          <div className="text-sm text-gray-600 mt-3 line-clamp-2 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: profile.bio }} />
         )}
 
         {/* Tags (hervorgehoben wenn gefiltert) */}
@@ -196,7 +196,7 @@ function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }:
               {profile?.bio && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 mt-3">Kurzbiografie</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{profile.bio}</p>
+                  <div className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: profile.bio }} />
                 </div>
               )}
 
