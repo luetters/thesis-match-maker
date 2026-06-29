@@ -318,7 +318,17 @@ const profileRouterDef = router({
         await setPreferredLanguage(ctx.user.id, input.preferredLanguage);
       }
       // Prüfer:innen-spezifische Felder in examiner_profiles speichern
-      const isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
+      const isAdminUser = userHasRole(ctx.user, 'admin') || userHasRole(ctx.user, 'superadmin');
+      let isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
+      // Admin/Superadmin mit examiner_profiles-Eintrag dürfen ebenfalls Prüfer-Felder speichern
+      if (!isExaminer && isAdminUser) {
+        const { getDb } = await import('./db');
+        const db2 = await getDb();
+        if (db2) {
+          const epCheck = await db2.execute(`SELECT userId FROM examiner_profiles WHERE userId = ${ctx.user.id} LIMIT 1`);
+          if ((epCheck[0] as unknown as any[]).length > 0) isExaminer = true;
+        }
+      }
       if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined || input.examinerBio !== undefined || input.examinerResearchFocus !== undefined)) {
         await upsertExaminerProfile({
           userId: ctx.user.id,

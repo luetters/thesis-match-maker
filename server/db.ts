@@ -122,11 +122,13 @@ export async function upsertExaminerProfile(profile: InsertExaminerProfile) {
     const updateData = Object.fromEntries(
       Object.entries(profile).filter(([key, val]) => key !== 'userId' && val !== undefined)
     );
+    console.log('[upsertExaminerProfile] UPDATE userId=%d keys=%s', profile.userId, Object.keys(updateData).join(','));
     if (Object.keys(updateData).length > 0) {
       await db
         .update(examinerProfiles)
         .set(updateData)
         .where(eq(examinerProfiles.userId, profile.userId));
+      console.log('[upsertExaminerProfile] UPDATE done');
     }
   } else {
     await db.insert(examinerProfiles).values(profile);
@@ -3867,7 +3869,16 @@ export async function getProfile(userId: number) {
     let examinerResearchFocus: string | null = null;
     let allowedDepartments: string[] = [];
     let primaryDepartment: string | null = null;
-    const isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
+    // Admin/Superadmin können ebenfalls Prüfer-Profil-Felder haben
+    const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
+    let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
+    if (!isExaminerRole && isAdminRole) {
+      // Prüfen ob ein examiner_profiles-Eintrag existiert
+      try {
+        const epCheck = await db.execute(`SELECT userId FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
+        if ((epCheck[0] as unknown as any[]).length > 0) isExaminerRole = true;
+      } catch { /* ignore */ }
+    }
     if (isExaminerRole) {
       try {
         const epRows = await db.execute(`SELECT languages, tags, bio, research_focus AS researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);

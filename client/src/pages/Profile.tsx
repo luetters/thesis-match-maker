@@ -1124,6 +1124,38 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             ))}
           </div>
+          {/* ── Redundanter Speichern-Button am Ende des Persönliche-Daten-Formulars ── */}
+          {editMode && (
+            <div className="flex items-center justify-end gap-3 pt-5 border-t border-gray-100 mt-4">
+              {hasUrlErrors && (
+                <p className="text-xs text-red-500 flex-1">{p.urlErrorBanner}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setEditMode(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-xl border border-gray-200 transition-colors"
+              >
+                {lang === 'de' ? 'Abbrechen' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={updateMutation.isPending || hasUrlErrors}
+                title={hasUrlErrors ? p.urlSaveBlocked : undefined}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#76B900' }}
+                onMouseEnter={(e) => { if (!updateMutation.isPending && !hasUrlErrors) e.currentTarget.style.backgroundColor = '#5e9200'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#76B900'; }}
+              >
+                {updateMutation.isPending
+                  ? <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                {updateMutation.isPending
+                  ? (lang === 'de' ? 'Wird gespeichert…' : 'Saving…')
+                  : (lang === 'de' ? 'Speichern' : 'Save')}
+              </button>
+            </div>
+          )}
         </div>}
 
         {/* ── Zugewiesene Prüfer:innen (nur Studierende) ── */}
