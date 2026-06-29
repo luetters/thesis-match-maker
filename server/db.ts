@@ -890,15 +890,24 @@ export async function getThesisStats() {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return undefined;
-  // Alle Accounts mit dieser E-Mail laden und den Passwort-Account (openId beginnt mit pw_) priorisieren
+  const emailLower = email.toLowerCase();
+  // Primäre E-Mail suchen
   const result = await db
     .select()
     .from(users)
-    .where(eq(users.email, email.toLowerCase()));
-  if (result.length === 0) return undefined;
-  // Passwort-Account bevorzugen (openId beginnt mit 'pw_')
-  const pwAccount = result.find((u) => u.openId?.startsWith('pw_'));
-  return pwAccount ?? result[0];
+    .where(eq(users.email, emailLower));
+  if (result.length > 0) {
+    const pwAccount = result.find((u) => u.openId?.startsWith('pw_'));
+    return pwAccount ?? result[0];
+  }
+  // Fallback: alternative E-Mail (secondEmail) suchen
+  const bySecondEmail = await db
+    .select()
+    .from(users)
+    .where(eq(users.secondEmail, emailLower));
+  if (bySecondEmail.length === 0) return undefined;
+  const pwAccount = bySecondEmail.find((u) => u.openId?.startsWith('pw_'));
+  return pwAccount ?? bySecondEmail[0];
 }
 
 export async function setUserPasswordHash(userId: number, hash: string) {
