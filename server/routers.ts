@@ -1123,6 +1123,15 @@ export const appRouter = router({
           }
         }
         // Nur öffentliche Felder zurückgeben
+        // Für Prüfer:innen: bio, phone, languages und tags aus examiner_profiles lesen
+        const examinerBio = isExaminerRole ? (examinerProfile?.bio ?? user.bio) : user.bio;
+        const examinerPhone = isExaminerRole ? (examinerProfile?.phone ?? user.phone) : user.phone;
+        const examinerLanguages: string[] = isExaminerRole && examinerProfile?.languages
+          ? (Array.isArray(examinerProfile.languages) ? (examinerProfile.languages as string[]) : [])
+          : [];
+        const examinerTags: string[] = isExaminerRole && examinerProfile?.tags
+          ? (Array.isArray(examinerProfile.tags) ? (examinerProfile.tags as string[]) : [])
+          : [];
         return {
           id: user.id,
           name: user.name,
@@ -1130,9 +1139,9 @@ export const appRouter = router({
           lastName: user.lastName ?? null,
           email: user.email,
           role: user.role,
-          department: user.department,
-          bio: user.bio,
-          phone: user.phone,
+          department: isExaminerRole ? (examinerProfile?.department ?? user.department) : user.department,
+          bio: examinerBio,
+          phone: examinerPhone,
           avatarUrl: user.avatarUrl,
           website: user.website,
           linkedIn: user.linkedIn,
@@ -1145,7 +1154,9 @@ export const appRouter = router({
           academicTitle: examinerProfile?.title ?? null,
           officeHours: examinerProfile?.officeHours ?? null,
           researchFocus: examinerProfile?.researchFocus ?? null,
-          researchTags: examinerProfile?.tags ? (Array.isArray(examinerProfile.tags) ? (examinerProfile.tags as string[]).join(", ") : String(examinerProfile.tags)) : null,
+          researchTags: examinerTags.length > 0 ? examinerTags.join(", ") : null,
+          tags: examinerTags,
+          languages: examinerLanguages,
           photoUrl: examinerProfile?.photoUrl ?? null,
           websiteUrl: examinerProfile?.websiteUrl ?? null,
           // Kapazitäten

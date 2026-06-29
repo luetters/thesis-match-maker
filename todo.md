@@ -291,13 +291,13 @@
 
 ## Phase 50: Studierenden-Umstrukturierung & Verwaltungs-Dashboard
 
-- [ ] Studierenden-Dashboard entfernen (kein Dashboard für Studierende)
-- [ ] Studiengang-Onboarding: Bachelor/Master-Auswahl zuerst, dann Studiengangsliste mit Logos
-- [ ] Studiengang unveränderlich nach erster Auswahl (nur bei erster Nutzung)
-- [ ] Studierenden-Startseite: direkt zur Anfragen-Übersicht oder Prüfer:innen-Suche
-- [ ] Verwaltungs-Dashboard: echte KPIs (offene Anfragen, bestätigte Rollen, aktive Studierende)
-- [ ] Verwaltungs-Dashboard: Statistiken und Übersichten mit Diagrammen
-- [ ] Verwaltungs-Dashboard: Letzte Aktivitäten und ausstehende Aufgaben
+- [x] Studierenden-Dashboard entfernen (kein Dashboard für Studierende)
+- [x] Studiengang-Onboarding: Bachelor/Master-Auswahl zuerst, dann Studiengangsliste mit Logos
+- [x] Studiengang unveränderlich nach erster Auswahl (nur bei erster Nutzung)
+- [x] Studierenden-Startseite: direkt zur Anfragen-Übersicht oder Prüfer:innen-Suche
+- [x] Verwaltungs-Dashboard: echte KPIs (offene Anfragen, bestätigte Rollen, aktive Studierende)
+- [x] Verwaltungs-Dashboard: Statistiken und Übersichten mit Diagrammen
+- [x] Verwaltungs-Dashboard: Letzte Aktivitäten und ausstehende Aufgaben
 
 
 ## Phase 50: Studierenden-Umstrukturierung & Verwaltungs-Dashboard ✅ KOMPLETT
@@ -363,29 +363,29 @@
 
 ## Phase 55: Registrierung mit E-Mail/Passwort und zentraler Freischaltung
 
-- [ ] Registrierungsseite /register: Schritt 1 Rollenauswahl (Studierende:r / Prüfer:in / Verwaltungsmitarbeiter:in)
-- [ ] Registrierungsseite /register: Schritt 2 Name + E-Mail + Passwort (min. 8 Zeichen) + Passwort-Bestätigung
-- [ ] Backend: auth.register Prozedur (publicProcedure) – Konto anlegen mit roleStatus="pending", isActive=false
-- [ ] Backend: Passwort mit bcrypt hashen (12 Runden)
-- [ ] Backend: Doppelte E-Mail-Adressen abfangen (Fehler zurückgeben)
-- [ ] Magic-Link-Mechanismus aus Login.tsx und Home.tsx entfernen
-- [ ] Login-Seite: Nur E-Mail/Passwort-Login, Link zu /register
-- [ ] Home.tsx: Anmelden-Button → /login, Registrieren-Button → /register
+- [x] Registrierungsseite /register: Schritt 1 Rollenauswahl (Studierende:r / Prüfer:in / Verwaltungsmitarbeiter:in)
+- [x] Registrierungsseite /register: Schritt 2 Name + E-Mail + Passwort (min. 8 Zeichen) + Passwort-Bestätigung
+- [x] Backend: auth.register Prozedur (publicProcedure) – Konto anlegen mit roleStatus="pending", isActive=false
+- [x] Backend: Passwort mit bcrypt hashen (12 Runden)
+- [x] Backend: Doppelte E-Mail-Adressen abfangen (Fehler zurückgeben)
+- [x] Magic-Link-Mechanismus aus Login.tsx und Home.tsx entfernen
+- [x] Login-Seite: Nur E-Mail/Passwort-Login, Link zu /register
+- [x] Home.tsx: Anmelden-Button → /login, Registrieren-Button → /register
 - [x] Admin-Dashboard: Tab "Neue Registrierungen" mit Liste wartender Konten (roleStatus="pending")
-- [ ] Admin: Freischalten-Button (setzt roleStatus="approved", isActive=true)
-- [ ] Admin: Ablehnen-Button mit Begründung (setzt roleStatus="rejected")
-- [ ] Wartende Nutzer:innen sehen nach Login eine Warteseite (PendingApproval)
+- [x] Admin: Freischalten-Button (setzt roleStatus="approved", isActive=true)
+- [x] Admin: Ablehnen-Button mit Begründung (setzt roleStatus="rejected")
+- [x] Wartende Nutzer:innen sehen nach Login eine Warteseite (PendingApproval)
 - [ ] Build und Tests grün
 
 ## Phase 56: Profilseite-Verbesserungen
 
-- [ ] Foto-Upload-Bug beheben (Backend-Prozedur und Frontend-Upload-Logik debuggen)
-- [ ] Fachbereich als Dropdown (FB1 – FB5) statt Freitextfeld
-- [ ] DB-Schema: secondEmail, website, linkedIn, researchGate Felder hinzufügen
-- [ ] DB-Migration: ALTER TABLE users für neue Felder
-- [ ] Backend: profile.get und profile.update um neue Felder erweitern
-- [ ] Frontend: Neue Felder in Profilseite einbinden
-- [ ] Frontend: Forschungsschwerpunkte als interaktive Tag-Liste (Eingabe + Löschen)
+- [x] Foto-Upload-Bug beheben (Backend-Prozedur und Frontend-Upload-Logik debuggen)
+- [x] Fachbereich als Dropdown (FB1 – FB5) statt Freitextfeld
+- [x] DB-Schema: secondEmail, website, linkedIn, researchGate Felder hinzufügen
+- [x] DB-Migration: ALTER TABLE users für neue Felder
+- [x] Backend: profile.get und profile.update um neue Felder erweitern
+- [x] Frontend: Neue Felder in Profilseite einbinden
+- [x] Frontend: Forschungsschwerpunkte als interaktive Tag-Liste (Eingabe + Löschen)
 - [ ] Build und Tests grün
 
 
@@ -408,7 +408,7 @@
 - [x] HTW Berlin Link zur Online-Präsenz hinzugefügt
 - [x] MISC-Link (Weitere Links) hinzugefügt
 - [x] Terminbuchungs-Link hinzugefügt
-- [ ] Profilfoto-Upload-Bug: avatarUrl wird nicht korrekt gespeichert/angezeigt (DB-Update prüfen)
+- [x] Profilfoto-Upload-Bug: avatarUrl wird nicht korrekt gespeichert/angezeigt (DB-Update prüfen)
 
 ## Phase 57: Superadmin-Rechteverwaltung
 
@@ -422,24 +422,24 @@
 - [x] Schutz: Eigene Rolle kann nicht geändert werden
 
 ## Phase 58: Formular-Verbesserungen
-- [ ] Formularvalidierung mit visuellen Fehlermeldungen (Pflichtfelder, Formatprüfung)
-- [ ] Zwischenspeichern des Antragsformulars im localStorage für spätere Weiterbearbeitung
-- [ ] Wiederherstellungs-Banner wenn gespeicherter Entwurf gefunden wird
+- [x] Formularvalidierung mit visuellen Fehlermeldungen (Pflichtfelder, Formatprüfung)
+- [x] Zwischenspeichern des Antragsformulars im localStorage für spätere Weiterbearbeitung
+- [x] Wiederherstellungs-Banner wenn gespeicherter Entwurf gefunden wird
 
 ## Phase 59: Passwort-Reset-Funktion
-- [ ] DB-Schema: password_reset_tokens Tabelle
-- [ ] Backend: requestPasswordReset Prozedur mit E-Mail-Versand
-- [ ] Backend: resetPassword Prozedur mit Token-Validierung
-- [ ] Frontend: "Passwort vergessen"-Link in Login.tsx
-- [ ] Frontend: ResetPassword.tsx Seite
-- [ ] Route /reset-password in App.tsx registrieren
+- [x] DB-Schema: password_reset_tokens Tabelle
+- [x] Backend: requestPasswordReset Prozedur mit E-Mail-Versand
+- [x] Backend: resetPassword Prozedur mit Token-Validierung
+- [x] Frontend: "Passwort vergessen"-Link in Login.tsx
+- [x] Frontend: ResetPassword.tsx Seite
+- [x] Route /reset-password in App.tsx registrieren
 
 ## Phase 60: Profil-Verbesserungen
-- [ ] Avatar-Upload-Bug final beheben (Bild wird nach Upload nicht angezeigt)
-- [ ] "Weitere Links" als editierbares Feld in Profile.tsx
-- [ ] HTW-Berlin-Profil-Link als editierbares Feld in Profile.tsx
-- [ ] Terminbuchung: BookingModal durch einfaches Link-Feld ersetzen
-- [ ] DB-Schema: miscLink und htwProfileUrl Felder hinzufügen
+- [x] Avatar-Upload-Bug final beheben (Bild wird nach Upload nicht angezeigt)
+- [x] "Weitere Links" als editierbares Feld in Profile.tsx
+- [x] HTW-Berlin-Profil-Link als editierbares Feld in Profile.tsx
+- [x] Terminbuchung: BookingModal durch einfaches Link-Feld ersetzen
+- [x] DB-Schema: miscLink und htwProfileUrl Felder hinzufügen
 
 
 ## Phase 48: Profil-Verbesserungen ✅ KOMPLETT
@@ -695,12 +695,12 @@
 
 ## Feature: Prüfer:innen – Study-Programme-Präferenzen (Links-nach-Rechts-Auswahlliste)
 
-- [ ] DB-Schema: examiner_programme_preferences-Tabelle prüfen / anlegen (examinerId, programmeId)
-- [ ] Backend: getExaminerProgrammePreferences(examinerId) in db.ts
-- [ ] Backend: setExaminerProgrammePreferences(examinerId, programmeIds[]) in db.ts
-- [ ] tRPC: examiner.getProgrammePreferences und examiner.setProgrammePreferences
-- [ ] Frontend: DualListBox-Komponente (Links-nach-Rechts) im Prüfer:innen-Dashboard (Profil-Tab)
-- [ ] i18n: DE + EN Keys für Programm-Präferenzen-UI
+- [x] DB-Schema: examiner_programme_preferences-Tabelle prüfen / anlegen (examinerId, programmeId) — nutzt examiner_programmes-Tabelle
+- [x] Backend: getExaminerProgrammePreferences(examinerId) in db.ts — getExaminerProgrammes
+- [x] Backend: setExaminerProgrammePreferences(examinerId, programmeIds[]) in db.ts — setExaminerProgrammes
+- [x] tRPC: examiner.getProgrammePreferences und examiner.setProgrammePreferences — programmes.getExaminerProgrammes/setExaminerProgrammes
+- [x] Frontend: DualListBox-Komponente (Links-nach-Rechts) im Prüfer:innen-Dashboard (Profil-Tab) — ExaminerProgrammeSelector
+- [x] i18n: DE + EN Keys für Programm-Präferenzen-UI
 
 ## Feature: Prüfer:innen – Study-Programme-Auswahl (Dual-List-Box) ✅ KOMPLETT
 - [x] DB-Schema: examiner_programmes-Tabelle bereits vorhanden (examinerId, programmeId)
@@ -753,11 +753,11 @@
 - [x] UserAvatar in ExaminerDashboard (Kandidaten-Liste) eingebaut
 - [x] UserAvatar in ExaminerDirectory eingebaut
 
-- [ ] E-Mail-Templates: DB-Tabelle email_templates (4 Typen pro Prüfer:in)
-- [ ] E-Mail-Templates: tRPC CRUD-Prozeduren (getTemplates, saveTemplate)
-- [ ] E-Mail-Templates: Template-Editor im Prüfer:innen-Profil (4 Tabs + Variablen-Hilfe)
-- [ ] E-Mail-Templates: Variablen {{name}}, {{thema}}, {{semester}}, {{studiengang}} ersetzen
-- [ ] E-Mail-Templates: Bei Zusage/Absage Template automatisch vorausfüllen
+- [x] E-Mail-Templates: DB-Tabelle email_templates (4 Typen pro Prüfer:in)
+- [x] E-Mail-Templates: tRPC CRUD-Prozeduren (getTemplates, saveTemplate)
+- [x] E-Mail-Templates: Template-Editor im Prüfer:innen-Profil (4 Tabs + Variablen-Hilfe)
+- [x] E-Mail-Templates: Variablen {{name}}, {{thema}}, {{semester}}, {{studiengang}} ersetzen
+- [x] E-Mail-Templates: Bei Zusage/Absage Template automatisch vorausfüllen
 
 ## Feature: Prüfer:innen – Persönliche E-Mail-Templates ✅ KOMPLETT
 
@@ -1003,17 +1003,17 @@
 - [x] Backend: profile.update speichert examinerBio und examinerResearchFocus via upsertExaminerProfile
 
 ## Feature: Prüfer:innen – Multi-Fachbereich-Zuordnung
-- [ ] DB-Schema: `examiner_departments`-Tabelle (userId, department, isPrimary) anlegen
-- [ ] Migration per `pnpm db:push` ausführen
-- [ ] Backend: `getExaminerDepartments(userId)` in db.ts
-- [ ] Backend: `setExaminerDepartments(userId, departments, primaryDept)` in db.ts
-- [ ] Backend: `getProfile` liefert `allowedDepartments[]` und `primaryDepartment`
-- [ ] Backend: `completeOnboarding` speichert Fachbereiche in `examiner_departments`
-- [ ] Backend: `profile.update` aktualisiert Fachbereiche
-- [ ] Frontend: Onboarding – Primärfachbereich-Dropdown + Checkboxen für weitere Fachbereiche
-- [ ] Frontend: Profilseite – Primärfachbereich-Dropdown + Multi-Fachbereich-Auswahl im Bearbeitungsmodus
-- [ ] Frontend: Profilseite – Alle erlaubten Fachbereiche in der Ansicht als Badges anzeigen
-- [ ] Frontend: Prüfer:innen-Verzeichnis – Filterung nach erlaubten Fachbereichen
+- [x] DB-Schema: `examiner_departments`-Tabelle (userId, department, isPrimary) anlegen
+- [x] Migration per `pnpm db:push` ausführen
+- [x] Backend: `getExaminerDepartments(userId)` in db.ts
+- [x] Backend: `setExaminerDepartments(userId, departments, primaryDept)` in db.ts
+- [x] Backend: `getProfile` liefert `allowedDepartments[]` und `primaryDepartment`
+- [x] Backend: `completeOnboarding` speichert Fachbereiche in `examiner_departments`
+- [x] Backend: `profile.update` aktualisiert Fachbereiche
+- [x] Frontend: Onboarding – Primärfachbereich-Dropdown + Checkboxen für weitere Fachbereiche
+- [x] Frontend: Profilseite – Primärfachbereich-Dropdown + Multi-Fachbereich-Auswahl im Bearbeitungsmodus
+- [x] Frontend: Profilseite – Alle erlaubten Fachbereiche in der Ansicht als Badges anzeigen
+- [x] Frontend: Prüfer:innen-Verzeichnis – Filterung nach erlaubten Fachbereichen
 
 ## Feature: Zugewiesene Prüfer:innen auf Studenten-Profilseite
 
@@ -1041,16 +1041,16 @@
 
 ## Verwaltungsworkflow (Anmeldung & Zulassung)
 
-- [ ] DB: Felder officialRegistrationStatus, admissionStatus, defenseDate, caseClosedAt, caseClosedBy zu thesis_requests hinzufügen
-- [ ] DB: Neue Tabelle deadline_changes (Protokoll aller Abgabefrist-Änderungen)
-- [ ] DB: Migration ausführen (pnpm db:push)
-- [ ] Backend: PAV-Prozedur setOfficialRegistration
-- [ ] Backend: PAV-Prozedur setAdmission (Zulassung + Abgabedatum)
-- [ ] Backend: PAV-Prozedur extendDeadline (Fristverlängerung mit Begründung)
-- [ ] Backend: PAV-Prozedur setDefenseDate
-- [ ] Backend: PAV-Prozedur closeCase (Akte vollständig übermittelt)
-- [ ] Backend: PAV-Query getRegisteredTheses
-- [ ] Backend: getExaminerAcceptedRequests um neue Felder erweitern
-- [ ] Frontend: PAV-Dashboard neuer Tab Anmeldung & Zulassung
-- [ ] Frontend: Dialoge für alle PAV-Aktionen
-- [ ] Frontend: Prüfer:innen-Ansicht mit Status und Abgabedatum
+- [x] DB: Felder officialRegistrationStatus, admissionStatus, defenseDate, caseClosedAt, caseClosedBy zu thesis_requests hinzufügen
+- [x] DB: Neue Tabelle deadline_changes (Protokoll aller Abgabefrist-Änderungen)
+- [x] DB: Migration ausführen (pnpm db:push)
+- [x] Backend: PAV-Prozedur setOfficialRegistration
+- [x] Backend: PAV-Prozedur setAdmission (Zulassung + Abgabedatum)
+- [x] Backend: PAV-Prozedur extendDeadline (Fristverlängerung mit Begründung)
+- [x] Backend: PAV-Prozedur setDefenseDate
+- [x] Backend: PAV-Prozedur closeCase (Akte vollständig übermittelt)
+- [x] Backend: PAV-Query getRegisteredTheses
+- [x] Backend: getExaminerAcceptedRequests um neue Felder erweitern
+- [x] Frontend: PAV-Dashboard neuer Tab Anmeldung & Zulassung
+- [x] Frontend: Dialoge für alle PAV-Aktionen
+- [x] Frontend: Prüfer:innen-Ansicht mit Status und Abgabedatum

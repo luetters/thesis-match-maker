@@ -41,6 +41,7 @@ type ExaminerListItem = {
     websiteUrl?: string | null;
   } | null;
   programmes?: Array<{ id: number; name: string; abbreviation: string; level: string; pictogramUrl?: string | null }>;
+  allowedDepartments?: string[];
 };
 
 function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }: {
@@ -337,6 +338,7 @@ export default function ExaminerDirectory() {
   const [filterCapacity, setFilterCapacity] = useState<"all" | "available" | "partial">("all");
   const [filterRole, setFilterRole] = useState<"all" | "first" | "second">("all");
   const [filterTag, setFilterTag] = useState<string>("");
+  const [filterDepartment, setFilterDepartment] = useState<string>("");
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "capacity_asc" | "capacity_desc">("name");
 
@@ -412,10 +414,24 @@ export default function ExaminerDirectory() {
         )) ||
       (ex.profile?.researchFocus ?? "").toLowerCase().includes(filterTag.toLowerCase());
 
-    return matchesSearch && matchesProgramme && matchesCapacity && matchesRole && matchesTag;
+    const matchesDepartment = !filterDepartment ||
+      (ex as any).allowedDepartments?.includes(filterDepartment) ||
+      ex.profile?.department === filterDepartment;
+
+    return matchesSearch && matchesProgramme && matchesCapacity && matchesRole && matchesTag && matchesDepartment;
   });
 
-  const hasActiveFilters = search || filterProgramme || filterCapacity !== "all" || filterRole !== "all" || filterTag;
+  const hasActiveFilters = search || filterProgramme || filterCapacity !== "all" || filterRole !== "all" || filterTag || filterDepartment;
+
+  // Alle Fachbereiche aus den Prüfer:innen-Daten extrahieren
+  const allDepartments = useMemo(() => {
+    const deptSet = new Set<string>();
+    for (const ex of (examiners ?? [])) {
+      const depts: string[] = (ex as any).allowedDepartments ?? (ex.profile?.department ? [ex.profile.department] : []);
+      for (const d of depts) if (d) deptSet.add(d);
+    }
+    return Array.from(deptSet).sort();
+  }, [examiners]);
 
   // Sortierung
   const sorted = useMemo(() => {
@@ -644,6 +660,24 @@ export default function ExaminerDirectory() {
               ))}
             </div>
 
+            {/* Fachbereich-Filter */}
+            {allDepartments.length > 0 && (
+              <Select value={filterDepartment || "__all__"} onValueChange={(v) => setFilterDepartment(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="h-8 text-xs border-gray-200 rounded-xl w-40">
+                  <svg className="w-3.5 h-3.5 text-gray-400 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <SelectValue placeholder="Alle Fachbereiche" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Alle Fachbereiche</SelectItem>
+                  {allDepartments.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Sortierung */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
               <SelectTrigger className="h-8 text-xs border-gray-200 rounded-xl w-44">
@@ -665,7 +699,7 @@ export default function ExaminerDirectory() {
                 <button
                   onClick={() => {
                     setSearch(""); setFilterProgramme(""); setFilterCapacity("all");
-                    setFilterRole("all"); setFilterTag("");
+                    setFilterRole("all"); setFilterTag(""); setFilterDepartment("");
                   }}
                   className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
                 >
@@ -700,6 +734,12 @@ export default function ExaminerDirectory() {
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
                   Studiengang: {(programmes ?? []).find((p) => p.id === filterProgramme)?.abbreviation ?? filterProgramme}
                   <button onClick={() => setFilterProgramme("")} className="hover:text-red-500 ml-0.5">×</button>
+                </span>
+              )}
+              {filterDepartment && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-purple-50 text-purple-700">
+                  Fachbereich: {filterDepartment}
+                  <button onClick={() => setFilterDepartment("")} className="hover:text-red-500 ml-0.5">×</button>
                 </span>
               )}
             </div>

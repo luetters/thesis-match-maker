@@ -547,6 +547,9 @@ export default function ExaminerManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [capacityExaminer, setCapacityExaminer] = useState<any | null>(null);
+  // Inline-Bearbeitung für maxSupervisions
+  const [inlineEditId, setInlineEditId] = useState<number | null>(null);
+  const [inlineEditValue, setInlineEditValue] = useState<string>("");
 
   const [editData, setEditData] = useState({
     title: "",
@@ -598,6 +601,24 @@ export default function ExaminerManagement() {
   const handleSaveEdit = () => {
     if (!editingId) return;
     updateMutation.mutate({ examinerId: editingId, ...editData });
+  };
+
+  const handleInlineEditStart = (examiner: any) => {
+    setInlineEditId(examiner.id);
+    setInlineEditValue(String(examiner.maxSupervisions ?? 5));
+  };
+
+  const handleInlineEditSave = (examinerId: number) => {
+    const val = parseInt(inlineEditValue, 10);
+    if (!isNaN(val) && val >= 1 && val <= 99) {
+      updateMutation.mutate({ examinerId, maxSupervisions: val });
+    }
+    setInlineEditId(null);
+  };
+
+  const handleInlineEditKeyDown = (e: React.KeyboardEvent, examinerId: number) => {
+    if (e.key === "Enter") handleInlineEditSave(examinerId);
+    if (e.key === "Escape") setInlineEditId(null);
   };
 
   return (
@@ -667,12 +688,49 @@ export default function ExaminerManagement() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <WorkloadBadge
-                        active={examiner.activeSupervisions}
-                        max={examiner.maxSupervisions}
-                        showCount
-                        compact
-                      />
+                      {inlineEditId === examiner.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            value={inlineEditValue}
+                            onChange={(e) => setInlineEditValue(e.target.value)}
+                            onKeyDown={(e) => handleInlineEditKeyDown(e, examiner.id)}
+                            onBlur={() => handleInlineEditSave(examiner.id)}
+                            autoFocus
+                            className="w-16 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-[#76B900]"
+                          />
+                          <span className="text-xs text-gray-400">max</span>
+                          <button
+                            onClick={() => handleInlineEditSave(examiner.id)}
+                            className="text-[#76B900] hover:text-[#5a8f00]"
+                            title="Speichern"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setInlineEditId(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                            title="Abbrechen"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 rounded px-1 py-0.5 inline-block group"
+                          title="Klicken zum Bearbeiten der maximalen Betreuungsanzahl"
+                          onClick={() => handleInlineEditStart(examiner)}
+                        >
+                          <WorkloadBadge
+                            active={examiner.activeSupervisions}
+                            max={examiner.maxSupervisions}
+                            showCount
+                            compact
+                          />
+                        </div>
+                      )}
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">

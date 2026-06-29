@@ -200,10 +200,22 @@ export async function getAllExaminers() {
     programmesMap.get(p.examinerId)!.push({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? p.name.slice(0, 4), level: p.level, pictogramUrl: p.pictogramUrl ?? null });
   }
 
+  // Fachbereiche pro Prüfer:in aus examiner_departments laden
+  const { examinerDepartments } = await import("../drizzle/schema");
+  const deptRows = await db
+    .select({ userId: examinerDepartments.userId, department: examinerDepartments.department })
+    .from(examinerDepartments);
+  const deptsMap = new Map<number, string[]>();
+  for (const d of deptRows) {
+    if (!deptsMap.has(d.userId)) deptsMap.set(d.userId, []);
+    deptsMap.get(d.userId)!.push(d.department);
+  }
+
   return result.map((r) => ({
     ...r,
     activeSupervisions: activeCountMap.get(r.user.id) ?? 0,
     programmes: programmesMap.get(r.user.id) ?? [],
+    allowedDepartments: deptsMap.get(r.user.id) ?? (r.user.department ? [r.user.department] : []),
   }));
 }
 
