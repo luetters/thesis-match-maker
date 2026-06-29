@@ -289,8 +289,8 @@ const profileRouterDef = router({
       examinerLanguages: z.array(z.string()).optional(),
       examinerKeywords: z.array(z.string().max(64)).max(30).optional(),
       examinerProgrammeIds: z.array(z.number().int().positive()).optional(),
-      examinerBio: z.string().max(2000).optional(),
-      examinerResearchFocus: z.string().max(2000).optional(),
+      examinerBio: z.string().max(10000).optional(),
+      examinerResearchFocus: z.string().max(10000).optional(),
       // Multi-Fachbereich für Prüfer:innen
       allowedDepartments: z.array(z.string().max(10)).max(5).optional(),
       primaryDepartment: z.string().max(10).optional(),

@@ -76,10 +76,15 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
   });
 
   // Sync external value changes (e.g. when switching templates)
+  // NOTE: setContent(content, emitUpdate) – second param MUST be a boolean, not an object
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, { emitUpdate: false });
+    if (!editor) return;
+    // Avoid unnecessary re-renders: only update when value truly differs
+    const current = editor.getHTML();
+    if (current !== value) {
+      editor.commands.setContent(value ?? "", { emitUpdate: false });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
   const setLink = useCallback(() => {
