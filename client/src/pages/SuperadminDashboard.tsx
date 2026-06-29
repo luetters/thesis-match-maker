@@ -990,11 +990,14 @@ export default function SuperadminDashboard() {
     { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
   ];
 
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || user?.role !== 'superadmin')) {
+      navigate('/');
+    }
+  }, [loading, isAuthenticated, user?.role]);
+
   if (loading) return null;
-  if (!isAuthenticated || (user?.role !== "superadmin")) {
-    if (!loading) navigate("/");
-    return null;
-  }
+  if (!isAuthenticated || user?.role !== 'superadmin') return null;
 
   return (
       <ThesisDashboardLayout navItems={navItems} title={t.superadmin.title}>
