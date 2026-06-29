@@ -296,7 +296,8 @@ type SemesterCapacity = { semester: string; maxFirst: number; maxSecond: number 
 
 // ─── Betreuungskapazitäten-Block ─────────────────────────────────────────────
 function SemesterCapacityBlock() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const de = lang === 'de';
   const utils = trpc.useUtils();
   const upcomingSemesters = generateUpcomingSemesters();
 
@@ -347,11 +348,11 @@ function SemesterCapacityBlock() {
       for (const cap of capacities) {
         await updateCapacityMutation.mutateAsync(cap);
       }
-      toast.success("Kapazitäten gespeichert");
+      toast.success(de ? 'Kapazitäten gespeichert' : 'Capacities saved');
     } catch (err: any) {
       // Bei Fehler hasHydrated wieder setzen, damit kein ungewollter Reset
       hasHydrated.current = true;
-      toast.error(err?.message ?? "Fehler beim Speichern der Kapazitäten");
+      toast.error(err?.message ?? (de ? 'Fehler beim Speichern der Kapazitäten' : 'Error saving capacities'));
     } finally {
       // Einmalig nach dem gesamten Loop invalidieren
       utils.examiner.getSemesterCapacities.invalidate();
@@ -369,15 +370,15 @@ function SemesterCapacityBlock() {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
       <h2 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
         <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-        Betreuungskapazitäten
+        {de ? 'Betreuungskapazitäten' : 'Supervision Capacities'}
       </h2>
-      <p className="text-sm text-gray-500 mb-5">Legen Sie fest, wie viele Erst- und Zweitbetreuungen Sie pro Semester übernehmen können.</p>
+      <p className="text-sm text-gray-500 mb-5">{de ? 'Legen Sie fest, wie viele Erst- und Zweitbetreuungen Sie pro Semester übernehmen können.' : 'Define how many first and second supervisions you can take on per semester.'}</p>
       <div className="space-y-3">
         {capacities.map((cap) => (
           <div key={cap.semester} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
             <span className="w-28 text-sm font-medium text-gray-700">{semesterLabel(cap.semester)}</span>
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500 w-20">Erstbetreuung</label>
+              <label className="text-xs text-gray-500 w-20">{de ? 'Erstbetreuung' : 'First supervision'}</label>
               <input
                 type="number" min={0} max={20} value={cap.maxFirst}
                 onChange={(e) => handleChange(cap.semester, "maxFirst", parseInt(e.target.value) || 0)}
@@ -385,7 +386,7 @@ function SemesterCapacityBlock() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500 w-24">Zweitbetreuung</label>
+              <label className="text-xs text-gray-500 w-24">{de ? 'Zweitbetreuung' : 'Second supervision'}</label>
               <input
                 type="number" min={0} max={20} value={cap.maxSecond}
                 onChange={(e) => handleChange(cap.semester, "maxSecond", parseInt(e.target.value) || 0)}
@@ -398,11 +399,11 @@ function SemesterCapacityBlock() {
       {/* Dirty-Warnung */}
       {showCapDirtyWarning && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-medium text-amber-800 mb-3">Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?</p>
+          <p className="text-sm font-medium text-amber-800 mb-3">{de ? 'Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?' : 'You have unsaved changes. Do you want to discard them?'}</p>
           <div className="flex gap-2">
-            <button onClick={() => setShowCapDirtyWarning(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors">Weiter bearbeiten</button>
-            <button onClick={handleReset} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">Änderungen verwerfen</button>
-            <button onClick={() => { handleSave(); setShowCapDirtyWarning(false); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors">Speichern</button>
+            <button onClick={() => setShowCapDirtyWarning(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors">{de ? 'Weiter bearbeiten' : 'Keep editing'}</button>
+            <button onClick={handleReset} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors">{de ? 'Änderungen verwerfen' : 'Discard changes'}</button>
+            <button onClick={() => { handleSave(); setShowCapDirtyWarning(false); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors">{de ? 'Speichern' : 'Save'}</button>
           </div>
         </div>
       )}
@@ -412,13 +413,13 @@ function SemesterCapacityBlock() {
             <>
               <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
-                Ungespeicherte Änderungen
+                {de ? 'Ungespeicherte Änderungen' : 'Unsaved changes'}
               </span>
               <button
                 onClick={handleReset}
                 className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg border border-gray-200 transition-colors"
               >
-                Zurücksetzen
+                {de ? 'Zurücksetzen' : 'Reset'}
               </button>
             </>
           )}
@@ -428,7 +429,7 @@ function SemesterCapacityBlock() {
           disabled={updateCapacityMutation.isPending || !isDirty}
           className="px-5 py-2 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50" style={{ backgroundColor: '#76B900' }} onMouseEnter={(e) => { if (!updateCapacityMutation.isPending && isDirty) e.currentTarget.style.backgroundColor = '#5e9200'; }} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#76B900')}
         >
-          {updateCapacityMutation.isPending ? "Wird gespeichert…" : "Kapazitäten speichern"}
+          {updateCapacityMutation.isPending ? (de ? 'Wird gespeichert…' : 'Saving…') : (de ? 'Kapazitäten speichern' : 'Save capacities')}
         </button>
       </div>
     </div>
@@ -935,7 +936,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             )}
             {/* Bevorzugte Sprache */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Bevorzugte Sprache</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{lang === 'de' ? 'Bevorzugte Sprache' : 'Preferred Language'}</label>
               {editMode ? (
                 <div className="flex gap-3">
                   <button
@@ -981,7 +982,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                     <option value="">{p.fieldDepartmentPlaceholder}</option>
                     {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">Weitere erlaubte Fachbereiche</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">{lang === 'de' ? 'Weitere erlaubte Fachbereiche' : 'Additional permitted departments'}</p>
                   <div className="flex flex-wrap gap-2">
                     {DEPARTMENTS.map((d) => {
                       const isPrimary = d.value === form.department;
