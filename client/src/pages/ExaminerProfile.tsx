@@ -6,6 +6,7 @@ import { Link, useParams } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { buildFullName } from "@shared/const";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
@@ -391,7 +392,11 @@ function EditProfileModal({
           </div>
           <div>
             <label className={labelClass}>{E.fieldBio}</label>
-            <textarea className={inputClass} rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder={E.fieldBioPlaceholder} />
+            <RichTextEditor
+              value={form.bio}
+              onChange={(html) => setForm({ ...form, bio: html })}
+              className="mt-1"
+            />
           </div>
           <div>
             <label className={labelClass}>{E.fieldResearch}</label>
