@@ -273,7 +273,7 @@ const profileRouterDef = router({
       name: z.string().min(1).max(128).optional(),
       firstName: z.string().max(128).optional(),
       lastName: z.string().max(128).optional(),
-      bio: z.string().max(1000).optional(),
+      bio: z.string().max(10000).optional(),
       phone: z.string().max(64).optional(),
       department: z.string().max(255).optional(),
       // Studierende

@@ -10,6 +10,7 @@ interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   className?: string;
+  placeholder?: string;
 }
 
 function ToolbarButton({
@@ -49,7 +50,7 @@ function Divider() {
   return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
 }
 
-export function RichTextEditor({ value, onChange, className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, className, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -71,6 +72,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       attributes: {
         class:
           "min-h-[200px] p-3 text-sm focus:outline-none prose prose-sm max-w-none prose-headings:text-gray-900 prose-a:text-[#76B900]",
+        "data-placeholder": placeholder ?? "",
       },
     },
   });

@@ -1036,12 +1036,15 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldBio}</label>
               {editMode ? (
-                <>
-                  <textarea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} placeholder={p.fieldBioPlaceholder} rows={4} maxLength={1000} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all resize-none" />
-                  <p className="text-xs text-gray-400 mt-1 text-right">{p.fieldBioChars.replace("{n}", String(form.bio.length))}</p>
-                </>
+                <RichTextEditor
+                  value={form.bio}
+                  onChange={(html) => setForm((f) => ({ ...f, bio: html }))}
+                  placeholder={p.fieldBioPlaceholder}
+                />
               ) : (
-                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{profile.bio ? profile.bio : <span className="text-gray-400 italic">{p.notSpecified}</span>}</p>
+                profile.bio
+                  ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: profile.bio }} />
+                  : <span className="text-gray-400 italic text-sm">{p.notSpecified}</span>
               )}
             </div>
           </div>
