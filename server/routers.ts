@@ -320,14 +320,9 @@ const profileRouterDef = router({
       // Prüfer:innen-spezifische Felder in examiner_profiles speichern
       const isAdminUser = userHasRole(ctx.user, 'admin') || userHasRole(ctx.user, 'superadmin');
       let isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
-      // Admin/Superadmin mit examiner_profiles-Eintrag dürfen ebenfalls Prüfer-Felder speichern
+      // Admin/Superadmin dürfen immer Prüfer-Felder speichern (examiner_profiles-Eintrag wird bei Bedarf angelegt)
       if (!isExaminer && isAdminUser) {
-        const { getDb } = await import('./db');
-        const db2 = await getDb();
-        if (db2) {
-          const epCheck = await db2.execute(`SELECT userId FROM examiner_profiles WHERE userId = ${ctx.user.id} LIMIT 1`);
-          if ((epCheck[0] as unknown as any[]).length > 0) isExaminer = true;
-        }
+        isExaminer = true;
       }
       if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined || input.examinerBio !== undefined || input.examinerResearchFocus !== undefined)) {
         await upsertExaminerProfile({

@@ -3878,16 +3878,9 @@ export async function getProfile(userId: number) {
     let examinerResearchFocus: string | null = null;
     let allowedDepartments: string[] = [];
     let primaryDepartment: string | null = null;
-    // Admin/Superadmin können ebenfalls Prüfer-Profil-Felder haben
+    // Admin/Superadmin haben immer Zugriff auf Prüfer-Profil-Felder
     const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-    let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
-    if (!isExaminerRole && isAdminRole) {
-      // Prüfen ob ein examiner_profiles-Eintrag existiert
-      try {
-        const epCheck = await db.execute(`SELECT userId FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
-        if ((epCheck[0] as unknown as any[]).length > 0) isExaminerRole = true;
-      } catch { /* ignore */ }
-    }
+    let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner' || isAdminRole;
     if (isExaminerRole) {
       try {
         const epRows = await db.execute(`SELECT languages, tags, bio, research_focus AS researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
