@@ -5,6 +5,7 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
@@ -360,12 +361,14 @@ function ProgrammeDropZone({ isOver }: { isOver: boolean }) {
       <svg className="w-10 h-10 text-[#76B900]/30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
-      <p className="text-xs text-gray-400">{isOver ? "Hier ablegen" : "Ziehen oder klicken Sie auf einen Studiengang"}</p>
+      <p className="text-xs text-gray-400">{isOver ? "Drop here" : "Drag or click a programme"}</p>
     </div>
   );
 }
 
 export function ExaminerProgrammeSelector() {
+  const { lang } = useLanguage();
+  const de = lang === 'de';
   const { data: programmes, isLoading } = trpc.programmes.list.useQuery();
   const { data: myProgrammes, isLoading: loadingMine } = trpc.programmes.getExaminerProgrammes.useQuery();
   const utils = trpc.useUtils();
@@ -464,9 +467,9 @@ export function ExaminerProgrammeSelector() {
     try {
       await utils.client.programmes.setExaminerProgrammes.mutate({ programmeIds: effectiveSelectedIds });
       utils.programmes.getExaminerProgrammes.invalidate();
-      toast.success("Studiengänge erfolgreich gespeichert.");
+      toast.success(de ? "Studiengänge erfolgreich gespeichert." : "Study programmes saved successfully.");
     } catch (err: any) {
-      toast.error(err?.message ?? "Fehler beim Speichern.");
+      toast.error(err?.message ?? (de ? "Fehler beim Speichern." : "Error saving."));
     } finally {
       setSaving(false);
     }
@@ -482,8 +485,9 @@ export function ExaminerProgrammeSelector() {
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-500">
-        Wählen Sie alle Studiengänge aus, in denen Sie grundsätzlich Prüfungen abnehmen würden.
-        Ziehen Sie Studiengänge zwischen den Listen oder klicken Sie auf einen Eintrag.
+        {de
+          ? "Wählen Sie alle Studiengänge aus, in denen Sie grundsätzlich Prüfungen abnehmen würden. Ziehen Sie Studiengänge zwischen den Listen oder klicken Sie auf einen Eintrag."
+          : "Select all study programmes in which you would generally be willing to examine. Drag programmes between the lists or click an entry."}
       </p>
 
       <DndContext
@@ -499,19 +503,19 @@ export function ExaminerProgrammeSelector() {
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between mb-1">
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Verfügbare Studiengänge</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{available.length} Studiengang{available.length !== 1 ? "gänge" : ""}</p>
+                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-widest">{de ? "Verfügbare Studiengänge" : "Available Programmes"}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{available.length} {de ? `Studiengang${available.length !== 1 ? "gänge" : ""}` : `programme${available.length !== 1 ? "s" : ""}`}</p>
                 </div>
                 <button
                   onClick={addAll}
                   disabled={available.length === 0}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#76B900]/10 text-[#76B900] hover:bg-[#76B900]/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Alle hinzufügen"
+                  title={de ? "Alle hinzufügen" : "Add all"}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                   </svg>
-                  Alle
+                  {de ? "Alle" : "All"}
                 </button>
               </div>
             </div>
@@ -521,7 +525,7 @@ export function ExaminerProgrammeSelector() {
                   <svg className="w-8 h-8 text-[#76B900]/30 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
                   </svg>
-                  <p className="text-xs text-gray-400">Alle Studiengänge ausgewählt</p>
+                  <p className="text-xs text-gray-400">{de ? "Alle Studiengänge ausgewählt" : "All programmes selected"}</p>
                 </div>
               ) : (
                 <SortableContext items={availableSortableIds} strategy={verticalListSortingStrategy}>
@@ -538,7 +542,7 @@ export function ExaminerProgrammeSelector() {
             <svg className="w-6 h-6 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-xs text-gray-400 text-center">Ziehen oder<br/>Klicken</span>
+            <span className="text-xs text-gray-400 text-center">{de ? <>Ziehen oder<br/>Klicken</> : <>Drag or<br/>Click</>}</span>
           </div>
 
           {/* Rechte Liste: Ausgewählte Studiengänge */}
@@ -550,19 +554,19 @@ export function ExaminerProgrammeSelector() {
             <div className="px-4 py-3 border-b border-[#76B900]/20 bg-[#76B900]/10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Meine Prüfungsstudiengänge</h3>
-                  <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} Studiengang{selected.length !== 1 ? "gänge" : ""} ausgewählt</p>
+                  <h3 className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">{de ? "Meine Prüfungsstudiengänge" : "My Examination Programmes"}</h3>
+                  <p className="text-xs text-[#76B900]/70 mt-0.5">{selected.length} {de ? `Studiengang${selected.length !== 1 ? "gänge" : ""} ausgewählt` : `programme${selected.length !== 1 ? "s" : ""} selected`}</p>
                 </div>
                 <button
                   onClick={removeAll}
                   disabled={selected.length === 0}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-red-50 text-red-400 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  title="Alle entfernen"
+                  title={de ? "Alle entfernen" : "Remove all"}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
                   </svg>
-                  Alle
+                  {de ? "Alle" : "All"}
                 </button>
               </div>
             </div>
@@ -600,8 +604,10 @@ export function ExaminerProgrammeSelector() {
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-gray-400">
           {selected.length === 0
-            ? "Ohne Auswahl werden Ihnen keine Betreuungsanfragen zugewiesen."
-            : `${selected.length} Studiengang${selected.length !== 1 ? "gänge" : ""} für Prüfungen aktiviert.`}
+            ? (de ? "Ohne Auswahl werden Ihnen keine Betreuungsanfragen zugewiesen." : "Without a selection, no supervision requests will be assigned to you.")
+            : (de
+                ? `${selected.length} Studiengang${selected.length !== 1 ? "gänge" : ""} für Prüfungen aktiviert.`
+                : `${selected.length} programme${selected.length !== 1 ? "s" : ""} activated for examination.`)}
         </p>
         <button
           onClick={handleSave}
@@ -610,9 +616,9 @@ export function ExaminerProgrammeSelector() {
           style={{ backgroundColor: "#76B900" }}
         >
           {saving ? (
-            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Speichern...</>
+            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {de ? "Speichern..." : "Saving..."}</>
           ) : (
-            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Auswahl speichern</>
+            <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> {de ? "Auswahl speichern" : "Save selection"}</>
           )}
         </button>
       </div>
