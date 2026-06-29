@@ -592,7 +592,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
     setEditMode(true);
   };
 
-  const isExaminerRole = profile?.role === 'examiner' || profile?.role === 'second_examiner';
+  const isExaminerRole = !!(profile as any)?.isExaminer || profile?.role === 'examiner' || profile?.role === 'second_examiner' || profile?.role === 'admin' || profile?.role === 'superadmin';
   const handleSave = () => {
     if (hasUrlErrors) {
       toast.error(p.urlSaveBlocked);
@@ -693,7 +693,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const initials = getInitials(fullName || profile.name, profile.email);
   const backLink = profile.role === "student" ? "/student" : profile.role === "examiner" ? "/examiner" : (profile.role === "admin" || profile.role === "superadmin") ? "/admin" : "/";
   const isStudent  = profile.role === "student";
-  const isExaminer = profile.role === "examiner" || profile.role === "second_examiner";
+  const isExaminer = !!(profile as any)?.isExaminer || profile.role === "examiner" || profile.role === "second_examiner" || profile.role === "admin" || profile.role === "superadmin";
   const isAdmin    = ["admin","pav","dean","vice_dean"].includes(profile.role);
   const displayTags = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 

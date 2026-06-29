@@ -3883,7 +3883,7 @@ export async function getProfile(userId: number) {
     let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner' || isAdminRole;
     if (isExaminerRole) {
       try {
-        const epRows = await db.execute(`SELECT languages, tags, bio, research_focus AS researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
+        const epRows = await db.execute(`SELECT languages, tags, bio, researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
         const ep = (epRows[0] as unknown as any[])[0];
         if (ep) {
           try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages) : []; } catch { examinerLanguages = []; }
@@ -3935,6 +3935,7 @@ export async function getProfile(userId: number) {
       createdAt: user.createdAt as Date,
       lastSignedIn: user.lastSignedIn as Date,
       // Prüfer:innen-spezifische Felder
+      isExaminer: isExaminerRole,
       examinerLanguages: isExaminerRole ? examinerLanguages : null,
       examinerKeywords: isExaminerRole ? examinerKeywords : null,
       examinerProgrammeIds: isExaminerRole ? examinerProgrammeIds : null,
