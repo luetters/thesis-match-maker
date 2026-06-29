@@ -118,10 +118,16 @@ export async function upsertExaminerProfile(profile: InsertExaminerProfile) {
     .limit(1);
 
   if (existing.length > 0) {
-    await db
-      .update(examinerProfiles)
-      .set({ ...profile })
-      .where(eq(examinerProfiles.userId, profile.userId));
+    // Nur definierte Felder aktualisieren – undefined-Werte nicht als NULL überschreiben
+    const updateData = Object.fromEntries(
+      Object.entries(profile).filter(([key, val]) => key !== 'userId' && val !== undefined)
+    );
+    if (Object.keys(updateData).length > 0) {
+      await db
+        .update(examinerProfiles)
+        .set(updateData)
+        .where(eq(examinerProfiles.userId, profile.userId));
+    }
   } else {
     await db.insert(examinerProfiles).values(profile);
   }
