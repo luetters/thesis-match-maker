@@ -560,8 +560,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const handleEditStart = () => {
     if (!profile) return;
     setResearchTagList(profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : []);
-    // Prüfer:innen-spezifische Felder initialisieren
-    if (profile.role === 'examiner' || profile.role === 'second_examiner') {
+    // Prüfer:innen-spezifische Felder initialisieren (auch für admin/superadmin)
+    const isExaminerLike = profile.role === 'examiner' || profile.role === 'second_examiner' || profile.role === 'admin' || profile.role === 'superadmin';
+    if (isExaminerLike) {
       setExaminerLanguages(Array.isArray(profile.examinerLanguages) ? profile.examinerLanguages : []);
       setExaminerKeywords(Array.isArray(profile.examinerKeywords) ? profile.examinerKeywords : []);
       // null = alle Studiengänge (Default), leeres Array = keine
@@ -614,8 +615,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
         examinerLanguages,
         examinerKeywords,
         examinerProgrammeIds: programmeIdsToSave,
-        examinerBio: form.examinerBio || undefined,
-        examinerResearchFocus: form.examinerResearchFocus || undefined,
+        // Immer senden (auch leere Strings), damit der Nutzer Inhalte löschen kann
+        examinerBio: form.examinerBio !== undefined ? form.examinerBio : undefined,
+        examinerResearchFocus: form.examinerResearchFocus !== undefined ? form.examinerResearchFocus : undefined,
         allowedDepartments: ((form as any).allowedDepartments ?? []).length > 0 ? (form as any).allowedDepartments : undefined,
         primaryDepartment: form.department || undefined,
       } : {}),
@@ -1697,24 +1699,25 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
                   {lang === 'de' ? 'Prüfungssprachen' : 'Examination Languages'}
                 </label>
-                <div className="flex gap-4">
-                  {(['Deutsch', 'English'] as const).map((lang_) => (
-                    <label key={lang_} className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={examinerLanguages.includes(lang_)}
-                        onChange={(e) => {
-                          if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
-                          else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
-                        }}
-                        className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
-                      />
-                      <span className="text-sm text-gray-700">{lang_}</span>
-                    </label>
-                  ))}
-                </div>
-                {!editMode && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                {editMode ? (
+                  <div className="flex gap-4">
+                    {(['Deutsch', 'English'] as const).map((lang_) => (
+                      <label key={lang_} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={examinerLanguages.includes(lang_)}
+                          onChange={(e) => {
+                            if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
+                            else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
+                          }}
+                          className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
+                        />
+                        <span className="text-sm text-gray-700">{lang_}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
                     {(Array.isArray(profile.examinerLanguages) && profile.examinerLanguages.length > 0)
                       ? profile.examinerLanguages.map((l, i) => (
                           <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>{l}</span>
