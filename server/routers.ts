@@ -719,6 +719,7 @@ export const appRouter = router({
           hasOwnTopic: z.boolean().default(true),
           studySpecializations: z.string().max(1000).optional(),
           personalInterests: z.string().max(1000).optional(),
+          keywords: z.string().max(500).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -735,6 +736,7 @@ export const appRouter = router({
           status: "PENDING",
           studySpecializations: input.studySpecializations ?? null,
           personalInterests: input.personalInterests ?? null,
+          keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
         });
         const insertId = (result as { insertId: number }).insertId;
         await createAuditLogEntry({
@@ -2558,6 +2560,7 @@ export const appRouter = router({
         exposeKey: z.string().optional(),
         studySpecializations: z.string().max(1000).optional(),
         personalInterests: z.string().max(1000).optional(),
+        keywords: z.string().max(500).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         
@@ -2581,6 +2584,7 @@ export const appRouter = router({
           status: "PENDING_FIRST_EXAMINER",
           studySpecializations: input.studySpecializations ?? null,
           personalInterests: input.personalInterests ?? null,
+          keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
         });
 
         const insertId = (result as { insertId: number }).insertId;

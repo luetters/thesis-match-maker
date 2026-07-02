@@ -257,6 +257,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
       exposeKey,
       studySpecializations: (form as any).studySpecializations || undefined,
       personalInterests: (form as any).personalInterests || undefined,
+      keywords: (form as any).keywords || undefined,
     });
   };
 
@@ -336,6 +337,19 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).personalInterests}</p>
               </div>
             )}
+            {(form as any).keywords && (() => {
+              const tags = (form as any).keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+              return tags.length > 0 ? (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">Schlagwörter</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag: string, i: number) => (
+                      <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
             {exposeFile && (
               <div>
                 <p className="text-xs text-gray-500 mb-1">{t.student.exposeLabel}</p>
@@ -593,6 +607,23 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
             <p className="text-xs text-gray-400 mt-1">Was interessiert Sie persönlich besonders – fachlich oder thematisch?</p>
+          </div>
+
+          {/* Schlagwörter */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+              Schlagwörter
+              <span className="text-gray-400 font-normal text-xs">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={(form as any).keywords ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
+              placeholder="z. B. Machine Learning, Nachhaltigkeit, Supply Chain"
+              maxLength={500}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+            />
+            <p className="text-xs text-gray-400 mt-1">Kommagetrennte Schlagwörter, die Ihr Thema beschreiben.</p>
           </div>
 
           <div>
@@ -1343,7 +1374,7 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
             </span>
           </div>
           {/* Persönliche Angaben */}
-          {((req as any).studySpecializations || (req as any).personalInterests) && (
+          {((req as any).studySpecializations || (req as any).personalInterests || (req as any).keywords) && (
             <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
               {(req as any).studySpecializations && (
                 <div>
@@ -1357,6 +1388,19 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
                   <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).personalInterests}</p>
                 </div>
               )}
+              {(req as any).keywords && (() => {
+                const tags: string[] = (() => { try { return JSON.parse((req as any).keywords); } catch { return []; } })();
+                return tags.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Schlagwörter</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags.map((tag: string, i: number) => (
+                        <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
           {req.rejectionReason && (

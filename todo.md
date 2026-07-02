@@ -1083,3 +1083,16 @@
 - [x] Frontend: Antrags-Detailansicht (Studierenden-Dashboard) – beide Felder anzeigen
 - [x] Frontend: Antrags-Detailansicht (Prüfer:innen-Dashboard) – beide Felder anzeigen
 - [x] Tests grün (61/61), Checkpoint gespeichert
+
+## Feature: Schlagwörter im Bewerbungsformular (manuell) ✅ KOMPLETT
+
+- [x] DB: Spalte `keywords` (text, nullable, JSON-Array) in thesis_requests (Migration 0058)
+- [x] Backend: keywords-Feld in createWithWantedExaminer + thesis.create (kommagetrennt → JSON-Array)
+- [x] Backend: getThesisRequestsByExaminer, getThesisRequestsByStudent, getAllThesisRequests liefern keywords zurück
+- [x] Frontend: Einzeiliges Textfeld "Schlagwörter" (kommagetrennt) im Antragsformular
+- [x] Frontend: Tag-Anzeige in Vorschau-Sektion
+- [x] Frontend: Tag-Anzeige in Antrags-Detailansicht (Studierenden-Dashboard)
+- [x] Frontend: Tag-Anzeige in Prüfer:innen-Detailansicht (ExaminerDashboard)
+- [x] Tests grün (61/61), Checkpoint gespeichert
+
+Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schlagwörter selbst ein.

@@ -732,6 +732,28 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           )}
         </div>
       )}
+      {/* Schlagwörter-Tags (LLM-extrahiert) */}
+      {(() => {
+        const rawKeywords = (req as any).keywords;
+        const tags: string[] = rawKeywords ? (() => { try { return JSON.parse(rawKeywords); } catch { return []; } })() : [];
+        if (tags.length === 0) return null;
+        return (
+          <div className="mb-4">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Schlagwörter</p>
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((tag: string, i: number) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
       {req.exposéUrl && (
         <div className="flex gap-2 mb-3">
           <button

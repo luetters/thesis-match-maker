@@ -267,6 +267,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
       wantedExaminerId: thesisRequests.wantedExaminerId,
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
+      keywords: thesisRequests.keywords,
       // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
@@ -319,6 +320,9 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       firstExaminerName: firstExaminerAlias.name,
       secondExaminerName: secondExaminerAlias.name,
       wantedExaminerId: thesisRequests.wantedExaminerId,
+      studySpecializations: thesisRequests.studySpecializations,
+      personalInterests: thesisRequests.personalInterests,
+      keywords: thesisRequests.keywords,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
@@ -367,6 +371,7 @@ export async function getAllThesisRequests() {
       deadline: thesisRequests.deadline,
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
+      keywords: thesisRequests.keywords,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,

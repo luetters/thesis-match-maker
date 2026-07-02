@@ -246,6 +246,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	// ─── Persönliche Angaben der Studierenden ───
 	studySpecializations: text("study_specializations"),
 	personalInterests: text("personal_interests"),
+	// ─── LLM-extrahierte Schlagwörter (JSON-Array als String) ───
+	keywords: text("keywords"),
 });
 
 export const users = mysqlTable("users", {
