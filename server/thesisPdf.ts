@@ -6,8 +6,13 @@
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { PDFDocument as LibPDFDocument } from "pdf-lib";
+
+// ESM-kompatibler __dirname-Ersatz
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Logo als Buffer einlesen (einmalig beim Modulstart)
 let logoBuffer: Buffer | null = null;
