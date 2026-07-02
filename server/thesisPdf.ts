@@ -29,14 +29,17 @@ for (const candidate of logoCandidates) {
 export interface ThesisPdfData {
   studentName: string;
   matrikelNr?: string | null;
+  studentEmail?: string | null;
   programmeName?: string | null;
   degreeType?: string | null;
+  department?: string | null;
   title: string;
   titleEn?: string | null;
   firstExaminerName?: string | null;
   secondExaminerName?: string | null;
   targetSemester?: string | null;
   language?: string | null;
+  submissionDeadline?: string | null;
   verifyUrl: string;
   verifyToken: string;
   createdAt: Date;
@@ -239,8 +242,13 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
 
     // ── Felder ─────────────────────────────────────────────────────────────────
 
-    // Thema (hervorgehoben)
+    // Thema (hervorgehoben, DE)
     y = drawField("Thema der Abschlussarbeit", "Thesis Topic", data.title, y, true);
+
+    // Englischer Titel (falls vorhanden)
+    if (data.titleEn && data.titleEn.trim() && data.titleEn.trim() !== data.title.trim()) {
+      y = drawField("Titel (Englisch)", "Title (English)", data.titleEn, y, false);
+    }
 
     // Name + Matrikelnummer
     y = drawRow(
@@ -252,6 +260,19 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         labelDe: "Matrikelnummer",
         labelEn: "Matriculation No.",
         value: data.matrikelNr ?? "-",
+      }
+    );
+
+    // E-Mail + Fachbereich
+    y = drawRow(
+      "E-Mail-Adresse",
+      "Email Address",
+      data.studentEmail ?? "-",
+      y,
+      {
+        labelDe: "Fachbereich",
+        labelEn: "Department",
+        value: data.department ?? "-",
       }
     );
 
@@ -294,12 +315,19 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       }
     );
 
-    // Datum der Erstellung
+    // Abgabefrist + Erstellungsdatum
     y = drawRow(
-      "Datum der Erstellung",
-      "Date of Document Production",
-      formatDate(data.createdAt),
-      y
+      "Abgabefrist",
+      "Submission Deadline",
+      data.submissionDeadline
+        ? (() => { try { return formatDate(new Date(data.submissionDeadline!)); } catch { return data.submissionDeadline!; } })()
+        : (data.language === "en" ? "Not yet set" : "Noch nicht festgelegt"),
+      y,
+      {
+        labelDe: "Datum der Erstellung",
+        labelEn: "Date of Document Production",
+        value: formatDate(data.createdAt),
+      }
     );
 
     // Trennlinie vor Verifikation
