@@ -486,15 +486,26 @@ function AdminWorkflowTab() {
           Übersicht aller offiziell angemeldeten und zugelassenen Abschlussarbeiten. Hier können Sie den Verwaltungsworkflow steuern.
         </div>
         {(theses ?? []).length > 0 && (
-          <button
-            onClick={exportCsv}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[#5e9200] transition-colors whitespace-nowrap"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            CSV exportieren
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportCsv}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[#5e9200] transition-colors whitespace-nowrap"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV exportieren
+            </button>
+            <a
+              href="/api/export/theses.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#76B900] text-[#76B900] text-sm font-medium hover:bg-[#76B900] hover:text-white transition-colors whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              PDF exportieren
+            </a>
+          </div>
         )}
       </div>
 

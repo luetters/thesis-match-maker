@@ -48,8 +48,10 @@ vi.mock("./db", () => ({
 }));
 
 vi.mock("./emailHelper", () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
   sendStatusChangeEmail: vi.fn().mockResolvedValue(undefined),
   sendExaminerCTAEmail: vi.fn().mockResolvedValue(undefined),
+  sendPavProgrammeAssignmentEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./jwtHelper", () => ({

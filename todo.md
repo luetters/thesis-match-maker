@@ -620,14 +620,14 @@
 - [x] getAllExaminers, getFirstExaminers, listExaminers um activeSupervisions erweitert
 - [x] Tests grün (55/55), Checkpoint gespeichert
 
-## Admin: Maximale Betreuungskapazität anpassen
+## Admin: Maximale Betreuungskapazität anpassen ✅ KOMPLETT
 
-- [ ] Backend: updateMaxSupervisions-Prozedur (adminProcedure) – examinerProfiles.maxSupervisions setzen
-- [ ] Frontend: Inline-Bearbeitungsfeld in ExaminerManagement-Tabelle (Klick auf Wert → Input)
-- [ ] Frontend: Speichern per Enter oder Blur, Abbrechen per Escape
-- [ ] Frontend: Optimistische Aktualisierung der Tabelle nach Speichern
-- [ ] Frontend: Validierung: nur positive ganze Zahlen (1–99)
-- [ ] Tests grün, Checkpoint gespeichert
+- [x] Backend: updateMaxSupervisions-Prozedur (adminProcedure) – examinerProfiles.maxSupervisions setzen (via superadmin.updateExaminerProfile)
+- [x] Frontend: Inline-Bearbeitungsfeld in ExaminerManagement-Tabelle (Klick auf Wert → Input)
+- [x] Frontend: Speichern per Enter oder Blur, Abbrechen per Escape
+- [x] Frontend: Optimistische Aktualisierung der Tabelle nach Speichern
+- [x] Frontend: Validierung: nur positive ganze Zahlen (1–99)
+- [x] Tests grün, Checkpoint gespeichert
 
 ## Prüfer:innen-Kapazitäten pro Semester ✅ KOMPLETT
 
@@ -1054,3 +1054,17 @@
 - [x] Frontend: PAV-Dashboard neuer Tab Anmeldung & Zulassung
 - [x] Frontend: Dialoge für alle PAV-Aktionen
 - [x] Frontend: Prüfer:innen-Ansicht mit Status und Abgabedatum
+
+## Feature: PDF-Export für alle Ansichten ✅ KOMPLETT
+
+- [x] Backend: GET /api/export/theses.pdf – Admin/PAV: alle Anträge als PDF-Tabelle
+- [x] Backend: GET /api/export/examiners.pdf – Prüfer:innen-Verzeichnis als PDF
+- [x] Backend: GET /api/export/profile.pdf – Eigenes Prüfer:innen-Profil als PDF
+- [x] Backend: GET /api/export/thesis/:id/summary.pdf – Einzelantrag-Zusammenfassung als PDF
+- [x] Frontend: Export-Button in AdminDashboard (Alle Anfragen-Tab)
+- [x] Frontend: Export-Button in PavDashboard (Anfragen-Tab)
+- [x] Frontend: Export-Button in ExaminerDirectory
+- [x] Frontend: Export-Button in Profile.tsx (standalone + embedded/Prüfer:innen-Tab)
+- [x] Frontend: Export-Button in ExaminerManagement (Superadmin)
+- [x] Frontend: Antrag-Zusammenfassung-Button im StudentDashboard
+- [x] Tests grün (61/61), Checkpoint gespeichert

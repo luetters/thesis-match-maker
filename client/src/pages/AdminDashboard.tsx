@@ -256,6 +256,21 @@ function AllRequests() {
         </div>
       </div>
 
+      {/* Export-Button */}
+      <div className="flex justify-end mb-2">
+        <a
+          href={`/api/export/theses.pdf${filter !== 'ALL' ? `?status=${filter}` : ''}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: '#76B900' }}
+          title="Aktuelle Ansicht als PDF herunterladen"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          Als PDF exportieren
+        </a>
+      </div>
+
       {/* Sortier-Leiste */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
         <span className="text-xs text-gray-500 font-medium">Sortieren nach:</span>

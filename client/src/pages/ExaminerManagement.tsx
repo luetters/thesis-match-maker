@@ -633,13 +633,25 @@ export default function ExaminerManagement() {
             <h1 className="text-2xl font-bold">{t.superadmin.examinerManagement}</h1>
             <p className="text-sm text-muted-foreground">{t.superadmin.manageExaminerProfiles}</p>
           </div>
-          <Button
-            onClick={() => setShowImport(true)}
-            className="gap-2 bg-[#76B900] hover:bg-[#5a8f00] text-white"
-          >
-            <Upload className="w-4 h-4" />
-            Importieren
-          </Button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/export/examiners.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border border-[#76B900] text-[#76B900] hover:bg-[#76B900] hover:text-white transition-colors"
+              title="Prüfer:innen-Verzeichnis als PDF herunterladen"
+            >
+              <Download className="w-4 h-4" />
+              PDF exportieren
+            </a>
+            <Button
+              onClick={() => setShowImport(true)}
+              className="gap-2 bg-[#76B900] hover:bg-[#5a8f00] text-white"
+            >
+              <Upload className="w-4 h-4" />
+              Importieren
+            </Button>
+          </div>
         </div>
       </div>
 

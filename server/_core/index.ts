@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerUploadRoutes } from "../uploadRoutes";
+import { registerExportRoutes } from "../exportRoutes";
 import { registerMagicLinkRoutes } from "../magicLinkRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -42,6 +43,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerUploadRoutes(app);
+  registerExportRoutes(app);
   registerMagicLinkRoutes(app);
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)
   app.use(maintenanceMiddleware());
