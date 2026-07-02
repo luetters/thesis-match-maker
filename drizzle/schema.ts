@@ -243,6 +243,9 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	defenseDateSetBy: int("defense_date_set_by"),
 	caseClosedAt: datetime("case_closed_at", { mode: "string" }),
 	caseClosedBy: int("case_closed_by"),
+	// ─── Persönliche Angaben der Studierenden ───
+	studySpecializations: text("study_specializations"),
+	personalInterests: text("personal_interests"),
 });
 
 export const users = mysqlTable("users", {

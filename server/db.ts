@@ -265,6 +265,8 @@ export async function getThesisRequestsByStudent(studentId: number) {
       secondExaminerId: thesisRequests.secondExaminerId,
       studentId: thesisRequests.studentId,
       wantedExaminerId: thesisRequests.wantedExaminerId,
+      studySpecializations: thesisRequests.studySpecializations,
+      personalInterests: thesisRequests.personalInterests,
       // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
@@ -363,6 +365,8 @@ export async function getAllThesisRequests() {
       caseClosedAt: thesisRequests.caseClosedAt,
       enrollmentEligibility: thesisRequests.enrollmentEligibility,
       deadline: thesisRequests.deadline,
+      studySpecializations: thesisRequests.studySpecializations,
+      personalInterests: thesisRequests.personalInterests,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,

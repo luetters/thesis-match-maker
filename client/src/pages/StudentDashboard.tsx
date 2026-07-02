@@ -255,6 +255,8 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
       description: hasOwnTopic ? form.description : (form.description.trim() || "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in."),
       exposeUrl,
       exposeKey,
+      studySpecializations: (form as any).studySpecializations || undefined,
+      personalInterests: (form as any).personalInterests || undefined,
     });
   };
 
@@ -320,6 +322,18 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               <div>
                 <p className="text-xs text-gray-500 mb-1">{t.student.abstractLabel}</p>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{form.abstract}</p>
+              </div>
+            )}
+            {(form as any).studySpecializations && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Gewählte Vertiefungen im Studium</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).studySpecializations}</p>
+              </div>
+            )}
+            {(form as any).personalInterests && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Besondere Interessen</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).personalInterests}</p>
               </div>
             )}
             {exposeFile && (
@@ -545,6 +559,40 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               placeholder="Kurze Zusammenfassung der geplanten Arbeit..."
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
+          </div>
+
+          {/* Gewählte Vertiefungen im Studium */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+              Gewählte Vertiefungen im Studium
+              <span className="text-gray-400 font-normal text-xs">(optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={(form as any).studySpecializations ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, studySpecializations: e.target.value }))}
+              placeholder="z. B. Controlling, Unternehmensrecht, Digitales Marketing …"
+              maxLength={1000}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
+            />
+            <p className="text-xs text-gray-400 mt-1">Welche Schwerpunkte oder Vertiefungsmodule haben Sie in Ihrem Studium gewählt?</p>
+          </div>
+
+          {/* Besondere Interessen */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+              Besondere Interessen
+              <span className="text-gray-400 font-normal text-xs">(optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={(form as any).personalInterests ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, personalInterests: e.target.value }))}
+              placeholder="z. B. Nachhaltigkeit, KI-Anwendungen, internationales Projektmanagement …"
+              maxLength={1000}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
+            />
+            <p className="text-xs text-gray-400 mt-1">Was interessiert Sie persönlich besonders – fachlich oder thematisch?</p>
           </div>
 
           <div>
@@ -1294,6 +1342,23 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
               {req.degreeType === "bachelor" ? "Bachelor" : "Master"}
             </span>
           </div>
+          {/* Persönliche Angaben */}
+          {((req as any).studySpecializations || (req as any).personalInterests) && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+              {(req as any).studySpecializations && (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">Gewählte Vertiefungen im Studium</p>
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).studySpecializations}</p>
+                </div>
+              )}
+              {(req as any).personalInterests && (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">Besondere Interessen</p>
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).personalInterests}</p>
+                </div>
+              )}
+            </div>
+          )}
           {req.rejectionReason && (
             <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
               <p className="text-xs text-red-700">

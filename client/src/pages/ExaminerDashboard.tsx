@@ -715,6 +715,23 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         <StatusBadge status={req.status} />
       </div>
       <p className="text-sm text-gray-600 line-clamp-2 mb-4">{req.description}</p>
+      {/* Persönliche Angaben der Studierenden */}
+      {((req as any).studySpecializations || (req as any).personalInterests) && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+          {(req as any).studySpecializations && (
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">Gewählte Vertiefungen im Studium</p>
+              <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).studySpecializations}</p>
+            </div>
+          )}
+          {(req as any).personalInterests && (
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-0.5">Besondere Interessen</p>
+              <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).personalInterests}</p>
+            </div>
+          )}
+        </div>
+      )}
       {req.exposéUrl && (
         <div className="flex gap-2 mb-3">
           <button

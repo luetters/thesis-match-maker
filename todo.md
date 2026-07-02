@@ -1068,3 +1068,18 @@
 - [x] Frontend: Export-Button in ExaminerManagement (Superadmin)
 - [x] Frontend: Antrag-Zusammenfassung-Button im StudentDashboard
 - [x] Tests grün (61/61), Checkpoint gespeichert
+
+## Feature: Persönliche Angaben im Bewerbungsformular ✅ KOMPLETT
+
+- [x] DB: Felder `studySpecializations` (text, nullable) und `personalInterests` (text, nullable) in thesis_requests
+- [x] DB: Migration per `pnpm db:push` ausgeführt (Migration 0057)
+- [x] Backend: `createThesisRequest` nimmt `studySpecializations` und `personalInterests` entgegen
+- [x] Backend: `getThesisRequestsByStudent` liefert neue Felder zurück
+- [x] Backend: `getAllThesisRequests` liefert neue Felder zurück
+- [x] Backend: `thesis.create` und `thesisPhase27.createWithWantedExaminer` akzeptieren neue Felder
+- [x] Frontend: Antragsformular – Textarea "Gewählte Vertiefungen im Studium"
+- [x] Frontend: Antragsformular – Textarea "Besondere Interessen"
+- [x] Frontend: Vorschau-Sektion – beide Felder anzeigen
+- [x] Frontend: Antrags-Detailansicht (Studierenden-Dashboard) – beide Felder anzeigen
+- [x] Frontend: Antrags-Detailansicht (Prüfer:innen-Dashboard) – beide Felder anzeigen
+- [x] Tests grün (61/61), Checkpoint gespeichert
