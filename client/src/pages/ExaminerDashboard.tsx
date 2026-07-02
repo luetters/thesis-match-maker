@@ -715,45 +715,52 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         <StatusBadge status={req.status} />
       </div>
       <p className="text-sm text-gray-600 line-clamp-2 mb-4">{req.description}</p>
-      {/* Persönliche Angaben der Studierenden */}
-      {((req as any).studySpecializations || (req as any).personalInterests) && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+      {/* Persönliche Angaben der Studierenden – strukturierter Block */}
+      {((req as any).studySpecializations || (req as any).personalInterests || (req as any).keywords) && (
+        <div className="mb-4 rounded-xl border border-[#76B900]/20 bg-[#76B900]/5 p-3.5 space-y-3">
+          <p className="text-xs font-semibold text-[#76B900] uppercase tracking-widest">Persönliche Angaben</p>
+
           {(req as any).studySpecializations && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">Gewählte Vertiefungen im Studium</p>
-              <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).studySpecializations}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Gewählte Vertiefungen im Studium</p>
+              <p className="text-xs text-gray-800 whitespace-pre-wrap">{(req as any).studySpecializations}</p>
             </div>
           )}
+
           {(req as any).personalInterests && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-0.5">Besondere Interessen</p>
-              <p className="text-xs text-gray-700 whitespace-pre-wrap">{(req as any).personalInterests}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Besondere Interessen</p>
+              <p className="text-xs text-gray-800 whitespace-pre-wrap">{(req as any).personalInterests}</p>
             </div>
           )}
+
+          {(req as any).keywords && (() => {
+            const rawKeywords = (req as any).keywords;
+            const tags: string[] = (() => {
+              try { return JSON.parse(rawKeywords); } catch {
+                return rawKeywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+              }
+            })();
+            if (tags.length === 0) return null;
+            return (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Schlagwörter</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map((tag: string, i: number) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
-      {/* Schlagwörter-Tags (LLM-extrahiert) */}
-      {(() => {
-        const rawKeywords = (req as any).keywords;
-        const tags: string[] = rawKeywords ? (() => { try { return JSON.parse(rawKeywords); } catch { return []; } })() : [];
-        if (tags.length === 0) return null;
-        return (
-          <div className="mb-4">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Schlagwörter</p>
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag: string, i: number) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
       {req.exposéUrl && (
         <div className="flex gap-2 mb-3">
           <button

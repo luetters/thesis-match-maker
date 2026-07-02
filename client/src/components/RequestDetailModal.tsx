@@ -143,6 +143,52 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
               </div>
             )}
 
+            {/* Persönliche Angaben der Studierenden */}
+            {(request.studySpecializations || request.personalInterests || request.keywords) && (
+              <div className="rounded-xl border border-[#76B900]/20 bg-[#76B900]/5 p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-[#76B900] uppercase tracking-widest">Persönliche Angaben</h4>
+
+                {request.studySpecializations && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gewählte Vertiefungen im Studium</label>
+                    <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{request.studySpecializations}</p>
+                  </div>
+                )}
+
+                {request.personalInterests && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Besondere Interessen</label>
+                    <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{request.personalInterests}</p>
+                  </div>
+                )}
+
+                {request.keywords && (() => {
+                  const tags: string[] = (() => {
+                    try { return JSON.parse(request.keywords); } catch {
+                      return request.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+                    }
+                  })();
+                  if (tags.length === 0) return null;
+                  return (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Schlagwörter</label>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {tags.map((tag: string, i: number) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                            style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Exposé */}
             {request.exposeUrl && (
               <div>
