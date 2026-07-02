@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,221 @@ type EditRoleDialogState = {
   selectedRole: string;
 };
 
+// ── Einzelne Nutzerkarte ──────────────────────────────────────────────────────
+function UserCard({
+  user,
+  onApprove,
+  onReject,
+  onEditRole,
+  approvePending,
+  rejectPending,
+}: {
+  user: PendingUser;
+  onApprove: (id: number) => void;
+  onReject: (u: PendingUser) => void;
+  onEditRole: (u: PendingUser) => void;
+  approvePending: boolean;
+  rejectPending: boolean;
+}) {
+  return (
+    <Card className="border border-amber-200 bg-amber-50/30">
+      <CardContent className="flex items-start gap-4 p-4">
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <User className="w-5 h-5 text-amber-600" />
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-gray-900 truncate">
+              {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email || `Nutzer #${user.id}`}
+            </span>
+            <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+              <Clock className="w-3 h-3 mr-1" />
+              Ausstehend
+            </Badge>
+          </div>
+          {/* E-Mail */}
+          <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
+
+          {/* Detailzeile 1: Rolle + Datum */}
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
+            <span className="flex items-center gap-1">
+              Gewünschte Rolle:
+              <strong className="text-gray-700 ml-1">
+                {ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–"}
+              </strong>
+              <button
+                type="button"
+                title="Rolle anpassen"
+                onClick={() => onEditRole(user)}
+                className="ml-1 text-blue-500 hover:text-blue-700 transition-colors"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </span>
+            <span>·</span>
+            <span>
+              {new Date(user.createdAt).toLocaleDateString("de-DE", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </span>
+            {user.loginMethod && (
+              <>
+                <span>·</span>
+                <span>{user.loginMethod}</span>
+              </>
+            )}
+          </div>
+
+          {/* Detailzeile 2: rollenspezifische Zusatzinfos */}
+          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+            {/* Prüfer:innen: Fachbereich + Personalnummer */}
+            {(user.requestedRole === "examiner" || user.requestedRole === "second_examiner") && (
+              <>
+                {user.department && (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="font-medium text-gray-600">FB:</span> {user.department}
+                  </span>
+                )}
+                {user.staffId && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-medium text-gray-600">Personal-Nr.:</span> {user.staffId}
+                    </span>
+                  </>
+                )}
+                {user.phone && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-medium text-gray-600">Tel.:</span> {user.phone}
+                    </span>
+                  </>
+                )}
+              </>
+            )}
+            {/* Studierende: Matrikelnummer + Studiengang + Semester */}
+            {user.requestedRole === "student" && (
+              <>
+                {user.matrikelNr && (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="font-medium text-gray-600">Matr.-Nr.:</span> {user.matrikelNr}
+                  </span>
+                )}
+                {user.department && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-medium text-gray-600">Studiengang:</span> {user.department}
+                    </span>
+                  </>
+                )}
+                {user.thesisType && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-medium text-gray-600">Abschluss:</span>{" "}
+                      {user.thesisType === "master" ? "Master" : "Bachelor"}
+                    </span>
+                  </>
+                )}
+                {user.targetSemester && (
+                  <>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="font-medium text-gray-600">Geplantes Semester:</span> {user.targetSemester}
+                    </span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Aktionen */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            size="sm"
+            className="bg-[#76B900] hover:bg-[#5a8c00] text-white gap-1"
+            onClick={() => onApprove(user.id)}
+            disabled={approvePending}
+          >
+            <CheckCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Freischalten</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50 gap-1"
+            onClick={() => onReject(user)}
+            disabled={rejectPending}
+          >
+            <XCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Ablehnen</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Gruppen-Abschnitt ─────────────────────────────────────────────────────────
+function GroupSection({
+  title,
+  icon,
+  users,
+  onApprove,
+  onReject,
+  onEditRole,
+  approvePending,
+  rejectPending,
+  accentColor,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  users: PendingUser[];
+  onApprove: (id: number) => void;
+  onReject: (u: PendingUser) => void;
+  onEditRole: (u: PendingUser) => void;
+  approvePending: boolean;
+  rejectPending: boolean;
+  accentColor: string;
+}) {
+  if (users.length === 0) return null;
+  return (
+    <section>
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${accentColor}`}>
+          {icon}
+        </div>
+        <span className="text-sm font-semibold text-gray-800">{title}</span>
+        <span className="text-xs font-medium text-white bg-amber-500 rounded-full px-2 py-0.5 leading-none">
+          {users.length}
+        </span>
+      </div>
+      <div className="space-y-3 pl-0">
+        {users.map((user) => (
+          <UserCard
+            key={user.id}
+            user={user}
+            onApprove={onApprove}
+            onReject={onReject}
+            onEditRole={onEditRole}
+            approvePending={approvePending}
+            rejectPending={rejectPending}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ── Haupt-Komponente ──────────────────────────────────────────────────────────
 export default function RoleApprovalTab({ canApproveAll = false }: { canApproveAll?: boolean }) {
   const utils = trpc.useUtils();
 
@@ -117,7 +332,18 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
   });
 
   const pending = pendingQuery.data ?? [];
-  const visiblePending = pending;
+
+  // Gruppen aufteilen nach requestedRole
+  const VERWALTUNG_ROLES = ["admin", "pav", "dean", "vice_dean", "superadmin"];
+  const PRUEFER_ROLES = ["examiner", "second_examiner"];
+  const STUDENT_ROLES = ["student"];
+
+  const groupVerwaltung = pending.filter((u) => VERWALTUNG_ROLES.includes(u.requestedRole ?? u.role ?? ""));
+  const groupStudierende = pending.filter((u) => STUDENT_ROLES.includes(u.requestedRole ?? u.role ?? ""));
+  const groupPruefer = pending.filter((u) => PRUEFER_ROLES.includes(u.requestedRole ?? u.role ?? ""));
+  const groupSonstige = pending.filter(
+    (u) => ![...VERWALTUNG_ROLES, ...PRUEFER_ROLES, ...STUDENT_ROLES].includes(u.requestedRole ?? u.role ?? "")
+  );
 
   const handleApprove = (userId: number) => {
     approveMutation.mutate({ userId });
@@ -156,7 +382,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Freischaltung neuer Kolleg:innen</h2>
+          <h2 className="text-xl font-bold text-gray-900">Freischaltungen</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             Neue Registrierungen, die auf Freischaltung warten
           </p>
@@ -180,7 +406,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         </div>
       )}
 
-      {!pendingQuery.isLoading && visiblePending.length === 0 && (
+      {!pendingQuery.isLoading && pending.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <CheckCircle className="w-12 h-12 text-primary/60 mb-3" />
@@ -190,154 +416,55 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         </Card>
       )}
 
-      {/* Anfragen-Liste */}
-      {visiblePending.length > 0 && (
-        <div className="space-y-3">
-          {visiblePending.map((user) => (
-            <Card key={user.id} className="border border-amber-200 bg-amber-50/30">
-              <CardContent className="flex items-start gap-4 p-4">
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <User className="w-5 h-5 text-amber-600" />
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 truncate">
-                      {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email || `Nutzer #${user.id}`}
-                    </span>
-                    <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Ausstehend
-                    </Badge>
-                  </div>
-                  {/* E-Mail */}
-                  <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
-
-                  {/* Detailzeile 1: Rolle + Datum */}
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
-                    <span className="flex items-center gap-1">
-                      Gewünschte Rolle:
-                      <strong className="text-gray-700 ml-1">
-                        {ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–"}
-                      </strong>
-                      <button
-                        type="button"
-                        title="Rolle anpassen"
-                        onClick={() => handleEditRoleOpen(user)}
-                        className="ml-1 text-blue-500 hover:text-blue-700 transition-colors"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {new Date(user.createdAt).toLocaleDateString("de-DE", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </span>
-                    {user.loginMethod && (
-                      <>
-                        <span>·</span>
-                        <span>{user.loginMethod}</span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Detailzeile 2: rollenspezifische Zusatzinfos */}
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                    {/* Prüfer:innen: Fachbereich + Personalnummer */}
-                    {(user.requestedRole === "examiner" || user.requestedRole === "second_examiner") && (
-                      <>
-                        {user.department && (
-                          <span className="inline-flex items-center gap-1">
-                            <span className="font-medium text-gray-600">FB:</span> {user.department}
-                          </span>
-                        )}
-                        {user.staffId && (
-                          <>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className="font-medium text-gray-600">Personal-Nr.:</span> {user.staffId}
-                            </span>
-                          </>
-                        )}
-                        {user.phone && (
-                          <>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className="font-medium text-gray-600">Tel.:</span> {user.phone}
-                            </span>
-                          </>
-                        )}
-                      </>
-                    )}
-                    {/* Studierende: Matrikelnummer + Studiengang + Semester */}
-                    {user.requestedRole === "student" && (
-                      <>
-                        {user.matrikelNr && (
-                          <span className="inline-flex items-center gap-1">
-                            <span className="font-medium text-gray-600">Matr.-Nr.:</span> {user.matrikelNr}
-                          </span>
-                        )}
-                        {user.department && (
-                          <>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className="font-medium text-gray-600">Studiengang:</span> {user.department}
-                            </span>
-                          </>
-                        )}
-                        {user.thesisType && (
-                          <>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className="font-medium text-gray-600">Abschluss:</span>{" "}
-                              {user.thesisType === "master" ? "Master" : "Bachelor"}
-                            </span>
-                          </>
-                        )}
-                        {user.targetSemester && (
-                          <>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className="font-medium text-gray-600">Geplantes Semester:</span> {user.targetSemester}
-                            </span>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Aktionen */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    size="sm"
-                    className="bg-[#76B900] hover:bg-[#5a8c00] text-white gap-1"
-                    onClick={() => handleApprove(user.id)}
-                    disabled={approveMutation.isPending}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Freischalten</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-red-300 text-red-600 hover:bg-red-50 gap-1"
-                    onClick={() => handleRejectOpen(user)}
-                    disabled={rejectMutation.isPending}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Ablehnen</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Anfragen-Liste – nach Gruppen unterteilt */}
+      {pending.length > 0 && (
+        <div className="space-y-8">
+          <GroupSection
+            title="Verwaltung"
+            icon={<Building2 className="w-4 h-4 text-purple-600" />}
+            accentColor="bg-purple-100"
+            users={groupVerwaltung}
+            onApprove={handleApprove}
+            onReject={handleRejectOpen}
+            onEditRole={handleEditRoleOpen}
+            approvePending={approveMutation.isPending}
+            rejectPending={rejectMutation.isPending}
+          />
+          <GroupSection
+            title="Studierende"
+            icon={<GraduationCap className="w-4 h-4 text-blue-600" />}
+            accentColor="bg-blue-100"
+            users={groupStudierende}
+            onApprove={handleApprove}
+            onReject={handleRejectOpen}
+            onEditRole={handleEditRoleOpen}
+            approvePending={approveMutation.isPending}
+            rejectPending={rejectMutation.isPending}
+          />
+          <GroupSection
+            title="Prüfer:innen"
+            icon={<BookOpen className="w-4 h-4 text-green-600" />}
+            accentColor="bg-green-100"
+            users={groupPruefer}
+            onApprove={handleApprove}
+            onReject={handleRejectOpen}
+            onEditRole={handleEditRoleOpen}
+            approvePending={approveMutation.isPending}
+            rejectPending={rejectMutation.isPending}
+          />
+          {groupSonstige.length > 0 && (
+            <GroupSection
+              title="Sonstige"
+              icon={<User className="w-4 h-4 text-gray-600" />}
+              accentColor="bg-gray-100"
+              users={groupSonstige}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+              onEditRole={handleEditRoleOpen}
+              approvePending={approveMutation.isPending}
+              rejectPending={rejectMutation.isPending}
+            />
+          )}
         </div>
       )}
 
@@ -437,7 +564,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
               Abbrechen
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="destructive"
               onClick={handleRejectConfirm}
               disabled={rejectMutation.isPending}
             >
