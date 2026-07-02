@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 
 // Logo als Buffer einlesen (einmalig beim Modulstart)
 let logoBuffer: Buffer | null = null;
-const logoCandidates = ["HTW_Berlin_Logo.jpg", "ThesisMatchMaker.jpg"];
+const logoCandidates = ["HTW_Berlin_Logo.png", "HTW_Berlin_Logo.jpg", "ThesisMatchMaker.jpg"];
 for (const candidate of logoCandidates) {
   try {
     logoBuffer = readFileSync(join(__dirname, candidate));
