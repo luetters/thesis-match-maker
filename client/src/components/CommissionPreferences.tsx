@@ -155,6 +155,9 @@ function AvailableItem({ candidate, onAdd }: { candidate: any; onAdd: (id: numbe
           <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
           <RoleBadge candidate={candidate} />
         </div>
+        {candidate.department && (
+          <p className="text-xs text-gray-400 truncate mt-0.5">{candidate.department}</p>
+        )}
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onAdd(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-[#76B900]/10 hover:bg-[#76B900]/30 flex items-center justify-center transition-colors" title="Hinzufügen">
@@ -200,6 +203,9 @@ function SelectedItem({ candidate, index, onRemove }: { candidate: any; index: n
           <p className="text-sm font-medium text-gray-900 truncate">{buildFullName({ firstName: candidate.firstName, lastName: candidate.lastName, academicTitle: candidate.academicTitle ?? candidate.title, name: candidate.name })}</p>
           <RoleBadge candidate={candidate} />
         </div>
+        {candidate.department && (
+          <p className="text-xs text-gray-400 truncate mt-0.5">{candidate.department}</p>
+        )}
         <WorkloadBadge active={candidate.activeSupervisions} max={candidate.maxSupervisions} compact className="mt-1" />
       </div>
       <button onClick={() => onRemove(candidate.id)} className="flex-shrink-0 w-6 h-6 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors" title="Entfernen">

@@ -1183,9 +1183,10 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
                       : ""
                   : "";
                 const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
+                const deptInfo = e.department ? ` · ${e.department}` : "";
                 result.push(
                   <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
-                    {displayName}{eHint}
+                    {displayName}{deptInfo}{eHint}
                   </option>
                 );
               });
