@@ -3089,6 +3089,24 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Mehrere Rollenanfragen auf einmal bestätigen (Gruppen-Freischaltung)
+    approveMany: protectedProcedure
+      .input(z.object({ userIds: z.array(z.number().int().positive()).min(1).max(200) }))
+      .mutation(async ({ ctx, input }) => {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        const results = await Promise.allSettled(
+          input.userIds.map((uid) => approveUserRole(uid, ctx.user.id, ctx.user.role))
+        );
+        const succeeded = results.filter(
+          (r) => r.status === "fulfilled" && (r as PromiseFulfilledResult<{ success: boolean }>).value?.success
+        ).length;
+        const failed = results.length - succeeded;
+        return { succeeded, failed };
+      }),
+
     // Gewünschte Rolle eines wartenden Nutzers vor Freischaltung anpassen
     updateRequestedRole: protectedProcedure
       .input(z.object({

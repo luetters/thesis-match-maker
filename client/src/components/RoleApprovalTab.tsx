@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2 } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,24 +48,13 @@ type PendingUser = {
   department?: string | null;
   matrikelNr?: string | null;
   thesisType?: string | null;
-  targetSemester?: string | null;
-  staffId?: string | null;
-  phone?: string | null;
 };
 
-type RejectDialogState = {
-  open: boolean;
-  user: PendingUser | null;
-  reason: string;
-};
+type RejectDialogState = { open: boolean; user: PendingUser | null; reason: string };
+type EditRoleDialogState = { open: boolean; user: PendingUser | null; selectedRole: string };
+type ApproveAllDialogState = { open: boolean; users: PendingUser[]; groupTitle: string };
 
-type EditRoleDialogState = {
-  open: boolean;
-  user: PendingUser | null;
-  selectedRole: string;
-};
-
-// ── Einzelne Nutzerkarte ──────────────────────────────────────────────────────
+// ── Einzelne Nutzer-Karte ─────────────────────────────────────────────────────
 function UserCard({
   user,
   onApprove,
@@ -81,147 +70,72 @@ function UserCard({
   approvePending: boolean;
   rejectPending: boolean;
 }) {
+  const displayName = buildFullName({
+    firstName: user.firstName,
+    lastName: user.lastName,
+    academicTitle: user.academicTitle,
+    name: user.name,
+  }) || user.email || `Nutzer:in #${user.id}`;
+
+  const requestedLabel = ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–";
+  const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
+
   return (
-    <Card className="border border-amber-200 bg-amber-50/30">
-      <CardContent className="flex items-start gap-4 p-4">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <User className="w-5 h-5 text-amber-600" />
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900 truncate">
-              {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email || `Nutzer #${user.id}`}
-            </span>
-            <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
-              <Clock className="w-3 h-3 mr-1" />
-              Ausstehend
-            </Badge>
-          </div>
-          {/* E-Mail */}
-          <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
-
-          {/* Detailzeile 1: Rolle + Datum */}
-          <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
-            <span className="flex items-center gap-1">
-              Gewünschte Rolle:
-              <strong className="text-gray-700 ml-1">
-                {ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–"}
-              </strong>
+    <Card className="border border-gray-200 shadow-none">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          {/* Nutzer-Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-gray-900 truncate">{displayName}</span>
+              <Badge variant="outline" className="text-xs shrink-0">
+                {requestedLabel}
+              </Badge>
               <button
-                type="button"
-                title="Rolle anpassen"
                 onClick={() => onEditRole(user)}
-                className="ml-1 text-blue-500 hover:text-blue-700 transition-colors"
+                className="text-gray-400 hover:text-blue-600 transition-colors"
+                title="Gewünschte Rolle anpassen"
               >
-                <Pencil className="w-3 h-3" />
+                <Pencil className="w-3.5 h-3.5" />
               </button>
-            </span>
-            <span>·</span>
-            <span>
-              {new Date(user.createdAt).toLocaleDateString("de-DE", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
-            </span>
-            {user.loginMethod && (
-              <>
-                <span>·</span>
-                <span>{user.loginMethod}</span>
-              </>
-            )}
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Registriert: {registeredAt}
+              </span>
+              {user.department && (
+                <span className="truncate">{user.department}</span>
+              )}
+              {user.matrikelNr && (
+                <span>Matr.-Nr.: {user.matrikelNr}</span>
+              )}
+            </div>
           </div>
 
-          {/* Detailzeile 2: rollenspezifische Zusatzinfos */}
-          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-            {/* Prüfer:innen: Fachbereich + Personalnummer */}
-            {(user.requestedRole === "examiner" || user.requestedRole === "second_examiner") && (
-              <>
-                {user.department && (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="font-medium text-gray-600">FB:</span> {user.department}
-                  </span>
-                )}
-                {user.staffId && (
-                  <>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-medium text-gray-600">Personal-Nr.:</span> {user.staffId}
-                    </span>
-                  </>
-                )}
-                {user.phone && (
-                  <>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-medium text-gray-600">Tel.:</span> {user.phone}
-                    </span>
-                  </>
-                )}
-              </>
-            )}
-            {/* Studierende: Matrikelnummer + Studiengang + Semester */}
-            {user.requestedRole === "student" && (
-              <>
-                {user.matrikelNr && (
-                  <span className="inline-flex items-center gap-1">
-                    <span className="font-medium text-gray-600">Matr.-Nr.:</span> {user.matrikelNr}
-                  </span>
-                )}
-                {user.department && (
-                  <>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-medium text-gray-600">Studiengang:</span> {user.department}
-                    </span>
-                  </>
-                )}
-                {user.thesisType && (
-                  <>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-medium text-gray-600">Abschluss:</span>{" "}
-                      {user.thesisType === "master" ? "Master" : "Bachelor"}
-                    </span>
-                  </>
-                )}
-                {user.targetSemester && (
-                  <>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-medium text-gray-600">Geplantes Semester:</span> {user.targetSemester}
-                    </span>
-                  </>
-                )}
-              </>
-            )}
+          {/* Aktions-Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => onReject(user)}
+              disabled={rejectPending}
+            >
+              <XCircle className="w-4 h-4" />
+              Ablehnen
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 bg-[#76B900] hover:bg-[#5a8c00] text-white"
+              onClick={() => onApprove(user.id)}
+              disabled={approvePending}
+            >
+              <CheckCircle className="w-4 h-4" />
+              Freischalten
+            </Button>
           </div>
-        </div>
-
-        {/* Aktionen */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            size="sm"
-            className="bg-[#76B900] hover:bg-[#5a8c00] text-white gap-1"
-            onClick={() => onApprove(user.id)}
-            disabled={approvePending}
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">Freischalten</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50 gap-1"
-            onClick={() => onReject(user)}
-            disabled={rejectPending}
-          >
-            <XCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">Ablehnen</span>
-          </Button>
         </div>
       </CardContent>
     </Card>
@@ -236,6 +150,7 @@ function GroupSection({
   onApprove,
   onReject,
   onEditRole,
+  onApproveAll,
   approvePending,
   rejectPending,
   accentColor,
@@ -246,6 +161,7 @@ function GroupSection({
   onApprove: (id: number) => void;
   onReject: (u: PendingUser) => void;
   onEditRole: (u: PendingUser) => void;
+  onApproveAll: (users: PendingUser[]) => void;
   approvePending: boolean;
   rejectPending: boolean;
   accentColor: string;
@@ -261,6 +177,18 @@ function GroupSection({
         <span className="text-xs font-medium text-white bg-amber-500 rounded-full px-2 py-0.5 leading-none">
           {users.length}
         </span>
+        {users.length > 1 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto gap-1.5 text-xs h-7 border-[#76B900] text-[#76B900] hover:bg-[#76B900]/10"
+            onClick={() => onApproveAll(users)}
+            disabled={approvePending}
+          >
+            <CheckCheck className="w-3.5 h-3.5" />
+            Alle {users.length} freischalten
+          </Button>
+        )}
       </div>
       <div className="space-y-3 pl-0">
         {users.map((user) => (
@@ -295,6 +223,12 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     selectedRole: "",
   });
 
+  const [approveAllDialog, setApproveAllDialog] = useState<ApproveAllDialogState>({
+    open: false,
+    users: [],
+    groupTitle: "",
+  });
+
   const pendingQuery = trpc.roleApproval.getPending.useQuery(undefined, {
     refetchInterval: 30000,
   });
@@ -306,6 +240,21 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     },
     onError: (err) => {
       toast.error(err.message ?? "Fehler beim Freischalten.");
+    },
+  });
+
+  const approveManyMutation = trpc.roleApproval.approveMany.useMutation({
+    onSuccess: async (data) => {
+      await utils.roleApproval.getPending.invalidate();
+      setApproveAllDialog({ open: false, users: [], groupTitle: "" });
+      if (data.failed > 0) {
+        toast.warning(`${data.succeeded} freigeschaltet, ${data.failed} fehlgeschlagen.`);
+      } else {
+        toast.success(`${data.succeeded} Person${data.succeeded !== 1 ? "en" : ""} wurden freigeschaltet.`);
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Fehler bei der Gruppen-Freischaltung.");
     },
   });
 
@@ -349,6 +298,14 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     approveMutation.mutate({ userId });
   };
 
+  const handleApproveAllOpen = (users: PendingUser[], groupTitle: string) => {
+    setApproveAllDialog({ open: true, users, groupTitle });
+  };
+
+  const handleApproveAllConfirm = () => {
+    approveManyMutation.mutate({ userIds: approveAllDialog.users.map((u) => u.id) });
+  };
+
   const handleRejectOpen = (user: PendingUser) => {
     setRejectDialog({ open: true, user, reason: "" });
   };
@@ -376,6 +333,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       newRole: editRoleDialog.selectedRole as any,
     });
   };
+
+  const anyPending = approveMutation.isPending || approveManyMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -427,7 +386,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApprove={handleApprove}
             onReject={handleRejectOpen}
             onEditRole={handleEditRoleOpen}
-            approvePending={approveMutation.isPending}
+            onApproveAll={(u) => handleApproveAllOpen(u, "Verwaltung")}
+            approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
           />
           <GroupSection
@@ -438,7 +398,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApprove={handleApprove}
             onReject={handleRejectOpen}
             onEditRole={handleEditRoleOpen}
-            approvePending={approveMutation.isPending}
+            onApproveAll={(u) => handleApproveAllOpen(u, "Studierende")}
+            approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
           />
           <GroupSection
@@ -449,7 +410,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApprove={handleApprove}
             onReject={handleRejectOpen}
             onEditRole={handleEditRoleOpen}
-            approvePending={approveMutation.isPending}
+            onApproveAll={(u) => handleApproveAllOpen(u, "Prüfer:innen")}
+            approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
           />
           {groupSonstige.length > 0 && (
@@ -461,7 +423,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
               onApprove={handleApprove}
               onReject={handleRejectOpen}
               onEditRole={handleEditRoleOpen}
-              approvePending={approveMutation.isPending}
+              onApproveAll={(u) => handleApproveAllOpen(u, "Sonstige")}
+              approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
             />
           )}
@@ -479,6 +442,55 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         </p>
       </div>
 
+      {/* Alle freischalten – Bestätigungs-Dialog */}
+      <Dialog
+        open={approveAllDialog.open}
+        onOpenChange={(open) => setApproveAllDialog((s) => ({ ...s, open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alle {approveAllDialog.groupTitle} freischalten?</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-gray-600 space-y-2">
+            <p>
+              Sie sind dabei,{" "}
+              <strong>
+                {approveAllDialog.users.length} Person{approveAllDialog.users.length !== 1 ? "en" : ""}
+              </strong>{" "}
+              aus der Gruppe <strong>{approveAllDialog.groupTitle}</strong> auf einmal freizuschalten:
+            </p>
+            <ul className="list-disc list-inside space-y-0.5 text-gray-500 max-h-48 overflow-y-auto">
+              {approveAllDialog.users.map((u) => (
+                <li key={u.id} className="truncate">
+                  {buildFullName({ firstName: u.firstName, lastName: u.lastName, academicTitle: u.academicTitle, name: u.name }) || u.email}
+                </li>
+              ))}
+            </ul>
+            <p className="text-gray-400 text-xs pt-1">
+              Jede Person erhält nach der Freischaltung automatisch eine E-Mail-Benachrichtigung.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setApproveAllDialog({ open: false, users: [], groupTitle: "" })}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-[#76B900] hover:bg-[#5a8c00] text-white gap-2"
+              onClick={handleApproveAllConfirm}
+              disabled={approveManyMutation.isPending}
+            >
+              <CheckCheck className="w-4 h-4" />
+              {approveManyMutation.isPending
+                ? "Wird verarbeitet …"
+                : `Alle ${approveAllDialog.users.length} freischalten`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Rolle anpassen – Dialog */}
       <Dialog
         open={editRoleDialog.open}
@@ -491,8 +503,15 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
               Passen Sie die Rolle für{" "}
-              <strong>{buildFullName({ firstName: (editRoleDialog.user as any)?.firstName, lastName: (editRoleDialog.user as any)?.lastName, academicTitle: (editRoleDialog.user as any)?.academicTitle, name: editRoleDialog.user?.name }) || editRoleDialog.user?.email}</strong> vor der
-              endgültigen Freischaltung an.
+              <strong>
+                {buildFullName({
+                  firstName: (editRoleDialog.user as any)?.firstName,
+                  lastName: (editRoleDialog.user as any)?.lastName,
+                  academicTitle: (editRoleDialog.user as any)?.academicTitle,
+                  name: editRoleDialog.user?.name,
+                }) || editRoleDialog.user?.email}
+              </strong>{" "}
+              vor der endgültigen Freischaltung an.
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="edit-role-select">Neue Rolle</Label>
@@ -543,7 +562,15 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
           <div className="space-y-4 py-2">
             <p className="text-sm text-gray-600">
               Möchten Sie die Registrierung von{" "}
-              <strong>{buildFullName({ firstName: (rejectDialog.user as any)?.firstName, lastName: (rejectDialog.user as any)?.lastName, academicTitle: (rejectDialog.user as any)?.academicTitle, name: rejectDialog.user?.name }) || rejectDialog.user?.email}</strong> ablehnen?
+              <strong>
+                {buildFullName({
+                  firstName: (rejectDialog.user as any)?.firstName,
+                  lastName: (rejectDialog.user as any)?.lastName,
+                  academicTitle: (rejectDialog.user as any)?.academicTitle,
+                  name: rejectDialog.user?.name,
+                }) || rejectDialog.user?.email}
+              </strong>{" "}
+              ablehnen?
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="reject-reason">Begründung (optional)</Label>
