@@ -327,13 +327,13 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
             )}
             {(form as any).studySpecializations && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Gewählte Vertiefungen im Studium</p>
+                <p className="text-xs text-gray-500 mb-1">{t.student.studySpecializationsLabel}</p>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).studySpecializations}</p>
               </div>
             )}
             {(form as any).personalInterests && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Besondere Interessen</p>
+                <p className="text-xs text-gray-500 mb-1">{t.student.personalInterestsLabel}</p>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{(form as any).personalInterests}</p>
               </div>
             )}
@@ -341,7 +341,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
               const tags = (form as any).keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0);
               return tags.length > 0 ? (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1.5">Schlagwörter</p>
+                  <p className="text-xs text-gray-500 mb-1.5">{t.student.keywordsLabel}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {tags.map((tag: string, i: number) => (
                       <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: "#F1F8E9", color: "#4a7a00", border: "1px solid #c8e6a0" }}>{tag}</span>
@@ -578,52 +578,52 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
           {/* Gewählte Vertiefungen im Studium */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Gewählte Vertiefungen im Studium
+              {t.student.studySpecializationsLabel}
               <span className="text-gray-400 font-normal text-xs">(optional)</span>
             </label>
             <textarea
               rows={3}
               value={(form as any).studySpecializations ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, studySpecializations: e.target.value }))}
-              placeholder="z. B. Controlling, Unternehmensrecht, Digitales Marketing …"
+              placeholder={t.student.studySpecializationsPlaceholder}
               maxLength={1000}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
-            <p className="text-xs text-gray-400 mt-1">Welche Schwerpunkte oder Vertiefungsmodule haben Sie in Ihrem Studium gewählt?</p>
+            <p className="text-xs text-gray-400 mt-1">{t.student.studySpecializationsHint}</p>
           </div>
 
           {/* Besondere Interessen */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Besondere Interessen
+              {t.student.personalInterestsLabel}
               <span className="text-gray-400 font-normal text-xs">(optional)</span>
             </label>
             <textarea
               rows={3}
               value={(form as any).personalInterests ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, personalInterests: e.target.value }))}
-              placeholder="z. B. Nachhaltigkeit, KI-Anwendungen, internationales Projektmanagement …"
+              placeholder={t.student.personalInterestsPlaceholder}
               maxLength={1000}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
             />
-            <p className="text-xs text-gray-400 mt-1">Was interessiert Sie persönlich besonders – fachlich oder thematisch?</p>
+            <p className="text-xs text-gray-400 mt-1">{t.student.personalInterestsHint}</p>
           </div>
 
           {/* Schlagwörter */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-              Schlagwörter
+              {t.student.keywordsLabel}
               <span className="text-gray-400 font-normal text-xs">(optional)</span>
             </label>
             <input
               type="text"
               value={(form as any).keywords ?? ""}
               onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
-              placeholder="z. B. Machine Learning, Nachhaltigkeit, Supply Chain"
+              placeholder={t.student.keywordsPlaceholder}
               maxLength={500}
               className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
             />
-            <p className="text-xs text-gray-400 mt-1">Kommagetrennte Schlagwörter, die Ihr Thema beschreiben.</p>
+            <p className="text-xs text-gray-400 mt-1">{t.student.keywordsHint}</p>
           </div>
 
           <div>
@@ -1023,6 +1023,63 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
           </div>
         </div>
       </div>
+
+      {/* ── Persönliche Angaben (auch im Thema-zugeteilt-Modus) ─────────────────────────── */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{t.student.personalSection}</h3>
+
+        {/* Gewählte Vertiefungen im Studium */}
+        <div>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+            {t.student.studySpecializationsLabel}
+            <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          </label>
+          <textarea
+            rows={3}
+            value={(form as any).studySpecializations ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, studySpecializations: e.target.value }))}
+            placeholder={t.student.studySpecializationsPlaceholder}
+            maxLength={1000}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
+          />
+          <p className="text-xs text-gray-400 mt-1">{t.student.studySpecializationsHint}</p>
+        </div>
+
+        {/* Besondere Interessen */}
+        <div>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+            {t.student.personalInterestsLabel}
+            <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          </label>
+          <textarea
+            rows={3}
+            value={(form as any).personalInterests ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, personalInterests: e.target.value }))}
+            placeholder={t.student.personalInterestsPlaceholder}
+            maxLength={1000}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none bg-white"
+          />
+          <p className="text-xs text-gray-400 mt-1">{t.student.personalInterestsHint}</p>
+        </div>
+
+        {/* Schlagwörter */}
+        <div>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+            {t.student.keywordsLabel}
+            <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={(form as any).keywords ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, keywords: e.target.value }))}
+            placeholder={t.student.keywordsPlaceholder}
+            maxLength={500}
+            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+          />
+          <p className="text-xs text-gray-400 mt-1">{t.student.keywordsHint}</p>
+        </div>
+      </div>
+
       <button
         type="submit"
         className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 active:scale-95"
