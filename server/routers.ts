@@ -2718,8 +2718,10 @@ export const appRouter = router({
 
     // Alle Zweitgutachter-Kandidaten (ohne Filter) – zugänglich für Studierende und Prüfer:innen
     getAllSecondExaminerCandidates: protectedProcedure
-      .query(async () => {
-        return getAllSecondExaminerCandidates();
+      .query(async ({ ctx }) => {
+        const all = await getAllSecondExaminerCandidates();
+        // Eingeloggte Person aus der Liste ausschließen
+        return all.filter((c: any) => c.id !== ctx.user.id);
       }),
 
     // Student: Zweitgutachter-Wunsch für eine Anfrage setzen

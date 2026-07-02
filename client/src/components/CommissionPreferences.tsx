@@ -247,8 +247,11 @@ export function CommissionPreferences() {
   // Prefs laden (korrekt via useEffect)
   useEffect(() => {
     if (prefs) {
-      const raw = (prefs as any).preferredSecondExaminerIds ?? (prefs as any).secondExaminerIds ?? [];
-      const ids = Array.isArray(raw) ? raw : [];
+      // prefs ist { secondExaminerIds: number[] }
+      const raw = Array.isArray(prefs)
+        ? prefs
+        : (prefs as any).secondExaminerIds ?? (prefs as any).preferredSecondExaminerIds ?? [];
+      const ids = Array.isArray(raw) ? raw.filter((x: any) => typeof x === "number") : [];
       setSelectedIds(ids);
     }
   }, [prefs]);

@@ -4226,12 +4226,12 @@ export async function getAllSecondExaminerCandidates() {
  */
 export async function getCommissionPreferences(firstExaminerId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return { secondExaminerIds: [] };
   const rows = await db
     .select({ secondExaminerId: examinerCommissionPreferences.secondExaminerId })
     .from(examinerCommissionPreferences)
     .where(eq(examinerCommissionPreferences.firstExaminerId, firstExaminerId));
-  return rows.map(r => r.secondExaminerId);
+  return { secondExaminerIds: rows.map(r => r.secondExaminerId) };
 }
 
 /**
@@ -4291,15 +4291,16 @@ export async function getFilteredSecondExaminers(firstExaminerId: number) {
   const db = await getDb();
   if (!db) return [];
   // Präferenzen des Erstgutachters laden
-  const prefs = await getCommissionPreferences(firstExaminerId);
+  const prefsResult = await getCommissionPreferences(firstExaminerId);
+  const prefIds = prefsResult.secondExaminerIds;
   // Alle Zweitgutachter-Kandidaten laden
   const all = await getAllSecondExaminerCandidates();
-  if (prefs.length === 0) {
+  if (prefIds.length === 0) {
     // Keine Präferenzen → alle anzeigen
     return all;
   }
   // Nur bevorzugte anzeigen
-  return all.filter(e => prefs.includes(e.id));
+  return all.filter(e => prefIds.includes(e.id));
 }
 
 // ─── Nutzerfelder aktualisieren (für Import) ──────────────────────────────────
