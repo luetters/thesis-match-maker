@@ -532,15 +532,18 @@ export const appRouter = router({
         const drizzleDb = await getDb();
         if (!drizzleDb) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbankfehler." });
         const { users } = await import("../drizzle/schema");
+        // Studierende mit @student.htw-berlin.de werden automatisch freigeschaltet
+        const isStudentAutoApprove = input.role === "student" && emailLowerReg.endsWith("@student.htw-berlin.de");
+        const initialRoleStatus = isStudentAutoApprove ? "approved" : "pending";
         await drizzleDb.insert(users).values({
           openId,
           email: input.email.toLowerCase(),
           name: input.name,
           ...(input.firstName ? { firstName: input.firstName } : {}),
           ...(input.lastName ? { lastName: input.lastName } : {}),
-          role: "user" as any,
+          role: isStudentAutoApprove ? "student" as any : "user" as any,
           requestedRole: input.role as any,
-          roleStatus: "pending" as any,
+          roleStatus: initialRoleStatus as any,
           loginMethod: "password",
           passwordHash,
           lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -556,6 +559,25 @@ export const appRouter = router({
         const newUser = await getUserByEmail(input.email);
         if (newUser) {
           await addUserRole(newUser.id, input.role as AppRole);
+          // Bei Auto-Freischaltung (@student.htw-berlin.de): Rolle sofort aktivieren
+          if (isStudentAutoApprove) {
+            try {
+              const db2 = await getDb();
+              if (db2) {
+                const { users: usersTable2 } = await import("../drizzle/schema");
+                const { eq } = await import("drizzle-orm");
+                await db2.update(usersTable2)
+                  .set({
+                    role: "student" as any,
+                    roleStatus: "approved" as any,
+                    requestedRole: null as any,
+                  })
+                  .where(eq(usersTable2.id, newUser.id));
+              }
+            } catch (e) {
+              console.warn("[Register] Auto-Freischaltung fehlgeschlagen:", e);
+            }
+          }
           // Automatische Freischaltung bei gültigem Einladungs-Token
           if (input.inviteToken) {
             try {
@@ -583,39 +605,38 @@ export const appRouter = router({
           actorId: 0,
           metadata: { email: input.email, requestedRole: input.role },
         } as any);
-        // E-Mail an SuperAdmin(s) senden
-        try {
-          const { sendEmail } = await import("./emailHelper");
-          const { getSuperadminEmails } = await import("./db");
-          const superadminEmails = await getSuperadminEmails();
-          const roleLabels: Record<string, string> = {
-            student: "Studierende:r",
-            examiner: "Prüfer:in (Erstprüfer:in)",
-            second_examiner: "Zweitprüfer:in",
-            admin: "Verwaltung",
-          };
-          const roleLabel = roleLabels[input.role] ?? input.role;
-          const siteOrigin = input.origin ?? "https://thesis.htw-berlin.com";
-          const adminUrl = `${siteOrigin}/admin`;
-          const logoUrl = `${siteOrigin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
-          for (const adminEmail of superadminEmails) {
-            await sendEmail({
-              to: adminEmail,
-              subject: `[HTW Berlin Thesis Match Maker] Neue Registrierung: ${input.name} (${roleLabel})`,
-              html: `<!DOCTYPE html>
+        // E-Mail an SuperAdmin(s) senden – nur bei manuell zu prüfenden Registrierungen
+        if (!isStudentAutoApprove) {
+          try {
+            const { sendEmail } = await import("./emailHelper");
+            const { getSuperadminEmails } = await import("./db");
+            const superadminEmails = await getSuperadminEmails();
+            const roleLabels: Record<string, string> = {
+              student: "Studierende:r",
+              examiner: "Prüfer:in (Erstprüfer:in)",
+              second_examiner: "Zweitprüfer:in",
+              admin: "Verwaltung",
+            };
+            const roleLabel = roleLabels[input.role] ?? input.role;
+            const siteOrigin = input.origin ?? "https://thesis.htw-berlin.com";
+            const adminUrl = `${siteOrigin}/admin`;
+            const logoUrl = `${siteOrigin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
+            for (const adminEmail of superadminEmails) {
+              await sendEmail({
+                to: adminEmail,
+                subject: `[HTW Berlin Thesis Match Maker] Neue Registrierung: ${input.name} (${roleLabel})`,
+                html: `<!DOCTYPE html>
 <html lang="de">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
   <tr><td align="center">
     <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-      <!-- Header -->
       <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
         <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
         <span style="color:#ffffff;font-size:18px;font-weight:bold;letter-spacing:0.5px">Thesis Match Maker</span><br>
         <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Fachbereich 3</span>
       </td></tr>
-      <!-- Body -->
       <tr><td style="padding:32px">
         <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Neue Registrierung wartet auf Freischaltung</h2>
         <p style="color:#374151;font-size:14px;margin:0 0 20px 0">Eine neue Person hat sich registriert und wartet auf Ihre Freischaltung:</p>
@@ -629,17 +650,18 @@ export const appRouter = router({
           <a href="${adminUrl}" style="background:#76B900;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;font-weight:bold">Zum Admin-Dashboard</a>
         </p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
-        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">⚠️ <strong>Hinweis:</strong> Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde. Diese Nachricht wurde automatisch generiert &ndash; bitte antworten Sie nicht direkt auf diese E-Mail.</p>
+        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">⚠️ <strong>Hinweis:</strong> Diese Nachricht wurde automatisch generiert.</p>
       </td></tr>
     </table>
   </td></tr>
 </table>
 </body></html>`,
-              text: `Neue Registrierung wartet auf Freischaltung\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\nBitte melden Sie sich im Admin-Dashboard an:\n${adminUrl}\n\nHinweis: Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde.`,
-            });
+                text: `Neue Registrierung wartet auf Freischaltung\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\nBitte melden Sie sich im Admin-Dashboard an:\n${adminUrl}`,
+              });
+            }
+          } catch (emailErr) {
+            console.warn("[Register] SuperAdmin-E-Mail konnte nicht gesendet werden:", emailErr);
           }
-        } catch (emailErr) {
-          console.warn("[Register] SuperAdmin-E-Mail konnte nicht gesendet werden:", emailErr);
         }
         return { success: true };
       }),

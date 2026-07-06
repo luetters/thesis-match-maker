@@ -829,7 +829,11 @@ export default function Login() {
                           ? L.emailDomainSecondExaminer
                           : L.emailDomainExaminer}
                       </p>
-                      <p>{L.pendingApproval}</p>
+                      <p>
+                        {selectedRole === "student"
+                          ? (L.studentAutoApproval ?? "✅ Studierende mit @student.htw-berlin.de werden sofort freigeschaltet und können sich direkt nach der Registrierung anmelden.")
+                          : L.pendingApproval}
+                      </p>
                     </div>
                     <Button
                       type="submit"

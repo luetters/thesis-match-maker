@@ -1096,3 +1096,14 @@
 - [x] Tests grün (61/61), Checkpoint gespeichert
 
 Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schlagwörter selbst ein.
+
+## Feature: Auto-Freischaltung für Studierende (@student.htw-berlin.de) ✅ KOMPLETT
+
+- [x] Backend: Bei Registrierung mit Rolle "student" und @student.htw-berlin.de → roleStatus sofort "approved", role = "student"
+- [x] Backend: SuperAdmin-Benachrichtigungs-E-Mail nur noch bei manuell zu prüfenden Registrierungen (Prüfer:innen, Verwaltung)
+- [x] Backend: Login-Prüfung bleibt unverändert (roleStatus "approved" erforderlich)
+- [x] Frontend: Hinweistext im Registrierungsformular für Studierende angepasst ("sofort freigeschaltet")
+- [x] Frontend: createAccountDesc zeigt differenzierte Info für Studierende vs. andere Rollen
+- [x] Frontend: registrationSubmittedDesc für Studierende angepasst ("sofort aktiv, jetzt anmelden")
+- [x] Übersetzungen (DE + EN) für studentAutoApproval-Schlüssel
+- [x] Tests grün (61/61), Checkpoint gespeichert
