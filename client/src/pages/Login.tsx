@@ -177,8 +177,28 @@ export default function Login() {
   });
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
-      setRegistered(true);
+    onSuccess: (data) => {
+      // Studierende werden automatisch freigeschaltet – direkt einloggen
+      const role = selectedRole ?? "student";
+      if (role === "student" && (data as any)?.autoApproved) {
+        // Auto-Login: E-Mail + Passwort direkt verwenden
+        loginMutation.mutate(
+          { email: regEmail.trim(), password: regPassword },
+          {
+            onSuccess: (loginData) => {
+              const roles: string[] = (loginData as any).roles?.length ? (loginData as any).roles : [loginData.role];
+              const target = roles.includes("student") ? "/student?welcome=1" : "/";
+              setLocation(target);
+            },
+            onError: () => {
+              // Fallback: Zur Login-Seite mit Hinweis
+              setRegistered(true);
+            },
+          }
+        );
+      } else {
+        setRegistered(true);
+      }
     },
     onError: (error) => {
       toast.error(error.message ?? L.registerFailed);

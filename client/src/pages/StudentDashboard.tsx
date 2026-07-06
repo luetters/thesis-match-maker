@@ -2263,8 +2263,55 @@ function FavoritesList() {
   );
 }
 
+function WelcomeBanner({ onDismiss }: { onDismiss: () => void }) {
+  const { t } = useLanguage();
+  const steps = [
+    { icon: "\uD83D\uDD0D", title: t.student.welcomeStep1Title, desc: t.student.welcomeStep1Desc },
+    { icon: "\uD83D\uDCDD", title: t.student.welcomeStep2Title, desc: t.student.welcomeStep2Desc },
+    { icon: "\uD83D\uDD14", title: t.student.welcomeStep3Title, desc: t.student.welcomeStep3Desc },
+  ];
+  return (
+    <div className="mb-6 bg-gradient-to-br from-[#76b900]/10 to-[#5a8f00]/5 border border-[#76b900]/30 rounded-2xl p-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">\uD83C\uDF89</span>
+            <h2 className="text-lg font-bold text-gray-900">{t.student.welcomeNewTitle}</h2>
+          </div>
+          <p className="text-sm text-gray-600">{t.student.welcomeNewDesc}</p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-gray-400 hover:text-gray-600 transition-colors mt-1 shrink-0"
+          aria-label="Schlie\xDFen"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        {steps.map((step, i) => (
+          <div key={i} className="bg-white rounded-xl p-4 border border-[#76b900]/20 shadow-sm">
+            <div className="text-2xl mb-2">{step.icon}</div>
+            <h3 className="font-semibold text-gray-900 text-sm mb-1">{step.title}</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">{step.desc}</p>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={onDismiss}
+        className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-semibold text-sm text-white transition-colors"
+        style={{ backgroundColor: "#76b900" }}
+      >
+        {t.student.welcomeDismiss}
+      </button>
+    </div>
+  );
+}
+
 export default function StudentDashboard() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   // URL-Parameter ?examiner=<id> auslesen (von Prüfer:innen-Profil-Button)
   const preselectExaminerId = (() => {
     try {
@@ -2272,6 +2319,11 @@ export default function StudentDashboard() {
       return parseInt(params.get("examiner") ?? "0", 10) || 0;
     } catch { return 0; }
   })();
+  // ?welcome=1 erkennen (nach Registrierung)
+  const isNewUser = (() => {
+    try { return new URLSearchParams(window.location.search).get("welcome") === "1"; } catch { return false; }
+  })();
+  const [showWelcome, setShowWelcome] = useState(isNewUser);
   const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history" | "favorites" | "profile">(
     location.startsWith("/student/new") || preselectExaminerId > 0 ? "new" :
     location === "/student/examiners" ? "examiners" :
@@ -2349,7 +2401,20 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
-      {activeTab === "requests" && <MyRequests />}
+      {activeTab === "requests" && (
+        <div>
+          {showWelcome && (
+            <WelcomeBanner onDismiss={() => {
+              setShowWelcome(false);
+              // ?welcome=1 aus URL entfernen ohne Seiten-Reload
+              const url = new URL(window.location.href);
+              url.searchParams.delete("welcome");
+              window.history.replaceState({}, "", url.pathname + (url.search || ""));
+            }} />
+          )}
+          <MyRequests />
+        </div>
+      )}
       {activeTab === "examiners" && (
         <div>
           <div className="mb-5">

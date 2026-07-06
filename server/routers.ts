@@ -658,7 +658,7 @@ export const appRouter = router({
             console.warn("[Register] SuperAdmin-E-Mail konnte nicht gesendet werden:", emailErr);
           }
         }
-        return { success: true };
+        return { success: true, autoApproved: isStudentAutoApprove };
       }),
     loginWithPassword: publicProcedure
       .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
