@@ -502,12 +502,7 @@ export const appRouter = router({
         const emailLowerReg = input.email.toLowerCase();
         const isHtwEmail = emailLowerReg.endsWith("@htw-berlin.de") || emailLowerReg.endsWith("@htw-berlin.com") || emailLowerReg.endsWith("@student.htw-berlin.de");
         if (input.role === "student") {
-          // TODO: @htw-berlin.com und @htw-berlin.de nur zu Testzwecken erlaubt – später wieder entfernen
-          const isStudentDomain =
-            emailLowerReg.endsWith("@student.htw-berlin.de") ||
-            emailLowerReg.endsWith("@htw-berlin.com") ||
-            emailLowerReg.endsWith("@htw-berlin.de");
-          if (!isStudentDomain) {
+          if (!emailLowerReg.endsWith("@student.htw-berlin.de")) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.",

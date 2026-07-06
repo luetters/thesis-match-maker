@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,6 +104,36 @@ export default function Login() {
   const [regMatrikelNr, setRegMatrikelNr] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [regEmailTouched, setRegEmailTouched] = useState(false);
+  // Bei Rollenwechsel E-Mail-Touched zurücksetzen
+  const prevSelectedRole = useRef(selectedRole);
+  if (prevSelectedRole.current !== selectedRole) {
+    prevSelectedRole.current = selectedRole;
+    // Fehlermeldung zurücksetzen wenn Rolle wechselt und E-Mail noch nicht passt
+    // (wird im nächsten Render neu berechnet)
+  }
+
+  // Echtzeit-E-Mail-Domain-Validierung
+  const regEmailLower = regEmail.trim().toLowerCase();
+  const regEmailError: string | null = (() => {
+    if (!regEmailTouched || !regEmailLower) return null;
+    const role = selectedRole ?? "student";
+    if (role === "student") {
+      if (!regEmailLower.endsWith("@student.htw-berlin.de")) {
+        return L.emailDomainErrorStudent ?? "Bitte verwenden Sie Ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de).";
+      }
+    } else if (role === "examiner") {
+      if (!regEmailLower.endsWith("@htw-berlin.de") && !regEmailLower.endsWith("@htw-berlin.com")) {
+        return L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).";
+      }
+    } else if (role === "admin") {
+      if (!regEmailLower.endsWith("@htw-berlin.de") && !regEmailLower.endsWith("@htw-berlin.com")) {
+        return L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).";
+      }
+    }
+    return null;
+  })();
+
   // Studiengang-Auswahl bei Registrierung (nur Studierende)
   const [regDegreeType, setRegDegreeType] = useState<"bachelor" | "master">("bachelor");
   const [regFachbereich, setRegFachbereich] = useState("FB3");
@@ -195,16 +225,17 @@ export default function Login() {
       toast.error(L.passwordTooShort);
       return;
     }
+    setRegEmailTouched(true);
     const emailLower = regEmail.trim().toLowerCase();
     const role = selectedRole ?? "student";
     if (role === "student") {
-      if (!emailLower.endsWith("@student.htw-berlin.de") && !emailLower.endsWith("@htw-berlin.de")) {
-        toast.error(L.emailDomainErrorStudent);
+      if (!emailLower.endsWith("@student.htw-berlin.de")) {
+        toast.error(L.emailDomainErrorStudent ?? "Bitte verwenden Sie Ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de).");
         return;
       }
     } else if (role === "examiner" || role === "admin") {
       if (!emailLower.endsWith("@htw-berlin.de") && !emailLower.endsWith("@htw-berlin.com")) {
-        toast.error(L.emailDomainErrorExaminer);
+        toast.error(L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).");
         return;
       }
     }
@@ -766,12 +797,25 @@ export default function Login() {
                               : L.emailPlaceholderExaminer
                           }
                           value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
+                          onChange={(e) => { setRegEmail(e.target.value); setRegEmailTouched(true); }}
+                          onBlur={() => setRegEmailTouched(true)}
                           required
                           autoComplete="email"
-                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                          className={`pl-10 bg-white/5 text-white placeholder:text-white/25 focus:ring-[#76b900]/20 ${
+                            regEmailError
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-white/10 focus:border-[#76b900]"
+                          }`}
                         />
                       </div>
+                      {regEmailError && (
+                        <div className="flex items-start gap-2 mt-1 px-1">
+                          <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                          </svg>
+                          <p className="text-red-400 text-xs leading-snug">{regEmailError}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
@@ -842,6 +886,7 @@ export default function Login() {
                         !regFirstName.trim() ||
                         !regLastName.trim() ||
                         !regEmail.trim() ||
+                        !!regEmailError ||
                         !regPassword ||
                         !regPasswordConfirm ||
                         ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) ||
