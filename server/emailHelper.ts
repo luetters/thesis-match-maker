@@ -16,18 +16,34 @@ function replacePlaceholders(template: string, vars: Record<string, string>): st
  */
 async function loadTemplate(
   key: string,
-  vars: Record<string, string>
+  vars: Record<string, string>,
+  lang?: "de" | "en"
 ): Promise<{ subject: string; html: string; text: string } | null> {
   try {
     const tpl = await getEmailTemplateByKey(key);
     if (!tpl) return null;
+    // Sprachspezifische Felder bevorzugen, Fallback auf generische Felder
+    const subject = lang === "de" && tpl.subjectDe
+      ? tpl.subjectDe
+      : lang === "en" && tpl.subjectEn
+      ? tpl.subjectEn
+      : tpl.subject;
+    const html = lang === "de" && tpl.htmlBodyDe
+      ? tpl.htmlBodyDe
+      : lang === "en" && tpl.htmlBodyEn
+      ? tpl.htmlBodyEn
+      : tpl.htmlBody;
+    const text = lang === "de" && tpl.textBodyDe
+      ? tpl.textBodyDe
+      : lang === "en" && tpl.textBodyEn
+      ? tpl.textBodyEn
+      : tpl.textBody;
     return {
-      subject: replacePlaceholders(tpl.subject, vars),
-      html: replacePlaceholders(tpl.htmlBody, vars),
-      text: replacePlaceholders(tpl.textBody, vars),
+      subject: replacePlaceholders(subject, vars),
+      html: replacePlaceholders(html, vars),
+      text: replacePlaceholders(text, vars),
     };
   } catch {
-    // Bei DB-Fehler Fallback auf hartkodierten Text
     return null;
   }
 }
@@ -200,6 +216,7 @@ export async function sendExaminerCTAEmail({
   department,
   acceptUrl,
   rejectUrl,
+  lang,
 }: {
   to: string;
   examinerName: string;
@@ -208,6 +225,7 @@ export async function sendExaminerCTAEmail({
   department: string;
   acceptUrl: string;
   rejectUrl: string;
+  lang?: "de" | "en";
 }): Promise<boolean> {
   const config = getTransporter();
   if (!config) return false;
@@ -224,7 +242,7 @@ export async function sendExaminerCTAEmail({
   };
 
   // DB-Vorlage laden (Fallback auf hartkodierten Text)
-  const tpl = await loadTemplate("examiner_proposal", vars);
+  const tpl = await loadTemplate("examiner_proposal", vars, lang);
 
   const subject = tpl?.subject ?? `Betreuungsanfrage: ${thesisTitle}`;
   const html = tpl?.html ?? buildEmailHtml({
@@ -274,6 +292,7 @@ export async function sendStatusChangeEmail({
   newStatus,
   reason,
   dashboardUrl,
+  lang,
 }: {
   to: string;
   studentName: string;
@@ -281,6 +300,7 @@ export async function sendStatusChangeEmail({
   newStatus: "ACCEPTED" | "REJECTED" | "MATCHED";
   reason?: string;
   dashboardUrl: string;
+  lang?: "de" | "en";
 }): Promise<boolean> {
   const config = getTransporter();
   if (!config) return false;
@@ -303,7 +323,7 @@ export async function sendStatusChangeEmail({
   };
 
   // DB-Vorlage laden (Fallback auf hartkodierten Text)
-  const tpl = await loadTemplate("status_change", vars);
+  const tpl = await loadTemplate("status_change", vars, lang);
 
   const subject = tpl?.subject ?? `Thesis Match: Status geändert – ${statusInfo.label}`;
   const html = tpl?.html ?? buildEmailHtml({

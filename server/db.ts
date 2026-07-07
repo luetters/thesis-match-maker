@@ -1660,7 +1660,11 @@ export async function getEmailTemplateByKey(key: string) {
 }
 export async function updateEmailTemplate(
   key: string,
-  data: { subject?: string; htmlBody?: string; textBody?: string },
+  data: {
+    subject?: string; htmlBody?: string; textBody?: string;
+    subjectDe?: string; htmlBodyDe?: string; textBodyDe?: string;
+    subjectEn?: string; htmlBodyEn?: string; textBodyEn?: string;
+  },
   updatedByUserId?: number
 ) {
   const db = await getDb();
@@ -1669,6 +1673,12 @@ export async function updateEmailTemplate(
   if (data.subject !== undefined) update.subject = data.subject;
   if (data.htmlBody !== undefined) update.htmlBody = data.htmlBody;
   if (data.textBody !== undefined) update.textBody = data.textBody;
+  if (data.subjectDe !== undefined) update.subjectDe = data.subjectDe;
+  if (data.htmlBodyDe !== undefined) update.htmlBodyDe = data.htmlBodyDe;
+  if (data.textBodyDe !== undefined) update.textBodyDe = data.textBodyDe;
+  if (data.subjectEn !== undefined) update.subjectEn = data.subjectEn;
+  if (data.htmlBodyEn !== undefined) update.htmlBodyEn = data.htmlBodyEn;
+  if (data.textBodyEn !== undefined) update.textBodyEn = data.textBodyEn;
   if (updatedByUserId !== undefined) update.updatedByUserId = updatedByUserId;
   await db.update(emailTemplates).set(update).where(eq(emailTemplates.key, key));
 }

@@ -2189,6 +2189,7 @@ export const appRouter = router({
           examinerId: z.number().int().positive(),
           examinerRole: z.enum(["first", "second"]),
           origin: z.string().url(),
+          emailLang: z.enum(["de", "en"]).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -2210,13 +2211,14 @@ export const appRouter = router({
           actionToken: token,
           emailSentAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
         });
-        // E-Mail an Prüfer:in (zweisprachig)
+        // E-Mail an Prüfer:in
         const examinerEmail = await resolveExaminerEmail(input.examinerId);
         const thesis = await getThesisRequestById(input.thesisRequestId);
         if (examinerEmail && thesis) {
           const { sendEmail } = await import("./emailHelper");
           const examinerUser = await getUserById(input.examinerId);
-          const examinerLang: Lang = (examinerUser?.preferredLanguage as Lang) ?? "de";
+          // Sprachauswahl: manuell gewählt > Präferenz des Empfängers > Fallback DE
+          const lang: Lang = input.emailLang ?? (examinerUser?.preferredLanguage as Lang) ?? "de";
           const acceptUrl = `${input.origin}/pav/respond?token=${token}&action=accept`;
           const declineUrl = `${input.origin}/pav/respond?token=${token}&action=decline`;
           const tpl = examinerRequestEmail({
@@ -2225,6 +2227,7 @@ export const appRouter = router({
             thesisTitle: thesis.title ?? "Abschlussarbeit",
             acceptUrl,
             declineUrl,
+            lang,
           });
           await sendEmail({ to: examinerEmail, subject: tpl.subject, html: tpl.html });
         }
@@ -2548,18 +2551,28 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getEmailTemplateByKey(input.key);
       }),
-    /** Vorlage aktualisieren */
+    /** Vorlage aktualisieren (inkl. DE/EN-Versionen) */
     update: adminProcedure
       .input(z.object({
         key: z.string(),
         subject: z.string().optional(),
         htmlBody: z.string().optional(),
         textBody: z.string().optional(),
+        subjectDe: z.string().optional(),
+        htmlBodyDe: z.string().optional(),
+        textBodyDe: z.string().optional(),
+        subjectEn: z.string().optional(),
+        htmlBodyEn: z.string().optional(),
+        textBodyEn: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         await updateEmailTemplate(
           input.key,
-          { subject: input.subject, htmlBody: input.htmlBody, textBody: input.textBody },
+          {
+            subject: input.subject, htmlBody: input.htmlBody, textBody: input.textBody,
+            subjectDe: input.subjectDe, htmlBodyDe: input.htmlBodyDe, textBodyDe: input.textBodyDe,
+            subjectEn: input.subjectEn, htmlBodyEn: input.htmlBodyEn, textBodyEn: input.textBodyEn,
+          },
           ctx.user.id
         );
         return { success: true };

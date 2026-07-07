@@ -35,9 +35,18 @@ export const emailTemplates = mysqlTable("email_templates", {
 	id: int().autoincrement().notNull(),
 	key: varchar({ length: 64 }).notNull(),
 	label: varchar({ length: 128 }).notNull(),
+	// Sprachunabhängiger Fallback (Legacy)
 	subject: varchar({ length: 255 }).notNull(),
 	htmlBody: text("html_body").notNull(),
 	textBody: text("text_body").notNull(),
+	// Deutsch
+	subjectDe: varchar("subject_de", { length: 255 }),
+	htmlBodyDe: text("html_body_de"),
+	textBodyDe: text("text_body_de"),
+	// Englisch
+	subjectEn: varchar("subject_en", { length: 255 }),
+	htmlBodyEn: text("html_body_en"),
+	textBodyEn: text("text_body_en"),
 	placeholders: text(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	updatedByUserId: int("updated_by_user_id"),

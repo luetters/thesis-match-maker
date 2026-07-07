@@ -61,10 +61,16 @@ export function examinerRequestEmail(opts: {
   semester?: string | null;
   acceptUrl?: string;
   declineUrl?: string;
+  lang?: Lang;
 }): { subject: string; html: string } {
   const roleDE = opts.role === "first" ? "Erstprüfer:in" : "Zweitprüfer:in";
   const roleEN = opts.role === "first" ? "first examiner" : "second examiner";
-  const subject = `HTW Berlin – Anfrage als ${roleDE} / Request as ${roleEN}: ${opts.thesisTitle}`;
+  // Betreff je nach Sprache
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Request as ${roleEN}: ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Anfrage als ${roleDE}: ${opts.thesisTitle}`
+    : `HTW Berlin – Anfrage als ${roleDE} / Request as ${roleEN}: ${opts.thesisTitle}`;
 
   const ctaDE = opts.acceptUrl && opts.declineUrl ? `
     <p style="margin:20px 0 12px 0">
@@ -77,7 +83,34 @@ export function examinerRequestEmail(opts: {
       <a href="${opts.declineUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
     </p>` : "";
 
-  const body = `
+  let body: string;
+  if (opts.lang === "en") {
+    body = `
+    ${p(`Dear ${opts.examinerName ?? "Examiner"},`)}
+    ${p(`The examination committee has proposed you as ${strong(roleEN)} for the following thesis:`)}
+    ${p(`${strong("Title:")} ${opts.thesisTitle}`)}
+    ${opts.studentName ? p(`${strong("Student:")} ${opts.studentName}`) : ""}
+    ${opts.studiengang ? p(`${strong("Programme:")} ${opts.studiengang}`) : ""}
+    ${opts.semester ? p(`${strong("Semester:")} ${opts.semester}`) : ""}
+    ${p("Please accept or decline the request:")}
+    ${ctaEN}
+    ${p("Kind regards,<br>HTW Berlin – Examination Committee")}
+  `;
+  } else if (opts.lang === "de") {
+    body = `
+    ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
+    ${p(`Der Prüfungsausschuss hat Sie als ${strong(roleDE)} für folgende Abschlussarbeit vorgeschlagen:`)}
+    ${p(`${strong("Thema:")} ${opts.thesisTitle}`)}
+    ${opts.studentName ? p(`${strong("Studierende:r:")} ${opts.studentName}`) : ""}
+    ${opts.studiengang ? p(`${strong("Studiengang:")} ${opts.studiengang}`) : ""}
+    ${opts.semester ? p(`${strong("Semester:")} ${opts.semester}`) : ""}
+    ${p("Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:")}
+    ${ctaDE}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsausschuss")}
+  `;
+  } else {
+    // Kein lang angegeben: zweisprachig (Legacy-Verhalten)
+    body = `
     ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
     ${p(`Der Prüfungsausschuss hat Sie als ${strong(roleDE)} für folgende Abschlussarbeit vorgeschlagen:`)}
     ${p(`${strong("Thema:")} ${opts.thesisTitle}`)}
@@ -100,6 +133,7 @@ export function examinerRequestEmail(opts: {
     ${ctaEN}
     ${p("Kind regards,<br>HTW Berlin – Examination Committee")}
   `;
+  }
 
   return { subject, html: htmlWrapper(body) };
 }

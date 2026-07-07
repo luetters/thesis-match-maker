@@ -931,6 +931,7 @@ function ProposeDialog({
   const utils = trpc.useUtils();
   const [examinerId, setExaminerId] = useState<number | "">("");
   const [examinerRole, setExaminerRole] = useState<ExaminerRole>("first");
+  const [emailLang, setEmailLang] = useState<"de" | "en">("de");
 
   const { data: examiners } = trpc.examiner.list.useQuery();
   const propose = trpc.pav.proposeExaminer.useMutation({
@@ -987,6 +988,28 @@ function ProposeDialog({
                 ))}
             </select>
           </div>
+          {/* Sprach-Picker */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sprache der E-Mail</label>
+            <div className="flex gap-2">
+              {(["de", "en"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setEmailLang(l)}
+                  className={`flex items-center gap-1.5 flex-1 py-2 rounded-xl text-sm font-medium border transition-all ${
+                    emailLang === l
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <span>{l === "de" ? "🇩🇪" : "🇬🇧"}</span>
+                  <span>{l === "de" ? "Deutsch" : "English"}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Die Anfrage-E-Mail wird in der gewählten Sprache versendet.</p>
+          </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
@@ -996,7 +1019,7 @@ function ProposeDialog({
             disabled={!examinerId || propose.isPending}
             onClick={() => {
               if (!examinerId) return;
-              propose.mutate({ thesisRequestId, examinerId: Number(examinerId), examinerRole, origin: window.location.origin });
+              propose.mutate({ thesisRequestId, examinerId: Number(examinerId), examinerRole, origin: window.location.origin, emailLang });
             }}
             className="flex-1 py-2.5 rounded-xl bg-[#76B900] text-white text-sm font-medium hover:bg-[var(--primary)] disabled:opacity-50 transition-colors"
           >

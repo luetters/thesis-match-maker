@@ -15,6 +15,20 @@ const PLACEHOLDER_COLORS: Record<string, string> = {
   "{{recipientName}}": "bg-blue-100 text-blue-700",
 };
 
+type Lang = "de" | "en";
+
+interface EditForm {
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+  subjectDe: string;
+  htmlBodyDe: string;
+  textBodyDe: string;
+  subjectEn: string;
+  htmlBodyEn: string;
+  textBodyEn: string;
+}
+
 export function EmailTemplatesTab() {
   const { data: templates, isLoading, refetch } = trpc.emailTemplates.getAll.useQuery();
   const updateMutation = trpc.emailTemplates.update.useMutation({
@@ -28,12 +42,11 @@ export function EmailTemplatesTab() {
   });
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{
-    subject: string;
-    htmlBody: string;
-    textBody: string;
-  } | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "error" | null>(null);
+  // Aktive Sprach-Tab im Editor (DE oder EN)
+  const [activeLang, setActiveLang] = useState<Lang>("de");
+  // Vorschau-Modus (HTML oder Text)
   const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
 
   function startEdit(t: {
@@ -41,9 +54,27 @@ export function EmailTemplatesTab() {
     subject: string;
     htmlBody: string;
     textBody: string;
+    subjectDe?: string | null;
+    htmlBodyDe?: string | null;
+    textBodyDe?: string | null;
+    subjectEn?: string | null;
+    htmlBodyEn?: string | null;
+    textBodyEn?: string | null;
   }) {
     setEditingKey(t.key);
-    setEditForm({ subject: t.subject, htmlBody: t.htmlBody, textBody: t.textBody });
+    setEditForm({
+      subject: t.subject,
+      htmlBody: t.htmlBody,
+      textBody: t.textBody,
+      subjectDe: t.subjectDe ?? t.subject,
+      htmlBodyDe: t.htmlBodyDe ?? t.htmlBody,
+      textBodyDe: t.textBodyDe ?? t.textBody,
+      subjectEn: t.subjectEn ?? "",
+      htmlBodyEn: t.htmlBodyEn ?? "",
+      textBodyEn: t.textBodyEn ?? "",
+    });
+    setActiveLang("de");
+    setPreviewMode("html");
     setSaveStatus(null);
   }
 
@@ -58,10 +89,40 @@ export function EmailTemplatesTab() {
     setSaveStatus("saving");
     updateMutation.mutate({
       key: editingKey,
-      subject: editForm.subject,
-      htmlBody: editForm.htmlBody,
-      textBody: editForm.textBody,
+      subject: editForm.subjectDe || editForm.subject,
+      htmlBody: editForm.htmlBodyDe || editForm.htmlBody,
+      textBody: editForm.textBodyDe || editForm.textBody,
+      subjectDe: editForm.subjectDe,
+      htmlBodyDe: editForm.htmlBodyDe,
+      textBodyDe: editForm.textBodyDe,
+      subjectEn: editForm.subjectEn,
+      htmlBodyEn: editForm.htmlBodyEn,
+      textBodyEn: editForm.textBodyEn,
     });
+  }
+
+  function updateField(lang: Lang, field: "subject" | "htmlBody" | "textBody", value: string) {
+    if (!editForm) return;
+    if (lang === "de") {
+      const key = field === "subject" ? "subjectDe" : field === "htmlBody" ? "htmlBodyDe" : "textBodyDe";
+      setEditForm((f) => f ? { ...f, [key]: value } : f);
+    } else {
+      const key = field === "subject" ? "subjectEn" : field === "htmlBody" ? "htmlBodyEn" : "textBodyEn";
+      setEditForm((f) => f ? { ...f, [key]: value } : f);
+    }
+  }
+
+  function getCurrentSubject() {
+    if (!editForm) return "";
+    return activeLang === "de" ? editForm.subjectDe : editForm.subjectEn;
+  }
+  function getCurrentHtmlBody() {
+    if (!editForm) return "";
+    return activeLang === "de" ? editForm.htmlBodyDe : editForm.htmlBodyEn;
+  }
+  function getCurrentTextBody() {
+    if (!editForm) return "";
+    return activeLang === "de" ? editForm.textBodyDe : editForm.textBodyEn;
   }
 
   if (isLoading) {
@@ -93,7 +154,8 @@ export function EmailTemplatesTab() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">E-Mail-Vorlagen</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Betreff und Inhalt der automatischen E-Mails anpassen. Platzhalter werden beim Versand durch echte Werte ersetzt.
+            Jede Vorlage kann in <strong>Deutsch</strong> und <strong>Englisch</strong> gepflegt werden.
+            Die Sprachauswahl kann vor dem Versenden noch geändert werden.
           </p>
         </div>
       </div>
@@ -101,47 +163,65 @@ export function EmailTemplatesTab() {
       {/* Vorlagen-Liste */}
       {!editingKey && (
         <div className="grid gap-3">
-          {templates.map((t) => (
-            <div
-              key={t.key}
-              className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">✉️</span>
-                    <h3 className="font-semibold text-gray-900 text-sm truncate">{t.label}</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-1">
-                    <span className="font-medium text-gray-700">Betreff:</span> {t.subject}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Zuletzt geändert: {new Date(t.updatedAt).toLocaleString("de-DE")}
-                  </p>
-                  {t.placeholders && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {(JSON.parse(t.placeholders) as string[]).map((p) => (
-                        <span
-                          key={p}
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono ${
-                            PLACEHOLDER_COLORS[p] ?? "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {p}
-                        </span>
-                      ))}
+          {templates.map((t) => {
+            const hasDe = !!(t as { subjectDe?: string | null }).subjectDe;
+            const hasEn = !!(t as { subjectEn?: string | null }).subjectEn;
+            return (
+              <div
+                key={t.key}
+                className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">✉️</span>
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">{t.label}</h3>
+                      {/* Sprachstatus-Badges */}
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${hasDe ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+                        🇩🇪 DE
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${hasEn ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-400"}`}>
+                        🇬🇧 EN
+                      </span>
                     </div>
-                  )}
+                    <p className="text-xs text-gray-500 mb-1">
+                      <span className="font-medium text-gray-700">Betreff (DE):</span>{" "}
+                      {(t as { subjectDe?: string | null }).subjectDe || t.subject}
+                    </p>
+                    {(t as { subjectEn?: string | null }).subjectEn && (
+                      <p className="text-xs text-gray-400 mb-1">
+                        <span className="font-medium text-gray-500">Subject (EN):</span>{" "}
+                        {(t as { subjectEn?: string | null }).subjectEn}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      Zuletzt geändert: {new Date(t.updatedAt).toLocaleString("de-DE")}
+                    </p>
+                    {t.placeholders && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(JSON.parse(t.placeholders) as string[]).map((p) => (
+                          <span
+                            key={p}
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono ${
+                              PLACEHOLDER_COLORS[p] ?? "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => startEdit(t as Parameters<typeof startEdit>[0])}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#76B900] text-white text-xs font-medium hover:bg-[var(--primary)] transition-colors"
+                  >
+                    Bearbeiten
+                  </button>
                 </div>
-                <button
-                  onClick={() => startEdit(t)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#76B900] text-white text-xs font-medium hover:bg-[var(--primary)] transition-colors"
-                >
-                  Bearbeiten
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -204,77 +284,140 @@ export function EmailTemplatesTab() {
               </div>
             )}
 
-            {/* Betreff */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Betreff</label>
-              <input
-                type="text"
-                value={editForm.subject}
-                onChange={(e) => setEditForm((f) => f ? { ...f, subject: e.target.value } : f)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {/* HTML-Body / Text-Body Tabs */}
-            <div>
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit mb-2">
+            {/* ── Sprach-Tabs ── */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              {/* Tab-Leiste */}
+              <div className="flex border-b border-gray-200 bg-gray-50">
                 <button
                   type="button"
-                  onClick={() => setPreviewMode("html")}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    previewMode === "html"
-                      ? "bg-white shadow text-gray-900"
-                      : "text-gray-500 hover:text-gray-700"
+                  onClick={() => setActiveLang("de")}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    activeLang === "de"
+                      ? "border-[#76B900] text-[#006937] bg-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  HTML-Version
+                  <span>🇩🇪</span>
+                  <span>Deutsch</span>
+                  {editForm.subjectDe && (
+                    <span className="w-2 h-2 rounded-full bg-green-500" title="Inhalt vorhanden" />
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPreviewMode("text")}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    previewMode === "text"
-                      ? "bg-white shadow text-gray-900"
-                      : "text-gray-500 hover:text-gray-700"
+                  onClick={() => setActiveLang("en")}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    activeLang === "en"
+                      ? "border-blue-500 text-blue-700 bg-white"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  Text-Version
+                  <span>🇬🇧</span>
+                  <span>English</span>
+                  {editForm.subjectEn && (
+                    <span className="w-2 h-2 rounded-full bg-blue-500" title="Content available" />
+                  )}
                 </button>
+                <div className="flex-1" />
+                <div className="flex items-center gap-1 px-3">
+                  <span className="text-xs text-gray-400">
+                    {activeLang === "de"
+                      ? "Deutsche Version – wird an Empfänger:innen mit DE-Präferenz gesendet"
+                      : "English version – sent to recipients with EN preference"}
+                  </span>
+                </div>
               </div>
 
-              {previewMode === "html" ? (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    HTML-Inhalt
-                    <span className="ml-1 text-gray-400 font-normal text-xs">(WYSIWYG-Editor – kein HTML-Wissen erforderlich)</span>
-                  </label>
-                  <RichTextEditor
-                    value={editForm.htmlBody}
-                    onChange={(html) =>
-                      setEditForm((f) => f ? { ...f, htmlBody: html } : f)
-                    }
-                  />
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    Platzhalter wie <code className="bg-gray-100 px-1 rounded">{'{{userName}}'}</code> können direkt in den Text eingefügt werden und werden beim Versand automatisch ersetzt.
-                  </p>
-                </div>
-              ) : (
+              {/* Tab-Inhalt */}
+              <div className="p-5 space-y-4">
+                {/* Betreff */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Text-Inhalt{" "}
-                    <span className="text-gray-400 font-normal">(Nur Text, kein HTML)</span>
+                    {activeLang === "de" ? "Betreff (Deutsch)" : "Subject (English)"}
                   </label>
-                  <textarea
-                    value={editForm.textBody}
-                    onChange={(e) =>
-                      setEditForm((f) => f ? { ...f, textBody: e.target.value } : f)
-                    }
-                    rows={10}
-                    style={{ maxHeight: "16rem", overflowY: "auto" }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  <input
+                    type="text"
+                    value={getCurrentSubject()}
+                    onChange={(e) => updateField(activeLang, "subject", e.target.value)}
+                    placeholder={activeLang === "de" ? "Betreff auf Deutsch…" : "Subject in English…"}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
-              )}
+
+                {/* HTML-Body / Text-Body Tabs */}
+                <div>
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("html")}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                        previewMode === "html"
+                          ? "bg-white shadow text-gray-900"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      HTML-Version
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("text")}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                        previewMode === "text"
+                          ? "bg-white shadow text-gray-900"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Text-Version
+                    </button>
+                  </div>
+
+                  {previewMode === "html" ? (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        {activeLang === "de" ? "HTML-Inhalt (Deutsch)" : "HTML Content (English)"}
+                        <span className="ml-1 text-gray-400 font-normal text-xs">
+                          (WYSIWYG-Editor)
+                        </span>
+                      </label>
+                      <RichTextEditor
+                        key={`${editingKey}-${activeLang}-html`}
+                        value={getCurrentHtmlBody()}
+                        onChange={(html) => updateField(activeLang, "htmlBody", html)}
+                      />
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Platzhalter wie{" "}
+                        <code className="bg-gray-100 px-1 rounded">{"{{userName}}"}</code>{" "}
+                        können direkt in den Text eingefügt werden.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        {activeLang === "de" ? "Text-Inhalt (Deutsch)" : "Text Content (English)"}
+                        <span className="text-gray-400 font-normal ml-1">(Nur Text, kein HTML)</span>
+                      </label>
+                      <textarea
+                        key={`${editingKey}-${activeLang}-text`}
+                        value={getCurrentTextBody()}
+                        onChange={(e) => updateField(activeLang, "textBody", e.target.value)}
+                        placeholder={activeLang === "de" ? "Text auf Deutsch…" : "Text in English…"}
+                        rows={10}
+                        style={{ maxHeight: "16rem", overflowY: "auto" }}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Hinweis zur Sprachauswahl beim Versenden */}
+            <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+              <p className="text-xs text-blue-800">
+                <strong>Hinweis zur Sprachauswahl:</strong> Beim Versenden einer E-Mail kann die Sprache
+                noch geändert werden. Ist keine englische Version hinterlegt, wird automatisch die
+                deutsche Version verwendet.
+              </p>
             </div>
           </div>
         </div>
