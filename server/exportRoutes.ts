@@ -471,7 +471,7 @@ async function exportProfilePdf(req: Request, res: Response) {
   y += 20;
 
   y = drawField(doc, "E-Mail", profile.email, margin, y, usableWidth);
-  if (profile.phone) y = drawField(doc, "Telefon", profile.phone, margin, y, usableWidth);
+  // Telefonnummer wird aus Datenschutzgründen nicht im PDF ausgegeben
   if (profile.department) y = drawField(doc, "Fachbereich", profile.department, margin, y, usableWidth);
   if (profile.secondEmail) y = drawField(doc, "Alternative E-Mail", profile.secondEmail, margin, y, usableWidth);
   if (profile.website) y = drawField(doc, "Website", profile.website, margin, y, usableWidth);

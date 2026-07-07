@@ -1148,7 +1148,13 @@ export const appRouter = router({
         // Nur öffentliche Felder zurückgeben
         // Für Prüfer:innen: bio, phone, languages und tags aus examiner_profiles lesen
         const examinerBio = isExaminerRole ? (examinerProfile?.bio ?? user.bio) : user.bio;
-        const examinerPhone = isExaminerRole ? (examinerProfile?.phone ?? user.phone) : user.phone;
+        // Telefonnummer nur für andere Prüfer:innen und Admins sichtbar – NICHT für Studierende
+        const viewerRole = ctx.user?.role ?? null;
+        const viewerMaySeePh = viewerRole === "examiner" || viewerRole === "second_examiner"
+          || viewerRole === "admin" || viewerRole === "superadmin" || viewerRole === "pav"
+          || viewerRole === "dean" || viewerRole === "vice_dean";
+        const rawPhone = isExaminerRole ? (examinerProfile?.phone ?? user.phone) : user.phone;
+        const examinerPhone = viewerMaySeePh ? rawPhone : null;
         const examinerLanguages: string[] = isExaminerRole && examinerProfile?.languages
           ? (Array.isArray(examinerProfile.languages) ? (examinerProfile.languages as string[]) : [])
           : [];
