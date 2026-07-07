@@ -493,7 +493,7 @@ function MarkdownNote({ content }: { content: string }) {
   return <div className="text-sm text-gray-800 space-y-0.5 [&_li]:list-disc [&_li]:ml-4" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -523,6 +523,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [secondSearch, setSecondSearch] = useState("");
   const [selectedSecondId, setSelectedSecondId] = useState<number | null>(null);
   const [setSecondSent, setSetSecondSent] = useState(false);
+  const [showConditionalDialog, setShowConditionalDialog] = useState(false);
+  const [conditionalReason, setConditionalReason] = useState("");
   const utils = trpc.useUtils();
 
   const { data: secondCandidates = [] } = (trpc.thesis as any).getAllSecondExaminerCandidates?.useQuery?.();
@@ -600,7 +602,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
   const examinerRespond = trpc.thesis.examinerRespond.useMutation({
     onSuccess: (_, vars) => {
-      toast.success(vars.action === "accept" ? t.examiner.toastAccepted ?? "Anfrage angenommen!" : t.examiner.toastRejected ?? "Anfrage abgelehnt.");
+      if (vars.action === "conditional") {
+        toast.success("Zusage unter Vorbehalt gespeichert.");
+      } else {
+        toast.success(vars.action === "accept" ? t.examiner.toastAccepted ?? "Anfrage angenommen!" : t.examiner.toastRejected ?? "Anfrage abgelehnt.");
+      }
       utils.thesis.examinerRequests.invalidate();
       utils.examiner.getPendingRequests.invalidate();
       setShowRejectForm(false);
@@ -699,6 +705,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   }
 
   const isPending = req.status === "PENDING" || req.status === "PENDING_FIRST_EXAMINER";
+  const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
@@ -1159,8 +1166,20 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         )}
       </div>
 
-      {isPending && (
+      {(isPending || isConditional) && (
         <div className="space-y-3">
+          {/* Vorbehalt-Hinweis wenn Status CONDITIONAL_ACCEPTANCE */}
+          {isConditional && (req as any).conditionalAcceptanceReason && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
+              <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-amber-800">Vorbehalt:</p>
+                <p className="text-xs text-amber-700">{(req as any).conditionalAcceptanceReason}</p>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               onClick={() => openEmailDialog("accept")}
@@ -1171,7 +1190,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Annehmen
+              {isConditional ? "Endgültig zusagen" : "Annehmen"}
             </button>
             <button
               onClick={() => openEmailDialog("reject")}
@@ -1184,15 +1203,83 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               Ablehnen
             </button>
           </div>
+          {/* Zusage unter Vorbehalt – nur bei PENDING_FIRST_EXAMINER */}
+          {isPending && (
+            <button
+              onClick={() => { setConditionalReason(""); setShowConditionalDialog(true); }}
+              disabled={examinerRespond.isPending}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-amber-700 border border-amber-300 bg-amber-50 hover:bg-amber-100 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              Zusage unter Vorbehalt
+            </button>
+          )}
           <button
             onClick={openRequirementsDialog}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Sende Mail mit persönlichen Hinweisen
           </button>
+        </div>
+      )}
+
+      {/* Dialog: Zusage unter Vorbehalt */}
+      {showConditionalDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowConditionalDialog(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="font-semibold text-gray-900">Zusage unter Vorbehalt</span>
+              </div>
+              <button onClick={() => setShowConditionalDialog(false)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-sm text-gray-600">Sie signalisieren grundsätzliche Betreuungsbereitschaft, haben das Thema aber noch nicht final akzeptiert. Bitte geben Sie Ihren Vorbehalt an.</p>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Vorbehalt / Begründung <span className="text-red-500">*</span></label>
+                <textarea
+                  rows={4}
+                  value={conditionalReason}
+                  onChange={(e) => setConditionalReason(e.target.value)}
+                  placeholder="z.B. Thema muss noch konkretisiert werden, Expose ausstehend, Rücksprache mit Fachbereich nötig ..."
+                  className="w-full px-3 py-2 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+              <button onClick={() => setShowConditionalDialog(false)} className="flex-1 px-4 py-2 rounded-xl text-sm text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Abbrechen
+              </button>
+              <button
+                disabled={!conditionalReason.trim() || examinerRespond.isPending}
+                onClick={() => {
+                  examinerRespond.mutate(
+                    { id: req.id, action: "conditional", conditionalReason: conditionalReason.trim() },
+                    {
+                      onSuccess: () => {
+                        toast.success("Zusage unter Vorbehalt gespeichert.");
+                        setShowConditionalDialog(false);
+                      },
+                    }
+                  );
+                }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {examinerRespond.isPending ? "Wird gespeichert..." : "Unter Vorbehalt zusagen"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1640,8 +1727,9 @@ function RequestsView() {
     ? semesterFiltered.filter((r: any) => !r.secondExaminerName || r.secondExaminerName.trim() === "")
     : semesterFiltered;
   const awaitingApproval = sortRequests(filteredRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
+  const conditionalList = sortRequests(filteredRequests.filter((r) => r.status === "CONDITIONAL_ACCEPTANCE"), sortKey);
   const pending = sortRequests(filteredRequests.filter((r) => r.status === "PENDING"), sortKey);
-  const others = sortRequests(filteredRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER"), sortKey);
+  const others = sortRequests(filteredRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER" && r.status !== "CONDITIONAL_ACCEPTANCE"), sortKey);
 
   const sortOptions: { value: RequestSortKey; label: string }[] = [
     { value: "date", label: "Neueste zuerst" },
@@ -1708,6 +1796,17 @@ function RequestsView() {
           </h3>
           <div className="space-y-4">
             {awaitingApproval.map((req) => <RequestCard key={req.id} req={req} />)}
+          </div>
+        </div>
+      )}
+      {conditionalList.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Zusage unter Vorbehalt ({conditionalList.length})
+          </h3>
+          <div className="space-y-4">
+            {conditionalList.map((req) => <RequestCard key={req.id} req={req} />)}
           </div>
         </div>
       )}

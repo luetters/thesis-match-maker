@@ -117,7 +117,7 @@ export default function SupervisionCapacities() {
 
   const isLoading = capsLoading || usageLoading;
 
-  const usageArr = usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>;
+  const usageArr = usageData as Array<{ semester: string; usedFirst: number; usedSecond: number; usedConditional: number }>;
 
   // ─── LVVO-Report ──────────────────────────────────────────────────────────
   const [lvvoSemester, setLvvoSemester] = useState<string>(() => {
@@ -242,7 +242,7 @@ export default function SupervisionCapacities() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Tabellen-Header */}
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-3 items-center">
+              <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-3 items-center">
                 {/* Semester */}
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   {sc.semester}
@@ -281,6 +281,15 @@ export default function SupervisionCapacities() {
                   </div>
                   <div className="text-[10px] text-gray-400 mt-0.5">{sc.grantedHint}</div>
                 </div>
+                {/* Zusagen unter Vorbehalt */}
+                <div className="text-center">
+                  <div
+                    className="text-xs font-semibold uppercase tracking-wide text-amber-600"
+                  >
+                    {de ? "Unter Vorbehalt" : "Conditional"}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">{de ? "Erst" : "1st"}</div>
+                </div>
               </div>
             </div>
 
@@ -295,6 +304,7 @@ export default function SupervisionCapacities() {
                 const usage = usageArr.find((u) => u.semester === sem);
                 const usedFirst = usage?.usedFirst ?? 0;
                 const usedSecond = usage?.usedSecond ?? 0;
+                const usedConditional = usage?.usedConditional ?? 0;
                 const overFirst = usedFirst > cap.maxFirst && cap.maxFirst > 0;
                 const overSecond = usedSecond > cap.maxSecond && cap.maxSecond > 0;
                 const isEven = idx % 2 === 0;
@@ -302,7 +312,7 @@ export default function SupervisionCapacities() {
                 return (
                   <div
                     key={sem}
-                    className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-3 items-center px-6 py-4 transition-colors ${
+                    className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-3 items-center px-6 py-4 transition-colors ${
                       isEven ? "bg-white" : "bg-gray-50/40"
                     }`}
                   >
@@ -423,6 +433,22 @@ export default function SupervisionCapacities() {
                       {cap.maxSecond > 0 && (
                         <span className="text-[10px] text-gray-400">
                           {de ? `von ${cap.maxSecond}` : `of ${cap.maxSecond}`}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Zusagen unter Vorbehalt */}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span
+                        className={`text-lg font-bold ${
+                          usedConditional > 0 ? "text-amber-600" : "text-gray-300"
+                        }`}
+                      >
+                        {usedConditional}
+                      </span>
+                      {usedConditional > 0 && (
+                        <span className="text-[10px] text-amber-500">
+                          {de ? "Vorbehalt" : "Conditional"}
                         </span>
                       )}
                     </div>

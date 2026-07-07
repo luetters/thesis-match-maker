@@ -790,8 +790,9 @@ export const appRouter = router({
       .input(
         z.object({
           id: z.number(),
-          action: z.enum(["accept", "reject"]),
+          action: z.enum(["accept", "reject", "conditional"]),
           rejectionReason: z.string().optional(),
+          conditionalReason: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -806,11 +807,16 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         }
 
-        // Statusübergang: PENDING_FIRST_EXAMINER → FIRST_EXAMINER_ACCEPTED / FIRST_EXAMINER_REJECTED
-        //                 PENDING / sonstige    → ACCEPTED / REJECTED
+        // Statusübergang: PENDING_FIRST_EXAMINER → FIRST_EXAMINER_ACCEPTED / FIRST_EXAMINER_REJECTED / CONDITIONAL_ACCEPTANCE
+        //                 PENDING / sonstige    → ACCEPTED / REJECTED / CONDITIONAL_ACCEPTANCE
         let newStatus: string;
         let auditAction: string;
-        if (existing.status === "PENDING_FIRST_EXAMINER") {
+        if (input.action === "conditional") {
+          const { conditionalAcceptThesisRequest } = await import("./db");
+          await conditionalAcceptThesisRequest(input.id, ctx.user.id, input.conditionalReason ?? "");
+          newStatus = "CONDITIONAL_ACCEPTANCE";
+          auditAction = "CONDITIONAL_ACCEPTANCE";
+        } else if (existing.status === "PENDING_FIRST_EXAMINER" || existing.status === "CONDITIONAL_ACCEPTANCE") {
           if (input.action === "accept") {
             const { acceptThesisRequest } = await import("./db");
             await acceptThesisRequest(input.id, ctx.user.id);
@@ -837,19 +843,20 @@ export const appRouter = router({
           action: auditAction,
           fromStatus: existing.status,
           toStatus: newStatus,
-          reason: input.rejectionReason,
+          reason: input.action === "conditional" ? input.conditionalReason : input.rejectionReason,
         });
-        // In-App-Benachrichtigung
-        // Bei PENDING_FIRST_EXAMINER ist examinerId noch null – nur Studierenden benachrichtigen
-        await notifyThesisParticipants({
-          thesisRequestId: input.id,
-          studentId: existing.studentId,
-          examinerId: existing.examinerId ?? null,
-          secondExaminerId: existing.secondExaminerId,
-          title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
-          message: `Ihre Anfrage "${existing.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.${input.rejectionReason ? ` Begründung: ${input.rejectionReason}` : ""}`,
-          type: "status_change",
-        });
+        // In-App-Benachrichtigung (bei conditional wird sie bereits in conditionalAcceptThesisRequest gesetzt)
+        if (input.action !== "conditional") {
+          await notifyThesisParticipants({
+            thesisRequestId: input.id,
+            studentId: existing.studentId,
+            examinerId: existing.examinerId ?? null,
+            secondExaminerId: existing.secondExaminerId,
+            title: input.action === "accept" ? "Anfrage angenommen" : "Anfrage abgelehnt",
+            message: `Ihre Anfrage "${existing.title}" wurde ${input.action === "accept" ? "angenommen" : "abgelehnt"}.${input.rejectionReason ? ` Begründung: ${input.rejectionReason}` : ""}`,
+            type: "status_change",
+          });
+        }
         return { success: true };
       }),
 
@@ -1554,30 +1561,36 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) return [];
       const { thesisRequests: trTable } = await import("../drizzle/schema");
-      const { inArray } = await import("drizzle-orm");
+      const { inArray, or, eq } = await import("drizzle-orm");
       const activeStatuses = [
         "PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER",
         "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
         "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED",
         "SECOND_EXAMINER_SET", "MATCHED", "ACCEPTED",
+        "CONDITIONAL_ACCEPTANCE",
       ] as const;
       const rows = await db
         .select({
           examinerId: trTable.examinerId,
           secondExaminerId: trTable.secondExaminerId,
           targetSemester: trTable.targetSemester,
+          status: trTable.status,
         })
         .from(trTable)
         .where(inArray(trTable.status, activeStatuses));
       // Aggregieren pro Semester
-      const usageMap: Record<string, { usedFirst: number; usedSecond: number }> = {};
+      const usageMap: Record<string, { usedFirst: number; usedSecond: number; usedConditional: number }> = {};
       for (const r of rows) {
         if (r.examinerId === ctx.user.id && r.targetSemester) {
-          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0 };
-          usageMap[r.targetSemester].usedFirst++;
+          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0, usedConditional: 0 };
+          if (r.status === "CONDITIONAL_ACCEPTANCE") {
+            usageMap[r.targetSemester].usedConditional++;
+          } else {
+            usageMap[r.targetSemester].usedFirst++;
+          }
         }
         if (r.secondExaminerId === ctx.user.id && r.targetSemester) {
-          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0 };
+          if (!usageMap[r.targetSemester]) usageMap[r.targetSemester] = { usedFirst: 0, usedSecond: 0, usedConditional: 0 };
           usageMap[r.targetSemester].usedSecond++;
         }
       }

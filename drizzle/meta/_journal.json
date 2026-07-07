@@ -421,6 +421,13 @@
       "when": 1783431463772,
       "tag": "0059_illegal_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "5",
+      "when": 1783434216701,
+      "tag": "0060_clumsy_micromacro",
+      "breakpoints": true
     }
   ]
 }

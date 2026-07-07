@@ -1,0 +1,4 @@
+ALTER TABLE `thesis_requests` MODIFY COLUMN `status` enum('PENDING','ACCEPTED','REJECTED','MATCHED','PENDING_FIRST_EXAMINER','PENDING_SECOND_EXAMINER','FIRST_EXAMINER_ACCEPTED','FIRST_EXAMINER_REJECTED','FIRST_EXAMINER_ASSIGNED','SECOND_EXAMINER_ACCEPTED','SECOND_EXAMINER_ASSIGNED','SECOND_EXAMINER_SET','COMPLETED','WITHDRAWN','CANCELLED','DRAFT_BY_EXAMINER','PENDING_STUDENT_CONFIRMATION','CONDITIONAL_ACCEPTANCE') NOT NULL DEFAULT 'PENDING';--> statement-breakpoint
+ALTER TABLE `thesis_requests` ADD `conditional_acceptance_reason` text;--> statement-breakpoint
+ALTER TABLE `thesis_requests` ADD `conditional_acceptance_at` datetime;--> statement-breakpoint
+ALTER TABLE `thesis_requests` ADD `conditional_acceptance_by_id` int;

@@ -2009,6 +2009,54 @@ export async function rejectThesisRequest(thesisRequestId: number, rejectionReas
 }
 
 /**
+ * Setze Status auf CONDITIONAL_ACCEPTANCE (Zusage unter Vorbehalt)
+ */
+export async function conditionalAcceptThesisRequest(
+  thesisRequestId: number,
+  examinerId: number,
+  reason: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  const [thesisResult] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  if (!thesisResult) throw new Error("Anfrage nicht gefunden");
+
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  await db.update(thesisRequests)
+    .set({
+      status: "CONDITIONAL_ACCEPTANCE",
+      examinerId,
+      conditionalAcceptanceReason: reason,
+      conditionalAcceptanceAt: now,
+      conditionalAcceptanceById: examinerId,
+      updatedAt: now,
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+
+  // In-App-Benachrichtigung für Studierenden
+  const [examinerUser] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, examinerId))
+    .limit(1);
+  const examinerName = examinerUser?.name ?? "der Gutachter:in";
+
+  await db.insert(notifications).values({
+    userId: thesisResult.studentId,
+    title: "Zusage unter Vorbehalt",
+    message: `Ihre Betreuungsanfrage „${thesisResult.title}“ wurde von ${examinerName} vorläufig unter Vorbehalt angenommen. Bitte beachten Sie die Rückmeldung des Betreuers.`,
+    type: "status_change",
+    thesisRequestId,
+    read: 0,
+  });
+}
+
+/**
  * Ziehe eine Anfrage zurück (nur wenn noch nicht beantwortet)
  */
 export async function withdrawThesisRequest(thesisRequestId: number, studentId: number) {

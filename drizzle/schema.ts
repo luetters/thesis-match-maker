@@ -209,7 +209,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	targetSemester: varchar({ length: 32 }),
 	language: varchar({ length: 8 }).default('de'),
 	degreeType: mysqlEnum(['bachelor','master']).default('bachelor'),
-	status: mysqlEnum(['PENDING','ACCEPTED','REJECTED','MATCHED','PENDING_FIRST_EXAMINER','PENDING_SECOND_EXAMINER','FIRST_EXAMINER_ACCEPTED','FIRST_EXAMINER_REJECTED','FIRST_EXAMINER_ASSIGNED','SECOND_EXAMINER_ACCEPTED','SECOND_EXAMINER_ASSIGNED','SECOND_EXAMINER_SET','COMPLETED','WITHDRAWN','CANCELLED','DRAFT_BY_EXAMINER','PENDING_STUDENT_CONFIRMATION']).default('PENDING').notNull(),
+	status: mysqlEnum(['PENDING','ACCEPTED','REJECTED','MATCHED','PENDING_FIRST_EXAMINER','PENDING_SECOND_EXAMINER','FIRST_EXAMINER_ACCEPTED','FIRST_EXAMINER_REJECTED','FIRST_EXAMINER_ASSIGNED','SECOND_EXAMINER_ACCEPTED','SECOND_EXAMINER_ASSIGNED','SECOND_EXAMINER_SET','COMPLETED','WITHDRAWN','CANCELLED','DRAFT_BY_EXAMINER','PENDING_STUDENT_CONFIRMATION','CONDITIONAL_ACCEPTANCE']).default('PENDING').notNull(),
 	// ─── Examiner/PAV-initiierter Antrag ───
 	initiatedBy: int("initiated_by"),
 	initiatedByRole: varchar("initiated_by_role", { length: 32 }),
@@ -219,6 +219,9 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	studentConfirmedAt: datetime("student_confirmed_at", { mode: "string" }),
 	deadline: datetime({ mode: 'string'}),
 	rejectionReason: text(),
+	conditionalAcceptanceReason: text("conditional_acceptance_reason"),
+	conditionalAcceptanceAt: datetime("conditional_acceptance_at", { mode: "string" }),
+	conditionalAcceptanceById: int("conditional_acceptance_by_id"),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	exposeUrl: text(),
