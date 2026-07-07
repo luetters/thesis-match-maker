@@ -34,8 +34,9 @@ export function generateLvvoPdf(
   semester: string,
   examiner: LvvoExaminer | null,
   entries: LvvoEntry[],
-  lang: "de" | "en" = "de"
-) {
+  lang: "de" | "en" = "de",
+  mode: "download" | "base64" = "download"
+): string | void {
   const de = lang === "de";
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -290,7 +291,11 @@ export function generateLvvoPdf(
     );
   }
 
-  // ─── Download ──────────────────────────────────────────────────────────────
+  // ─── Download / Base64 ────────────────────────────────────────────────────
   const filename = `LVVO_${semester}_${(examiner?.name ?? "Betreuer").replace(/\s+/g, "_")}.pdf`;
+  if (mode === "base64") {
+    // Gibt den reinen Base64-String zurück (ohne data-URI-Prefix)
+    return doc.output("datauristring").split(",")[1];
+  }
   doc.save(filename);
 }

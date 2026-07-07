@@ -1472,6 +1472,83 @@ export const appRouter = router({
         return { examiner: examiner ?? null, entries };
       }),
 
+    /** LVVO-Report per E-Mail an die Hochschulverwaltung senden */
+    sendLvvoReport: anyExaminerProcedure
+      .input(z.object({
+        semester: z.string().min(1),
+        recipientEmail: z.string().email(),
+        subject: z.string().min(1).max(255),
+        message: z.string().max(2000),
+        pdfBase64: z.string().min(1),  // Base64-kodiertes PDF
+        lang: z.enum(["de", "en"]).default("de"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { sendEmail } = await import("./emailHelper");
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        const de = input.lang === "de";
+
+        // Betreuer-Daten laden
+        let examinerName = ctx.user.name ?? "";
+        let examinerEmail = ctx.user.email ?? "";
+        if (db) {
+          const { users: usersTable } = await import("../drizzle/schema");
+          const { eq: eqDrizzle } = await import("drizzle-orm");
+          const [ex] = await db.select({ name: usersTable.name, email: usersTable.email, academicTitle: usersTable.academicTitle })
+            .from(usersTable).where(eqDrizzle(usersTable.id, ctx.user.id)).limit(1);
+          if (ex) {
+            examinerName = [ex.academicTitle, ex.name].filter(Boolean).join(" ");
+            examinerEmail = ex.email ?? examinerEmail;
+          }
+        }
+
+        const semLabel = input.semester.startsWith("WS")
+          ? `WS ${input.semester.slice(2)}/${parseInt(input.semester.slice(2)) + 1}`
+          : input.semester.startsWith("SoSe")
+          ? `SoSe ${input.semester.slice(4)}`
+          : input.semester;
+
+        const htmlBody = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; color: #111;">
+  <div style="background:#006937;padding:16px 24px;border-radius:8px 8px 0 0;">
+    <span style="color:#fff;font-size:18px;font-weight:bold;">HTW Berlin &ndash; Thesis Match</span>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <p style="margin:0 0 12px;">${de ? "Sehr geehrte Damen und Herren," : "Dear Sir or Madam,"}</p>
+    <p style="margin:0 0 16px;">${input.message.replace(/\n/g, "<br>")}</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;">
+      <tr><td style="padding:6px 12px;background:#f3f4f6;font-weight:bold;width:40%;">${de ? "Betreuer:in" : "Supervisor"}</td><td style="padding:6px 12px;">${examinerName}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9fafb;font-weight:bold;">${de ? "E-Mail" : "Email"}</td><td style="padding:6px 12px;">${examinerEmail}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f3f4f6;font-weight:bold;">${de ? "Semester" : "Semester"}</td><td style="padding:6px 12px;">${semLabel}</td></tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">${de ? "Der LVVO-Nachweis ist als PDF-Anhang beigef&uuml;gt." : "The LVVO report is attached as a PDF."}</p>
+  </div>
+</div>`;
+
+        const pdfBuffer = Buffer.from(input.pdfBase64, "base64");
+        const filename = `LVVO_${input.semester}_${(examinerName).replace(/\s+/g, "_")}.pdf`;
+
+        const ok = await sendEmail({
+          to: input.recipientEmail,
+          subject: input.subject,
+          html: htmlBody,
+          text: `${input.message}\n\n${de ? "Betreuer:in" : "Supervisor"}: ${examinerName} | ${de ? "Semester" : "Semester"}: ${semLabel}`,
+          attachments: [{ filename, content: pdfBuffer, contentType: "application/pdf" }],
+        });
+
+        // Audit-Log
+        if (db) {
+          const { createAuditLogEntry } = await import("./db");
+          await createAuditLogEntry({
+            actorId: ctx.user.id,
+            action: "LVVO_REPORT_SENT",
+            reason: `LVVO-Report ${semLabel} an ${input.recipientEmail} gesendet`,
+          });
+        }
+
+        return { success: ok };
+      }),
+
     getCapacityUsage: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getDb } = await import("./db");
       const db = await getDb();
@@ -1899,6 +1976,7 @@ export const appRouter = router({
         thesisDeadlineWarningDays: map["thesisDeadlineWarningDays"] ?? "14",
         pdfDisclaimerDe: map["pdfDisclaimerDe"] ?? "Der Thesis Match Maker ist ein Hilfsmittel zur Organisation der Thesisbetreuung. Die Abstimmung erfolgt jedoch ausserhalb der offiziellen Prozesse der HTW Berlin. Aus der erfolgreichen Synchronisierung entsteht kein Anspruch auf eine Thesis im geplanten Semester. Hierzu ist eine Zulassung zur Thesis durch die Verwaltung Ihres Studiengangs erforderlich, die im Nachgang zu diesem Match erfolgt.",
         pdfDisclaimerEn: map["pdfDisclaimerEn"] ?? "The Thesis Match Maker is a tool designed to help organize your thesis supervision. Please note that any arrangements made here take place outside of HTW Berlin's official administrative processes. A successful match via the platform does not guarantee enrollment in your thesis for the planned semester. For this, official admission from your department's degree program administration is required, which must be requested after a match has been made.",
+        administrationEmail: map["administrationEmail"] ?? "",
       };
     }),
     updateSettings: superadminProcedure
@@ -1913,6 +1991,7 @@ export const appRouter = router({
           thesisDeadlineWarningDays: z.string().optional(),
           pdfDisclaimerDe: z.string().max(2000).optional(),
           pdfDisclaimerEn: z.string().max(2000).optional(),
+          administrationEmail: z.string().email().or(z.literal("")).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {

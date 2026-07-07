@@ -759,6 +759,7 @@ function SystemConfigTab() {
     thesisDeadlineWarningDays: string;
     pdfDisclaimerDe: string;
     pdfDisclaimerEn: string;
+    administrationEmail: string;
   };
   const [form, setForm] = useState<FormState | null>(null);
   const [saved, setSaved] = useState(false);
@@ -776,6 +777,7 @@ function SystemConfigTab() {
         thesisDeadlineWarningDays: settings.thesisDeadlineWarningDays,
         pdfDisclaimerDe: (settings as any).pdfDisclaimerDe ?? "",
         pdfDisclaimerEn: (settings as any).pdfDisclaimerEn ?? "",
+        administrationEmail: (settings as any).administrationEmail ?? "",
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -808,6 +810,11 @@ function SystemConfigTab() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Kontakt-E-Mail</label>
           <input type="email" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.contactEmail} onChange={(e) => setForm((f) => f ? { ...f, contactEmail: e.target.value } : f)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Verwaltungs-E-Mail (LVVO-Nachweis)</label>
+          <input type="email" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="z.B. pruefungsamt@htw-berlin.de" value={form.administrationEmail} onChange={(e) => setForm((f) => f ? { ...f, administrationEmail: e.target.value } : f)} />
+          <p className="text-xs text-gray-400 mt-1">Wird als Standard-Empfänger beim Versenden des LVVO-Nachweises vorausgefüllt.</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Fusszeilen-Text</label>

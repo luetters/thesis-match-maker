@@ -128,18 +128,64 @@ export default function SupervisionCapacities() {
     return m >= 10 || m <= 3 ? `WS${y}` : `SoSe${y}`;
   });
   const [lvvoEnabled, setLvvoEnabled] = useState(false);
+  // Unterscheidung: 'download' = PDF herunterladen, 'email' = E-Mail-Dialog öffnen
+  const [lvvoAction, setLvvoAction] = useState<"download" | "email">("download");
+
+  // E-Mail-Dialog-State
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [pendingPdfBase64, setPendingPdfBase64] = useState<string | null>(null);
 
   const { data: lvvoData, isFetching: lvvoLoading } = (trpc.examiner as any).getLvvoReport?.useQuery?.(
     { semester: lvvoSemester },
     { enabled: lvvoEnabled, refetchOnMount: false }
   ) ?? { data: undefined, isFetching: false };
 
-  // Sobald Daten da → PDF generieren und Flag zurücksetzen
+  // Verwaltungs-E-Mail aus System-Settings laden
+  const { data: systemSettings } = (trpc.superadmin as any).getSettings?.useQuery?.() ?? { data: undefined };
+
+  const sendLvvoMutation = (trpc.examiner as any).sendLvvoReport?.useMutation?.({
+    onSuccess: (result: any) => {
+      if (result?.success) {
+        toast.success(de ? "LVVO-Nachweis erfolgreich versendet." : "LVVO report sent successfully.");
+        setEmailDialogOpen(false);
+        setPendingPdfBase64(null);
+      } else {
+        toast.error(de ? "E-Mail konnte nicht gesendet werden." : "Email could not be sent.");
+      }
+    },
+    onError: () => {
+      toast.error(de ? "Fehler beim Versenden." : "Error sending email.");
+    },
+  }) ?? { mutate: undefined, isPending: false };
+
+  // Sobald Daten da → je nach Aktion PDF herunterladen oder E-Mail-Dialog öffnen
   useEffect(() => {
     if (!lvvoEnabled || lvvoLoading || !lvvoData) return;
     setLvvoEnabled(false);
     try {
-      generateLvvoPdf(lvvoSemester, lvvoData.examiner ?? null, lvvoData.entries ?? [], lang as "de" | "en");
+      if (lvvoAction === "download") {
+        generateLvvoPdf(lvvoSemester, lvvoData.examiner ?? null, lvvoData.entries ?? [], lang as "de" | "en", "download");
+      } else {
+        // Base64 generieren und Dialog öffnen
+        const b64 = generateLvvoPdf(lvvoSemester, lvvoData.examiner ?? null, lvvoData.entries ?? [], lang as "de" | "en", "base64") as string;
+        setPendingPdfBase64(b64);
+        // Standard-Felder vorausfüllen
+        const adminEmail = systemSettings?.administrationEmail ?? "";
+        setEmailRecipient(adminEmail);
+        const semLabel = lvvoSemester.startsWith("WS")
+          ? `WS ${lvvoSemester.slice(2)}/${parseInt(lvvoSemester.slice(2)) + 1}`
+          : lvvoSemester.startsWith("SoSe") ? `SoSe ${lvvoSemester.slice(4)}` : lvvoSemester;
+        setEmailSubject(de
+          ? `LVVO-Nachweis Betreuungsleistungen ${semLabel}`
+          : `LVVO Supervision Report ${semLabel}`);
+        setEmailMessage(de
+          ? `Sehr geehrte Damen und Herren,\n\nim Anhang übersende ich Ihnen meinen LVVO-Nachweis der Betreuungsleistungen für das Semester ${semLabel}.\n\nMit freundlichen Grüßen`
+          : `Dear Sir or Madam,\n\nPlease find attached my LVVO supervision report for the semester ${semLabel}.\n\nKind regards`);
+        setEmailDialogOpen(true);
+      }
     } catch (err: any) {
       toast.error(de ? "PDF konnte nicht erstellt werden." : "Could not generate PDF.");
       console.error(err);
@@ -474,14 +520,15 @@ export default function SupervisionCapacities() {
                     ))}
                   </select>
                 </div>
+                {/* Download-Button */}
                 <button
                   type="button"
-                  onClick={() => setLvvoEnabled(true)}
+                  onClick={() => { setLvvoAction("download"); setLvvoEnabled(true); }}
                   disabled={lvvoLoading}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                   style={{ backgroundColor: "#76B900" }}
                 >
-                  {lvvoLoading ? (
+                  {lvvoLoading && lvvoAction === "download" ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       {de ? "Wird erstellt…" : "Generating…"}
@@ -495,9 +542,118 @@ export default function SupervisionCapacities() {
                     </>
                   )}
                 </button>
+
+                {/* E-Mail-Button */}
+                <button
+                  type="button"
+                  onClick={() => { setLvvoAction("email"); setLvvoEnabled(true); }}
+                  disabled={lvvoLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                  style={{ borderColor: "#76B900", color: "#76B900", backgroundColor: "white" }}
+                >
+                  {lvvoLoading && lvvoAction === "email" ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                      {de ? "Wird vorbereitet…" : "Preparing…"}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      {de ? "Per E-Mail senden" : "Send by Email"}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
+
+          {/* ─── E-Mail-Dialog */}
+          {emailDialogOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                  <h2 className="text-base font-semibold text-gray-900">
+                    {de ? "LVVO-Nachweis per E-Mail senden" : "Send LVVO Report by Email"}
+                  </h2>
+                  <button onClick={() => setEmailDialogOpen(false)} className="text-gray-400 hover:text-gray-600">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {de ? "Empfänger:in" : "Recipient"}
+                    </label>
+                    <input
+                      type="email"
+                      value={emailRecipient}
+                      onChange={(e) => setEmailRecipient(e.target.value)}
+                      placeholder={de ? "E-Mail-Adresse Verwaltung" : "Administration email address"}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {de ? "Betreff" : "Subject"}
+                    </label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {de ? "Nachricht" : "Message"}
+                    </label>
+                    <textarea
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      rows={5}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 text-gray-900 resize-none"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                    {de ? `LVVO_${lvvoSemester}.pdf wird als Anhang beigefügt.` : `LVVO_${lvvoSemester}.pdf will be attached.`}
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+                  <button
+                    onClick={() => setEmailDialogOpen(false)}
+                    className="px-4 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  >
+                    {de ? "Abbrechen" : "Cancel"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!pendingPdfBase64 || !emailRecipient) return;
+                      sendLvvoMutation.mutate?.({
+                        semester: lvvoSemester,
+                        recipientEmail: emailRecipient,
+                        subject: emailSubject,
+                        message: emailMessage,
+                        pdfBase64: pendingPdfBase64,
+                        lang: lang as "de" | "en",
+                      });
+                    }}
+                    disabled={!emailRecipient || sendLvvoMutation.isPending}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: "#76B900" }}
+                  >
+                    {sendLvvoMutation.isPending ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{de ? "Wird gesendet…" : "Sending…"}</>
+                    ) : (
+                      <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>{de ? "Jetzt senden" : "Send now"}</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ─── Legende ────────────────────────────────────────────────────── */}
           <div className="bg-blue-50/60 border border-blue-100 rounded-xl px-5 py-4">
