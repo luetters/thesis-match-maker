@@ -5736,3 +5736,264 @@ export async function deleteExaminerComment(params: {
   if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
   await db.delete(examinerComments).where(eq(examinerComments.id, params.id));
 }
+
+
+// ─── Zweitgutachter-Bestätigungs-Workflow ────────────────────────────────────
+
+/**
+ * Zweitgutachter bestätigt die Betreuung.
+ * Status: PENDING_SECOND_EXAMINER → SECOND_EXAMINER_ACCEPTED
+ */
+export async function acceptAsSecondExaminer(
+  thesisRequestId: number,
+  examinerId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  // Anfrage laden und Berechtigung prüfen
+  const [thesis] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  if (!thesis) throw new Error("Anfrage nicht gefunden");
+  if (thesis.secondExaminerId !== examinerId)
+    throw new Error("Sie sind nicht als Zweitgutachter:in für diese Anfrage eingetragen");
+  if (thesis.status !== "PENDING_SECOND_EXAMINER")
+    throw new Error("Diese Anfrage wartet nicht auf Ihre Bestätigung als Zweitgutachter:in");
+
+  // Status aktualisieren
+  await db.update(thesisRequests)
+    .set({
+      status: "SECOND_EXAMINER_ACCEPTED",
+      updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+
+  // Zweitgutachter-Name für Benachrichtigungen
+  const [secondExaminerUser] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, examinerId))
+    .limit(1);
+  const secondExaminerName = secondExaminerUser?.name ?? "der Zweitgutachter:in";
+
+  // In-App-Benachrichtigung für Studierenden
+  await db.insert(notifications).values({
+    userId: thesis.studentId,
+    title: "Zweitgutachter:in bestätigt",
+    message: `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" bestätigt.`,
+    type: "status_change",
+    thesisRequestId,
+    read: 0,
+  });
+
+  // In-App-Benachrichtigung für Erstgutachter (falls vorhanden)
+  if (thesis.examinerId) {
+    await db.insert(notifications).values({
+      userId: thesis.examinerId,
+      title: "Zweitgutachter:in bestätigt",
+      message: `${secondExaminerName} hat die Zweitbetreuung für „${thesis.title}" bestätigt.`,
+      type: "status_change",
+      thesisRequestId,
+      read: 0,
+    });
+  }
+
+  // E-Mail an Erstgutachter
+  if (thesis.examinerId) {
+    const [firstExaminer] = await db
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, thesis.examinerId))
+      .limit(1);
+    if (firstExaminer?.email) {
+      const { sendEmail } = await import("./emailHelper");
+      const baseUrl = process.env.FRONTEND_URL || "https://thesis.htw-berlin.com";
+      await sendEmail({
+        to: firstExaminer.email,
+        subject: `Zweitgutachter:in bestätigt – ${thesis.title}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+            <h2 style="color: #006937;">Zweitgutachter:in hat bestätigt</h2>
+            <p>Guten Tag ${firstExaminer.name},</p>
+            <p><strong>${secondExaminerName}</strong> hat die Zweitbetreuung für folgende Abschlussarbeit bestätigt:</p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+              <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${thesis.title}</td></tr>
+              <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Zweitgutachter:in</td><td style="padding:10px 16px;">${secondExaminerName}</td></tr>
+            </table>
+            <p><a href="${baseUrl}" style="display:inline-block;padding:12px 24px;background:#006937;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Zum Dashboard</a></p>
+            <p style="color:#9ca3af;font-size:12px;margin-top:32px;">HTW Berlin · Thesis Match · Automatisch generierte E-Mail</p>
+          </div>`,
+        text: `Guten Tag ${firstExaminer.name},\n\n${secondExaminerName} hat die Zweitbetreuung für "${thesis.title}" bestätigt.\n\nDashboard: ${baseUrl}`,
+      });
+    }
+  }
+
+  // E-Mail an Studierenden
+  const [student] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, thesis.studentId))
+    .limit(1);
+  if (student?.email) {
+    const { sendEmail } = await import("./emailHelper");
+    const baseUrl = process.env.FRONTEND_URL || "https://thesis.htw-berlin.com";
+    await sendEmail({
+      to: student.email,
+      subject: `Zweitgutachter:in bestätigt – ${thesis.title}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+          <h2 style="color: #006937;">Ihr Prüfungsteam ist vollständig</h2>
+          <p>Guten Tag ${student.name},</p>
+          <p><strong>${secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit bestätigt. Ihr Prüfungsteam ist nun vollständig.</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+            <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${thesis.title}</td></tr>
+            <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Zweitgutachter:in</td><td style="padding:10px 16px;">${secondExaminerName}</td></tr>
+          </table>
+          <p>Sie können jetzt Ihr aktualisiertes Anmeldedokument (mit Zweitgutachter:in) herunterladen.</p>
+          <p><a href="${baseUrl}" style="display:inline-block;padding:12px 24px;background:#006937;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Zum Dashboard</a></p>
+          <p style="color:#9ca3af;font-size:12px;margin-top:32px;">HTW Berlin · Thesis Match · Automatisch generierte E-Mail</p>
+        </div>`,
+      text: `Guten Tag ${student.name},\n\n${secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${thesis.title}" bestätigt.\n\nDashboard: ${baseUrl}`,
+    });
+  }
+}
+
+/**
+ * Zweitgutachter lehnt die Betreuung ab.
+ * Status: PENDING_SECOND_EXAMINER → SECOND_EXAMINER_REJECTED
+ * secondExaminerId wird auf null gesetzt, damit Student neu wählen kann.
+ */
+export async function rejectAsSecondExaminer(
+  thesisRequestId: number,
+  examinerId: number,
+  rejectionReason?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+
+  // Anfrage laden und Berechtigung prüfen
+  const [thesis] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  if (!thesis) throw new Error("Anfrage nicht gefunden");
+  if (thesis.secondExaminerId !== examinerId)
+    throw new Error("Sie sind nicht als Zweitgutachter:in für diese Anfrage eingetragen");
+  if (thesis.status !== "PENDING_SECOND_EXAMINER")
+    throw new Error("Diese Anfrage wartet nicht auf Ihre Bestätigung als Zweitgutachter:in");
+
+  // Status aktualisieren – secondExaminerId zurücksetzen, damit Student neu wählen kann
+  await db.update(thesisRequests)
+    .set({
+      status: "FIRST_EXAMINER_ACCEPTED", // Zurück zu: Erstgutachter hat zugesagt, Zweitgutachter fehlt noch
+      secondExaminerId: null,
+      updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+    })
+    .where(eq(thesisRequests.id, thesisRequestId));
+
+  // Zweitgutachter-Name
+  const [secondExaminerUser] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, examinerId))
+    .limit(1);
+  const secondExaminerName = secondExaminerUser?.name ?? "die Zweitgutachter:in";
+
+  // In-App-Benachrichtigung für Studierenden
+  await db.insert(notifications).values({
+    userId: thesis.studentId,
+    title: "Zweitgutachter:in hat abgelehnt",
+    message: `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" abgelehnt. Bitte wählen Sie eine andere Person.${rejectionReason ? ` Begründung: ${rejectionReason}` : ""}`,
+    type: "status_change",
+    thesisRequestId,
+    read: 0,
+  });
+
+  // E-Mail an Studierenden
+  const [student] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, thesis.studentId))
+    .limit(1);
+  if (student?.email) {
+    const { sendEmail } = await import("./emailHelper");
+    const baseUrl = process.env.FRONTEND_URL || "https://thesis.htw-berlin.com";
+    await sendEmail({
+      to: student.email,
+      subject: `Zweitgutachter:in hat abgelehnt – ${thesis.title}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+          <h2 style="color: #dc2626;">Zweitgutachter:in hat abgelehnt</h2>
+          <p>Guten Tag ${student.name},</p>
+          <p><strong>${secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit leider abgelehnt.</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+            <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${thesis.title}</td></tr>
+            ${rejectionReason ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Begründung</td><td style="padding:10px 16px;">${rejectionReason}</td></tr>` : ""}
+          </table>
+          <p>Bitte wählen Sie in Ihrem Dashboard eine andere Zweitgutachter:in aus.</p>
+          <p><a href="${baseUrl}" style="display:inline-block;padding:12px 24px;background:#006937;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Zum Dashboard</a></p>
+          <p style="color:#9ca3af;font-size:12px;margin-top:32px;">HTW Berlin · Thesis Match · Automatisch generierte E-Mail</p>
+        </div>`,
+      text: `Guten Tag ${student.name},\n\n${secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${thesis.title}" abgelehnt.${rejectionReason ? `\nBegründung: ${rejectionReason}` : ""}\n\nBitte wählen Sie eine andere Person.\n\nDashboard: ${baseUrl}`,
+    });
+  }
+}
+
+/**
+ * Sendet eine Benachrichtigungs-E-Mail an den Zweitgutachter,
+ * wenn ein Student ihn als Zweitgutachter ausgewählt hat.
+ */
+export async function notifySecondExaminerOfSelection(
+  thesisRequestId: number,
+  secondExaminerId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const [thesis] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  if (!thesis) return;
+
+  const [secondExaminer] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, secondExaminerId))
+    .limit(1);
+  if (!secondExaminer?.email) return;
+
+  const [student] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, thesis.studentId))
+    .limit(1);
+  const studentName = student?.name ?? "eine:r Studierende:r";
+
+  const { sendEmail } = await import("./emailHelper");
+  const baseUrl = process.env.FRONTEND_URL || "https://thesis.htw-berlin.com";
+  await sendEmail({
+    to: secondExaminer.email,
+    subject: `Anfrage als Zweitgutachter:in – ${thesis.title}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 32px;">
+        <h2 style="color: #006937;">Anfrage als Zweitgutachter:in</h2>
+        <p>Guten Tag ${secondExaminer.name},</p>
+        <p><strong>${studentName}</strong> hat Sie als Zweitgutachter:in für folgende Abschlussarbeit ausgewählt:</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+          <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${thesis.title}</td></tr>
+          <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studierende:r</td><td style="padding:10px 16px;">${studentName}</td></tr>
+          ${thesis.targetSemester ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${thesis.targetSemester}</td></tr>` : ""}
+        </table>
+        <p>Bitte melden Sie sich in Ihrem Dashboard an und bestätigen oder lehnen Sie die Anfrage ab.</p>
+        <p><a href="${baseUrl}" style="display:inline-block;padding:12px 24px;background:#006937;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Zum Dashboard – Anfrage beantworten</a></p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:32px;">HTW Berlin · Thesis Match · Automatisch generierte E-Mail</p>
+      </div>`,
+    text: `Guten Tag ${secondExaminer.name},\n\n${studentName} hat Sie als Zweitgutachter:in für "${thesis.title}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`,
+  });
+}

@@ -1323,6 +1323,29 @@ export const appRouter = router({
       return getExaminerSecondExaminerRequests(ctx.user.id);
     }),
 
+    // Zweitgutachter bestätigt die Betreuung
+    acceptAsSecondExaminer: anyExaminerProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const { acceptAsSecondExaminer } = await import("./db");
+        await acceptAsSecondExaminer(input.thesisRequestId, ctx.user.id);
+        return { success: true };
+      }),
+
+    // Zweitgutachter lehnt die Betreuung ab
+    rejectAsSecondExaminer: anyExaminerProcedure
+      .input(
+        z.object({
+          thesisRequestId: z.number().int().positive(),
+          rejectionReason: z.string().max(500).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { rejectAsSecondExaminer } = await import("./db");
+        await rejectAsSecondExaminer(input.thesisRequestId, ctx.user.id, input.rejectionReason);
+        return { success: true };
+      }),
+
     getRequestStats: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerRequestStats } = await import("./db");
       return getExaminerRequestStats(ctx.user.id);
@@ -2716,6 +2739,12 @@ export const appRouter = router({
           action: "SECOND_EXAMINER_SET",
           toStatus: "PENDING_SECOND_EXAMINER",
         });
+
+        // E-Mail-Benachrichtigung an den ausgewählten Zweitgutachter (asynchron, kein Fehler wenn fehlschlägt)
+        const { notifySecondExaminerOfSelection } = await import("./db");
+        notifySecondExaminerOfSelection(input.thesisRequestId, input.secondExaminerId).catch(
+          (err: unknown) => console.error("[Email] Zweitgutachter-Benachrichtigung fehlgeschlagen:", err)
+        );
 
         return { success: true };
       }),

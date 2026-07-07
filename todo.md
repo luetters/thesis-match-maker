@@ -1107,3 +1107,18 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: registrationSubmittedDesc für Studierende angepasst ("sofort aktiv, jetzt anmelden")
 - [x] Übersetzungen (DE + EN) für studentAutoApproval-Schlüssel
 - [x] Tests grün (61/61), Checkpoint gespeichert
+
+## Feature: Zweitgutachter-Bestätigungs-Workflow ✅ KOMPLETT
+
+- [x] Backend db.ts: `acceptAsSecondExaminer(thesisRequestId, examinerId)` → Status `SECOND_EXAMINER_ACCEPTED`
+- [x] Backend db.ts: `rejectAsSecondExaminer(thesisRequestId, examinerId)` → Status `FIRST_EXAMINER_ACCEPTED` + secondExaminerId=null
+- [x] Backend routers.ts: `examiner.acceptAsSecondExaminer` (anyExaminerProcedure)
+- [x] Backend routers.ts: `examiner.rejectAsSecondExaminer` (anyExaminerProcedure)
+- [x] Backend: E-Mail an Zweitgutachter nach Auswahl durch Studierenden (notifySecondExaminerOfSelection)
+- [x] Backend: E-Mail an Erstgutachter + Studierenden nach Bestätigung durch Zweitgutachter
+- [x] Backend: E-Mail an Studierenden nach Ablehnung durch Zweitgutachter
+- [x] Backend: PDF on-demand – enthält automatisch Zweitgutachter sobald gesetzt
+- [x] Frontend: Accept/Reject-Buttons im Zweitgutachter-Tab des ExaminerRequestDashboard
+- [x] Frontend: Ablehnen-Dialog mit optionaler Begründung
+- [x] Frontend: Amber-Badge auf Tab-Header bei ausstehenden Anfragen
+- [x] Tests grün (61/61), Checkpoint gespeichert
