@@ -3663,6 +3663,50 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    getConditionalDocuments: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const existing = await getThesisRequestById(input.thesisRequestId);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        // Zugriff: Studierende der Thesis, zugewiesene Prüfer:innen, Admin
+        const isStudent = existing.studentId === ctx.user.id;
+        const isExaminer = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isStudent && !isExaminer && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { conditionalDocuments } = await import("../drizzle/schema");
+        const { eq: eqDrizzle, desc } = await import("drizzle-orm");
+        const docs = await db.select().from(conditionalDocuments)
+          .where(eqDrizzle(conditionalDocuments.thesisRequestId, input.thesisRequestId))
+          .orderBy(desc(conditionalDocuments.createdAt));
+        return docs;
+      }),
+
+    deleteConditionalDocument: protectedProcedure
+      .input(z.object({ documentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { conditionalDocuments } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        const [doc] = await db.select().from(conditionalDocuments)
+          .where(eqDrizzle(conditionalDocuments.id, input.documentId));
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+        // Nur Uploader oder Admin darf löschen
+        const isOwner = doc.uploadedByUserId === ctx.user.id;
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+        if (!isOwner && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await db.delete(conditionalDocuments).where(eqDrizzle(conditionalDocuments.id, input.documentId));
+        await createAuditLogEntry({
+          thesisRequestId: doc.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "CONDITIONAL_DOCUMENT_DELETED",
+          reason: `Dokument gelöscht: ${doc.originalFilename}`,
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────────

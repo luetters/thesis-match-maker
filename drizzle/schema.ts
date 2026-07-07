@@ -496,3 +496,19 @@ export const examinerComments = mysqlTable("examiner_comments", {
 });
 export type InsertExaminerComment = typeof examinerComments.$inferInsert;
 export type SelectExaminerComment = typeof examinerComments.$inferSelect;
+
+// ─── Conditional Documents (Dokumente bei Zusage unter Vorbehalt) ─────────────
+export const conditionalDocuments = mysqlTable("conditional_documents", {
+  id: int().autoincrement().notNull().primaryKey(),
+  thesisRequestId: int("thesis_request_id").notNull().references(() => thesisRequests.id, { onDelete: "cascade" }),
+  uploadedByUserId: int("uploaded_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  originalFilename: varchar("original_filename", { length: 512 }).notNull(),
+  storageKey: varchar("storage_key", { length: 1024 }).notNull(),
+  storageUrl: varchar("storage_url", { length: 2048 }).notNull(),
+  mimeType: varchar("mime_type", { length: 128 }).notNull().default("application/pdf"),
+  fileSizeBytes: int("file_size_bytes"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+export type InsertConditionalDocument = typeof conditionalDocuments.$inferInsert;
+export type SelectConditionalDocument = typeof conditionalDocuments.$inferSelect;

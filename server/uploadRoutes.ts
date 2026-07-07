@@ -419,4 +419,80 @@ export function registerUploadRoutes(app: Express) {
       res.status(500).json({ error: message });
     }
   });
+
+  // POST /api/thesis/:id/conditional-documents – Dokument bei Zusage unter Vorbehalt hochladen
+  const conditionalDocUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    fileFilter: (_req, file, cb) => {
+      const allowed = ["application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (!allowed.includes(file.mimetype)) {
+        cb(new Error("Nur PDF-, Word-, PowerPoint- und Bilddateien sind erlaubt."));
+      } else {
+        cb(null, true);
+      }
+    },
+  });
+
+  app.post(
+    "/api/thesis/:id/conditional-documents",
+    (req, res, next) => conditionalDocUpload.single("file")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu gro\u00df. Maximal 10 MB erlaubt." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ung\u00fcltige Datei." });
+      }
+      next();
+    }),
+    async (req: Request, res: Response) => {
+      try {
+        const user = await getUserFromRequest(req);
+        if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
+        const thesisId = parseInt(req.params.id, 10);
+        if (isNaN(thesisId)) { res.status(400).json({ error: "Ung\u00fcltige Thesis-ID" }); return; }
+        const thesis = await getThesisRequestById(thesisId);
+        if (!thesis) { res.status(404).json({ error: "Thesis nicht gefunden" }); return; }
+        // Nur Studierende der eigenen Thesis d\u00fcrfen hochladen
+        if (thesis.studentId !== user.id) { res.status(403).json({ error: "Kein Zugriff." }); return; }
+        if (!req.file) { res.status(400).json({ error: "Keine Datei \u00fcbermittelt." }); return; }
+        const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 500) : null;
+        const safeFilename = req.file.originalname.replace(/[^a-zA-Z0-9._\-\u00C0-\u024F]/g, "_");
+        const storageFilename = `conditional-${thesisId}-${Date.now()}-${safeFilename}`;
+        const { key, url } = await storagePut(`conditional-docs/${storageFilename}`, req.file.buffer, req.file.mimetype);
+        // DB-Eintrag
+        const { getDb } = await import("./db");
+        const { conditionalDocuments } = await import("../drizzle/schema");
+        const db = await getDb();
+        if (!db) { res.status(500).json({ error: "Datenbankfehler" }); return; }
+        await db.insert(conditionalDocuments).values({
+          thesisRequestId: thesisId,
+          uploadedByUserId: user.id,
+          originalFilename: req.file.originalname,
+          storageKey: key,
+          storageUrl: url,
+          mimeType: req.file.mimetype,
+          fileSizeBytes: req.file.size,
+          note,
+        });
+        // Audit-Log
+        await createAuditLogEntry({
+          thesisRequestId: thesisId,
+          actorId: user.id,
+          actorRole: user.role,
+          action: "CONDITIONAL_DOCUMENT_UPLOADED",
+          metadata: { filename: req.file.originalname, key },
+        });
+        res.json({ success: true, key, url, filename: req.file.originalname });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Upload fehlgeschlagen.";
+        console.error("[Upload/conditional-docs] Fehler:", err);
+        res.status(500).json({ error: message });
+      }
+    }
+  );
 }

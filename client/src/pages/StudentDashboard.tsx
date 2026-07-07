@@ -1320,7 +1320,47 @@ function MyRequests() {
 
 function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils: any; withdrawMutation: any }) {
   const [showRegPreview, setShowRegPreview] = useState(false);
+  const [condDocNote, setCondDocNote] = useState("");
+  const [condDocUploading, setCondDocUploading] = useState(false);
+  const condDocFileRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
+
+  const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
+
+  const { data: condDocs, refetch: refetchCondDocs } = trpc.examinerEmailTemplates.getConditionalDocuments.useQuery(
+    { thesisRequestId: req.id },
+    { enabled: isConditional }
+  );
+
+  const deleteCondDocMutation = trpc.examinerEmailTemplates.deleteConditionalDocument.useMutation({
+    onSuccess: () => { refetchCondDocs(); toast.success("Dokument gelöscht."); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  async function handleCondDocUpload(file: File) {
+    if (!file) return;
+    setCondDocUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (condDocNote.trim()) formData.append("note", condDocNote.trim());
+      const res = await fetch(`/api/thesis/${req.id}/conditional-documents`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
+      toast.success(`"${json.filename}" erfolgreich hochgeladen.`);
+      setCondDocNote("");
+      if (condDocFileRef.current) condDocFileRef.current.value = "";
+      refetchCondDocs();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
+    } finally {
+      setCondDocUploading(false);
+    }
+  }
   return (
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-4 mb-3">
@@ -1487,6 +1527,73 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
                       <p className="text-xs text-amber-700 whitespace-pre-wrap">{(req as any).conditionalAcceptanceReason}</p>
                     </div>
                   )}
+
+                  {/* Upload-Bereich */}
+                  <div className="mt-3 pt-3 border-t border-amber-200">
+                    <p className="text-xs font-semibold text-amber-800 mb-2">Dokumente einreichen</p>
+                    <p className="text-xs text-amber-700 mb-3">
+                      Laden Sie hier überarbeitete Exposés oder ergänzende Unterlagen hoch, die Ihrer Betreuungsperson vorgelegt werden sollen. Erlaubte Formate: PDF, Word, PowerPoint, Bilder (max. 10 MB).
+                    </p>
+
+                    {/* Vorhandene Dokumente */}
+                    {condDocs && condDocs.length > 0 && (
+                      <div className="mb-3 space-y-1.5">
+                        {condDocs.map((doc: any) => (
+                          <div key={doc.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-amber-200">
+                            <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div className="flex-1 min-w-0">
+                              <a href={doc.storageUrl} target="_blank" rel="noopener noreferrer"
+                                className="text-xs font-medium text-blue-700 hover:underline truncate block">
+                                {doc.originalFilename}
+                              </a>
+                              {doc.note && <p className="text-xs text-amber-600 truncate">{doc.note}</p>}
+                              <p className="text-xs text-gray-400">{new Date(doc.createdAt).toLocaleDateString("de-DE")}</p>
+                            </div>
+                            <button
+                              onClick={() => { if (confirm("Dokument wirklich löschen?")) deleteCondDocMutation.mutate({ documentId: doc.id }); }}
+                              className="p-1 text-red-400 hover:text-red-600 flex-shrink-0"
+                              title="Löschen"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Notiz-Feld */}
+                    <textarea
+                      value={condDocNote}
+                      onChange={(e) => setCondDocNote(e.target.value)}
+                      placeholder="Optionale Anmerkung zum Dokument..."
+                      rows={2}
+                      className="w-full text-xs border border-amber-200 rounded-lg px-3 py-2 bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none mb-2"
+                    />
+
+                    {/* Upload-Button */}
+                    <input
+                      ref={condDocFileRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCondDocUpload(f); }}
+                    />
+                    <button
+                      onClick={() => condDocFileRef.current?.click()}
+                      disabled={condDocUploading}
+                      className="flex items-center gap-2 px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      {condDocUploading ? (
+                        <><svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Wird hochgeladen...</>
+                      ) : (
+                        <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>Dokument hochladen</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
