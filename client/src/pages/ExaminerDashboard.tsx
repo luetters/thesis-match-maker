@@ -519,7 +519,13 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [secondExaminerEmailSubject, setSecondExaminerEmailSubject] = useState("");
   const [secondExaminerEmailBody, setSecondExaminerEmailBody] = useState("");
   const [secondExaminerEmailSent, setSecondExaminerEmailSent] = useState(false);
+  const [showSetSecondDialog, setShowSetSecondDialog] = useState(false);
+  const [secondSearch, setSecondSearch] = useState("");
+  const [selectedSecondId, setSelectedSecondId] = useState<number | null>(null);
+  const [setSecondSent, setSetSecondSent] = useState(false);
   const utils = trpc.useUtils();
+
+  const { data: secondCandidates = [] } = (trpc.thesis as any).getAllSecondExaminerCandidates?.useQuery?.();
 
   const contactSecondMutation = (trpc.examinerEmailTemplates as any).contactSecondExaminer?.useMutation?.({
     onSuccess: () => {
@@ -527,6 +533,15 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       setTimeout(() => { setShowSecondExaminerEmailDialog(false); setSecondExaminerEmailSent(false); }, 2000);
     },
     onError: (err: any) => toast.error(err.message ?? "E-Mail konnte nicht gesendet werden."),
+  });
+
+  const setWantedSecondMutation = (trpc.examinerEmailTemplates as any).setWantedSecondExaminerByFirstExaminer?.useMutation?.({
+    onSuccess: () => {
+      setSetSecondSent(true);
+      utils.thesis.examinerRequests.invalidate();
+      setTimeout(() => { setShowSetSecondDialog(false); setSetSecondSent(false); setSelectedSecondId(null); setSecondSearch(""); }, 2000);
+    },
+    onError: (err: any) => toast.error(err.message ?? "Fehler beim Speichern."),
   });
 
   /** Fügt Markdown-Formatierung um den selektierten Text ein. */
@@ -872,13 +887,77 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           )}
           {/* Kein Zweitgutachter vorhanden oder angefragt */}
           {!req.secondExaminerName && !req.wantedSecondExaminerName && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              Zweitgutachter:in fehlt noch
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                Zweitgutachter:in fehlt noch
+              </span>
+              {req.status === "FIRST_EXAMINER_ACCEPTED" && (
+                <button
+                  onClick={() => { setSecondSearch(""); setSelectedSecondId(null); setShowSetSecondDialog(true); }}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  Zweitgutachter:in eintragen
+                </button>
+              )}
+            </div>
           )}
+        </div>
+      )}
+
+      {/* Dialog: Neuen Zweitgutachter eintragen */}
+      {showSetSecondDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900">Zweitgutachter:in eintragen</h3>
+              <button onClick={() => setShowSetSecondDialog(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Wählen Sie eine Person als neuen Zweitgutachter-Wunsch für <strong>{req.title}</strong>. Die Person erhält anschließend eine Anfrage.</p>
+            <input
+              type="text"
+              placeholder="Name suchen..."
+              value={secondSearch}
+              onChange={(e) => setSecondSearch(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900]"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
+              {(secondCandidates as any[])
+                .filter((c: any) => !secondSearch || c.name?.toLowerCase().includes(secondSearch.toLowerCase()) || c.email?.toLowerCase().includes(secondSearch.toLowerCase()))
+                .map((c: any) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedSecondId(c.id)}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
+                      selectedSecondId === c.id
+                        ? "bg-[#76b900] text-white"
+                        : "hover:bg-gray-50 border border-gray-100"
+                    }`}
+                  >
+                    <span className="font-medium">{c.name}</span>
+                    {c.email && <span className="ml-2 text-xs opacity-70">{c.email}</span>}
+                  </button>
+                ))}
+              {(secondCandidates as any[]).filter((c: any) => !secondSearch || c.name?.toLowerCase().includes(secondSearch.toLowerCase()) || c.email?.toLowerCase().includes(secondSearch.toLowerCase())).length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-4">Keine Treffer</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowSetSecondDialog(false)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
+              <button
+                disabled={!selectedSecondId || setWantedSecondMutation?.isPending}
+                onClick={() => setWantedSecondMutation?.mutate?.({ thesisRequestId: req.id, secondExaminerId: selectedSecondId! })}
+                className="px-4 py-2 rounded-xl bg-[#76b900] text-white text-sm font-medium hover:bg-[#5a8f00] disabled:opacity-50 transition-colors"
+              >
+                {setSecondSent ? "✅ Gespeichert" : setWantedSecondMutation?.isPending ? "Speichere..." : "Eintragen"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

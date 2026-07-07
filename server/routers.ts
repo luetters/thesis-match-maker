@@ -3388,6 +3388,42 @@ export const appRouter = router({
         });
         return { success: true, sentTo: input.recipientEmail };
       }),
+
+    /** Erstgutachter:in trägt neuen Zweitgutachter-Wunsch ein (nach Ablehnung) */
+    setWantedSecondExaminerByFirstExaminer: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        secondExaminerId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        // Nur Erstgutachter:in oder Admin
+        const isFirstExaminer = req.examinerId === ctx.user.id || (req as any).wantedExaminerId === ctx.user.id;
+        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isFirstExaminer && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen können den Zweitgutachter-Wunsch setzen." });
+        // Status muss FIRST_EXAMINER_ACCEPTED sein (Zweitgutachter fehlt noch)
+        if (req.status !== "FIRST_EXAMINER_ACCEPTED")
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Zweitgutachter:in kann nur bei Status \"Erstgutachter:in zugesagt\" eingetragen werden." });
+        // Nicht identisch mit Erstgutachter
+        if (input.secondExaminerId === req.examinerId)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Zweitgutachter:in darf nicht identisch mit Erstgutachter:in sein." });
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { thesisRequests: tr } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        await db.update(tr)
+          .set({ wantedSecondExaminerId: input.secondExaminerId })
+          .where(eqDrizzle(tr.id, input.thesisRequestId));
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "FIRST_EXAMINER_SET_WANTED_SECOND",
+          reason: `Erstgutachter:in hat neuen Zweitgutachter-Wunsch (ID: ${input.secondExaminerId}) eingetragen.`,
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────

@@ -5902,11 +5902,12 @@ export async function rejectAsSecondExaminer(
   if (thesis.status !== "PENDING_SECOND_EXAMINER")
     throw new Error("Diese Anfrage wartet nicht auf Ihre Bestätigung als Zweitgutachter:in");
 
-  // Status aktualisieren – secondExaminerId zurücksetzen, damit Student neu wählen kann
+  // Status aktualisieren – secondExaminerId und wantedSecondExaminerId zurücksetzen, damit neu gewählt werden kann
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_ACCEPTED", // Zurück zu: Erstgutachter hat zugesagt, Zweitgutachter fehlt noch
       secondExaminerId: null,
+      wantedSecondExaminerId: null,
       updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
     })
     .where(eq(thesisRequests.id, thesisRequestId));
