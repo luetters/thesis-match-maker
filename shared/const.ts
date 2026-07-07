@@ -34,6 +34,7 @@ export const STATUS_BADGE: Record<string, { label: string; className: string; he
   SECOND_EXAMINER_SET:          { label: "Zweitgutachter:in gesetzt",     className: "bg-green-100 text-green-800 border border-green-200",  hex: "#22C55E" },
   REJECTED:                     { label: "Abgelehnt",                     className: "bg-red-100 text-red-800 border border-red-200",       hex: "#EF4444" },
   FIRST_EXAMINER_REJECTED:      { label: "Erstgutachter:in abgelehnt",    className: "bg-red-100 text-red-800 border border-red-200",       hex: "#EF4444" },
+  CONDITIONAL_ACCEPTANCE:        { label: "Zusage unter Vorbehalt",         className: "bg-amber-100 text-amber-800 border border-amber-200",  hex: "#F59E0B" },
   WITHDRAWN:                    { label: "Zurückgezogen",                 className: "bg-gray-100 text-gray-600 border border-gray-200",    hex: "#9CA3AF" },
   DRAFT_BY_EXAMINER:            { label: "Entwurf (Prüfer:in)",           className: "bg-gray-100 text-gray-600 border border-gray-200",    hex: "#9CA3AF" },
   CANCELLED:                    { label: "Storniert",                     className: "bg-gray-100 text-gray-600 border border-gray-200",    hex: "#9CA3AF" },

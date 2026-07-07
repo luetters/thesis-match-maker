@@ -268,6 +268,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
       keywords: thesisRequests.keywords,
+      conditionalAcceptanceReason: thesisRequests.conditionalAcceptanceReason,
       // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,

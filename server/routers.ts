@@ -845,8 +845,33 @@ export const appRouter = router({
           toStatus: newStatus,
           reason: input.action === "conditional" ? input.conditionalReason : input.rejectionReason,
         });
-        // In-App-Benachrichtigung (bei conditional wird sie bereits in conditionalAcceptThesisRequest gesetzt)
-        if (input.action !== "conditional") {
+        // In-App-Benachrichtigung
+        if (input.action === "conditional") {
+          await notifyThesisParticipants({
+            thesisRequestId: input.id,
+            studentId: existing.studentId,
+            examinerId: existing.examinerId ?? null,
+            secondExaminerId: existing.secondExaminerId,
+            title: "Zusage unter Vorbehalt",
+            message: `Ihre Anfrage "${existing.title}" hat eine Zusage unter Vorbehalt erhalten.${input.conditionalReason ? ` Vorbehalt: ${input.conditionalReason}` : ""}`,
+            type: "status_change",
+          });
+          // E-Mail an Studierenden in deren Kommunikationssprache
+          const student = await getUserById(existing.studentId);
+          if (student?.email) {
+            const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
+            const examiner = await getUserById(ctx.user.id);
+            const { conditionalAcceptanceEmail } = await import("./emailTemplates");
+            const tpl = conditionalAcceptanceEmail({
+              recipientName: student.name,
+              examinerName: examiner?.name ?? ctx.user.name,
+              thesisTitle: existing.title ?? "",
+              reason: input.conditionalReason ?? "",
+              lang: studentLang,
+            });
+            await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
+          }
+        } else {
           await notifyThesisParticipants({
             thesisRequestId: input.id,
             studentId: existing.studentId,
@@ -3608,9 +3633,39 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    updateConditionalReason: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number(),
+        reason: z.string().min(1, "Bitte einen Vorbehalt angeben."),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getThesisRequestById(input.thesisRequestId);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        if (existing.status !== "CONDITIONAL_ACCEPTANCE") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Nur bei Status 'Zusage unter Vorbehalt' möglich." });
+        }
+        const isAssigned = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+        if (!isAssigned && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { thesisRequests: tr } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        await db.update(tr)
+          .set({ conditionalAcceptanceReason: input.reason })
+          .where(eqDrizzle(tr.id, input.thesisRequestId));
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "CONDITIONAL_ACCEPTANCE",
+          reason: `Vorbehalt aktualisiert: ${input.reason}`,
+        });
+        return { success: true };
+      }),
   }),
 
-  // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────
+  // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────────
   invite: router({
     /**
      * Erstgutachter oder PAV legt einen Entwurf-Antrag an und lädt den Studierenden per E-Mail ein.

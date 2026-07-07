@@ -180,6 +180,50 @@ export function statusChangeEmail(opts: {
   return { subject, html: htmlWrapper(body) };
 }
 
+// ─── Zusage unter Vorbehalt ──────────────────────────────────────────────────
+export function conditionalAcceptanceEmail(opts: {
+  recipientName?: string | null;
+  examinerName?: string | null;
+  thesisTitle: string;
+  reason: string;
+  lang?: Lang;
+}): { subject: string; html: string } {
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Conditional Acceptance: ${opts.thesisTitle}`
+    : `HTW Berlin – Zusage unter Vorbehalt: ${opts.thesisTitle}`;
+
+  const reasonBlockDE = opts.reason
+    ? `${p(`<strong>Vorbehalt / Hinweis des Betreuers:</strong>`)}
+       ${p(opts.reason)}`
+    : "";
+  const reasonBlockEN = opts.reason
+    ? `${p(`<strong>Condition / Note from supervisor:</strong>`)}
+       ${p(opts.reason)}`
+    : "";
+
+  let body: string;
+  if (opts.lang === "en") {
+    body = `
+    ${p(`Dear ${opts.recipientName ?? "Student"},`)}
+    ${p(`Your thesis application <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong> has received a <strong>conditional acceptance</strong> from ${opts.examinerName ?? "your supervisor"}.`)}
+    ${p("This means the supervisor is generally willing to supervise your thesis, but has indicated conditions or open questions that must be resolved before a final commitment can be given.")}
+    ${reasonBlockEN}
+    ${p("Please contact your supervisor directly to clarify the open points. Once all conditions have been met, the supervisor will confirm the final acceptance in the system.")}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  } else {
+    body = `
+    ${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
+    ${p(`Ihre Abschlussarbeitsanfrage <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> hat eine <strong>Zusage unter Vorbehalt</strong> von ${opts.examinerName ?? "Ihrer Betreuungsperson"} erhalten.`)}
+    ${p("Das bedeutet, dass die Betreuungsperson grundsätzlich bereit ist, Ihre Arbeit zu betreuen, jedoch noch Bedingungen oder offene Fragen bestehen, die vor einer endgültigen Zusage geklärt werden müssen.")}
+    ${reasonBlockDE}
+    ${p("Bitte nehmen Sie direkt Kontakt mit Ihrer Betreuungsperson auf, um die offenen Punkte zu klären. Sobald alle Bedingungen erfüllt sind, wird die Betreuungsperson die endgültige Zusage im System bestätigen.")}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+  `;
+  }
+  return { subject, html: htmlWrapper(body) };
+}
+
 // ─── Anmeldefähigkeit ─────────────────────────────────────────────────────────
 export function enrollmentEligibilityEmail(opts: {
   studentName?: string | null;

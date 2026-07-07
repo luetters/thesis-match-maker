@@ -493,6 +493,66 @@ function MarkdownNote({ content }: { content: string }) {
   return <div className="text-sm text-gray-800 space-y-0.5 [&_li]:list-disc [&_li]:ml-4" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+function ConditionalReasonBox({ requestId, reason, onUpdated }: { requestId: number; reason: string; onUpdated: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(reason);
+  const updateMutation = trpc.examinerEmailTemplates.updateConditionalReason.useMutation({
+    onSuccess: () => { setEditing(false); onUpdated(); toast.success("Vorbehalt aktualisiert."); },
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+  return (
+    <div className="px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
+      <div className="flex items-start gap-2">
+        <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-semibold text-amber-800">Vorbehalt:</p>
+            {!editing && (
+              <button
+                onClick={() => { setEditValue(reason); setEditing(true); }}
+                className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900 border border-amber-300 rounded px-1.5 py-0.5 hover:bg-amber-100 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Bearbeiten
+              </button>
+            )}
+          </div>
+          {editing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                rows={3}
+                className="w-full text-xs border border-amber-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+                placeholder="Vorbehalt / Begründung eingeben..."
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateMutation.mutate({ thesisRequestId: requestId, reason: editValue })}
+                  disabled={updateMutation.isPending || !editValue.trim()}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                >
+                  {updateMutation.isPending ? "Speichern..." : "Speichern"}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-700 whitespace-pre-wrap">{reason || <span className="italic text-amber-500">Kein Vorbehalt eingetragen.</span>}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
@@ -1169,16 +1229,12 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       {(isPending || isConditional) && (
         <div className="space-y-3">
           {/* Vorbehalt-Hinweis wenn Status CONDITIONAL_ACCEPTANCE */}
-          {isConditional && (req as any).conditionalAcceptanceReason && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
-              <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <div>
-                <p className="text-xs font-semibold text-amber-800">Vorbehalt:</p>
-                <p className="text-xs text-amber-700">{(req as any).conditionalAcceptanceReason}</p>
-              </div>
-            </div>
+          {isConditional && (
+            <ConditionalReasonBox
+              requestId={req.id}
+              reason={(req as any).conditionalAcceptanceReason ?? ""}
+              onUpdated={() => utils.thesis.examinerRequests.invalidate()}
+            />
           )}
           <div className="flex gap-2">
             <button
@@ -1661,9 +1717,20 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 }
 
 // ─── Requests View ────────────────────────────────────────────────────────────
-type RequestSortKey = "name" | "programme" | "semester" | "title" | "date";
-
-function sortRequests<T extends { studentName?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; department?: string; targetSemester?: string | null; title?: string; createdAt?: string }>(list: T[], key: RequestSortKey): T[] {
+type RequestSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
+const STATUS_SORT_ORDER: Record<string, number> = {
+  CONDITIONAL_ACCEPTANCE: 0,
+  PENDING_FIRST_EXAMINER: 1,
+  PENDING: 2,
+  FIRST_EXAMINER_ACCEPTED: 3,
+  SECOND_EXAMINER_ASSIGNED: 4,
+  MATCHED: 5,
+  ACCEPTED: 6,
+  REJECTED: 7,
+  FIRST_EXAMINER_REJECTED: 8,
+  WITHDRAWN: 9,
+};
+function sortRequests<T extends { studentName?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; department?: string; targetSemester?: string | null; title?: string; createdAt?: string; status?: string }>(list: T[], key: RequestSortKey): T[] {
   return [...list].sort((a, b) => {
     switch (key) {
       case "name": return (a.studentName ?? "").localeCompare(b.studentName ?? "", "de");
@@ -1671,6 +1738,7 @@ function sortRequests<T extends { studentName?: string | null; programmeName?: s
       case "semester": return (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "", "de");
       case "title": return (a.title ?? "").localeCompare(b.title ?? "", "de");
       case "date": return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+      case "status": return (STATUS_SORT_ORDER[a.status ?? ""] ?? 99) - (STATUS_SORT_ORDER[b.status ?? ""] ?? 99);
       default: return 0;
     }
   });
@@ -1733,6 +1801,7 @@ function RequestsView() {
 
   const sortOptions: { value: RequestSortKey; label: string }[] = [
     { value: "date", label: "Neueste zuerst" },
+    { value: "status", label: "Status" },
     { value: "name", label: "Name A–Z" },
     { value: "programme", label: "Studiengang A–Z" },
     { value: "semester", label: "Semester" },
@@ -2434,7 +2503,9 @@ function Overview() {
   const stats = {
     total: requestsAny.length,
     pending: requestsAny.filter((r: any) => PENDING_STATUSES.includes(r.status)).length,
+    conditional: requestsAny.filter((r: any) => r.status === "CONDITIONAL_ACCEPTANCE").length,
     accepted: requestsAny.filter((r: any) => ACCEPTED_STATUSES.includes(r.status)).length,
+    rejected: requestsAny.filter((r: any) => r.status === "REJECTED" || r.status === "FIRST_EXAMINER_REJECTED").length,
     matched: requestsAny.filter((r: any) => r.status === "MATCHED" || r.status === "SECOND_EXAMINER_ASSIGNED").length,
   };
   // Auslastung: nur Semester mit gespeicherten Kapazitäten oder aktiver Nutzung
@@ -2508,11 +2579,13 @@ function Overview() {
       {/* Ausstehende Einladungen */}
       <PendingInvitationsPanel onChanged={() => utils.thesis.examinerRequests.invalidate()} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: t.examiner.statsTotal ?? "Gesamt", value: stats.total, color: "text-gray-900" },
           { label: t.examiner.statsOpen ?? "Offen", value: stats.pending, color: "text-amber-600" },
+          { label: t.examiner.statsConditional ?? "Unter Vorbehalt", value: stats.conditional, color: "text-orange-500" },
           { label: t.examiner.statsAccepted ?? "Angenommen", value: stats.accepted, color: "text-primary" },
+          { label: t.examiner.statsRejected ?? "Abgelehnt", value: stats.rejected, color: "text-red-500" },
           { label: t.examiner.statsMatched ?? "Matched", value: stats.matched, color: "text-blue-600" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
