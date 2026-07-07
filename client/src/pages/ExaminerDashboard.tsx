@@ -1,6 +1,7 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import Profile from "@/pages/Profile";
+import SupervisionCapacities from "@/pages/SupervisionCapacities";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -393,6 +394,7 @@ function useNavItems() {
     { href: "/examiner/requests", label: t.examiner.requests, icon: Icons.inbox },
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
+    { href: "/examiner/capacities", label: t.supervisionCapacitiesPage.navLabel, icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
     { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
   ];
   return items;
@@ -2907,11 +2909,12 @@ function SelectedDropZone({ isOver }: { isOver: boolean }) {
 export default function ExaminerDashboard() {
   const [location, navigate] = useLocation();
   // URL-basierte Tab-Initialisierung: /examiner/profile öffnet direkt den Profil-Tab
-  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" => {
+  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "capacities" => {
     if (location === "/examiner/profile") return "profile";
     if (location === "/examiner/requests") return "requests";
     if (location === "/examiner/colloquiums") return "colloquiums";
     if (location === "/examiner/history") return "history";
+    if (location === "/examiner/capacities") return "capacities";
     if (location === "/examiner/programmes") return "profile"; // Weiterleitung: Studiengänge jetzt in Mein Profil
     if (location === "/examiner/commission") return "profile"; // Kommissionspräferenzen jetzt in Mein Profil
     return "overview";
@@ -2951,7 +2954,7 @@ export default function ExaminerDashboard() {
       else if (item.href === "/examiner/colloquiums") setActiveTab("colloquiums");
       else if (item.href === "/examiner/history") setActiveTab("history");
       else if (item.href === "/examiner/profile") setActiveTab("profile");
-
+      else if (item.href === "/examiner/capacities") setActiveTab("capacities");
     },
   }));
 
@@ -2961,6 +2964,7 @@ export default function ExaminerDashboard() {
     colloquiums: t.examiner.colloquiums,
     history: t.examiner.history,
     profile: t.examiner.profile,
+    capacities: t.supervisionCapacitiesPage.title,
   };
 
   return (
@@ -2970,6 +2974,7 @@ export default function ExaminerDashboard() {
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "history" && <ExaminerStatusHistory />}
       {activeTab === "profile" && <Profile embedded={true} />}
+      {activeTab === "capacities" && <SupervisionCapacities />}
     </ThesisDashboardLayout>
   );
 }

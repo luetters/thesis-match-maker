@@ -1122,3 +1122,15 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: Ablehnen-Dialog mit optionaler Begründung
 - [x] Frontend: Amber-Badge auf Tab-Header bei ausstehenden Anfragen
 - [x] Tests grün (61/61), Checkpoint gespeichert
+
+## Betreuungskapazitäten als eigener Sidebar-Menüpunkt ✅ KOMPLETT
+
+- [x] Neue Seite SupervisionCapacities.tsx erstellt
+- [x] Verbessertes Tabellen-Design mit Fortschrittsbalken
+- [x] Linke Spalten: Eigene Planung (editierbare Max-Werte für Erst-/Zweitbetreuung)
+- [x] Rechte Spalten: Bereits erteilte Zusagen (Erstbetreuer + Zweitbetreuer getrennt)
+- [x] Sidebar-Eintrag in useNavItems() OBERHALB von "Mein Profil" hinzugefügt
+- [x] Routing in ExaminerDashboard für /examiner/capacities hinzugefügt
+- [x] Betreuungskapazitäten-Block aus Profile.tsx entfernt
+- [x] Vollständige DE/EN-Übersetzungen in LanguageContext.tsx (supervisionCapacitiesPage)
+- [x] 61 Tests grün
