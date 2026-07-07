@@ -53,7 +53,11 @@ export function generateLvvoPdf(
 
   // ─── Logo ──────────────────────────────────────────────────────────────────
   try {
-    doc.addImage(HTW_LOGO_BASE64, "JPEG", margin, 12, 38, 14);
+    // Logo: 477x284 px → Seitenverhältnis 1.6796:1
+    // Bei 40mm Breite → Höhe = 40 / 1.6796 ≈ 23.8mm
+    const logoW = 40;
+    const logoH = Math.round((logoW / (477 / 284)) * 10) / 10;
+    doc.addImage(HTW_LOGO_BASE64, "JPEG", margin, 10, logoW, logoH);
   } catch {
     // Logo-Fehler ignorieren
   }
