@@ -144,9 +144,28 @@ export function statusChangeEmail(opts: {
   thesisTitle: string;
   statusTextDE: string;
   statusTextEN: string;
+  lang?: Lang;
 }): { subject: string; html: string } {
-  const subject = `HTW Berlin – Statusänderung / Status Update: ${opts.thesisTitle}`;
-  const body = `
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Status Update: ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Statusänderung: ${opts.thesisTitle}`
+    : `HTW Berlin – Statusänderung / Status Update: ${opts.thesisTitle}`;
+  let body: string;
+  if (opts.lang === "en") {
+    body = `
+    ${p(`Dear ${opts.recipientName ?? "User"},`)}
+    ${p(opts.statusTextEN)}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  } else if (opts.lang === "de") {
+    body = `
+    ${p(`Sehr geehrte/r ${opts.recipientName ?? "Nutzende/r"},`)}
+    ${p(opts.statusTextDE)}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+  `;
+  } else {
+    body = `
     ${p(`Sehr geehrte/r ${opts.recipientName ?? "Nutzende/r"},`)}
     ${p(opts.statusTextDE)}
     ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
@@ -157,6 +176,7 @@ export function statusChangeEmail(opts: {
     ${p(opts.statusTextEN)}
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
+  }
   return { subject, html: htmlWrapper(body) };
 }
 
@@ -166,19 +186,38 @@ export function enrollmentEligibilityEmail(opts: {
   thesisTitle: string;
   eligible: boolean;
   note?: string | null;
+  lang?: Lang;
 }): { subject: string; html: string } {
-  const subject = `HTW Berlin – Anmeldefähigkeit / Enrollment Eligibility: ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Enrollment Eligibility: ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Anmeldefähigkeit: ${opts.thesisTitle}`
+    : `HTW Berlin – Anmeldefähigkeit / Enrollment Eligibility: ${opts.thesisTitle}`;
   const statusDE = opts.eligible
-    ? "Ihre Anmeldefähigkeit wurde bestätigt. Ihr Antrag wird nun weiterbearbeitet."
-    : `Ihre Anmeldefähigkeit wurde nicht bestätigt. Ihr Antrag wurde abgelehnt.${opts.note ? " Begründung: " + opts.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
+    ? "Ihre Anmeldefähigkeit wurde bestätigt. Ihr Antrag wird nun weiterbearbeitet."
+    : `Ihre Anmeldefähigkeit wurde nicht bestätigt. Ihr Antrag wurde abgelehnt.${opts.note ? " Begründung: " + opts.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
   const statusEN = opts.eligible
     ? "Your enrollment eligibility has been confirmed. Your application will now be processed further."
     : `Your enrollment eligibility has not been confirmed. Your application has been rejected.${opts.note ? " Reason: " + opts.note : ""} Please contact the examination office.`;
 
-  const body = `
+  let body: string;
+  if (opts.lang === "en") {
+    body = `
+    ${p(`Dear ${opts.studentName ?? "Student"},`)}
+    ${p(statusEN)}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  } else if (opts.lang === "de") {
+    body = `
     ${p(`Sehr geehrte/r ${opts.studentName ?? "Studierende/r"},`)}
     ${p(statusDE)}
-    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+  `;
+  } else {
+    body = `
+    ${p(`Sehr geehrte/r ${opts.studentName ?? "Studierende/r"},`)}
+    ${p(statusDE)}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
 
@@ -186,6 +225,7 @@ export function enrollmentEligibilityEmail(opts: {
     ${p(statusEN)}
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
+  }
   return { subject, html: htmlWrapper(body) };
 }
 
@@ -195,19 +235,38 @@ export function defenseEligibilityEmail(opts: {
   thesisTitle: string;
   eligible: boolean;
   note?: string | null;
+  lang?: Lang;
 }): { subject: string; html: string } {
-  const subject = `HTW Berlin – Prüfungsfähigkeit / Defense Eligibility: ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Defense Eligibility: ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Prüfungsfähigkeit: ${opts.thesisTitle}`
+    : `HTW Berlin – Prüfungsfähigkeit / Defense Eligibility: ${opts.thesisTitle}`;
   const statusDE = opts.eligible
-    ? "Sie sind prüfungsfähig. Ihr Kolloquium kann geplant werden."
-    : `Sie sind derzeit nicht prüfungsfähig.${opts.note ? " Begründung: " + opts.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
+    ? "Sie sind prüfungsfähig. Ihr Kolloquium kann geplant werden."
+    : `Sie sind derzeit nicht prüfungsfähig.${opts.note ? " Begründung: " + opts.note : ""} Bitte wenden Sie sich an die Prüfungsverwaltung.`;
   const statusEN = opts.eligible
     ? "You are eligible for your defense. Your colloquium can be scheduled."
     : `You are currently not eligible for your defense.${opts.note ? " Reason: " + opts.note : ""} Please contact the examination office.`;
 
-  const body = `
+  let body: string;
+  if (opts.lang === "en") {
+    body = `
+    ${p(`Dear ${opts.studentName ?? "Student"},`)}
+    ${p(statusEN)}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  } else if (opts.lang === "de") {
+    body = `
     ${p(`Sehr geehrte/r ${opts.studentName ?? "Studierende/r"},`)}
     ${p(statusDE)}
-    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+  `;
+  } else {
+    body = `
+    ${p(`Sehr geehrte/r ${opts.studentName ?? "Studierende/r"},`)}
+    ${p(statusDE)}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
 
@@ -215,6 +274,7 @@ export function defenseEligibilityEmail(opts: {
     ${p(statusEN)}
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
+  }
   return { subject, html: htmlWrapper(body) };
 }
 

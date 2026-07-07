@@ -982,9 +982,20 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
               </div>
             )}
-            {/* Bevorzugte Sprache */}
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{lang === 'de' ? 'Bevorzugte Sprache' : 'Preferred Language'}</label>
+            {/* Kommunikationssprache */}
+            <div className={isStudent ? "col-span-full" : ""}>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                {isStudent
+                  ? (lang === 'de' ? 'Kommunikationssprache' : 'Communication Language')
+                  : (lang === 'de' ? 'Bevorzugte Sprache' : 'Preferred Language')}
+              </label>
+              {isStudent && (
+                <p className="text-xs text-gray-400 mb-2">
+                  {lang === 'de'
+                    ? 'Alle E-Mails des Systems werden in der gewählten Sprache versendet.'
+                    : 'All system emails will be sent in the selected language.'}
+                </p>
+              )}
               {editMode ? (
                 <div className="flex gap-3">
                   <button
@@ -1014,6 +1025,11 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 <div className="flex items-center gap-2">
                   <span className="text-base">{((profile as any).preferredLanguage ?? "de") === "en" ? "🇬🇧" : "🇩🇪"}</span>
                   <span className="text-sm text-gray-800">{((profile as any).preferredLanguage ?? "de") === "en" ? "English" : "Deutsch"}</span>
+                  {isStudent && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                      {lang === 'de' ? 'E-Mail-Sprache' : 'Email language'}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

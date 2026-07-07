@@ -899,6 +899,7 @@ export const appRouter = router({
           const student = await getUserById(existing.studentId);
           const origin = input.origin ?? "https://thesis.htw-berlin.com";
           if (student?.email) {
+            const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
             const statusLabelDE2: Record<string, string> = { ACCEPTED: "Angenommen", REJECTED: "Abgelehnt", MATCHED: "Matched" };
             const statusLabelEN2: Record<string, string> = { ACCEPTED: "Accepted", REJECTED: "Rejected", MATCHED: "Matched" };
             const studentStatusTpl = statusChangeEmail({
@@ -906,6 +907,7 @@ export const appRouter = router({
               thesisTitle: existing.title ?? "",
               statusTextDE: `Der Status Ihrer Anfrage &ldquo;${existing.title}&rdquo; hat sich ge&auml;ndert: ${statusLabelDE2[input.status] ?? input.status}.${input.reason ? " Begr\u00fcndung: " + input.reason : ""} Weitere Details finden Sie in Ihrem <a href="${origin}/student">Dashboard</a>.`,
               statusTextEN: `The status of your application &ldquo;${existing.title}&rdquo; has changed to: ${statusLabelEN2[input.status] ?? input.status}.${input.reason ? " Reason: " + input.reason : ""} View details in your <a href="${origin}/student">dashboard</a>.`,
+              lang: studentLang,
             });
             await sendEmail({ to: student.email, subject: studentStatusTpl.subject, html: studentStatusTpl.html });
           }
@@ -2288,6 +2290,7 @@ export const appRouter = router({
             thesisTitle: thesis.title ?? "Abschlussarbeit",
             eligible: input.eligibility === "approved",
             note: input.note,
+            lang: studentLang,
           });
           await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
         }
@@ -2319,6 +2322,7 @@ export const appRouter = router({
             thesisTitle: thesis.title ?? "Abschlussarbeit",
             eligible: input.eligibility === "approved",
             note: input.note,
+            lang: studentLang,
           });
           await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
         }
