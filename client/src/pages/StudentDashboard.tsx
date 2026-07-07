@@ -2263,6 +2263,96 @@ function FavoritesList() {
   );
 }
 
+function ProfileCompletionBanner({ onGoToProfile, onDismiss }: { onGoToProfile: () => void; onDismiss: () => void }) {
+  const { t } = useLanguage();
+  const { data: profile } = trpc.profile.get.useQuery();
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem("htw-profile-banner-dismissed") === "1"; } catch { return false; }
+  });
+
+  if (dismissed || !profile) return null;
+
+  const missingFields: string[] = [];
+  if (!profile.firstName?.trim() || !profile.lastName?.trim()) missingFields.push(t.student.profileCompleteFirstName);
+  if (!profile.bio?.trim()) missingFields.push(t.student.profileCompleteBio);
+  if (!profile.matrikelNr?.trim()) missingFields.push(t.student.profileCompleteMatrikel);
+
+  // Nur anzeigen wenn mindestens ein Feld fehlt
+  if (missingFields.length === 0) return null;
+
+  const completionPct = Math.round(((3 - missingFields.length) / 3) * 100);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem("htw-profile-banner-dismissed", "1"); } catch {}
+    onDismiss();
+  };
+
+  return (
+    <div className="mb-5 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-semibold text-gray-900 text-sm">{t.student.profileCompleteTitle}</h3>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{completionPct}% vollständig</span>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">{t.student.profileCompleteDesc}</p>
+            {/* Fortschrittsbalken */}
+            <div className="w-full bg-amber-100 rounded-full h-1.5 mb-3 max-w-xs">
+              <div
+                className="h-1.5 rounded-full transition-all"
+                style={{ width: `${completionPct}%`, backgroundColor: "#f59e0b" }}
+              />
+            </div>
+            {/* Fehlende Felder */}
+            <p className="text-xs font-medium text-gray-700 mb-1.5">{t.student.profileCompleteMissing}</p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {missingFields.map((f) => (
+                <span key={f} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-800">
+                  <svg className="w-3 h-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
+                  </svg>
+                  {f}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={onGoToProfile}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white transition-colors"
+                style={{ backgroundColor: "#f59e0b" }}
+              >
+                {t.student.profileCompleteBtn}
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-amber-100 transition-colors"
+              >
+                {t.student.profileCompleteDismiss}
+              </button>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleDismiss}
+          className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+          aria-label="Schließen"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function WelcomeBanner({ onDismiss }: { onDismiss: () => void }) {
   const { t } = useLanguage();
   const steps = [
@@ -2411,6 +2501,12 @@ export default function StudentDashboard() {
               url.searchParams.delete("welcome");
               window.history.replaceState({}, "", url.pathname + (url.search || ""));
             }} />
+          )}
+          {!showWelcome && (
+            <ProfileCompletionBanner
+              onGoToProfile={() => setActiveTab("profile")}
+              onDismiss={() => {}}
+            />
           )}
           <MyRequests />
         </div>
