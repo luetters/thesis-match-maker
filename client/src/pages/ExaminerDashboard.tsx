@@ -493,7 +493,7 @@ function MarkdownNote({ content }: { content: string }) {
   return <div className="text-sm text-gray-800 space-y-0.5 [&_li]:list-disc [&_li]:ml-4" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -515,7 +515,19 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [editingContent, setEditingContent] = useState("");
   const newCommentRef = useRef<HTMLTextAreaElement>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
+  const [showSecondExaminerEmailDialog, setShowSecondExaminerEmailDialog] = useState(false);
+  const [secondExaminerEmailSubject, setSecondExaminerEmailSubject] = useState("");
+  const [secondExaminerEmailBody, setSecondExaminerEmailBody] = useState("");
+  const [secondExaminerEmailSent, setSecondExaminerEmailSent] = useState(false);
   const utils = trpc.useUtils();
+
+  const contactSecondMutation = (trpc.examinerEmailTemplates as any).contactSecondExaminer?.useMutation?.({
+    onSuccess: () => {
+      setSecondExaminerEmailSent(true);
+      setTimeout(() => { setShowSecondExaminerEmailDialog(false); setSecondExaminerEmailSent(false); }, 2000);
+    },
+    onError: (err: any) => toast.error(err.message ?? "E-Mail konnte nicht gesendet werden."),
+  });
 
   /** Fügt Markdown-Formatierung um den selektierten Text ein. */
   const insertFormat = useCallback((marker: string, setter: (v: string) => void, getValue: () => string, ref: React.RefObject<HTMLTextAreaElement | null>) => {
@@ -799,17 +811,67 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         {req.degreeType && <span>🎓 {req.degreeType === "bachelor" ? (t.pav?.bachelor ?? "Bachelor") : (t.pav?.master ?? "Master")}</span>}
       </div>
 
-      {/* Status-Label: Zweitgutachter vorhanden oder fehlend */}
-      {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
-        <div className="mb-3">
-          {req.secondExaminerName ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Zweitgutachter:in: {req.secondExaminerName}
-            </span>
-          ) : (
+      {/* Status-Label: Zweitgutachter vorhanden, angefragt oder fehlend */}
+      {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "SECOND_EXAMINER_ACCEPTED", "PENDING_SECOND_EXAMINER", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
+        <div className="mb-3 space-y-2">
+          {/* Zweitgutachter bereits zugesagt/zugewiesen */}
+          {req.secondExaminerName && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Zweitgutachter:in: {req.secondExaminerName} – <strong>Zugesagt</strong>
+              </span>
+              {req.secondExaminerEmail && (
+                <button
+                  onClick={() => {
+                    const recipientName = req.secondExaminerName ?? "Zweitgutachter:in";
+                    setSecondExaminerEmailSubject(`Re: Zweitbetreuung – ${req.title}`);
+                    setSecondExaminerEmailBody(`Sehr geehrte/r ${recipientName},\n\n`);
+                    setShowSecondExaminerEmailDialog(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  E-Mail senden
+                </button>
+              )}
+            </div>
+          )}
+          {/* Zweitgutachter angefragt (noch keine Zusage) */}
+          {!req.secondExaminerName && req.wantedSecondExaminerName && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Zweitgutachter:in: {req.wantedSecondExaminerName} – <strong>Angefragt</strong>
+              </span>
+              {req.wantedSecondExaminerEmail && (
+                <button
+                  onClick={() => {
+                    const recipientName = req.wantedSecondExaminerName ?? "Zweitgutachter:in";
+                    setSecondExaminerEmailSubject(`Bitte um Zusage als Zweitgutachter:in – ${req.title}`);
+                    setSecondExaminerEmailBody(
+                      `Sehr geehrte/r ${recipientName},\n\n` +
+                      `ich bin als Erstgutachter:in für die Abschlussarbeit „${req.title}\u201c von ${req.studentName ?? "dem/der Studierenden"} eingetragen.\n\n` +
+                      `Sie wurden als Zweitgutachter:in angefragt und Ihre Zusage steht noch aus. Ich würde mich freuen, wenn Sie die Anfrage bestätigen könnten.\n\n` +
+                      `Bitte melden Sie sich im System unter: ${window.location.origin}/examiner\n\n` +
+                      `Mit freundlichen Grüßen`
+                    );
+                    setShowSecondExaminerEmailDialog(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  Zur Zusage auffordern
+                </button>
+              )}
+            </div>
+          )}
+          {/* Kein Zweitgutachter vorhanden oder angefragt */}
+          {!req.secondExaminerName && !req.wantedSecondExaminerName && (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -817,6 +879,58 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               Zweitgutachter:in fehlt noch
             </span>
           )}
+        </div>
+      )}
+
+      {/* E-Mail-Dialog: Zweitgutachter:in kontaktieren */}
+      {showSecondExaminerEmailDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900">E-Mail an Zweitgutachter:in</h3>
+              <button onClick={() => setShowSecondExaminerEmailDialog(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Empfänger:in: <strong>{req.secondExaminerName ?? req.wantedSecondExaminerName}</strong> ({req.secondExaminerEmail ?? req.wantedSecondExaminerEmail})
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Betreff</label>
+                <input
+                  type="text"
+                  value={secondExaminerEmailSubject}
+                  onChange={(e) => setSecondExaminerEmailSubject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nachricht</label>
+                <textarea
+                  rows={8}
+                  value={secondExaminerEmailBody}
+                  onChange={(e) => setSecondExaminerEmailBody(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowSecondExaminerEmailDialog(false)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
+              <button
+                disabled={!secondExaminerEmailSubject || !secondExaminerEmailBody || contactSecondMutation?.isPending}
+                onClick={() => contactSecondMutation?.mutate?.({
+                  thesisRequestId: req.id,
+                  subject: secondExaminerEmailSubject,
+                  body: secondExaminerEmailBody,
+                  recipientEmail: (req.secondExaminerEmail ?? req.wantedSecondExaminerEmail) as string,
+                })}
+                className="px-4 py-2 rounded-xl bg-[#76b900] text-white text-sm font-medium hover:bg-[#5a8f00] disabled:opacity-50 transition-colors"
+              >
+                {secondExaminerEmailSent ? "✅ Gesendet" : contactSecondMutation?.isPending ? "Sende..." : "E-Mail senden"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

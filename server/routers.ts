@@ -3357,6 +3357,37 @@ export const appRouter = router({
           attachmentCount: emailAttachments.length,
         };
       }),
+
+    /** Erstgutachter:in schreibt Zweitgutachter:in direkt an */
+    contactSecondExaminer: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        subject: z.string().min(1).max(255),
+        body: z.string().min(1),
+        recipientEmail: z.string().email(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        // Nur Erstgutachter:in oder Admin darf diese Funktion nutzen
+        const isFirstExaminer = req.examinerId === ctx.user.id || (req as any).wantedExaminerId === ctx.user.id;
+        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isFirstExaminer && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen können Zweitgutachter:innen direkt kontaktieren." });
+        const sent = await sendEmail({
+          to: input.recipientEmail,
+          subject: input.subject,
+          html: input.body.replace(/\n/g, "<br>"),
+        });
+        if (!sent) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "E-Mail konnte nicht gesendet werden." });
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "FIRST_EXAMINER_CONTACTED_SECOND",
+          reason: `Erstgutachter:in hat Zweitgutachter:in (${input.recipientEmail}) kontaktiert.`,
+        });
+        return { success: true, sentTo: input.recipientEmail };
+      }),
   }),
 
   // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────

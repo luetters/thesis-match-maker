@@ -297,6 +297,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
   if (!db) return [];
   const firstExaminerAlias = aliasedTable(users, "first_examiner_tbe");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_tbe");
+  const wantedSecondExaminerAlias = aliasedTable(users, "wanted_second_examiner_tbe");
   return db
     .select({
       id: thesisRequests.id,
@@ -312,6 +313,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       examinerId: thesisRequests.examinerId,
       secondExaminerId: thesisRequests.secondExaminerId,
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
       studentId: thesisRequests.studentId,
       studentName: users.name,
       studentEmail: users.email,
@@ -319,6 +321,9 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
       secondExaminerName: secondExaminerAlias.name,
+      secondExaminerEmail: secondExaminerAlias.email,
+      wantedSecondExaminerName: wantedSecondExaminerAlias.name,
+      wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
       wantedExaminerId: thesisRequests.wantedExaminerId,
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
@@ -329,6 +334,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(wantedSecondExaminerAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerAlias.id))
     .where(
       or(
         eq(thesisRequests.examinerId, examinerId),
