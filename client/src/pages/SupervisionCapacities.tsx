@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { generateLvvoPdf } from "@/lib/generateLvvoPdf";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
@@ -117,6 +118,33 @@ export default function SupervisionCapacities() {
   const isLoading = capsLoading || usageLoading;
 
   const usageArr = usageData as Array<{ semester: string; usedFirst: number; usedSecond: number }>;
+
+  // ─── LVVO-Report ──────────────────────────────────────────────────────────
+  const [lvvoSemester, setLvvoSemester] = useState<string>(() => {
+    // Aktuelles Semester vorauswählen
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    return m >= 10 || m <= 3 ? `WS${y}` : `SoSe${y}`;
+  });
+  const [lvvoEnabled, setLvvoEnabled] = useState(false);
+
+  const { data: lvvoData, isFetching: lvvoLoading } = (trpc.examiner as any).getLvvoReport?.useQuery?.(
+    { semester: lvvoSemester },
+    { enabled: lvvoEnabled, refetchOnMount: false }
+  ) ?? { data: undefined, isFetching: false };
+
+  // Sobald Daten da → PDF generieren und Flag zurücksetzen
+  useEffect(() => {
+    if (!lvvoEnabled || lvvoLoading || !lvvoData) return;
+    setLvvoEnabled(false);
+    try {
+      generateLvvoPdf(lvvoSemester, lvvoData.examiner ?? null, lvvoData.entries ?? [], lang as "de" | "en");
+    } catch (err: any) {
+      toast.error(de ? "PDF konnte nicht erstellt werden." : "Could not generate PDF.");
+      console.error(err);
+    }
+  }, [lvvoEnabled, lvvoLoading, lvvoData]);
 
   // Alle Semester zusammenführen (eigene Planung + bereits erteilte Zusagen)
   const allSemesters = upcomingSemesters;
@@ -412,6 +440,63 @@ export default function SupervisionCapacities() {
                 </>
               )}
             </button>
+          </div>
+
+          {/* ─── LVVO-Report ─────────────────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {de ? "LVVO-Nachweis" : "LVVO Report"}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {de
+                    ? "Nachweis der Betreuungsleistungen nach Lehrverpflichtungsverordnung (LVVO) als PDF"
+                    : "Supervision activities report per Teaching Obligation Regulation (LVVO) as PDF"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                    {de ? "Semester" : "Semester"}
+                  </label>
+                  <select
+                    value={lvvoSemester}
+                    onChange={(e) => setLvvoSemester(e.target.value)}
+                    className="text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent bg-white text-gray-900"
+                    style={{ minWidth: 130 }}
+                  >
+                    {upcomingSemesters.map((s) => (
+                      <option key={s} value={s}>{semesterLabel(s)}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLvvoEnabled(true)}
+                  disabled={lvvoLoading}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                  style={{ backgroundColor: "#76B900" }}
+                >
+                  {lvvoLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {de ? "Wird erstellt…" : "Generating…"}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      LVVO Report
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* ─── Legende ────────────────────────────────────────────────────── */}

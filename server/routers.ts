@@ -1380,6 +1380,98 @@ export const appRouter = router({
         return { success: true };
       }),
     // Auslastung pro Semester: wie viele aktive Erst-/Zweitbetreuungen gibt es pro Semester?
+    /** LVVO-Report: Alle betreuten Arbeiten eines Semesters für den eingeloggten Prüfer */
+    getLvvoReport: anyExaminerProcedure
+      .input(z.object({ semester: z.string().min(1) }))
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) return { examiner: null, entries: [] };
+        const { thesisRequests: tr, users: usersTable, programmes } = await import("../drizzle/schema");
+        const { or, eq: eqDrizzle } = await import("drizzle-orm");
+        // Betreuer-Daten laden
+        const [examiner] = await db
+          .select({
+            id: usersTable.id,
+            name: usersTable.name,
+            email: usersTable.email,
+            academicTitle: usersTable.academicTitle,
+            department: usersTable.department,
+          })
+          .from(usersTable)
+          .where(eqDrizzle(usersTable.id, ctx.user.id))
+          .limit(1);
+        // Alle Arbeiten für dieses Semester, bei denen der Prüfer Erst- oder Zweitgutachter ist
+        const completedStatuses = [
+          "SECOND_EXAMINER_SET", "COMPLETED", "ACCEPTED", "MATCHED",
+          "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+          "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED",
+          "PENDING_SECOND_EXAMINER",
+        ] as const;
+        const studentAlias = usersTable;
+        const rows = await db
+          .select({
+            id: tr.id,
+            title: tr.title,
+            degreeType: tr.degreeType,
+            language: tr.language,
+            targetSemester: tr.targetSemester,
+            status: tr.status,
+            examinerId: tr.examinerId,
+            secondExaminerId: tr.secondExaminerId,
+            studentId: tr.studentId,
+            department: tr.department,
+          })
+          .from(tr)
+          .where(
+            or(
+              eqDrizzle(tr.examinerId, ctx.user.id),
+              eqDrizzle(tr.secondExaminerId, ctx.user.id)
+            )
+          );
+        // Nur Semester-Match und aktive/abgeschlossene Status
+        const filtered = rows.filter(
+          (r) =>
+            r.targetSemester === input.semester &&
+            completedStatuses.includes(r.status as any)
+        );
+        // Studierenden-Namen nachladen
+        const studentIds = Array.from(new Set(filtered.map((r) => r.studentId)));
+        const studentsMap: Record<number, { name: string | null; programmeId: number | null; thesisType: string | null }> = {};
+        if (studentIds.length > 0) {
+          const { inArray } = await import("drizzle-orm");
+          const studs = await db
+            .select({ id: usersTable.id, name: usersTable.name, programmeId: usersTable.programmeId, thesisType: usersTable.thesisType })
+            .from(usersTable)
+            .where(inArray(usersTable.id, studentIds));
+          for (const s of studs) studentsMap[s.id] = { name: s.name, programmeId: s.programmeId, thesisType: s.thesisType };
+        }
+        // Studiengänge nachladen
+        const progIds = Array.from(new Set(Object.values(studentsMap).map((s) => s.programmeId).filter(Boolean) as number[]));
+        const progMap: Record<number, string> = {};
+        if (progIds.length > 0) {
+          const { inArray } = await import("drizzle-orm");
+          const progs = await db.select({ id: programmes.id, name: programmes.name }).from(programmes).where((await import("drizzle-orm")).inArray(programmes.id, progIds));
+          for (const p of progs) progMap[p.id] = p.name ?? "";
+        }
+        const entries = filtered.map((r) => {
+          const stu = studentsMap[r.studentId];
+          const progName = stu?.programmeId ? (progMap[stu.programmeId] ?? r.department ?? "") : (r.department ?? "");
+          const role: "first" | "second" = r.examinerId === ctx.user.id ? "first" : "second";
+          return {
+            id: r.id,
+            studentName: stu?.name ?? "",
+            studyProgram: progName,
+            title: r.title,
+            language: r.language ?? "de",
+            degreeType: r.degreeType ?? "bachelor",
+            role,
+            status: r.status,
+          };
+        });
+        return { examiner: examiner ?? null, entries };
+      }),
+
     getCapacityUsage: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getDb } = await import("./db");
       const db = await getDb();
