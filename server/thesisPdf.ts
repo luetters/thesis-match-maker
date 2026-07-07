@@ -132,8 +132,10 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     // Logo links
     const logoX = 60;
     const logoY = 14;
+    // Logo: 477x284 px → Seitenverhältnis 1.6796:1
+    // Bei 100pt Breite → Höhe = 100 / 1.6796 ≈ 59.5pt
     const logoW = 100;
-    const logoH = 68;
+    const logoH = Math.round(logoW / (477 / 284));
 
     if (logoBuffer) {
       doc.image(logoBuffer, logoX, logoY, { width: logoW, height: logoH, fit: [logoW, logoH] });
