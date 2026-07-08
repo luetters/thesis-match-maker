@@ -3707,6 +3707,91 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    // ── Kommentare zu Conditional-Dokumenten ──────────────────────────────────
+    addDocumentComment: protectedProcedure
+      .input(z.object({
+        documentId: z.number(),
+        content: z.string().min(1, "Kommentar darf nicht leer sein.").max(2000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { conditionalDocuments, conditionalDocumentComments } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        // Dokument laden und Berechtigungen prüfen
+        const [doc] = await db.select().from(conditionalDocuments)
+          .where(eqDrizzle(conditionalDocuments.id, input.documentId));
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+        const thesis = await getThesisRequestById(doc.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND" });
+        const isExaminer = thesis.examinerId === ctx.user.id || thesis.secondExaminerId === ctx.user.id;
+        const isStudent = thesis.studentId === ctx.user.id;
+        const isAdmin = ["admin", "superadmin", "pav"].includes(ctx.user.role ?? "");
+        if (!isExaminer && !isStudent && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const [inserted] = await db.insert(conditionalDocumentComments).values({
+          documentId: input.documentId,
+          authorId: ctx.user.id,
+          content: input.content,
+        });
+        await createAuditLogEntry({
+          thesisRequestId: doc.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "CONDITIONAL_DOCUMENT_COMMENT",
+          reason: `Kommentar zu Dokument "${doc.originalFilename}": ${input.content.substring(0, 80)}`,
+        });
+        return { success: true, id: (inserted as any)?.insertId };
+      }),
+
+    getDocumentComments: protectedProcedure
+      .input(z.object({ documentId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { conditionalDocuments, conditionalDocumentComments, users } = await import("../drizzle/schema");
+        const { eq: eqDrizzle, asc } = await import("drizzle-orm");
+        const [doc] = await db.select().from(conditionalDocuments)
+          .where(eqDrizzle(conditionalDocuments.id, input.documentId));
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+        const thesis = await getThesisRequestById(doc.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND" });
+        const isExaminer = thesis.examinerId === ctx.user.id || thesis.secondExaminerId === ctx.user.id;
+        const isStudent = thesis.studentId === ctx.user.id;
+        const isAdmin = ["admin", "superadmin", "pav"].includes(ctx.user.role ?? "");
+        if (!isExaminer && !isStudent && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const comments = await db
+          .select({
+            id: conditionalDocumentComments.id,
+            content: conditionalDocumentComments.content,
+            createdAt: conditionalDocumentComments.createdAt,
+            updatedAt: conditionalDocumentComments.updatedAt,
+            authorId: conditionalDocumentComments.authorId,
+            authorName: users.name,
+            authorRole: users.role,
+          })
+          .from(conditionalDocumentComments)
+          .leftJoin(users, eqDrizzle(conditionalDocumentComments.authorId, users.id))
+          .where(eqDrizzle(conditionalDocumentComments.documentId, input.documentId))
+          .orderBy(asc(conditionalDocumentComments.createdAt));
+        return comments;
+      }),
+
+    deleteDocumentComment: protectedProcedure
+      .input(z.object({ commentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { conditionalDocumentComments } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        const [comment] = await db.select().from(conditionalDocumentComments)
+          .where(eqDrizzle(conditionalDocumentComments.id, input.commentId));
+        if (!comment) throw new TRPCError({ code: "NOT_FOUND" });
+        const isOwner = comment.authorId === ctx.user.id;
+        const isAdmin = ["admin", "superadmin"].includes(ctx.user.role ?? "");
+        if (!isOwner && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await db.delete(conditionalDocumentComments).where(eqDrizzle(conditionalDocumentComments.id, input.commentId));
+        return { success: true };
+      }),
   }),
 
   // ─── Examiner/PAV-initiierter Antrag (Studierenden einladen) ─────────────────

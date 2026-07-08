@@ -11,6 +11,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
+import { DocComments } from "@/components/DocComments";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1325,6 +1327,7 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
   const condDocFileRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
 
+  const { user } = useAuth();
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
 
   const { data: condDocs, refetch: refetchCondDocs } = trpc.examinerEmailTemplates.getConditionalDocuments.useQuery(
@@ -1539,7 +1542,8 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
                     {condDocs && condDocs.length > 0 && (
                       <div className="mb-3 space-y-1.5">
                         {condDocs.map((doc: any) => (
-                          <div key={doc.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-amber-200">
+                          <div key={doc.id} className="bg-white rounded-lg border border-amber-200 overflow-hidden">
+                            <div className="flex items-center gap-2 p-2">
                             <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
@@ -1560,6 +1564,18 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
+                            </div>{/* end flex row */}
+                            {/* Feedback vom Prüfer zu diesem Dokument */}
+                            <div className="border-t border-amber-100 bg-amber-50/30 px-2 pb-2">
+                              <p className="text-xs font-semibold text-amber-700 mt-2 mb-1">Feedback des Prüfers</p>
+                              <DocComments
+                                documentId={doc.id}
+                                documentName={doc.originalFilename}
+                                currentUserId={user?.id ?? 0}
+                                canComment={false}
+                                showInput={false}
+                              />
+                            </div>
                           </div>
                         ))}
                       </div>
