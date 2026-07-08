@@ -699,6 +699,18 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
             />
           </div>
 
+        </div>
+      )}
+
+      {/* ── Abschnitt 1b: Arbeitsprozess (immer sichtbar, auch bei Prüfer-Thema) ────────────────── */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ihr Arbeitsprozess</h3>
+        {topicMode === "examiner" && (
+          <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
+            Auch bei einem vorgegebenen Thema können Sie hier Ihren persönlichen Hintergrund und Ihr Exposé ergänzen. Diese Angaben helfen der Prüfer:in bei der Einschätzung Ihrer Bewerbung.
+          </p>
+        )}
+
           {/* Gewählte Vertiefungen im Studium */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
@@ -750,6 +762,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
             <p className="text-xs text-gray-400 mt-1">{t.student.keywordsHint}</p>
           </div>
 
+          {/* Exposé Upload */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
               {t.student.exposeLabel} <span className="text-gray-400 font-normal">(PDF, optional, max. 5 MB)</span>
@@ -791,7 +804,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
               >
                 {exposeFile ? `✓ ${exposeFile.name}` : t.student.pdfSelect}
               </label>
-                {exposeFile && (
+              {exposeFile && (
                 <button
                   type="button"
                   onClick={() => setExposeFile(null)}
@@ -803,7 +816,6 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
             </div>
           </div>
         </div>
-      )}
 
       {/* ── Abschnitt 2: Rahmenbedingungen ──────────────────────────────── */}
       <div className="rounded-2xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
