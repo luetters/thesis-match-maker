@@ -219,6 +219,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	studentConfirmedAt: datetime("student_confirmed_at", { mode: "string" }),
 	deadline: datetime({ mode: 'string'}),
 	rejectionReason: text(),
+	withdrawalReason: text("withdrawal_reason"),
 	conditionalAcceptanceReason: text("conditional_acceptance_reason"),
 	conditionalAcceptanceAt: datetime("conditional_acceptance_at", { mode: "string" }),
 	conditionalAcceptanceById: int("conditional_acceptance_by_id"),

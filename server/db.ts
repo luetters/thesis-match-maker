@@ -2068,7 +2068,7 @@ export async function conditionalAcceptThesisRequest(
 /**
  * Ziehe eine Anfrage zurück (nur wenn noch nicht beantwortet)
  */
-export async function withdrawThesisRequest(thesisRequestId: number, studentId: number) {
+export async function withdrawThesisRequest(thesisRequestId: number, studentId: number, reason?: string) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
 
@@ -2099,8 +2099,9 @@ export async function withdrawThesisRequest(thesisRequestId: number, studentId: 
   await db.update(thesisRequests)
     .set({
       status: "WITHDRAWN",
+      withdrawalReason: reason?.trim() || null,
       updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-    })
+    } as any)
     .where(eq(thesisRequests.id, thesisRequestId));
 }
 

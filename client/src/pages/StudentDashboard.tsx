@@ -89,7 +89,9 @@ function getNextSemesters(): { label: string; value: string }[] {
 
 const DRAFT_KEY = "htw-thesis-request-draft";
 
-function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () => void; preselectExaminerId?: number }) {
+type FormDraft = { title: string; description: string; department: string; fachbereich: string; abstract: string; targetSemester: string; language: "de" | "en"; degreeType: "bachelor" | "master"; wantedExaminerId: number; };
+
+function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { onSuccess: () => void; preselectExaminerId?: number; initialDraft?: Partial<FormDraft>; }) {
   const { t } = useLanguage();
   // Studiengang aus Profil laden
   const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
@@ -110,16 +112,16 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0 }: { onSuccess: () 
   const examinerDropdownRef = useRef<HTMLDivElement>(null);
   const [hideFullExaminers, setHideFullExaminers] = useState(false);
 
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    department: "",
-    fachbereich: "FB3",
-    abstract: "",
-    targetSemester: "",
-    language: "de" as "de" | "en",
-    degreeType: "bachelor" as "bachelor" | "master",
-    wantedExaminerId: preselectExaminerId,
+  const [form, setForm] = useState<FormDraft>({
+    title: initialDraft?.title ?? "",
+    description: initialDraft?.description ?? "",
+    department: initialDraft?.department ?? "",
+    fachbereich: initialDraft?.fachbereich ?? "FB3",
+    abstract: initialDraft?.abstract ?? "",
+    targetSemester: initialDraft?.targetSemester ?? "",
+    language: (initialDraft?.language ?? "de") as "de" | "en",
+    degreeType: (initialDraft?.degreeType ?? "bachelor") as "bachelor" | "master",
+    wantedExaminerId: initialDraft?.wantedExaminerId ?? preselectExaminerId,
   });
 
   // Zweitgutachter-Kandidaten gefiltert nach Erstgutachter-Präferenzen
@@ -1443,7 +1445,7 @@ function SecondExaminerPicker({
 // ─── My Requests ────────────────────────────────────────────────────────────────
 const WITHDRAWABLE_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"];
 
-function MyRequests() {
+function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormDraft>) => void }) {
   const { t } = useLanguage();
   const utils = trpc.useUtils();
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
@@ -1483,14 +1485,15 @@ function MyRequests() {
   return (
     <div className="space-y-4">
       {requests.map((req) => (
-        <StudentRequestCard key={req.id} req={req} utils={utils} withdrawMutation={withdrawMutation} />
+        <StudentRequestCard key={req.id} req={req} utils={utils} withdrawMutation={withdrawMutation} onReuseRequest={onReuseRequest} />
       ))}
     </div>
   );
 }
 
-function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils: any; withdrawMutation: any }) {
+function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { req: any; utils: any; withdrawMutation: any; onReuseRequest?: (draft: Partial<FormDraft>) => void }) {
   const [showRegPreview, setShowRegPreview] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState("");
   const [condDocNote, setCondDocNote] = useState("");
   const [condDocUploading, setCondDocUploading] = useState(false);
   const condDocFileRef = useRef<HTMLInputElement>(null);
@@ -1879,17 +1882,56 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
                     <AlertDialogTitle>{t.student.withdrawConfirmTitle}</AlertDialogTitle>
                     <AlertDialogDescription>{t.student.withdrawConfirmDesc}</AlertDialogDescription>
                   </AlertDialogHeader>
+                  <div className="px-1 pb-2">
+                    <label className="text-xs font-medium text-gray-600 block mb-1.5">
+                      Grund für den Abbruch <span className="text-gray-400 font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      value={withdrawReason}
+                      onChange={(e) => setWithdrawReason(e.target.value)}
+                      placeholder="z. B. Thema geändert, Prüfer:in gewechselt…"
+                      maxLength={500}
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-200"
+                    />
+                    <p className="text-right text-xs text-gray-400 mt-0.5">{withdrawReason.length}/500</p>
+                  </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>{t.student.cancel}</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setWithdrawReason("")}>{t.student.cancel}</AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-red-600 hover:bg-red-700 text-white"
-                      onClick={() => withdrawMutation.mutate({ thesisRequestId: req.id })}
+                      onClick={() => {
+                        withdrawMutation.mutate({ thesisRequestId: req.id, reason: withdrawReason.trim() || undefined });
+                        setWithdrawReason("");
+                      }}
                     >
                       {t.student.withdrawBtn}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+            )}
+            {/* Wiederverwendungs-Button für zurückgezogene Anfragen */}
+            {req.status === "WITHDRAWN" && onReuseRequest && (
+              <button
+                type="button"
+                onClick={() => onReuseRequest({
+                  title: req.title,
+                  description: req.description,
+                  abstract: req.abstract ?? "",
+                  department: req.department ?? "",
+                  targetSemester: req.targetSemester ?? "",
+                  language: req.language ?? "de",
+                  degreeType: req.degreeType ?? "bachelor",
+                  wantedExaminerId: req.wantedExaminerId ?? 0,
+                })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[#76B900] border border-[#76B900]/30 hover:bg-[#76B900]/5 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Als Vorlage verwenden
+              </button>
             )}
           </div>
           {showRegPreview && (
@@ -2743,6 +2785,7 @@ export default function StudentDashboard() {
     location === "/student/profile" ? "profile" : "requests"
   );
   const utils = trpc.useUtils();
+  const [reuseFormDraft, setReuseFormDraft] = useState<Partial<FormDraft> | undefined>(undefined);
   // Prüfen ob offene Anfrage vorhanden (immer aktiv, für Sperr-Banner und Navigation)
   const { data: hasOpenReq } = trpc.thesis.hasOpenRequest.useQuery(undefined, {
     refetchOnWindowFocus: true,
@@ -2805,11 +2848,12 @@ export default function StudentDashboard() {
           <div className={`bg-white rounded-2xl p-6 border border-gray-100 shadow-sm${hasOpenReq ? " opacity-40 pointer-events-none select-none" : ""}`}>
             <h2 className="font-semibold text-gray-900 mb-1">{t.student.submitIdea}</h2>
             <p className="text-sm text-gray-500 mb-6">{t.student.submitIdeaDesc}</p>
-            <NewRequestForm onSuccess={() => {
+            <NewRequestForm key={JSON.stringify(reuseFormDraft)} onSuccess={() => {
               utils.thesis.myRequests.invalidate();
               utils.thesis.hasOpenRequest.invalidate();
+              setReuseFormDraft(undefined);
               setActiveTab("requests");
-            }} preselectExaminerId={preselectExaminerId} />
+            }} preselectExaminerId={preselectExaminerId} initialDraft={reuseFormDraft} />
           </div>
         </div>
       )}
@@ -2830,7 +2874,7 @@ export default function StudentDashboard() {
               onDismiss={() => {}}
             />
           )}
-          <MyRequests />
+          <MyRequests onReuseRequest={(draft) => { setReuseFormDraft(draft); setActiveTab("new"); }} />
         </div>
       )}
       {activeTab === "examiners" && (

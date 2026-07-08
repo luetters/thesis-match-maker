@@ -2924,10 +2924,10 @@ export const appRouter = router({
 
     // Student: Anfrage zurückziehen
     withdraw: studentProcedure
-      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .input(z.object({ thesisRequestId: z.number().int().positive(), reason: z.string().max(500).optional() }))
       .mutation(async ({ ctx, input }) => {
         try {
-          await withdrawThesisRequest(input.thesisRequestId, ctx.user.id);
+          await withdrawThesisRequest(input.thesisRequestId, ctx.user.id, input.reason);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           if (msg === "Anfrage nicht gefunden") {
