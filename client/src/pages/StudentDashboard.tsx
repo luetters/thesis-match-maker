@@ -2721,9 +2721,9 @@ export default function StudentDashboard() {
     location === "/student/profile" ? "profile" : "requests"
   );
   const utils = trpc.useUtils();
-  // Prüfen ob offene Anfrage vorhanden (für Sperr-Banner)
+  // Prüfen ob offene Anfrage vorhanden (immer aktiv, für Sperr-Banner und Navigation)
   const { data: hasOpenReq } = trpc.thesis.hasOpenRequest.useQuery(undefined, {
-    enabled: activeTab === "new",
+    refetchOnWindowFocus: true,
   });
 
   const navItems = useNavItems();
@@ -2757,28 +2757,26 @@ export default function StudentDashboard() {
       <StatusNotificationBanner />
       {activeTab === "new" && (
         <div className="max-w-2xl">
-          {hasOpenReq ? (
-            /* Sperr-Banner: zentriert im Bildschirm */
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center border border-amber-200">
-                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{t.student.openRequestBlockTitle ?? "Offene Anfrage vorhanden"}</h2>
-                <p className="text-sm text-gray-600 mb-6">{t.student.openRequestBlockDesc ?? "Sie haben bereits eine offene Betreuungsanfrage. Bitte warten Sie auf eine Antwort oder ziehen Sie die bestehende Anfrage zurück, bevor Sie eine neue stellen."}</p>
-                <button
-                  onClick={() => setActiveTab("requests")}
-                  className="w-full py-2.5 px-4 rounded-xl font-medium text-white"
-                  style={{ backgroundColor: "#76B900" }}
-                >
-                  {t.student.openRequestBlockBtn ?? "Meine Anfragen anzeigen"}
-                </button>
+          {hasOpenReq && (
+            /* Sperr-Banner oben – kein Overlay, damit Nutzer:in den Kontext sieht */
+            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-800">{t.student.openRequestBlockTitle ?? "Offene Anfrage vorhanden"}</p>
+                <p className="text-xs text-amber-700 mt-0.5">{t.student.openRequestBlockDesc ?? "Sie haben bereits eine offene Betreuungsanfrage. Bitte warten Sie auf eine Antwort oder ziehen Sie die bestehende Anfrage zurück, bevor Sie eine neue stellen."}</p>
               </div>
+              <button
+                onClick={() => setActiveTab("requests")}
+                className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg text-white"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                {t.student.openRequestBlockBtn ?? "Meine Anfragen"}
+              </button>
             </div>
-          ) : null}
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          )}
+          <div className={`bg-white rounded-2xl p-6 border border-gray-100 shadow-sm${hasOpenReq ? " opacity-40 pointer-events-none select-none" : ""}`}>
             <h2 className="font-semibold text-gray-900 mb-1">{t.student.submitIdea}</h2>
             <p className="text-sm text-gray-500 mb-6">{t.student.submitIdeaDesc}</p>
             <NewRequestForm onSuccess={() => {
