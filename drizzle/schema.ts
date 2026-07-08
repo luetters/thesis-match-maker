@@ -260,6 +260,15 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	personalInterests: text("personal_interests"),
 	// ─── LLM-extrahierte Schlagwörter (JSON-Array als String) ───
 	keywords: text("keywords"),
+	// ─── Externer Zweitgutachter (nicht im System) ───
+	externalSecondExaminerTitle: varchar("external_second_examiner_title", { length: 64 }),
+	externalSecondExaminerFirstName: varchar("external_second_examiner_first_name", { length: 128 }),
+	externalSecondExaminerLastName: varchar("external_second_examiner_last_name", { length: 128 }),
+	externalSecondExaminerEmail: varchar("external_second_examiner_email", { length: 320 }),
+	// Zeitstempel: wann der Zweitgutachter angefragt wurde
+	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
+	// Zeitstempel: wann der Zweitgutachter zugesagt hat
+	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
 });
 
 export const users = mysqlTable("users", {

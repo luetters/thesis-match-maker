@@ -769,6 +769,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const { user } = useAuth();
   const isPending = req.status === "PENDING" || req.status === "PENDING_FIRST_EXAMINER";
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
+  const isPendingSecond = req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId === user?.id;
 
   const { data: condDocs } = (trpc.examinerEmailTemplates as any).getConditionalDocuments?.useQuery?.(
     { thesisRequestId: req.id },
@@ -1263,6 +1264,44 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       )}
       {showRegPreview && (
         <RegistrationPdfPreviewModal thesisId={req.id} onClose={() => setShowRegPreview(false)} />
+      )}
+
+      {/* ── Zweitgutachter-Anfrage: Annehmen/Ablehnen ── */}
+      {isPendingSecond && (
+        <div className="space-y-3">
+          <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-xs font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Anfrage als Zweitgutachter:in
+            </p>
+            <p className="text-xs text-blue-700">Sie wurden als Zweitgutachter:in für diese Abschlussarbeit angefragt.</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openEmailDialog("accept")}
+              disabled={examinerRespond.isPending}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: "#76B900" }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Annehmen
+            </button>
+            <button
+              onClick={() => openEmailDialog("reject")}
+              disabled={examinerRespond.isPending}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Ablehnen
+            </button>
+          </div>
+        </div>
       )}
 
       {(isPending || isConditional) && (

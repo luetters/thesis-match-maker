@@ -1172,14 +1172,41 @@ function ExposeUploadButton({ thesisId, currentUrl, onSuccess }: { thesisId: num
   );
 }
 
-// ─── Zweitgutachter-Auswahl nach Erstgutachter-Zusage ──────────────────────────
-function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExaminerId }: { requestId: number; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null }) {
+// ─── Zweitgutachter-Anfrageprozess nach Erstgutachter-Zusage ─────────────────
+const EXTERNAL_MARKER = -999;
+
+function SecondExaminerPicker({
+  requestId,
+  wantedExaminerId,
+  wantedSecondExaminerId,
+  externalSecondExaminerTitle,
+  externalSecondExaminerFirstName,
+  externalSecondExaminerLastName,
+  externalSecondExaminerEmail,
+  secondExaminerRequestedAt,
+}: {
+  requestId: number;
+  wantedExaminerId?: number | null;
+  wantedSecondExaminerId?: number | null;
+  externalSecondExaminerTitle?: string | null;
+  externalSecondExaminerFirstName?: string | null;
+  externalSecondExaminerLastName?: string | null;
+  externalSecondExaminerEmail?: string | null;
+  secondExaminerRequestedAt?: string | null;
+}) {
   const { t } = useLanguage();
   const utils = trpc.useUtils();
-  const [selectedId, setSelectedId] = useState<number>(wantedSecondExaminerId ?? 0);
-  const [saving, setSaving] = useState(false);
 
-  // Gefilterte Zweitgutachter nach Erstgutachter-Präferenzen
+  const hasRequest = !!wantedSecondExaminerId || !!externalSecondExaminerFirstName;
+
+  const [selectedId, setSelectedId] = useState<number>(
+    externalSecondExaminerFirstName ? EXTERNAL_MARKER : (wantedSecondExaminerId ?? 0)
+  );
+  const [extTitle, setExtTitle] = useState(externalSecondExaminerTitle ?? "");
+  const [extFirstName, setExtFirstName] = useState(externalSecondExaminerFirstName ?? "");
+  const [extLastName, setExtLastName] = useState(externalSecondExaminerLastName ?? "");
+  const [extEmail, setExtEmail] = useState(externalSecondExaminerEmail ?? "");
+
   const { data: secondExaminers = [] } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
     { firstExaminerId: wantedExaminerId ?? 0 },
     { enabled: !!wantedExaminerId && wantedExaminerId > 0 }
@@ -1187,85 +1214,205 @@ function SecondExaminerPicker({ requestId, wantedExaminerId, wantedSecondExamine
 
   const setMutation = trpc.thesisPhase27.setWantedSecondExaminer.useMutation({
     onSuccess: () => {
-      toast.success(t.student.secondPrefSaved);
+      toast.success("Anfrage an Zweitgutachter:in gesendet.");
       utils.thesis.myRequests.invalidate();
     },
     onError: (err) => toast.error(err.message),
-    onSettled: () => setSaving(false),
   });
 
-  const handleSave = () => {
-    setSaving(true);
-    setMutation.mutate({ requestId, secondExaminerId: selectedId > 0 ? selectedId : null });
+  const setExternalMutation = trpc.thesisPhase27.setExternalSecondExaminer.useMutation({
+    onSuccess: () => {
+      toast.success("Externe Zweitgutachter:in eingetragen.");
+      utils.thesis.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const withdrawMutation = trpc.thesisPhase27.withdrawSecondExaminerRequest.useMutation({
+    onSuccess: () => {
+      toast.success("Anfrage zurückgezogen.");
+      utils.thesis.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSend = () => {
+    if (selectedId === EXTERNAL_MARKER) {
+      if (!extFirstName.trim() || !extLastName.trim() || !extEmail.trim()) {
+        toast.error("Bitte Vorname, Nachname und E-Mail angeben.");
+        return;
+      }
+      setExternalMutation.mutate({ requestId, title: extTitle, firstName: extFirstName, lastName: extLastName, email: extEmail });
+    } else if (selectedId > 0) {
+      setMutation.mutate({ requestId, secondExaminerId: selectedId });
+    } else {
+      toast.error("Bitte eine Zweitgutachter:in auswählen.");
+    }
   };
 
+  const isSaving = setMutation.isPending || setExternalMutation.isPending;
+
+  // ── Ansicht: Anfrage bereits gestellt ──
+  if (hasRequest) {
+    const isExternal = !!externalSecondExaminerFirstName;
+    const examinerDisplay = isExternal
+      ? `${externalSecondExaminerTitle ? externalSecondExaminerTitle + " " : ""}${externalSecondExaminerFirstName} ${externalSecondExaminerLastName}`
+      : (() => {
+          const e = (secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId);
+          return e ? buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }) : `ID ${wantedSecondExaminerId}`;
+        })();
+
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-50">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+            <span className="text-xs font-semibold text-amber-800">Zweitgutachter:in auswählen</span>
+            <span className="ml-auto text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+              {isExternal ? "Extern eingetragen" : "Anfrage gestellt"}
+            </span>
+          </div>
+          <p className="text-xs text-amber-700 mb-2">
+            {isExternal
+              ? "Externe Zweitgutachter:in eingetragen. Änderung nur möglich nach Rückzug."
+              : "Anfrage an Zweitgutachter:in wurde gesendet. Änderung nur möglich nach Rückzug oder Ablehnung."}
+          </p>
+          <div className="bg-white rounded-lg border border-amber-200 px-3 py-2 mb-2">
+            <p className="text-xs font-semibold text-gray-800">{examinerDisplay}</p>
+            {isExternal && externalSecondExaminerEmail && (
+              <p className="text-xs text-gray-500">{externalSecondExaminerEmail}</p>
+            )}
+            {secondExaminerRequestedAt && (
+              <p className="text-xs text-gray-400 mt-0.5">
+                Angefragt: {new Date(secondExaminerRequestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => withdrawMutation.mutate({ requestId })}
+            disabled={withdrawMutation.isPending}
+            className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {withdrawMutation.isPending ? "Wird zurückgezogen…" : "Anfrage zurückziehen"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Ansicht: Auswahl treffen ──
   return (
     <div className="mt-3 pt-3 border-t border-gray-50">
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-          <span className="text-xs font-semibold text-blue-800">{t.student.secondExaminerTitle}</span>
-          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{t.student.firstExaminerAccepted}</span>
+          <span className="text-xs font-semibold text-blue-800">Zweitgutachter:in auswählen</span>
+          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Erstgutachter:in hat zugesagt</span>
         </div>
-        <p className="text-xs text-blue-600 mb-2">{t.student.secondExaminerAvailable}</p>
-        <div className="flex gap-2">
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(parseInt(e.target.value))}
-            className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-          >
-            <option value={0}>{t.student.noPreference}</option>
-            {(() => {
-              const sorted = [...(secondExaminers as any[])]
-                .filter((e: any) => e.id !== wantedExaminerId)
-                .sort((a: any, b: any) => {
-                  const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
-                  const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
-                  return lastA.localeCompare(lastB, "de");
-                });
-              const result: React.ReactNode[] = [];
-              let currentLetter = "";
-              sorted.forEach((e: any) => {
-                const lastName = e.lastName ?? (e.name ?? "").trim().split(" ").pop() ?? "";
-                const letter = lastName.charAt(0).toUpperCase();
-                if (letter !== currentLetter) {
-                  currentLetter = letter;
-                  result.push(<option key={`sep2-${letter}`} disabled value="">── {letter} ──</option>);
-                }
-                const eActive = (e as any).activeSupervisions as number | undefined;
-                const eMax = (e as any).maxSupervisions as number | undefined;
-                const eHint = eMax != null
-                  ? eActive != null && eActive >= eMax
-                       ? ` \u2014 ${t.student.capacityFull}`
-                      : eActive != null && eMax > 0 && eActive / eMax >= 0.8
-                        ? ` \u2014 ${t.student.capacityAlmost}`
-                      : ""
-                  : "";
-                const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
-                const deptInfo = e.department ? ` · ${e.department}` : "";
-                result.push(
-                  <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
-                    {displayName}{deptInfo}{eHint}
-                  </option>
-                );
+        <p className="text-xs text-blue-600 mb-3">Wählen Sie eine Zweitgutachter:in aus. Nach dem Senden wird eine Anfrage gestellt – analog zum Erstgutachter-Prozess.</p>
+
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(parseInt(e.target.value))}
+          className="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 mb-2"
+        >
+          <option value={0}>-- Bitte auswählen --</option>
+          <option value={EXTERNAL_MARKER}>Zweitgutachter:in ist nicht in der Liste</option>
+          <option disabled value="">────────────────────</option>
+          {(() => {
+            const sorted = [...(secondExaminers as any[])]
+              .filter((e: any) => e.id !== wantedExaminerId)
+              .sort((a: any, b: any) => {
+                const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
+                const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
+                return lastA.localeCompare(lastB, "de");
               });
-              return result;
-            })()}
-          </select>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-3 py-2 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition-colors"
-            style={{ backgroundColor: "#76B900" }}
-          >
-            {saving ? "..." : t.student.save}
-          </button>
-        </div>
-        {wantedSecondExaminerId && wantedSecondExaminerId > 0 && (
-          <p className="mt-1.5 text-xs text-blue-700">
-            {t.student.currentPref}: {(() => { const e = (secondExaminers as any[]).find((e: any) => e.id === wantedSecondExaminerId); return e ? buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name }) : `ID ${wantedSecondExaminerId}`; })()}
-          </p>
+            const result: React.ReactNode[] = [];
+            let currentLetter = "";
+            sorted.forEach((e: any) => {
+              const lastName = e.lastName ?? (e.name ?? "").trim().split(" ").pop() ?? "";
+              const letter = lastName.charAt(0).toUpperCase();
+              if (letter !== currentLetter) {
+                currentLetter = letter;
+                result.push(<option key={`sep2-${letter}`} disabled value="">── {letter} ──</option>);
+              }
+              const eActive = (e as any).activeSupervisions as number | undefined;
+              const eMax = (e as any).maxSupervisions as number | undefined;
+              const eHint = eMax != null
+                ? eActive != null && eActive >= eMax
+                     ? ` — Kapazität voll`
+                    : eActive != null && eMax > 0 && eActive / eMax >= 0.8
+                      ? ` — fast voll`
+                    : ""
+                : "";
+              const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
+              const deptInfo = e.department ? ` · ${e.department}` : "";
+              result.push(
+                <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
+                  {displayName}{deptInfo}{eHint}
+                </option>
+              );
+            });
+            return result;
+          })()}
+        </select>
+
+        {selectedId === EXTERNAL_MARKER && (
+          <div className="space-y-2 mb-3 p-3 bg-white rounded-lg border border-blue-200">
+            <p className="text-xs font-semibold text-gray-700 mb-1">Angaben zur externen Zweitgutachter:in</p>
+            <div className="flex gap-2">
+              <div className="w-28">
+                <label className="text-xs text-gray-500 mb-0.5 block">Titel (opt.)</label>
+                <input
+                  type="text"
+                  value={extTitle}
+                  onChange={(e) => setExtTitle(e.target.value)}
+                  placeholder="Prof. Dr."
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-gray-500 mb-0.5 block">Vorname *</label>
+                <input
+                  type="text"
+                  value={extFirstName}
+                  onChange={(e) => setExtFirstName(e.target.value)}
+                  placeholder="Maria"
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-gray-500 mb-0.5 block">Nachname *</label>
+                <input
+                  type="text"
+                  value={extLastName}
+                  onChange={(e) => setExtLastName(e.target.value)}
+                  placeholder="Musterfrau"
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-0.5 block">E-Mail-Adresse *</label>
+              <input
+                type="email"
+                value={extEmail}
+                onChange={(e) => setExtEmail(e.target.value)}
+                placeholder="m.musterfrau@beispiel.de"
+                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+            </div>
+          </div>
         )}
+
+        <button
+          onClick={handleSend}
+          disabled={isSaving || selectedId === 0}
+          className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
+          style={{ backgroundColor: "#76B900" }}
+        >
+          {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "Anfrage senden"}
+        </button>
       </div>
     </div>
   );
@@ -1645,11 +1792,16 @@ function StudentRequestCard({ req, utils, withdrawMutation }: { req: any; utils:
             </div>
           )}
           {/* Zweitgutachter-Auswahl nach Erstgutachter-Zusage */}
-          {req.status === "FIRST_EXAMINER_ACCEPTED" && (
+          {(req.status === "FIRST_EXAMINER_ACCEPTED" || req.status === "PENDING_SECOND_EXAMINER") && (
             <SecondExaminerPicker
               requestId={req.id}
               wantedExaminerId={(req as any).wantedExaminerId}
               wantedSecondExaminerId={(req as any).wantedSecondExaminerId}
+              externalSecondExaminerTitle={(req as any).externalSecondExaminerTitle}
+              externalSecondExaminerFirstName={(req as any).externalSecondExaminerFirstName}
+              externalSecondExaminerLastName={(req as any).externalSecondExaminerLastName}
+              externalSecondExaminerEmail={(req as any).externalSecondExaminerEmail}
+              secondExaminerRequestedAt={(req as any).secondExaminerRequestedAt}
             />
           )}
           <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col gap-3">

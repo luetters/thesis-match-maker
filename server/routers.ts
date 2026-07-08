@@ -139,6 +139,8 @@ import {
   getCommissionPreferences,
   setCommissionPreferences,
   setWantedSecondExaminer,
+  setExternalSecondExaminer,
+  withdrawSecondExaminerRequest,
   getFilteredSecondExaminers,
   hasSharedThesisRequest,
   getRequestsPendingEnrollmentEligibility,
@@ -828,14 +830,16 @@ export const appRouter = router({
         if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
         const isWantedExaminer = (existing as any).wantedExaminerId === ctx.user.id;
+        const isWantedSecondExaminer = (existing as any).wantedSecondExaminerId === ctx.user.id;
         const isAssignedExaminer = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
         const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
 
-        if (!isWantedExaminer && !isAssignedExaminer && !isAdmin) {
+        if (!isWantedExaminer && !isWantedSecondExaminer && !isAssignedExaminer && !isAdmin) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Diese Anfrage ist Ihnen nicht zugewiesen." });
         }
 
         // Statusübergang: PENDING_FIRST_EXAMINER → FIRST_EXAMINER_ACCEPTED / FIRST_EXAMINER_REJECTED / CONDITIONAL_ACCEPTANCE
+        //                 PENDING_SECOND_EXAMINER → SECOND_EXAMINER_ACCEPTED / FIRST_EXAMINER_ACCEPTED (Ablehnung = zurück)
         //                 PENDING / sonstige    → ACCEPTED / REJECTED / CONDITIONAL_ACCEPTANCE
         let newStatus: string;
         let auditAction: string;
@@ -844,6 +848,19 @@ export const appRouter = router({
           await conditionalAcceptThesisRequest(input.id, ctx.user.id, input.conditionalReason ?? "");
           newStatus = "CONDITIONAL_ACCEPTANCE";
           auditAction = "CONDITIONAL_ACCEPTANCE";
+        } else if (existing.status === "PENDING_SECOND_EXAMINER" && isWantedSecondExaminer) {
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB nicht verfügbar" });
+          if (input.action === "accept") {
+            await db.execute(`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED' WHERE id = ${input.id}`);
+            newStatus = "SECOND_EXAMINER_ACCEPTED";
+            auditAction = "SECOND_EXAMINER_ACCEPTED";
+          } else {
+            // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen
+            await db.execute(`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL WHERE id = ${input.id}`);
+            newStatus = "FIRST_EXAMINER_ACCEPTED";
+            auditAction = "SECOND_EXAMINER_REJECTED";
+          }
         } else if (existing.status === "PENDING_FIRST_EXAMINER" || existing.status === "CONDITIONAL_ACCEPTANCE") {
           if (input.action === "accept") {
             const { acceptThesisRequest } = await import("./db");
@@ -3030,7 +3047,7 @@ export const appRouter = router({
         return all.filter((c: any) => c.id !== ctx.user.id);
       }),
 
-    // Student: Zweitgutachter-Wunsch für eine Anfrage setzen
+    // Student: Zweitgutachter-Anfrage stellen (interner Prüfer im System)
     setWantedSecondExaminer: studentProcedure
       .input(z.object({
         requestId: z.number().int().positive(),
@@ -3038,6 +3055,47 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const result = await setWantedSecondExaminer(input.requestId, ctx.user.id, input.secondExaminerId);
+        if (!result.success) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+        }
+        // E-Mail-Benachrichtigung an Zweitgutachter:in senden
+        if (input.secondExaminerId) {
+          const { notifySecondExaminerOfSelection } = await import("./db");
+          notifySecondExaminerOfSelection(input.requestId, input.secondExaminerId).catch(
+            (e) => console.error("[notifySecondExaminer] E-Mail-Fehler:", e)
+          );
+        }
+        return { success: true };
+      }),
+
+    // Student: Externen Zweitgutachter (nicht im System) eintragen
+    setExternalSecondExaminer: studentProcedure
+      .input(z.object({
+        requestId: z.number().int().positive(),
+        title: z.string().max(64).default(""),
+        firstName: z.string().min(1).max(128),
+        lastName: z.string().min(1).max(128),
+        email: z.string().email().max(320),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await setExternalSecondExaminer(input.requestId, ctx.user.id, {
+          title: input.title,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+        });
+        if (!result.success) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+        }
+        return { success: true };
+      }),
+
+    // Student/Admin: Zweitgutachter-Anfrage zurückziehen
+    withdrawSecondExaminerRequest: studentProcedure
+      .input(z.object({ requestId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin";
+        const result = await withdrawSecondExaminerRequest(input.requestId, ctx.user.id, isAdmin);
         if (!result.success) {
           throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
         }

@@ -329,6 +329,12 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
       keywords: thesisRequests.keywords,
+      externalSecondExaminerTitle: thesisRequests.externalSecondExaminerTitle,
+      externalSecondExaminerFirstName: thesisRequests.externalSecondExaminerFirstName,
+      externalSecondExaminerLastName: thesisRequests.externalSecondExaminerLastName,
+      externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
+      secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
+      secondExaminerAcceptedAt: thesisRequests.secondExaminerAcceptedAt,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
@@ -341,7 +347,9 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
         eq(thesisRequests.examinerId, examinerId),
         eq(thesisRequests.secondExaminerId, examinerId),
         // Auch Anfragen anzeigen, die dem Prüfer:in zugeteilt wurden (wantedExaminerId)
-        eq(thesisRequests.wantedExaminerId, examinerId)
+        eq(thesisRequests.wantedExaminerId, examinerId),
+        // Anfragen, bei denen dieser Prüfer als Zweitgutachter angefragt wurde (wantedSecondExaminerId)
+        eq(thesisRequests.wantedSecondExaminerId, examinerId)
       )
     )
     .orderBy(desc(thesisRequests.createdAt));
@@ -4323,15 +4331,14 @@ export async function setCommissionPreferences(firstExaminerId: number, secondEx
 }
 
 /**
- * Zweitgutachter-Wunsch für eine Anfrage setzen
- * Nur erlaubt wenn Status = FIRST_EXAMINER_ACCEPTED
+ * Zweitgutachter-Anfrage stellen (interner Prüfer im System)
+ * Status wechselt zu PENDING_SECOND_EXAMINER, Anfrage wird an Zweitgutachter geschickt
  */
 export async function setWantedSecondExaminer(requestId: number, studentId: number, secondExaminerId: number | null) {
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
-  // Anfrage laden und Berechtigungen prüfen
   const rows = await db
-    .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status, wantedExaminerId: thesisRequests.wantedExaminerId })
+    .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status, wantedExaminerId: thesisRequests.wantedExaminerId, examinerId: thesisRequests.examinerId })
     .from(thesisRequests)
     .where(eq(thesisRequests.id, requestId))
     .limit(1);
@@ -4341,13 +4348,97 @@ export async function setWantedSecondExaminer(requestId: number, studentId: numb
   if (req.status !== "FIRST_EXAMINER_ACCEPTED") {
     return { success: false, error: "Zweitgutachter:in kann erst nach Zusage des Erstgutachters gewählt werden" };
   }
-  // Zweitgutachter darf nicht identisch mit Erstgutachter sein
-  if (secondExaminerId !== null && secondExaminerId === req.wantedExaminerId) {
+  if (secondExaminerId !== null && (secondExaminerId === req.wantedExaminerId || secondExaminerId === req.examinerId)) {
     return { success: false, error: "Zweitgutachter:in darf nicht identisch mit Erstgutachter:in sein" };
   }
-  await db.execute(
-    `UPDATE thesis_requests SET wanted_second_examiner_id = ${secondExaminerId === null ? "NULL" : secondExaminerId} WHERE id = ${requestId}`
-  );
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  await db.update(thesisRequests)
+    .set({
+      wantedSecondExaminerId: secondExaminerId,
+      // Externe Felder löschen wenn interner Prüfer gewählt wird
+      externalSecondExaminerTitle: null,
+      externalSecondExaminerFirstName: null,
+      externalSecondExaminerLastName: null,
+      externalSecondExaminerEmail: null,
+      status: secondExaminerId !== null ? "PENDING_SECOND_EXAMINER" : "FIRST_EXAMINER_ACCEPTED",
+      secondExaminerRequestedAt: secondExaminerId !== null ? now : null,
+    } as any)
+    .where(eq(thesisRequests.id, requestId));
+  return { success: true };
+}
+
+/**
+ * Externen Zweitgutachter (nicht im System) eintragen
+ * Status bleibt FIRST_EXAMINER_ACCEPTED, da keine digitale Bestätigung möglich
+ * Stattdessen wird direkt SECOND_EXAMINER_ACCEPTED gesetzt (manuelle Bestätigung)
+ */
+export async function setExternalSecondExaminer(requestId: number, studentId: number, data: {
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  const rows = await db
+    .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status })
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, requestId))
+    .limit(1);
+  if (!rows.length) return { success: false, error: "Anfrage nicht gefunden" };
+  const req = rows[0];
+  if (req.studentId !== studentId) return { success: false, error: "Keine Berechtigung" };
+  if (req.status !== "FIRST_EXAMINER_ACCEPTED") {
+    return { success: false, error: "Zweitgutachter:in kann erst nach Zusage des Erstgutachters eingetragen werden" };
+  }
+  if (!data.firstName.trim() || !data.lastName.trim() || !data.email.trim()) {
+    return { success: false, error: "Vorname, Nachname und E-Mail sind Pflichtfelder" };
+  }
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  await db.update(thesisRequests)
+    .set({
+      wantedSecondExaminerId: null,
+      externalSecondExaminerTitle: data.title.trim() || null,
+      externalSecondExaminerFirstName: data.firstName.trim(),
+      externalSecondExaminerLastName: data.lastName.trim(),
+      externalSecondExaminerEmail: data.email.trim(),
+      // Externer Prüfer kann nicht digital bestätigen → Status direkt auf PENDING_SECOND_EXAMINER
+      status: "PENDING_SECOND_EXAMINER",
+      secondExaminerRequestedAt: now,
+    } as any)
+    .where(eq(thesisRequests.id, requestId));
+  return { success: true };
+}
+
+/**
+ * Zweitgutachter-Anfrage zurückziehen (Student oder Admin)
+ * Setzt Status zurück auf FIRST_EXAMINER_ACCEPTED
+ */
+export async function withdrawSecondExaminerRequest(requestId: number, userId: number, isAdmin = false) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  const rows = await db
+    .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status })
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, requestId))
+    .limit(1);
+  if (!rows.length) return { success: false, error: "Anfrage nicht gefunden" };
+  const req = rows[0];
+  if (!isAdmin && req.studentId !== userId) return { success: false, error: "Keine Berechtigung" };
+  if (req.status !== "PENDING_SECOND_EXAMINER") {
+    return { success: false, error: "Nur ausstehende Zweitgutachter-Anfragen können zurückgezogen werden" };
+  }
+  await db.update(thesisRequests)
+    .set({
+      wantedSecondExaminerId: null,
+      externalSecondExaminerTitle: null,
+      externalSecondExaminerFirstName: null,
+      externalSecondExaminerLastName: null,
+      externalSecondExaminerEmail: null,
+      status: "FIRST_EXAMINER_ACCEPTED",
+      secondExaminerRequestedAt: null,
+    } as any)
+    .where(eq(thesisRequests.id, requestId));
   return { success: true };
 }
 
