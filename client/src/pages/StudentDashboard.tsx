@@ -101,7 +101,10 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
   // Alle Erstgutachter:innen laden (role=examiner)
   const { data: firstExaminers = [] } = trpc.thesisPhase27.getFirstExaminers.useQuery();
 
-  const [hasOwnTopic, setHasOwnTopic] = useState(true);
+  const [topicMode, setTopicMode] = useState<"own" | "assigned" | "examiner">("own");
+  const hasOwnTopic = topicMode === "own"; // Rückwärtskompatibilität
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const { data: activeTopics = [] } = trpc.thesisPhase27.getAllActiveTopics.useQuery();
   const [exposeFile, setExposeFile] = useState<File | null>(null);
   const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -162,7 +165,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.form) setForm(parsed.form);
-        if (parsed.hasOwnTopic !== undefined) setHasOwnTopic(parsed.hasOwnTopic);
+        if (parsed.hasOwnTopic !== undefined) setTopicMode(parsed.hasOwnTopic ? "own" : "assigned");
       }
     } catch {}
     setShowRestoreBanner(false);
@@ -470,11 +473,11 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
       {/* Themenauswahl – zwei Karten */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-3">{t.student.topicQuestion} <span className="text-red-500">*</span></p>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-3 gap-3">
           {/* Karte: Eigener Vorschlag */}
           <button
             type="button"
-            onClick={() => setHasOwnTopic(true)}
+            onClick={() => setTopicMode("own")}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
               hasOwnTopic
                 ? "border-[#76B900] bg-[#f6ffe0]"
@@ -503,24 +506,24 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
           {/* Karte: Thema zuteilen */}
           <button
             type="button"
-            onClick={() => setHasOwnTopic(false)}
+            onClick={() => setTopicMode("assigned")}
             className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-              !hasOwnTopic
+              topicMode === "assigned"
                 ? "border-[#76B900] bg-[#f6ffe0]"
                 : "border-gray-200 bg-white hover:border-gray-300"
             }`}
           >
             <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-              !hasOwnTopic ? "border-[#76B900] bg-[#76B900]" : "border-gray-300 bg-white"
+              topicMode === "assigned" ? "border-[#76B900] bg-[#76B900]" : "border-gray-300 bg-white"
             }`}>
-              {!hasOwnTopic && (
+              {topicMode === "assigned" && (
                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               )}
             </div>
             <div>
-              <p className={`font-semibold text-sm ${!hasOwnTopic ? "text-[#4a7a00]" : "text-gray-700"}`}>
+              <p className={`font-semibold text-sm ${topicMode === "assigned" ? "text-[#4a7a00]" : "text-gray-700"}`}>
                 {t.student.assignedTopic}
               </p>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
@@ -528,10 +531,93 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
               </p>
             </div>
           </button>
+          {/* Karte: Thema von Prüfer:in auswählen */}
+          <button
+            type="button"
+            onClick={() => setTopicMode("examiner")}
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+              topicMode === "examiner"
+                ? "border-[#76B900] bg-[#f6ffe0]"
+                : "border-gray-200 bg-white hover:border-gray-300"
+            }`}
+          >
+            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+              topicMode === "examiner" ? "border-[#76B900] bg-[#76B900]" : "border-gray-300 bg-white"
+            }`}>
+              {topicMode === "examiner" && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <p className={`font-semibold text-sm ${topicMode === "examiner" ? "text-[#4a7a00]" : "text-gray-700"}`}>
+                Thema von Prüfer:in
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                Wählen Sie ein veröffentlichtes Thema direkt aus.
+              </p>
+            </div>
+          </button>
         </div>
+
+        {/* Themenauswahl-Dropdown bei Prüfer-Thema */}
+        {topicMode === "examiner" && (
+          <div className="mt-3">
+            {activeTopics.length === 0 ? (
+              <p className="text-sm text-gray-400">Derzeit sind keine Themenvorschläge von Prüfer:innen verfügbar.</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Thema auswählen:</p>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {activeTopics.map((topic: any) => (
+                    <button
+                      key={topic.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTopicId(topic.id);
+                        setForm(f => ({
+                          ...f,
+                          title: topic.title,
+                          description: topic.description,
+                          language: topic.language ?? f.language,
+                          degreeType: topic.degreeType ?? f.degreeType,
+                          wantedExaminerId: topic.examinerId,
+                        }));
+                      }}
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                        selectedTopicId === topic.id
+                          ? "border-[#76B900] bg-[#f6ffe0]"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-gray-900">{topic.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{topic.description}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-xs text-[#4a7a00] font-medium">{topic.examinerName}</span>
+                            {topic.degreeType && <span className="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
+                            <span className="px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : "Deutsch"}</span>
+                          </div>
+                        </div>
+                        {selectedTopicId === topic.id && (
+                          <svg className="w-5 h-5 text-[#76B900] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {selectedTopicId && (
+                  <p className="text-xs text-[#4a7a00] font-medium">Thema ausgewählt – Titel und Beschreibung wurden übernommen.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ── Abschnitt 1: Thema ──────────────────────────────────────────── */}
+      {/* ── Abschnitt 1: Thema ───────────────────────────────────────────────────── */}
       {hasOwnTopic && (
         <div className="rounded-2xl border border-[#76B900]/20 bg-[#f9ffe8] p-5 space-y-4">
           <h3 className="text-xs font-semibold text-[#4a7a00] uppercase tracking-widest">{t.student.topicSection}</h3>

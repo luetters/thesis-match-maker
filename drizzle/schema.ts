@@ -538,3 +538,23 @@ export const conditionalDocumentComments = mysqlTable("conditional_document_comm
 });
 export type InsertConditionalDocumentComment = typeof conditionalDocumentComments.$inferInsert;
 export type SelectConditionalDocumentComment = typeof conditionalDocumentComments.$inferSelect;
+
+// ─── Prüfer-Themenvorschläge ──────────────────────────────────────────────────
+export const examinerTopics = mysqlTable("examiner_topics", {
+  id: int().autoincrement().notNull().primaryKey(),
+  examinerId: int("examiner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar({ length: 512 }).notNull(),
+  description: text().notNull(),
+  // Semester-Eingrenzung: null = für alle Zukunft
+  validFromSemester: varchar("valid_from_semester", { length: 16 }),
+  validUntilSemester: varchar("valid_until_semester", { length: 16 }),
+  // Abschlussart-Einschränkung: null = beide
+  degreeType: mysqlEnum("degree_type", ["bachelor", "master"]),
+  // Sprache der Arbeit
+  language: mysqlEnum("language", ["de", "en"]).default("de").notNull(),
+  isActive: tinyint("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+export type InsertExaminerTopic = typeof examinerTopics.$inferInsert;
+export type SelectExaminerTopic = typeof examinerTopics.$inferSelect;

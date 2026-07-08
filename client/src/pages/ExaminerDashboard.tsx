@@ -393,6 +393,7 @@ function useNavItems() {
   const items = [
     { href: "/examiner", label: "Übersicht", icon: Icons.home },
     { href: "/examiner/requests", label: t.examiner.requests, icon: Icons.inbox },
+    { href: "/examiner/topics", label: "Meine Themen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> },
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
     { href: "/examiner/capacities", label: t.supervisionCapacitiesPage.navLabel, icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
@@ -3392,18 +3393,190 @@ function SelectedDropZone({ isOver }: { isOver: boolean }) {
   );
 }
 
+// ─── Examiner Topics Manager ──────────────────────────────────────────────────────
+function ExaminerTopicsManager() {
+  const utils = trpc.useUtils();
+  const { data: topics = [], isLoading } = trpc.thesisPhase27.getMyTopics.useQuery();
+  const semesters = getNextSemesters();
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    validFromSemester: "",
+    validUntilSemester: "",
+    degreeType: "" as "" | "bachelor" | "master",
+    language: "de" as "de" | "en",
+  });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
+  const createMutation = trpc.thesisPhase27.createTopic.useMutation({
+    onSuccess: () => { toast.success("Thema erfolgreich angelegt."); utils.thesisPhase27.getMyTopics.invalidate(); resetForm(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMutation = trpc.thesisPhase27.updateTopic.useMutation({
+    onSuccess: () => { toast.success("Thema aktualisiert."); utils.thesisPhase27.getMyTopics.invalidate(); resetForm(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMutation = trpc.thesisPhase27.deleteTopic.useMutation({
+    onSuccess: () => { toast.success("Thema gelöscht."); utils.thesisPhase27.getMyTopics.invalidate(); setDeleteConfirmId(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const toggleActiveMutation = trpc.thesisPhase27.updateTopic.useMutation({
+    onSuccess: () => utils.thesisPhase27.getMyTopics.invalidate(),
+    onError: (e) => toast.error(e.message),
+  });
+
+  function resetForm() {
+    setForm({ title: "", description: "", validFromSemester: "", validUntilSemester: "", degreeType: "", language: "de" });
+    setShowForm(false); setEditingId(null);
+  }
+  function startEdit(topic: any) {
+    setForm({ title: topic.title, description: topic.description, validFromSemester: topic.validFromSemester ?? "", validUntilSemester: topic.validUntilSemester ?? "", degreeType: topic.degreeType ?? "", language: topic.language ?? "de" });
+    setEditingId(topic.id); setShowForm(true);
+  }
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const payload = { title: form.title.trim(), description: form.description.trim(), validFromSemester: form.validFromSemester || null, validUntilSemester: form.validUntilSemester || null, degreeType: (form.degreeType || null) as "bachelor" | "master" | null | undefined, language: form.language };
+    if (editingId) { updateMutation.mutate({ id: editingId, ...payload }); } else { createMutation.mutate(payload); }
+  }
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+        <p className="font-semibold mb-0.5">Themenvorschläge für Studierende</p>
+        <p className="text-xs text-blue-700">Hier können Sie Themen veröffentlichen, die Studierende direkt auswählen können. Aktive Themen erscheinen im Anfrageformular der Studierenden als dritte Option neben eigenem Thema und Themenzuteilung.</p>
+      </div>
+      {!showForm ? (
+        <button type="button" onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90" style={{ backgroundColor: "#76B900" }}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          Neues Thema anlegen
+        </button>
+      ) : (
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <h3 className="font-semibold text-gray-900">{editingId ? "Thema bearbeiten" : "Neues Thema anlegen"}</h3>
+          <div>
+            <Label htmlFor="topic-title">Titel <span className="text-red-500">*</span></Label>
+            <Input id="topic-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="z. B. Nachhaltigkeit in der Lieferkette" required maxLength={512} className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="topic-desc">Kurzbeschreibung <span className="text-red-500">*</span></Label>
+            <Textarea id="topic-desc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Beschreiben Sie das Thema, mögliche Fragestellungen und Anforderungen." required rows={4} className="mt-1" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Gültig ab Semester</Label>
+              <Select value={form.validFromSemester || "all"} onValueChange={v => setForm(f => ({ ...f, validFromSemester: v === "all" ? "" : v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Alle zukünftigen Semester" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle zukünftigen Semester</SelectItem>
+                  {semesters.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Gültig bis Semester</Label>
+              <Select value={form.validUntilSemester || "all"} onValueChange={v => setForm(f => ({ ...f, validUntilSemester: v === "all" ? "" : v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Kein Enddatum" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Kein Enddatum</SelectItem>
+                  {semesters.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Abschlussart</Label>
+              <Select value={form.degreeType || "all"} onValueChange={v => setForm(f => ({ ...f, degreeType: v === "all" ? "" : v as "bachelor" | "master" }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Beide" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Beide (Bachelor & Master)</SelectItem>
+                  <SelectItem value="bachelor">Bachelor</SelectItem>
+                  <SelectItem value="master">Master</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Sprache der Arbeit</Label>
+              <Select value={form.language} onValueChange={v => setForm(f => ({ ...f, language: v as "de" | "en" }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="de">Deutsch</SelectItem>
+                  <SelectItem value="en">Englisch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-5 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90" style={{ backgroundColor: "#76B900" }}>
+              {editingId ? "Speichern" : "Thema anlegen"}
+            </button>
+            <button type="button" onClick={resetForm} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
+          </div>
+        </form>
+      )}
+      {isLoading ? (
+        <div className="text-sm text-gray-400">Lade Themen…</div>
+      ) : topics.length === 0 ? (
+        <div className="text-sm text-gray-400 py-8 text-center">Noch keine Themenvorschläge angelegt.</div>
+      ) : (
+        <div className="space-y-3">
+          {topics.map((topic: any) => (
+            <div key={topic.id} className={`bg-white rounded-2xl border shadow-sm p-4 ${topic.isActive ? 'border-gray-100' : 'border-gray-200 opacity-60'}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-gray-900 text-sm">{topic.title}</span>
+                    {topic.isActive ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktiv</span> : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inaktiv</span>}
+                    {topic.degreeType && <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : "Deutsch"}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{topic.description}</p>
+                  {(topic.validFromSemester || topic.validUntilSemester) && (
+                    <p className="text-xs text-gray-400 mt-1">Gültig: {semesterLabel(topic.validFromSemester) ?? "ab sofort"} – {semesterLabel(topic.validUntilSemester) ?? "unbegrenzt"}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button type="button" onClick={() => toggleActiveMutation.mutate({ id: topic.id, isActive: topic.isActive ? 0 : 1 })} className="px-2.5 py-1 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">{topic.isActive ? "Deaktivieren" : "Aktivieren"}</button>
+                  <button type="button" onClick={() => startEdit(topic)} className="px-2.5 py-1 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">Bearbeiten</button>
+                  <button type="button" onClick={() => setDeleteConfirmId(topic.id)} className="px-2.5 py-1 rounded-lg text-xs border border-red-200 text-red-600 hover:bg-red-50">Löschen</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <AlertDialog open={deleteConfirmId !== null} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Thema löschen?</AlertDialogTitle>
+            <AlertDialogDescription>Dieser Vorgang kann nicht rückgängig gemacht werden. Das Thema wird dauerhaft entfernt.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmId && deleteMutation.mutate({ id: deleteConfirmId })} className="bg-red-600 hover:bg-red-700 text-white">Löschen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────────
 export default function ExaminerDashboard() {
   const [location, navigate] = useLocation();
   // URL-basierte Tab-Initialisierung: /examiner/profile öffnet direkt den Profil-Tab
-  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "capacities" => {
+  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "capacities" | "topics" => {
     if (location === "/examiner/profile") return "profile";
     if (location === "/examiner/requests") return "requests";
     if (location === "/examiner/colloquiums") return "colloquiums";
     if (location === "/examiner/history") return "history";
     if (location === "/examiner/capacities") return "capacities";
-    if (location === "/examiner/programmes") return "profile"; // Weiterleitung: Studiengänge jetzt in Mein Profil
-    if (location === "/examiner/commission") return "profile"; // Kommissionspräferenzen jetzt in Mein Profil
+    if (location === "/examiner/topics") return "topics";
+    if (location === "/examiner/programmes") return "profile";
+    if (location === "/examiner/commission") return "profile";
     return "overview";
   };
   const [activeTab, setActiveTab] = useState(getInitialTab);
@@ -3442,6 +3615,7 @@ export default function ExaminerDashboard() {
       else if (item.href === "/examiner/history") setActiveTab("history");
       else if (item.href === "/examiner/profile") setActiveTab("profile");
       else if (item.href === "/examiner/capacities") setActiveTab("capacities");
+      else if (item.href === "/examiner/topics") setActiveTab("topics");
     },
   }));
 
@@ -3452,6 +3626,7 @@ export default function ExaminerDashboard() {
     history: t.examiner.history,
     profile: t.examiner.profile,
     capacities: t.supervisionCapacitiesPage.title,
+    topics: "Meine Themenvorschläge",
   };
 
   return (
@@ -3462,6 +3637,7 @@ export default function ExaminerDashboard() {
       {activeTab === "history" && <ExaminerStatusHistory />}
       {activeTab === "profile" && <Profile embedded={true} />}
       {activeTab === "capacities" && <SupervisionCapacities />}
+      {activeTab === "topics" && <ExaminerTopicsManager />}
     </ThesisDashboardLayout>
   );
 }

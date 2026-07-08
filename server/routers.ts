@@ -181,6 +181,12 @@ import {
   createExaminerComment,
   updateExaminerComment,
   deleteExaminerComment,
+  getTopicsByExaminer,
+  getActiveTopicsForExaminer,
+  getAllActiveTopics,
+  createExaminerTopic,
+  updateExaminerTopic,
+  deleteExaminerTopic,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -3117,6 +3123,80 @@ export const appRouter = router({
         }
         const success = await setCommissionPreferences(ctx.user.id, input.secondExaminerIds);
         return { success };
+      }),
+
+    // ─── Prüfer-Themenvorschläge ──────────────────────────────────────────────
+
+    // Prüfer:in: eigene Themen abrufen
+    getMyTopics: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        return getTopicsByExaminer(ctx.user.id);
+      }),
+
+    // Öffentlich: alle aktiven Themen abrufen (für Studierende)
+    getAllActiveTopics: publicProcedure
+      .query(async () => {
+        return getAllActiveTopics();
+      }),
+
+    // Öffentlich: aktive Themen eines bestimmten Prüfers abrufen
+    getActiveTopicsForExaminer: publicProcedure
+      .input(z.object({ examinerId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return getActiveTopicsForExaminer(input.examinerId);
+      }),
+
+    // Prüfer:in: neues Thema anlegen
+    createTopic: protectedProcedure
+      .input(z.object({
+        title: z.string().min(3).max(512),
+        description: z.string().min(10),
+        validFromSemester: z.string().max(16).nullable().optional(),
+        validUntilSemester: z.string().max(16).nullable().optional(),
+        degreeType: z.enum(["bachelor", "master"]).nullable().optional(),
+        language: z.enum(["de", "en"]).default("de"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen können Themen anlegen." });
+        }
+        await createExaminerTopic({ examinerId: ctx.user.id, ...input });
+        return { success: true };
+      }),
+
+    // Prüfer:in: Thema aktualisieren
+    updateTopic: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        title: z.string().min(3).max(512).optional(),
+        description: z.string().min(10).optional(),
+        validFromSemester: z.string().max(16).nullable().optional(),
+        validUntilSemester: z.string().max(16).nullable().optional(),
+        degreeType: z.enum(["bachelor", "master"]).nullable().optional(),
+        language: z.enum(["de", "en"]).optional(),
+        isActive: z.number().int().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const { id, ...data } = input;
+        await updateExaminerTopic(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    // Prüfer:in: Thema löschen
+    deleteTopic: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        await deleteExaminerTopic(input.id, ctx.user.id);
+        return { success: true };
       }),
   }),
 

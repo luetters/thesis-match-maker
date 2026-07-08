@@ -24,6 +24,7 @@ import {
   examinerSemesterCapacities,
   userRoles,
   deadlineChanges,
+  examinerTopics,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -6156,4 +6157,105 @@ export async function notifySecondExaminerOfSelection(
       </div>`,
     text: `Guten Tag ${secondExaminer.name},\n\n${studentName} hat Sie als Zweitgutachter:in für "${thesis.title}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`,
   });
+}
+
+// ─── Prüfer-Themenvorschläge ──────────────────────────────────────────────────
+
+export async function getTopicsByExaminer(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerTopics)
+    .where(eq(examinerTopics.examinerId, examinerId))
+    .orderBy(desc(examinerTopics.createdAt));
+}
+
+export async function getActiveTopicsForExaminer(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(examinerTopics)
+    .where(and(eq(examinerTopics.examinerId, examinerId), eq(examinerTopics.isActive, 1)))
+    .orderBy(desc(examinerTopics.createdAt));
+}
+
+export async function getAllActiveTopics() {
+  const db = await getDb();
+  if (!db) return [];
+  const et = examinerTopics;
+  const u = users;
+  return db
+    .select({
+      id: et.id,
+      examinerId: et.examinerId,
+      title: et.title,
+      description: et.description,
+      validFromSemester: et.validFromSemester,
+      validUntilSemester: et.validUntilSemester,
+      degreeType: et.degreeType,
+      language: et.language,
+      isActive: et.isActive,
+      createdAt: et.createdAt,
+      examinerName: u.name,
+      examinerFirstName: u.firstName,
+      examinerLastName: u.lastName,
+      examinerAcademicTitle: u.academicTitle,
+    })
+    .from(et)
+    .innerJoin(u, eq(et.examinerId, u.id))
+    .where(eq(et.isActive, 1))
+    .orderBy(et.title);
+}
+
+export async function createExaminerTopic(data: {
+  examinerId: number;
+  title: string;
+  description: string;
+  validFromSemester?: string | null;
+  validUntilSemester?: string | null;
+  degreeType?: "bachelor" | "master" | null;
+  language?: "de" | "en";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const [result] = await db.insert(examinerTopics).values({
+    examinerId: data.examinerId,
+    title: data.title,
+    description: data.description,
+    validFromSemester: data.validFromSemester ?? null,
+    validUntilSemester: data.validUntilSemester ?? null,
+    degreeType: data.degreeType ?? null,
+    language: data.language ?? "de",
+    isActive: 1,
+  } as any);
+  return result;
+}
+
+export async function updateExaminerTopic(topicId: number, examinerId: number, data: {
+  title?: string;
+  description?: string;
+  validFromSemester?: string | null;
+  validUntilSemester?: string | null;
+  degreeType?: "bachelor" | "master" | null;
+  language?: "de" | "en";
+  isActive?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const [existing] = await db.select().from(examinerTopics)
+    .where(and(eq(examinerTopics.id, topicId), eq(examinerTopics.examinerId, examinerId)));
+  if (!existing) throw new Error("Thema nicht gefunden oder keine Berechtigung");
+  await db.update(examinerTopics).set({ ...data, updatedAt: new Date().toISOString().slice(0, 19).replace("T", " ") } as any)
+    .where(eq(examinerTopics.id, topicId));
+}
+
+export async function deleteExaminerTopic(topicId: number, examinerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const [existing] = await db.select().from(examinerTopics)
+    .where(and(eq(examinerTopics.id, topicId), eq(examinerTopics.examinerId, examinerId)));
+  if (!existing) throw new Error("Thema nicht gefunden oder keine Berechtigung");
+  await db.delete(examinerTopics).where(eq(examinerTopics.id, topicId));
 }
