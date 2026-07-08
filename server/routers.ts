@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   assignExaminerToThesis,
@@ -773,9 +774,24 @@ export const appRouter = router({
           studySpecializations: z.string().max(1000).optional(),
           personalInterests: z.string().max(1000).optional(),
           keywords: z.string().max(500).optional(),
+          examinerTopicId: z.number().int().positive().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
+        // Prüfen ob Thema-Limit erreicht ist
+        if (input.examinerTopicId) {
+          const db = await getDb();
+          if (db) {
+            const tid = input.examinerTopicId;
+            const rows = await db.execute(
+              sql`SELECT max_assignments, (SELECT COUNT(*) FROM thesis_requests WHERE examiner_topic_id = ${tid} AND status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER')) AS assignment_count FROM examiner_topics WHERE id = ${tid}`
+            ) as any;
+            const topic = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0][0] : rows[0]) : null;
+            if (topic && topic.max_assignments !== null && Number(topic.assignment_count) >= Number(topic.max_assignments)) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema hat die maximale Anzahl an Vergaben erreicht und kann nicht mehr gewählt werden.' });
+            }
+          }
+        }
         const result = await createThesisRequest({
           studentId: ctx.user.id,
           title: input.title,
@@ -790,7 +806,8 @@ export const appRouter = router({
           studySpecializations: input.studySpecializations ?? null,
           personalInterests: input.personalInterests ?? null,
           keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
-        });
+          examinerTopicId: input.examinerTopicId ?? null,
+        } as any);
         const insertId = (result as { insertId: number }).insertId;
         await createAuditLogEntry({
           thesisRequestId: insertId,

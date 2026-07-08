@@ -6198,12 +6198,15 @@ export async function getAllActiveTopics() {
       language: et.language,
       isActive: et.isActive,
       allowMultiple: et.allowMultiple,
+      maxAssignments: et.maxAssignments,
       tags: et.tags,
       createdAt: et.createdAt,
       examinerName: u.name,
       examinerFirstName: u.firstName,
       examinerLastName: u.lastName,
       examinerAcademicTitle: u.academicTitle,
+      // Anzahl aktiver Vergaben (Anfragen mit diesem Thema, die nicht zurückgezogen/abgelehnt sind)
+      assignmentCount: sql<number>`(SELECT COUNT(*) FROM thesis_requests tr WHERE tr.examiner_topic_id = ${et.id} AND tr.status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER'))`,
     })
     .from(et)
     .innerJoin(u, eq(et.examinerId, u.id))
@@ -6220,6 +6223,7 @@ export async function createExaminerTopic(data: {
   degreeType?: "bachelor" | "master" | null;
   language?: "de" | "en" | "both";
   allowMultiple?: number;
+  maxAssignments?: number | null;
   tags?: string | null;
 }) {
   const db = await getDb();
@@ -6234,6 +6238,7 @@ export async function createExaminerTopic(data: {
     language: data.language ?? "de",
     isActive: 1,
     allowMultiple: data.allowMultiple ?? 1,
+    maxAssignments: data.maxAssignments ?? null,
     tags: data.tags ?? null,
   } as any);
   return result;
@@ -6248,6 +6253,7 @@ export async function updateExaminerTopic(topicId: number, examinerId: number, d
   language?: "de" | "en" | "both";
   isActive?: number;
   allowMultiple?: number;
+  maxAssignments?: number | null;
   tags?: string | null;
 }) {
   const db = await getDb();

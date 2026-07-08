@@ -270,6 +270,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter zugesagt hat
 	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
+	// Referenz auf das gewählte Prüfer-Thema (optional)
+	examinerTopicId: int("examiner_topic_id"),
 });
 
 export const users = mysqlTable("users", {
@@ -555,6 +557,8 @@ export const examinerTopics = mysqlTable("examiner_topics", {
   isActive: tinyint("is_active").default(1).notNull(),
   // Mehrfachvergabe: 1 = Thema kann von mehreren Studierenden gewählt werden
   allowMultiple: tinyint("allow_multiple").default(1).notNull(),
+  // Maximale Anzahl Vergaben: NULL = unbegrenzt
+  maxAssignments: int("max_assignments"),
   // Schlagwörter als komma-getrennter String, z. B. "KI,Nachhaltigkeit,Logistik"
   tags: text("tags"),
   createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),

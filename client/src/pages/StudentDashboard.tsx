@@ -266,7 +266,8 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
       studySpecializations: (form as any).studySpecializations || undefined,
       personalInterests: (form as any).personalInterests || undefined,
       keywords: (form as any).keywords || undefined,
-    });
+      examinerTopicId: selectedTopicId ?? undefined,
+    } as any);
   };
 
   // Vorschau-Sektion
@@ -574,7 +575,9 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                     <button
                       key={topic.id}
                       type="button"
+                      disabled={topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)}
                       onClick={() => {
+                        if (topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)) return;
                         setSelectedTopicId(topic.id);
                         setForm(f => ({
                           ...f,
@@ -586,9 +589,11 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                         }));
                       }}
                       className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
-                        selectedTopicId === topic.id
-                          ? "border-[#76B900] bg-[#f6ffe0]"
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                        topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)
+                          ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                          : selectedTopicId === topic.id
+                            ? "border-[#76B900] bg-[#f6ffe0]"
+                            : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -600,6 +605,12 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                             {topic.degreeType && <span className="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
                             <span className="px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
                             {topic.allowMultiple === 0 && <span className="px-1.5 py-0.5 rounded text-xs bg-orange-50 text-orange-600">Einmalig</span>}
+                            {topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments) && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600 font-medium">Vergeben</span>
+                            )}
+                            {topic.maxAssignments !== null && Number(topic.assignmentCount) < Number(topic.maxAssignments) && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">{Number(topic.assignmentCount)}/{topic.maxAssignments} vergeben</span>
+                            )}
                           </div>
                           {topic.tags && (
                             <div className="flex flex-wrap gap-1 mt-1.5">

@@ -3409,6 +3409,7 @@ function ExaminerTopicsManager() {
     degreeType: "" as "" | "bachelor" | "master",
     language: "de" as "de" | "en" | "both",
     allowMultiple: 1 as 0 | 1,
+    maxAssignments: "" as string,
     tags: "",
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
@@ -3431,16 +3432,17 @@ function ExaminerTopicsManager() {
   });
 
   function resetForm() {
-    setForm({ title: "", description: "", validFromSemester: "", validUntilSemester: "", degreeType: "", language: "de", allowMultiple: 1, tags: "" });
+    setForm({ title: "", description: "", validFromSemester: "", validUntilSemester: "", degreeType: "", language: "de", allowMultiple: 1, maxAssignments: "", tags: "" });
     setShowForm(false); setEditingId(null);
   }
   function startEdit(topic: any) {
-    setForm({ title: topic.title, description: topic.description, validFromSemester: topic.validFromSemester ?? "", validUntilSemester: topic.validUntilSemester ?? "", degreeType: topic.degreeType ?? "", language: (topic.language ?? "de") as "de" | "en" | "both", allowMultiple: topic.allowMultiple ?? 1, tags: topic.tags ?? "" });
+    setForm({ title: topic.title, description: topic.description, validFromSemester: topic.validFromSemester ?? "", validUntilSemester: topic.validUntilSemester ?? "", degreeType: topic.degreeType ?? "", language: (topic.language ?? "de") as "de" | "en" | "both", allowMultiple: topic.allowMultiple ?? 1, maxAssignments: topic.maxAssignments != null ? String(topic.maxAssignments) : "", tags: topic.tags ?? "" });
     setEditingId(topic.id); setShowForm(true);
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { title: form.title.trim(), description: form.description.trim(), validFromSemester: form.validFromSemester || null, validUntilSemester: form.validUntilSemester || null, degreeType: (form.degreeType || null) as "bachelor" | "master" | null | undefined, language: form.language, allowMultiple: form.allowMultiple, tags: form.tags.trim() || null };
+    const maxVal = form.maxAssignments.trim() ? parseInt(form.maxAssignments.trim(), 10) : null;
+    const payload = { title: form.title.trim(), description: form.description.trim(), validFromSemester: form.validFromSemester || null, validUntilSemester: form.validUntilSemester || null, degreeType: (form.degreeType || null) as "bachelor" | "master" | null | undefined, language: form.language, allowMultiple: form.allowMultiple, maxAssignments: maxVal, tags: form.tags.trim() || null };
     if (editingId) { updateMutation.mutate({ id: editingId, ...payload }); } else { createMutation.mutate(payload); }
   }
 
@@ -3525,6 +3527,14 @@ function ExaminerTopicsManager() {
             </button>
             <span className="text-sm text-gray-700">Mehrfachvergabe erlaubt <span className="text-xs text-gray-400">(Thema kann von mehreren Studierenden gewählt werden)</span></span>
           </div>
+          {/* Maximale Vergaben */}
+          <div className="flex items-center gap-3">
+            <div className="w-28">
+              <Label htmlFor="topic-max">Max. Vergaben</Label>
+              <Input id="topic-max" type="number" min="1" max="999" value={form.maxAssignments} onChange={e => setForm(f => ({ ...f, maxAssignments: e.target.value }))} placeholder="unbegrenzt" className="mt-1 text-sm" />
+            </div>
+            <p className="text-xs text-gray-400 mt-5">Leer lassen = unbegrenzt. Studierende sehen das Thema als „Vergeben“, sobald das Limit erreicht ist.</p>
+          </div>
           <div className="flex items-center gap-3 pt-1">
             <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-5 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90" style={{ backgroundColor: "#76B900" }}>
               {editingId ? "Speichern" : "Thema anlegen"}
@@ -3549,6 +3559,11 @@ function ExaminerTopicsManager() {
                     {topic.degreeType && <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
                     <span className="px-2 py-0.5 rounded-full text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
                     {!topic.allowMultiple && <span className="px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-600">Einmalig</span>}
+                    {topic.maxAssignments != null && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ Number(topic.assignmentCount) >= Number(topic.maxAssignments) ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600' }`}>
+                        {Number(topic.assignmentCount)}/{topic.maxAssignments} vergeben
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{topic.description}</p>
                   {topic.tags && (
