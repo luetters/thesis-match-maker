@@ -90,7 +90,7 @@ const DEPT_OPTIONS = [
   { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
 ];
 
-// ─── Studierenden einladen (Formular) ─────────────────────────────────────────
+// ─── Studierende einladen (Formular) ─────────────────────────────────────────
 function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [studentEmail, setStudentEmail] = useState("");
@@ -116,7 +116,7 @@ function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
         style={{ backgroundColor: "#76B900" }}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-        Studierenden einladen
+        Studierende einladen
       </button>
     );
   }
@@ -124,7 +124,7 @@ function InviteStudentForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold" style={{ color: "#76B900" }}>Studierenden zur Registrierung einladen</h3>
+        <h3 className="font-bold" style={{ color: "#76B900" }}>Studierende zur Registrierung einladen</h3>
         <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
       </div>
       <p className="text-sm text-gray-500">
@@ -224,7 +224,7 @@ function PendingInvitationsPanel({ onChanged }: { onChanged?: () => void }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
       <h2 className="font-semibold" style={{ color: "#76B900" }}>Ausstehende Einladungen</h2>
-      <p className="text-xs text-gray-500">Diese Einladungen wurden versandt, aber noch nicht vom Studierenden bestätigt.</p>
+      <p className="text-xs text-gray-500">Diese Einladungen wurden versandt, aber noch nicht von der/dem Studierenden bestätigt.</p>
       <div className="space-y-3">
         {drafts.map((d) => (
           <div key={d.id}>
@@ -586,6 +586,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [setSecondSent, setSetSecondSent] = useState(false);
   const [showConditionalDialog, setShowConditionalDialog] = useState(false);
   const [conditionalReason, setConditionalReason] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
   const utils = trpc.useUtils();
 
   const { data: secondCandidates = [] } = (trpc.thesis as any).getAllSecondExaminerCandidates?.useQuery?.();
@@ -817,7 +818,60 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         </div>
         <StatusBadge status={req.status} />
       </div>
-      <p className="text-sm text-gray-600 line-clamp-2 mb-4">{req.description}</p>
+      {/* Beschreibung – aufklappbar */}
+      <div className="mb-3">
+        <p className={`text-sm text-gray-600 ${showDetails ? "" : "line-clamp-2"}`}>{req.description}</p>
+        {req.description && req.description.length > 120 && (
+          <button
+            onClick={() => setShowDetails(v => !v)}
+            className="mt-1 flex items-center gap-1 text-xs font-medium hover:underline"
+            style={{ color: "#76B900" }}
+          >
+            {showDetails ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                Weniger anzeigen
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                Vollständige Beschreibung anzeigen
+              </>
+            )}
+          </button>
+        )}
+        {/* Zusatzfelder nur im aufgeklappten Zustand */}
+        {showDetails && (
+          <div className="mt-3 space-y-3">
+            {(req as any).abstract && (
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Abstract</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{(req as any).abstract}</p>
+              </div>
+            )}
+            {(req as any).rejectionReason && (
+              <div className="p-3 bg-red-50 rounded-xl border border-red-200">
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Ablehnungsgrund</p>
+                <p className="text-sm text-red-700">{(req as any).rejectionReason}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              {req.studentEmail && (
+                <div><span className="font-medium text-gray-500">E-Mail Studierende:r:</span>{" "}<span className="text-gray-700">{req.studentEmail}</span></div>
+              )}
+              {req.degreeType && (
+                <div><span className="font-medium text-gray-500">Abschlussart:</span>{" "}<span className="text-gray-700">{req.degreeType === "bachelor" ? "Bachelor" : "Master"}</span></div>
+              )}
+              {req.language && (
+                <div><span className="font-medium text-gray-500">Sprache:</span>{" "}<span className="text-gray-700">{req.language === "de" ? "Deutsch" : "Englisch"}</span></div>
+              )}
+              {req.targetSemester && (
+                <div><span className="font-medium text-gray-500">Zielsemester:</span>{" "}<span className="text-gray-700">{req.targetSemester}</span></div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       {/* Persönliche Angaben der Studierenden – strukturierter Block */}
       {((req as any).studySpecializations || (req as any).personalInterests || (req as any).keywords) && (
         <div className="mb-4 rounded-xl border border-[#76B900]/20 bg-[#76B900]/5 p-3.5 space-y-3">
