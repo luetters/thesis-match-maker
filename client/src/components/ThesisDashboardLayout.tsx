@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
 import { buildFullName, getStatusBadge } from "@shared/const";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── App-Logo mit Fallback ────────────────────────────────────────────────────
 function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
@@ -243,32 +244,53 @@ function NavItem({
   icon,
   active,
   onClick,
+  disabled,
+  disabledTooltip,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
+  disabledTooltip?: string;
 }) {
-  return (
+  const btn = (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-        active
+        disabled
+          ? "text-gray-300 cursor-not-allowed opacity-50"
+          : active
           ? "text-white"
           : "text-gray-600 hover:text-gray-900 hover:bg-primary/5"
       }`}
-      style={active ? { backgroundColor: "#76B900" } : undefined}
+      style={active && !disabled ? { backgroundColor: "#76B900" } : undefined}
       aria-current={active ? "page" : undefined}
     >
       <span className="w-5 h-5 flex-shrink-0">{icon}</span>
       {label}
     </button>
   );
+  if (disabled && disabledTooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {/* span wrapper nötig, da disabled buttons keine Pointer-Events empfangen */}
+          <span className="block w-full" tabIndex={0}>
+            {btn}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="max-w-[200px] text-center">{disabledTooltip}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return btn;
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-type NavEntry = { href: string; label: string; icon: React.ReactNode; onClick?: () => void };
+type NavEntry = { href: string; label: string; icon: React.ReactNode; onClick?: () => void; disabled?: boolean; disabledTooltip?: string };
 
 function Sidebar({
   navItems,
@@ -341,7 +363,10 @@ function Sidebar({
               label={item.label}
               icon={item.icon}
               active={location === item.href}
+              disabled={item.disabled}
+              disabledTooltip={item.disabledTooltip}
               onClick={() => {
+                if (item.disabled) return;
                 navigate(item.href);
                 if (item.onClick) item.onClick();
                 onMobileClose();

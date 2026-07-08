@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -2750,6 +2751,10 @@ export default function StudentDashboard() {
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
+    disabled: item.href === "/student/new" && !!hasOpenReq,
+    disabledTooltip: item.href === "/student/new" && !!hasOpenReq
+      ? "Bitte zuerst die offene Anfrage zurückziehen, bevor Sie eine neue stellen."
+      : undefined,
     onClick: () => {
       if (item.href === "/student") setActiveTab("requests");
       else if (item.href === "/student/new") setActiveTab("new");
