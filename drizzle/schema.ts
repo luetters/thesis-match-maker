@@ -312,6 +312,10 @@ export const users = mysqlTable("users", {
   miscLink: varchar("misc_link", { length: 512 }),
   bookingUrl: varchar("booking_url", { length: 512 }),
   isFictitiousExample: tinyint("is_fictitious_example").notNull().default(0),
+  // Profil-Banner
+  bannerColor: varchar("banner_color", { length: 32 }),
+  bannerImageUrl: text("banner_image_url"),
+  bannerImageKey: varchar("banner_image_key", { length: 512 }),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

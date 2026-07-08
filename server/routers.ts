@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getDb } from "./db";
 import {
   assignExaminerToThesis,
   createAuditLogEntry,
@@ -377,6 +378,33 @@ const profileRouterDef = router({
       if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Avatar konnte nicht gespeichert werden." });
       return { avatarUrl: url };
     }),
+
+  setBannerColor: protectedProcedure
+    .input(z.object({ color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Ungültige Farbe") }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.execute(`UPDATE users SET banner_color = '${input.color}', banner_image_url = NULL, banner_image_key = NULL WHERE id = ${ctx.user.id}`);
+      return { bannerColor: input.color };
+    }),
+
+  removeBanner: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    await db.execute(`UPDATE users SET banner_color = NULL, banner_image_url = NULL, banner_image_key = NULL WHERE id = ${ctx.user.id}`);
+    return { success: true };
+  }),
+
+  getBannerData: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { bannerColor: null, bannerImageUrl: null };
+    const [rows] = await db.execute(`SELECT banner_color, banner_image_url FROM users WHERE id = ${ctx.user.id}`) as any;
+    const row = Array.isArray(rows) ? rows[0] : null;
+    return {
+      bannerColor: (row?.banner_color as string | null) ?? null,
+      bannerImageUrl: (row?.banner_image_url as string | null) ?? null,
+    };
+  }),
 });
 
 // --- App Router ---------------------------------------------------------------

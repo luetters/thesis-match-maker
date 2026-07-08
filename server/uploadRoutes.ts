@@ -495,4 +495,41 @@ export function registerUploadRoutes(app: Express) {
       }
     }
   );
+
+  // --- Profil-Banner-Upload ---
+  app.post(
+    "/api/upload/banner",
+    (req, res, next) => upload.single("banner")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Datei ist zu gro\u00df. Bitte laden Sie ein Bild mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ung\u00fcltige Datei." });
+      }
+      next();
+    }),
+    async (req: Request, res: Response) => {
+      try {
+        const user = await getUserFromRequest(req);
+        if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
+        if (!req.file) { res.status(400).json({ error: "Kein Bild \u00fcbermittelt." }); return; }
+        const mimeType = req.file.mimetype;
+        if (!['image/jpeg','image/png','image/webp','image/gif'].includes(mimeType)) {
+          res.status(400).json({ error: "Nur JPEG, PNG, WebP oder GIF sind erlaubt." }); return;
+        }
+        const ext = mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1];
+        const storageKey = `banners/user-${user.id}-${Date.now()}.${ext}`;
+        const { key: savedKey, url } = await storagePut(storageKey, req.file.buffer, mimeType);
+        // Banner-Felder in DB speichern
+        const db = await (await import('./db.js')).getDb();
+        if (!db) { res.status(500).json({ error: "Datenbankfehler." }); return; }
+        await db.execute(`UPDATE users SET banner_image_url = '${url.replace(/'/g,"''")}', banner_image_key = '${savedKey.replace(/'/g,"''")}', banner_color = NULL WHERE id = ${user.id}`);
+        res.json({ success: true, bannerImageUrl: url, key: savedKey });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Banner-Upload fehlgeschlagen.";
+        console.error("[Upload/banner] Fehler:", err);
+        res.status(500).json({ error: message });
+      }
+    }
+  );
 }

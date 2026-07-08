@@ -4020,6 +4020,8 @@ export async function getProfile(userId: number) {
       miscLink: user.miscLink as string | null,
       bookingUrl: user.bookingUrl as string | null,
       preferredLanguage: (user.preferredLanguage as 'de' | 'en') ?? 'de',
+      bannerColor: (user.bannerColor as string | null) ?? null,
+      bannerImageUrl: (user.bannerImageUrl as string | null) ?? null,
       createdAt: user.createdAt as Date,
       lastSignedIn: user.lastSignedIn as Date,
       // Prüfer:innen-spezifische Felder

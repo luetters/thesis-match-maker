@@ -498,6 +498,44 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
 
+  // ─── Banner-State ─────────────────────────────────────────────────────────
+  const [showBannerEditor, setShowBannerEditor] = useState(false);
+  const [bannerPickerColor, setBannerPickerColor] = useState('#1d4ed8');
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: bannerData, refetch: refetchBanner } = trpc.profile.getBannerData.useQuery(undefined, {
+    enabled: !!user && !loading,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const setBannerColorMutation = trpc.profile.setBannerColor.useMutation({
+    onSuccess: () => { toast.success('Banner gespeichert'); setShowBannerEditor(false); refetchBanner(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeBannerMutation = trpc.profile.removeBanner.useMutation({
+    onSuccess: () => { toast.success('Banner entfernt'); setShowBannerEditor(false); refetchBanner(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const uploadBanner = async (file: File) => {
+    setUploadingBanner(true);
+    try {
+      const formData = new FormData();
+      formData.append('banner', file);
+      const resp = await fetch('/api/upload/banner', { method: 'POST', body: formData, credentials: 'include' });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok || !json.success) throw new Error(json.error ?? `HTTP ${resp.status}`);
+      toast.success('Banner hochgeladen');
+      setShowBannerEditor(false);
+      refetchBanner();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Banner-Upload fehlgeschlagen');
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   const urlFields = ["website", "linkedIn", "researchGate", "htwProfileUrl", "miscLink", "bookingUrl"] as const;
   const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
 
@@ -814,7 +852,114 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
 
         {/* ── Profilkarte ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="h-24 w-full" style={{ background: `linear-gradient(135deg, ${roleConf.color}22, ${roleConf.color}44)` }} />
+          {/* Banner-Bereich */}
+          <div className="relative h-32 w-full group" style={{
+            background: bannerData?.bannerImageUrl
+              ? `url(${bannerData.bannerImageUrl}) center/cover no-repeat`
+              : bannerData?.bannerColor
+              ? bannerData.bannerColor
+              : `linear-gradient(135deg, ${roleConf.color}22, ${roleConf.color}44)`
+          }}>
+            {/* Banner bearbeiten Button */}
+            <button
+              type="button"
+              onClick={() => setShowBannerEditor(v => !v)}
+              className="absolute bottom-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-white text-xs font-medium transition-all opacity-0 group-hover:opacity-100"
+              title={lang === 'de' ? 'Banner anpassen' : 'Customize banner'}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              {lang === 'de' ? 'Banner' : 'Banner'}
+            </button>
+
+            {/* Banner-Editor-Popup */}
+            {showBannerEditor && (
+              <div className="absolute top-full right-0 mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 w-80">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-800">{lang === 'de' ? 'Banner anpassen' : 'Customize Banner'}</h3>
+                  <button type="button" onClick={() => setShowBannerEditor(false)} className="text-gray-400 hover:text-gray-600">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+
+                {/* Bild hochladen */}
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-gray-600 mb-1.5">{lang === 'de' ? 'Bild hochladen' : 'Upload image'}</p>
+                  <p className="text-xs text-gray-400 mb-2">{lang === 'de' ? 'Empfohlen: 1200 × 300 px, max. 5 MB (JPEG, PNG, WebP)' : 'Recommended: 1200 × 300 px, max. 5 MB (JPEG, PNG, WebP)'}</p>
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#76b900] hover:bg-[#f6ffe0] text-sm text-gray-600 hover:text-[#76b900] transition-all disabled:opacity-50"
+                  >
+                    {uploadingBanner ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    )}
+                    {uploadingBanner ? (lang === 'de' ? 'Wird hochgeladen...' : 'Uploading...') : (lang === 'de' ? 'Bild auswählen' : 'Select image')}
+                  </button>
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      e.target.value = '';
+                      if (file.size > 5 * 1024 * 1024) { toast.error(lang === 'de' ? 'Bild zu groß (max. 5 MB)' : 'Image too large (max. 5 MB)'); return; }
+                      uploadBanner(file);
+                    }}
+                  />
+                </div>
+
+                {/* Farbe wählen */}
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-gray-600 mb-1.5">{lang === 'de' ? 'Oder Farbe wählen' : 'Or choose a color'}</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={bannerPickerColor}
+                      onChange={(e) => setBannerPickerColor(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                    />
+                    {/* Vorschlag-Farben */}
+                    {['#1d4ed8','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#374151','#be185d'].map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setBannerPickerColor(c)}
+                        className={`w-6 h-6 rounded-full border-2 transition-all ${bannerPickerColor === c ? 'border-gray-800 scale-110' : 'border-transparent hover:border-gray-400'}`}
+                        style={{ background: c }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBannerColorMutation.mutate({ color: bannerPickerColor })}
+                    disabled={setBannerColorMutation.isPending}
+                    className="mt-2 w-full px-3 py-2 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-50"
+                    style={{ background: bannerPickerColor }}
+                  >
+                    {setBannerColorMutation.isPending ? (lang === 'de' ? 'Speichern...' : 'Saving...') : (lang === 'de' ? 'Farbe übernehmen' : 'Apply color')}
+                  </button>
+                </div>
+
+                {/* Entfernen */}
+                {(bannerData?.bannerColor || bannerData?.bannerImageUrl) && (
+                  <button
+                    type="button"
+                    onClick={() => removeBannerMutation.mutate()}
+                    disabled={removeBannerMutation.isPending}
+                    className="w-full px-3 py-2 rounded-xl text-sm text-red-600 border border-red-200 hover:bg-red-50 transition-all disabled:opacity-50"
+                  >
+                    {lang === 'de' ? 'Banner entfernen' : 'Remove banner'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="px-6 pb-6">
             <div className="flex items-end gap-4 -mt-12 mb-4">
               <div className="relative flex-shrink-0">
