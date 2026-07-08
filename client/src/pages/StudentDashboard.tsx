@@ -1288,13 +1288,34 @@ function SecondExaminerPicker({
               </p>
             )}
           </div>
-          <button
-            onClick={() => withdrawMutation.mutate({ requestId })}
-            disabled={withdrawMutation.isPending}
-            className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {withdrawMutation.isPending ? "Wird zurückgezogen…" : "Anfrage zurückziehen"}
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                disabled={withdrawMutation.isPending}
+                className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {withdrawMutation.isPending ? "Wird zurückgezogen…" : "Anfrage zurückziehen"}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Anfrage zurückziehen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Möchten Sie die Anfrage an die Zweitgutachter:in wirklich zurückziehen? Sie können danach eine neue Anfrage stellen.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => withdrawMutation.mutate({ requestId })}
+                >
+                  Zurückziehen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     );
