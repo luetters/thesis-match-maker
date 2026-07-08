@@ -111,8 +111,7 @@ function drawHeader(doc: PDFKit.PDFDocument, title: string, subtitle?: string) {
     .strokeColor(HTW_GREEN)
     .lineWidth(1.5)
     .stroke();
-
-  doc.moveDown(0.5);
+  // KEIN doc.moveDown() – explizite Y-Verwaltung im Aufrufer
 }
 
 /** Zeichnet den Standard-Footer auf jeder Seite */
@@ -418,11 +417,22 @@ async function exportProfilePdf(req: Request, res: Response) {
   const profile = await getProfile(user.id);
   if (!profile) return res.status(404).json({ error: "Profil nicht gefunden" });
 
-  const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
+  // ── Hilfsfunktion: Text mit expliziter Y-Position, KEIN automatischer Cursor-Vorschub ──
+  // Alle Texte werden mit absolutem x/y platziert, damit PDFKit keinen internen
+  // Cursor-Zustand aufbaut, der zu ungewollten Seitenumbrüchen führt.
+  const PAGE_H = 841.89; // A4 Höhe in pt
+  const PAGE_BOTTOM = PAGE_H - 50; // untere Grenze (Margin)
+
+  const doc = new PDFDocument({
+    size: "A4",
+    margins: { top: 0, bottom: 0, left: 0, right: 0 }, // Margins deaktiviert – wir verwalten alles selbst
+    bufferPages: true,
+    autoFirstPage: true,
+  });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
-  const pageWidth = doc.page.width;
+  const pageWidth = doc.page.width; // 595.28 pt
   const margin = 50;
   const usableWidth = pageWidth - 2 * margin;
 
@@ -433,19 +443,84 @@ async function exportProfilePdf(req: Request, res: Response) {
     name: profile.name,
   });
 
-  drawHeader(doc, "Profil-Übersicht", `HTW Berlin · Thesis-Management`);
+  // ── Interne Hilfsfunktion: Seite hinzufügen und Header zeichnen ──
+  let currentPage = 0;
+  const addNewPage = (title = "Profil-Übersicht (Fortsetzung)") => {
+    doc.addPage({ size: "A4", margins: { top: 0, bottom: 0, left: 0, right: 0 } });
+    currentPage++;
+    drawPageHeader(title);
+  };
 
-  // doc.y nach drawHeader synchronisieren, damit kein impliziter Seitenumbruch entsteht
-  doc.y = 80;
-  let y = 80;
+  const drawPageHeader = (title: string) => {
+    // Grüner Balken oben
+    doc.rect(0, 0, pageWidth, 8).fill(HTW_GREEN);
+    // Logo
+    if (logoBuffer) {
+      try { doc.image(logoBuffer, margin, 18, { height: 36, fit: [120, 36] }); } catch { /* ignore */ }
+    }
+    // Titel
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(16)
+      .text(title, margin + 130, 22, { width: pageWidth - margin - 130 - margin, align: "right", lineBreak: false });
+    // Untertitel
+    doc.fillColor(GRAY).font("Helvetica").fontSize(9)
+      .text("HTW Berlin · Thesis-Management", margin + 130, 42, { width: pageWidth - margin - 130 - margin, align: "right", lineBreak: false });
+    // Trennlinie
+    doc.moveTo(margin, 65).lineTo(pageWidth - margin, 65).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
+  };
+
+  // Erste Seite Header
+  drawPageHeader("Profil-Übersicht");
+  let y = 78;
+
+  // ── Hilfsfunktion: Seitenumbruch prüfen ──
+  const ensureSpace = (needed: number, newPageTitle?: string) => {
+    if (y + needed > PAGE_BOTTOM - 30) {
+      addNewPage(newPageTitle);
+      y = 78;
+    }
+  };
+
+  // ── Hilfsfunktion: Abschnittsüberschrift ──
+  const drawSection = (title: string) => {
+    ensureSpace(30);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11)
+      .text(title, margin, y, { width: usableWidth, lineBreak: false });
+    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
+    y += 20;
+  };
+
+  // ── Hilfsfunktion: Schlüssel-Wert-Zeile ──
+  const drawKV = (label: string, value: string | null | undefined) => {
+    if (!value) return;
+    ensureSpace(18);
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8)
+      .text(label, margin, y, { width: usableWidth * 0.35, lineBreak: false });
+    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(8)
+      .text(value || "–", margin + usableWidth * 0.37, y, { width: usableWidth * 0.63, lineBreak: false });
+    y += 18;
+  };
+
+  // ── Hilfsfunktion: Mehrzeiliger Text (Bio, Forschung) ──
+  // Schätzt Höhe anhand von Zeichenanzahl und Zeilenbreite
+  const drawMultilineText = (text: string) => {
+    const charsPerLine = Math.floor(usableWidth / 5.2); // ~5.2 pt pro Zeichen bei fontSize 9
+    const lines = Math.ceil(text.length / charsPerLine) + text.split("\n").length;
+    const estimatedH = lines * 13 + 8;
+    ensureSpace(Math.min(estimatedH, 120)); // max 120 pt reservieren, Rest läuft auf nächste Seite
+    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9)
+      .text(text, margin, y, { width: usableWidth, lineGap: 2, align: "left" });
+    y = doc.y + 10;
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // INHALT
+  // ────────────────────────────────────────────────────────────────────────────
 
   // ── Profilkopf ──────────────────────────────────────────────────────────────
+  ensureSpace(56);
   doc.rect(margin, y, usableWidth, 50).fill(LIGHT_GRAY);
-  doc
-    .fillColor(HTW_DARK)
-    .font("Helvetica-Bold")
-    .fontSize(18)
-    .text(fullName || "–", margin + 16, y + 10, { width: usableWidth - 32 });
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(16)
+    .text(fullName || "–", margin + 16, y + 8, { width: usableWidth - 32, lineBreak: false });
 
   const roleLabels: Record<string, string> = {
     examiner: "Erstprüfer:in",
@@ -455,135 +530,81 @@ async function exportProfilePdf(req: Request, res: Response) {
     superadmin: "Superadmin",
     pav: "PAV",
   };
-  doc
-    .fillColor(HTW_GREEN)
-    .font("Helvetica")
-    .fontSize(10)
-    .text(roleLabels[profile.role] ?? profile.role, margin + 16, y + 34);
-
-  y += 62;
+  doc.fillColor(HTW_GREEN).font("Helvetica").fontSize(10)
+    .text(roleLabels[profile.role] ?? profile.role, margin + 16, y + 30, { lineBreak: false });
+  y += 58;
 
   // ── Persönliche Daten ────────────────────────────────────────────────────────
-  doc
-    .fillColor(HTW_DARK)
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .text("Persönliche Daten", margin, y);
-  doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-  y += 20;
-
-  y = drawField(doc, "E-Mail", profile.email, margin, y, usableWidth);
-  // Telefonnummer wird aus Datenschutzgründen nicht im PDF ausgegeben
-  if (profile.department) y = drawField(doc, "Fachbereich", profile.department, margin, y, usableWidth);
-  if (profile.secondEmail) y = drawField(doc, "Alternative E-Mail", profile.secondEmail, margin, y, usableWidth);
-  if (profile.website) y = drawField(doc, "Website", profile.website, margin, y, usableWidth);
-  if (profile.linkedIn) y = drawField(doc, "LinkedIn", profile.linkedIn, margin, y, usableWidth);
-  if (profile.htwProfileUrl) y = drawField(doc, "HTW-Profil", profile.htwProfileUrl, margin, y, usableWidth);
-
-  y += 8;
+  drawSection("Persönliche Daten");
+  drawKV("E-Mail", profile.email);
+  if (profile.department) drawKV("Fachbereich", profile.department);
+  if (profile.secondEmail) drawKV("Alternative E-Mail", profile.secondEmail);
+  if (profile.website) drawKV("Website", profile.website);
+  if (profile.linkedIn) drawKV("LinkedIn", profile.linkedIn);
+  if (profile.htwProfileUrl) drawKV("HTW-Profil", profile.htwProfileUrl);
+  y += 6;
 
   // ── Prüfer:innen-spezifische Felder ─────────────────────────────────────────
   if (profile.isExaminer) {
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Prüfer:innen-Profil", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
+    drawSection("Prüfer:innen-Profil");
+    if (profile.officeRoom) drawKV("Büro/Raum", profile.officeRoom);
+    if (profile.officeHours) drawKV("Sprechstunden", profile.officeHours);
+    if (profile.bookingUrl) drawKV("Terminbuchung", profile.bookingUrl);
 
-    if (profile.officeRoom) y = drawField(doc, "Büro/Raum", profile.officeRoom, margin, y, usableWidth);
-    if (profile.officeHours) y = drawField(doc, "Sprechstunden", profile.officeHours, margin, y, usableWidth);
-    if (profile.bookingUrl) y = drawField(doc, "Terminbuchung", profile.bookingUrl, margin, y, usableWidth);
+    const langs = Array.isArray(profile.examinerLanguages)
+      ? (profile.examinerLanguages as string[]).join(", ")
+      : null;
+    drawKV("Prüfungssprachen", langs || "–");
 
-    const langs = Array.isArray(profile.examinerLanguages) ? (profile.examinerLanguages as string[]).join(", ") : "–";
-    y = drawField(doc, "Prüfungssprachen", langs, margin, y, usableWidth);
-
-    const depts = Array.isArray(profile.allowedDepartments) ? (profile.allowedDepartments as string[]).join(", ") : (profile.department ?? "–");
-    y = drawField(doc, "Zuständige Fachbereiche", depts, margin, y, usableWidth);
-
-    y += 8;
+    const depts = Array.isArray(profile.allowedDepartments)
+      ? (profile.allowedDepartments as string[]).join(", ")
+      : (profile.department ?? null);
+    drawKV("Zuständige Fachbereiche", depts || "–");
+    y += 6;
 
     // Kurzbiografie
     if (profile.examinerBio) {
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica-Bold")
-        .fontSize(11)
-        .text("Kurzbiografie", margin, y);
-      doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-      y += 20;
-
-      // HTML-Tags entfernen für Plain-Text-Ausgabe
       const bioText = (profile.examinerBio as string).replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-      // Seitenumbruch prüfen bevor langer Text gerendert wird
-      if (y + 60 > doc.page.height - 60) { doc.addPage(); y = 80; drawHeader(doc, "Profil-Übersicht (Fortsetzung)", `HTW Berlin · Thesis-Management`); doc.y = 80; }
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica")
-        .fontSize(9)
-        .text(bioText || "–", margin, y, { width: usableWidth, lineGap: 2 });
-      y = doc.y + 12;
+      if (bioText) {
+        drawSection("Kurzbiografie");
+        drawMultilineText(bioText);
+      }
     }
 
     // Forschungsschwerpunkte
     if (profile.examinerResearchFocus) {
-      if (y + 60 > doc.page.height - 60) { doc.addPage(); y = 80; drawHeader(doc, "Profil-Übersicht (Fortsetzung)", `HTW Berlin · Thesis-Management`); doc.y = 80; }
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica-Bold")
-        .fontSize(11)
-        .text("Forschungsschwerpunkte", margin, y);
-      doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-      y += 20;
-
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica")
-        .fontSize(9)
-        .text(profile.examinerResearchFocus as string, margin, y, { width: usableWidth, lineGap: 2 });
-      y = doc.y + 12;
+      drawSection("Forschungsschwerpunkte");
+      drawMultilineText(profile.examinerResearchFocus as string);
     }
 
     // Schlagworte
     if (Array.isArray(profile.examinerKeywords) && (profile.examinerKeywords as string[]).length > 0) {
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica-Bold")
-        .fontSize(11)
-        .text("Schlagworte", margin, y);
-      doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-      y += 20;
-
-      doc
-        .fillColor(HTW_DARK)
-        .font("Helvetica")
-        .fontSize(9)
-        .text((profile.examinerKeywords as string[]).join(" · "), margin, y, { width: usableWidth });
-      y = doc.y + 12;
+      drawSection("Schlagworte");
+      drawMultilineText((profile.examinerKeywords as string[]).join(" · "));
     }
   }
 
   // ── Studierende-spezifische Felder ───────────────────────────────────────────
   if (profile.role === "student") {
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Studium", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
-
-    if (profile.matrikelNr) y = drawField(doc, "Matrikelnummer", profile.matrikelNr, margin, y, usableWidth);
-    if (profile.thesisType) y = drawField(doc, "Abschlussart", profile.thesisType === "master" ? "Master" : "Bachelor", margin, y, usableWidth);
-    if (profile.enrollmentSemester) y = drawField(doc, "Immatrikulationssemester", profile.enrollmentSemester, margin, y, usableWidth);
+    drawSection("Studium");
+    if (profile.matrikelNr) drawKV("Matrikelnummer", profile.matrikelNr);
+    if (profile.thesisType) drawKV("Abschlussart", profile.thesisType === "master" ? "Master" : "Bachelor");
+    if (profile.enrollmentSemester) drawKV("Immatrikulationssemester", profile.enrollmentSemester);
   }
 
-  // Footer
+  // ── Footer auf allen Seiten ──────────────────────────────────────────────────
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
-    drawFooter(doc, i + 1, range.count);
+    const footerY = PAGE_H - 38;
+    doc.moveTo(margin, footerY - 8).lineTo(pageWidth - margin, footerY - 8)
+      .strokeColor(BORDER).lineWidth(0.5).stroke();
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8)
+      .text("HTW Berlin – Thesis-Management-System", margin, footerY, { width: 200, lineBreak: false });
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8)
+      .text(`Seite ${i + 1} von ${range.count}`, pageWidth - margin - 80, footerY, { width: 80, align: "right", lineBreak: false });
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8)
+      .text(`Erstellt: ${formatDate(new Date())}`, margin, footerY + 12, { width: 200, lineBreak: false });
   }
 
   doc.end();
