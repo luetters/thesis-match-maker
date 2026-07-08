@@ -3407,7 +3407,9 @@ function ExaminerTopicsManager() {
     validFromSemester: "",
     validUntilSemester: "",
     degreeType: "" as "" | "bachelor" | "master",
-    language: "de" as "de" | "en",
+    language: "de" as "de" | "en" | "both",
+    allowMultiple: 1 as 0 | 1,
+    tags: "",
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
@@ -3429,16 +3431,16 @@ function ExaminerTopicsManager() {
   });
 
   function resetForm() {
-    setForm({ title: "", description: "", validFromSemester: "", validUntilSemester: "", degreeType: "", language: "de" });
+    setForm({ title: "", description: "", validFromSemester: "", validUntilSemester: "", degreeType: "", language: "de", allowMultiple: 1, tags: "" });
     setShowForm(false); setEditingId(null);
   }
   function startEdit(topic: any) {
-    setForm({ title: topic.title, description: topic.description, validFromSemester: topic.validFromSemester ?? "", validUntilSemester: topic.validUntilSemester ?? "", degreeType: topic.degreeType ?? "", language: topic.language ?? "de" });
+    setForm({ title: topic.title, description: topic.description, validFromSemester: topic.validFromSemester ?? "", validUntilSemester: topic.validUntilSemester ?? "", degreeType: topic.degreeType ?? "", language: (topic.language ?? "de") as "de" | "en" | "both", allowMultiple: topic.allowMultiple ?? 1, tags: topic.tags ?? "" });
     setEditingId(topic.id); setShowForm(true);
   }
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { title: form.title.trim(), description: form.description.trim(), validFromSemester: form.validFromSemester || null, validUntilSemester: form.validUntilSemester || null, degreeType: (form.degreeType || null) as "bachelor" | "master" | null | undefined, language: form.language };
+    const payload = { title: form.title.trim(), description: form.description.trim(), validFromSemester: form.validFromSemester || null, validUntilSemester: form.validUntilSemester || null, degreeType: (form.degreeType || null) as "bachelor" | "master" | null | undefined, language: form.language, allowMultiple: form.allowMultiple, tags: form.tags.trim() || null };
     if (editingId) { updateMutation.mutate({ id: editingId, ...payload }); } else { createMutation.mutate(payload); }
   }
 
@@ -3500,14 +3502,28 @@ function ExaminerTopicsManager() {
             </div>
             <div>
               <Label>Sprache der Arbeit</Label>
-              <Select value={form.language} onValueChange={v => setForm(f => ({ ...f, language: v as "de" | "en" }))}>
+              <Select value={form.language} onValueChange={v => setForm(f => ({ ...f, language: v as "de" | "en" | "both" }))}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="de">Deutsch</SelectItem>
                   <SelectItem value="en">Englisch</SelectItem>
+                  <SelectItem value="both">Deutsch & Englisch</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          {/* Tags */}
+          <div>
+            <Label htmlFor="topic-tags">Schlagwörter (Tags)</Label>
+            <Input id="topic-tags" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="z. B. KI, Nachhaltigkeit, Logistik (kommagetrennt)" maxLength={512} className="mt-1" />
+            <p className="text-xs text-gray-400 mt-0.5">Kommagetrennte Schlagwörter werden als farbige Badges angezeigt.</p>
+          </div>
+          {/* Mehrfachvergabe */}
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setForm(f => ({ ...f, allowMultiple: f.allowMultiple ? 0 : 1 }))} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${ form.allowMultiple ? 'bg-[#76B900]' : 'bg-gray-300' }`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${ form.allowMultiple ? 'translate-x-4.5' : 'translate-x-0.5' }`} />
+            </button>
+            <span className="text-sm text-gray-700">Mehrfachvergabe erlaubt <span className="text-xs text-gray-400">(Thema kann von mehreren Studierenden gewählt werden)</span></span>
           </div>
           <div className="flex items-center gap-3 pt-1">
             <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-5 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90" style={{ backgroundColor: "#76B900" }}>
@@ -3531,9 +3547,18 @@ function ExaminerTopicsManager() {
                     <span className="font-semibold text-gray-900 text-sm">{topic.title}</span>
                     {topic.isActive ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktiv</span> : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inaktiv</span>}
                     {topic.degreeType && <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : "Deutsch"}</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
+                    {!topic.allowMultiple && <span className="px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-600">Einmalig</span>}
                   </div>
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">{topic.description}</p>
+                  {topic.tags && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {topic.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean).map((tag: string, i: number) => {
+                        const colors = ['bg-violet-100 text-violet-700','bg-sky-100 text-sky-700','bg-emerald-100 text-emerald-700','bg-amber-100 text-amber-700','bg-rose-100 text-rose-700','bg-indigo-100 text-indigo-700'];
+                        return <span key={i} className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[i % colors.length]}`}>{tag}</span>;
+                      })}
+                    </div>
+                  )}
                   {(topic.validFromSemester || topic.validUntilSemester) && (
                     <p className="text-xs text-gray-400 mt-1">Gültig: {semesterLabel(topic.validFromSemester) ?? "ab sofort"} – {semesterLabel(topic.validUntilSemester) ?? "unbegrenzt"}</p>
                   )}

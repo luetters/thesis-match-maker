@@ -6197,6 +6197,8 @@ export async function getAllActiveTopics() {
       degreeType: et.degreeType,
       language: et.language,
       isActive: et.isActive,
+      allowMultiple: et.allowMultiple,
+      tags: et.tags,
       createdAt: et.createdAt,
       examinerName: u.name,
       examinerFirstName: u.firstName,
@@ -6216,7 +6218,9 @@ export async function createExaminerTopic(data: {
   validFromSemester?: string | null;
   validUntilSemester?: string | null;
   degreeType?: "bachelor" | "master" | null;
-  language?: "de" | "en";
+  language?: "de" | "en" | "both";
+  allowMultiple?: number;
+  tags?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
@@ -6229,6 +6233,8 @@ export async function createExaminerTopic(data: {
     degreeType: data.degreeType ?? null,
     language: data.language ?? "de",
     isActive: 1,
+    allowMultiple: data.allowMultiple ?? 1,
+    tags: data.tags ?? null,
   } as any);
   return result;
 }
@@ -6239,8 +6245,10 @@ export async function updateExaminerTopic(topicId: number, examinerId: number, d
   validFromSemester?: string | null;
   validUntilSemester?: string | null;
   degreeType?: "bachelor" | "master" | null;
-  language?: "de" | "en";
+  language?: "de" | "en" | "both";
   isActive?: number;
+  allowMultiple?: number;
+  tags?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");

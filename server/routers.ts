@@ -3157,7 +3157,9 @@ export const appRouter = router({
         validFromSemester: z.string().max(16).nullable().optional(),
         validUntilSemester: z.string().max(16).nullable().optional(),
         degreeType: z.enum(["bachelor", "master"]).nullable().optional(),
-        language: z.enum(["de", "en"]).default("de"),
+        language: z.enum(["de", "en", "both"]).default("de"),
+        allowMultiple: z.number().int().min(0).max(1).default(1),
+        tags: z.string().max(512).nullable().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
@@ -3176,8 +3178,10 @@ export const appRouter = router({
         validFromSemester: z.string().max(16).nullable().optional(),
         validUntilSemester: z.string().max(16).nullable().optional(),
         degreeType: z.enum(["bachelor", "master"]).nullable().optional(),
-        language: z.enum(["de", "en"]).optional(),
+        language: z.enum(["de", "en", "both"]).optional(),
         isActive: z.number().int().min(0).max(1).optional(),
+        allowMultiple: z.number().int().min(0).max(1).optional(),
+        tags: z.string().max(512).nullable().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {

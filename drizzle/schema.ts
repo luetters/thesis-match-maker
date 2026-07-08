@@ -551,8 +551,12 @@ export const examinerTopics = mysqlTable("examiner_topics", {
   // Abschlussart-Einschränkung: null = beide
   degreeType: mysqlEnum("degree_type", ["bachelor", "master"]),
   // Sprache der Arbeit
-  language: mysqlEnum("language", ["de", "en"]).default("de").notNull(),
+  language: mysqlEnum("language", ["de", "en", "both"]).default("de").notNull(),
   isActive: tinyint("is_active").default(1).notNull(),
+  // Mehrfachvergabe: 1 = Thema kann von mehreren Studierenden gewählt werden
+  allowMultiple: tinyint("allow_multiple").default(1).notNull(),
+  // Schlagwörter als komma-getrennter String, z. B. "KI,Nachhaltigkeit,Logistik"
+  tags: text("tags"),
   createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

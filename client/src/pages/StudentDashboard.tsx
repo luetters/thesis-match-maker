@@ -598,8 +598,17 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className="text-xs text-[#4a7a00] font-medium">{topic.examinerName}</span>
                             {topic.degreeType && <span className="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
-                            <span className="px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : "Deutsch"}</span>
+                            <span className="px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
+                            {topic.allowMultiple === 0 && <span className="px-1.5 py-0.5 rounded text-xs bg-orange-50 text-orange-600">Einmalig</span>}
                           </div>
+                          {topic.tags && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {topic.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean).map((tag: string, i: number) => {
+                                const colors = ['bg-violet-100 text-violet-700','bg-sky-100 text-sky-700','bg-emerald-100 text-emerald-700','bg-amber-100 text-amber-700','bg-rose-100 text-rose-700','bg-indigo-100 text-indigo-700'];
+                                return <span key={i} className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${colors[i % colors.length]}`}>{tag}</span>;
+                              })}
+                            </div>
+                          )}
                         </div>
                         {selectedTopicId === topic.id && (
                           <svg className="w-5 h-5 text-[#76B900] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
