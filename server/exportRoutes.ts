@@ -435,6 +435,8 @@ async function exportProfilePdf(req: Request, res: Response) {
 
   drawHeader(doc, "Profil-Übersicht", `HTW Berlin · Thesis-Management`);
 
+  // doc.y nach drawHeader synchronisieren, damit kein impliziter Seitenumbruch entsteht
+  doc.y = 80;
   let y = 80;
 
   // ── Profilkopf ──────────────────────────────────────────────────────────────
@@ -514,6 +516,8 @@ async function exportProfilePdf(req: Request, res: Response) {
 
       // HTML-Tags entfernen für Plain-Text-Ausgabe
       const bioText = (profile.examinerBio as string).replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+      // Seitenumbruch prüfen bevor langer Text gerendert wird
+      if (y + 60 > doc.page.height - 60) { doc.addPage(); y = 80; drawHeader(doc, "Profil-Übersicht (Fortsetzung)", `HTW Berlin · Thesis-Management`); doc.y = 80; }
       doc
         .fillColor(HTW_DARK)
         .font("Helvetica")
@@ -524,6 +528,7 @@ async function exportProfilePdf(req: Request, res: Response) {
 
     // Forschungsschwerpunkte
     if (profile.examinerResearchFocus) {
+      if (y + 60 > doc.page.height - 60) { doc.addPage(); y = 80; drawHeader(doc, "Profil-Übersicht (Fortsetzung)", `HTW Berlin · Thesis-Management`); doc.y = 80; }
       doc
         .fillColor(HTW_DARK)
         .font("Helvetica-Bold")
