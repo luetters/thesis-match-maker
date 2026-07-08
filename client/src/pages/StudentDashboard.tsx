@@ -454,6 +454,19 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
         </div>
       )}
 
+      {/* Vorlage-Hinweis-Banner */}
+      {!!initialDraft?.title && (
+        <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-blue-50 border border-blue-200 text-sm">
+          <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="font-semibold text-blue-800">Formular aus Vorlage befüllt</p>
+            <p className="text-blue-700 text-xs mt-0.5">Die Felder wurden aus einer zurückgezogenen Anfrage übernommen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie die neue Anfrage absenden.</p>
+          </div>
+        </div>
+      )}
+
       {/* Themenauswahl – zwei Karten */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-3">{t.student.topicQuestion} <span className="text-red-500">*</span></p>
