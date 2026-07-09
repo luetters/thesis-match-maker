@@ -6,12 +6,18 @@
 
 export type Lang = "de" | "en";
 
-const LOGO_URL = "https://storage.manus.space/public/manus-webdev-static/thesis-match-logo-1746007561.png";
+const SITE_URL_BASE = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
+const LOGO_URL = `${SITE_URL_BASE}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
 
-const DISCLAIMER_DE = "⚠️ Dies ist ein nicht offizielles Tool an der HTW Berlin, welches zu Testzwecken installiert wurde.";
-const DISCLAIMER_EN = "⚠️ This is an unofficial tool at HTW Berlin, installed for testing purposes.";
+const FOOTER_NOTE_DE = "Dies ist eine automatisch generierte E-Mail vom Thesis Match Maker der HTW Berlin.";
+const FOOTER_NOTE_EN = "This is an automatically generated email from the Thesis Match Maker of HTW Berlin.";
 
-function htmlWrapper(content: string): string {
+function htmlWrapper(content: string, showEnglishBelow = true): string {
+  const englishBelowBanner = showEnglishBelow
+    ? `<tr><td style="padding:8px 32px;background:#f0f7e6;border-bottom:1px solid #d4edaa">
+        <p style="color:#5a7a00;font-size:12px;margin:0;font-style:italic">🇬🇧 <a href="#english" style="color:#5a7a00;text-decoration:underline">English below</a></p>
+      </td></tr>`
+    : "";
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -20,18 +26,16 @@ function htmlWrapper(content: string): string {
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:560px">
       <tr><td style="background:#006937;padding:24px 32px;text-align:center">
-        <img src="${LOGO_URL}" alt="Thesis Match Maker" style="height:48px;max-width:200px;object-fit:contain" />
+        <img src="${LOGO_URL}" alt="Thesis Match Maker" style="height:48px;max-width:200px;object-fit:contain;display:block;margin:0 auto" />
         <p style="color:#ffffff;margin:8px 0 0 0;font-size:13px;opacity:0.85">HTW Berlin – Thesis Match Maker</p>
       </td></tr>
-      <tr><td style="padding:8px 32px 8px 32px;background:#f0f7e6;border-bottom:1px solid #d4edaa">
-        <p style="color:#5a7a00;font-size:12px;margin:0;font-style:italic">🇬🇧 English below</p>
-      </td></tr>
+      ${englishBelowBanner}
       <tr><td style="padding:32px">
         ${content}
       </td></tr>
       <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
-        <p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">${DISCLAIMER_DE}</p>
-        <p style="color:#9ca3af;font-size:11px;margin:0">${DISCLAIMER_EN}</p>
+        <p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">${FOOTER_NOTE_DE}</p>
+        <p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>
       </td></tr>
     </table>
   </td></tr>
@@ -40,7 +44,7 @@ function htmlWrapper(content: string): string {
 }
 
 function divider(): string {
-  return `<hr style="border:none;border-top:2px solid #e5e7eb;margin:28px 0" />`;
+  return `<hr id="english" style="border:none;border-top:2px solid #e5e7eb;margin:28px 0" />`;
 }
 
 function p(text: string): string {
@@ -209,16 +213,35 @@ export function conditionalAcceptanceEmail(opts: {
     ${p("This means the supervisor is generally willing to supervise your thesis, but has indicated conditions or open questions that must be resolved before a final commitment can be given.")}
     ${reasonBlockEN}
     ${p("Please contact your supervisor directly to clarify the open points. Once all conditions have been met, the supervisor will confirm the final acceptance in the system.")}
-    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+    ${p("Kind regards,<br>HTW Berlin \u2013 Examination Office")}
   `;
-  } else {
+  } else if (opts.lang === "de") {
     body = `
     ${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
     ${p(`Ihre Abschlussarbeitsanfrage <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> hat eine <strong>Zusage unter Vorbehalt</strong> von ${opts.examinerName ?? "Ihrer Betreuungsperson"} erhalten.`)}
-    ${p("Das bedeutet, dass die Betreuungsperson grundsätzlich bereit ist, Ihre Arbeit zu betreuen, jedoch noch Bedingungen oder offene Fragen bestehen, die vor einer endgültigen Zusage geklärt werden müssen.")}
+    ${p("Das bedeutet, dass die Betreuungsperson grunds\u00e4tzlich bereit ist, Ihre Arbeit zu betreuen, jedoch noch Bedingungen oder offene Fragen bestehen, die vor einer endg\u00fcltigen Zusage gekl\u00e4rt werden m\u00fcssen.")}
     ${reasonBlockDE}
-    ${p("Bitte nehmen Sie direkt Kontakt mit Ihrer Betreuungsperson auf, um die offenen Punkte zu klären. Sobald alle Bedingungen erfüllt sind, wird die Betreuungsperson die endgültige Zusage im System bestätigen.")}
-    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+    ${p("Bitte nehmen Sie direkt Kontakt mit Ihrer Betreuungsperson auf, um die offenen Punkte zu kl\u00e4ren. Sobald alle Bedingungen erf\u00fcllt sind, wird die Betreuungsperson die endg\u00fcltige Zusage im System best\u00e4tigen.")}
+    ${p("Mit freundlichen Gr\u00fc\u00dfen<br>HTW Berlin \u2013 Pr\u00fcfungsverwaltung")}
+  `;
+  } else {
+    // Zweisprachig (Standard)
+    body = `
+    ${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
+    ${p(`Ihre Abschlussarbeitsanfrage <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> hat eine <strong>Zusage unter Vorbehalt</strong> von ${opts.examinerName ?? "Ihrer Betreuungsperson"} erhalten.`)}
+    ${p("Das bedeutet, dass die Betreuungsperson grunds\u00e4tzlich bereit ist, Ihre Arbeit zu betreuen, jedoch noch Bedingungen oder offene Fragen bestehen, die vor einer endg\u00fcltigen Zusage gekl\u00e4rt werden m\u00fcssen.")}
+    ${reasonBlockDE}
+    ${p("Bitte nehmen Sie direkt Kontakt mit Ihrer Betreuungsperson auf, um die offenen Punkte zu kl\u00e4ren. Sobald alle Bedingungen erf\u00fcllt sind, wird die Betreuungsperson die endg\u00fcltige Zusage im System best\u00e4tigen.")}
+    ${p("Mit freundlichen Gr\u00fc\u00dfen<br>HTW Berlin \u2013 Pr\u00fcfungsverwaltung")}
+
+    ${divider()}
+
+    ${p(`Dear ${opts.recipientName ?? "Student"},`)}
+    ${p(`Your thesis application <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong> has received a <strong>conditional acceptance</strong> from ${opts.examinerName ?? "your supervisor"}.`)}
+    ${p("This means the supervisor is generally willing to supervise your thesis, but has indicated conditions or open questions that must be resolved before a final commitment can be given.")}
+    ${reasonBlockEN}
+    ${p("Please contact your supervisor directly to clarify the open points. Once all conditions have been met, the supervisor will confirm the final acceptance in the system.")}
+    ${p("Kind regards,<br>HTW Berlin \u2013 Examination Office")}
   `;
   }
   return { subject, html: htmlWrapper(body) };
@@ -490,4 +513,130 @@ export function roleRejectedEmail(opts: {
     html: htmlWrapper(body),
     text: `Ihre Rollenanfrage als ${opts.roleLabel} wurde abgelehnt.${opts.reason ? " Begründung: " + opts.reason : ""}\n\nYour role request as ${opts.roleLabel} was declined.${opts.reason ? " Reason: " + opts.reason : ""}`,
   };
+}
+
+// ─── Zweitgutachter: Bestätigung ─────────────────────────────────────────────
+export function buildSecondExaminerConfirmedEmail(opts: {
+  recipientName?: string | null;
+  recipientRole: "first" | "student";
+  secondExaminerName: string;
+  thesisTitle: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Zweitgutachter:in bestätigt / Second Examiner Confirmed – ${opts.thesisTitle}`;
+  const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
+
+  const bodyDE = opts.recipientRole === "student"
+    ? `${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
+       ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> bestätigt. Ihr Prüfungsteam ist nun vollständig.`)}
+       ${p("Sie können jetzt Ihr aktualisiertes Anmeldedokument (mit Zweitgutachter:in) herunterladen.")}
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+       ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}`
+    : `${p(`Sehr geehrte/r ${opts.recipientName ?? "Prüfer:in"},`)}
+       ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung für folgende Abschlussarbeit bestätigt: <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong>`)}
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+       ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}`;
+
+  const bodyEN = opts.recipientRole === "student"
+    ? `${p(`Dear ${opts.recipientName ?? "Student"},`)}
+       ${p(`<strong>${opts.secondExaminerName}</strong> has confirmed the second supervision for your thesis <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>. Your examination team is now complete.`)}
+       ${p("You can now download your updated registration document (including the second examiner).")}
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+       ${p("Kind regards,<br>HTW Berlin – Examination Office")}`
+    : `${p(`Dear ${opts.recipientName ?? "Examiner"},`)}
+       ${p(`<strong>${opts.secondExaminerName}</strong> has confirmed the second supervision for the thesis: <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>`)}
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+       ${p("Kind regards,<br>HTW Berlin – Examination Office")}`;
+
+  const body = `${bodyDE}${divider()}${bodyEN}`;
+  const text = opts.recipientRole === "student"
+    ? `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`
+    : `${opts.secondExaminerName} hat die Zweitbetreuung für "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body), text };
+}
+
+// ─── Zweitgutachter: Ablehnung ────────────────────────────────────────────────
+export function buildSecondExaminerRejectedEmail(opts: {
+  recipientName?: string | null;
+  secondExaminerName: string;
+  thesisTitle: string;
+  rejectionReason?: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Zweitgutachter:in hat abgelehnt / Second Examiner Declined – ${opts.thesisTitle}`;
+  const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
+  const reasonDE = opts.rejectionReason ? p(`<strong>Begründung:</strong> ${opts.rejectionReason}`) : "";
+  const reasonEN = opts.rejectionReason ? p(`<strong>Reason:</strong> ${opts.rejectionReason}`) : "";
+
+  const body = `
+    ${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
+    ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> leider abgelehnt.`)}
+    ${reasonDE}
+    ${p("Bitte wählen Sie in Ihrem Dashboard eine andere Zweitgutachter:in aus.")}
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+
+    ${divider()}
+
+    ${p(`Dear ${opts.recipientName ?? "Student"},`)}
+    ${p(`<strong>${opts.secondExaminerName}</strong> has unfortunately declined the second supervision for your thesis <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>.`)}
+    ${reasonEN}
+    ${p("Please select a different second examiner in your dashboard.")}
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  const text = `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" abgelehnt.${opts.rejectionReason ? `\nBegründung: ${opts.rejectionReason}` : ""}\n\nBitte wählen Sie eine andere Person.\n\nDashboard: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body), text };
+}
+
+// ─── Zweitgutachter: Anfrage ──────────────────────────────────────────────────
+export function buildSecondExaminerRequestEmail(opts: {
+  examinerName?: string | null;
+  studentName: string;
+  thesisTitle: string;
+  semester?: string;
+  personalNote?: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Anfrage als Zweitgutachter:in / Request as Second Examiner – ${opts.thesisTitle}`;
+  const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
+  const personalNoteBlockDE = opts.personalNote
+    ? `<div style="margin:16px 0;padding:16px;background:#f0fdf4;border-left:4px solid #006937;border-radius:4px;">
+        <p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;font-weight:600;">Persönliche Nachricht der/des Studierenden:</p>
+        <p style="margin:0;color:#1f2937;font-size:14px;white-space:pre-wrap;">${opts.personalNote.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+       </div>`
+    : "";
+  const personalNoteBlockEN = opts.personalNote
+    ? `<div style="margin:16px 0;padding:16px;background:#f0fdf4;border-left:4px solid #006937;border-radius:4px;">
+        <p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;font-weight:600;">Personal message from the student:</p>
+        <p style="margin:0;color:#1f2937;font-size:14px;white-space:pre-wrap;">${opts.personalNote.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+       </div>`
+    : "";
+
+  const body = `
+    ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
+    ${p(`<strong>${opts.studentName}</strong> hat Sie als Zweitgutachter:in für folgende Abschlussarbeit ausgewählt:`)}
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
+      <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studierende:r</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>
+      ${opts.semester ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
+    </table>
+    ${personalNoteBlockDE}
+    ${p("Bitte melden Sie sich in Ihrem Dashboard an und bestätigen oder lehnen Sie die Anfrage ab.")}
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard – Anfrage beantworten</a></p>
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+
+    ${divider()}
+
+    ${p(`Dear ${opts.examinerName ?? "Examiner"},`)}
+    ${p(`<strong>${opts.studentName}</strong> has selected you as second examiner for the following thesis:`)}
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Title</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
+      <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Student</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>
+      ${opts.semester ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
+    </table>
+    ${personalNoteBlockEN}
+    ${p("Please log in to your dashboard and accept or decline the request.")}
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+  const text = `${opts.studentName} hat Sie als Zweitgutachter:in für "${opts.thesisTitle}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body), text };
 }
