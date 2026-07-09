@@ -2125,6 +2125,10 @@ function ProfileEdit() {
   });
   const [alternativeEmail, setAlternativeEmail] = useState("");
   const [isSecondExaminer, setIsSecondExaminer] = useState(false);
+  const [allowedDepartments, setAllowedDepartments] = useState<string[]>([]);
+
+  // Fachbereich-Zuordnungen laden
+  const { data: examinerDepts } = trpc.examiner.getDepartments.useQuery();
 
   // Profil-Daten in den lokalen State laden (useEffect statt setState im Render-Body)
   useEffect(() => {
@@ -2141,8 +2145,18 @@ function ProfileEdit() {
     });
     setAlternativeEmail((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "");
     setIsSecondExaminer((profile as { isSecondExaminer?: number }).isSecondExaminer === 1);
+    // Wenn noch keine Fachbereich-Zuordnungen vorhanden: eigenen Fachbereich als Default setzen
+    if (allowedDepartments.length === 0 && profile.department) {
+      setAllowedDepartments([profile.department]);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.userId ?? (profile as any)?.id]);
+
+  // Fachbereich-Zuordnungen aus DB laden (nach erster Abfrage)
+  useEffect(() => {
+    if (!examinerDepts || examinerDepts.length === 0) return;
+    setAllowedDepartments(examinerDepts.map((d) => d.department));
+  }, [examinerDepts?.length]);
 
   const updateProfile = trpc.examiner.updateProfile.useMutation({
     onSuccess: () => toast.success(t.examiner.toastProfileSaved ?? "Profil gespeichert!"),
@@ -2170,6 +2184,7 @@ function ProfileEdit() {
       languages: form.languages.split(",").map((l) => l.trim()).filter(Boolean),
       studyPrograms: form.studyPrograms.split(",").map((s) => s.trim()).filter(Boolean),
       maxSupervisions: form.maxSupervisions,
+      allowedDepartments: allowedDepartments.length > 0 ? allowedDepartments : undefined,
     });
     // Alternative E-Mail separat speichern
     if (alternativeEmail !== ((profile as { alternativeEmail?: string | null }).alternativeEmail ?? "")) {
@@ -2204,14 +2219,76 @@ function ProfileEdit() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Fachbereich</label>
-              <input
-                type="text"
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Primärer Fachbereich</label>
+              <select
                 value={form.department}
-                onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                placeholder="z.B. Informatik und Wirtschaft"
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
-              />
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((f) => ({ ...f, department: val }));
+                  // Primärfachbereich immer in der Auswahl behalten
+                  if (val && !allowedDepartments.includes(val)) {
+                    setAllowedDepartments((prev) => [...prev, val]);
+                  }
+                }}
+                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all bg-white"
+              >
+                <option value="">Bitte wählen…</option>
+                <option value="FB1">FB 1 – Wirtschafts- und Rechtswissenschaften</option>
+                <option value="FB2">FB 2 – Informatik und Medien</option>
+                <option value="FB3">FB 3 – Ingenieurwissenschaften</option>
+                <option value="FB4">FB 4 – Gestaltung und Kultur</option>
+                <option value="FB5">FB 5 – Natur- und Technikwissenschaften</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Betreuung auch für andere Fachbereiche
+                <span className="ml-1.5 text-xs font-normal text-gray-400">(Mehrfachauswahl möglich)</span>
+              </label>
+              <p className="text-xs text-gray-500 mb-3">Ihr primärer Fachbereich ist automatisch ausgewählt. Wählen Sie weitere Fachbereiche, für die Sie Abschlussarbeiten betreuen möchten.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([
+                  { value: "FB1", label: "FB 1 – Wirtschafts- und Rechtswissenschaften" },
+                  { value: "FB2", label: "FB 2 – Informatik und Medien" },
+                  { value: "FB3", label: "FB 3 – Ingenieurwissenschaften" },
+                  { value: "FB4", label: "FB 4 – Gestaltung und Kultur" },
+                  { value: "FB5", label: "FB 5 – Natur- und Technikwissenschaften" },
+                ] as const).map((fb) => {
+                  const isPrimary = fb.value === form.department;
+                  const isChecked = allowedDepartments.includes(fb.value);
+                  return (
+                    <label
+                      key={fb.value}
+                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border cursor-pointer transition-all select-none ${
+                        isPrimary
+                          ? "border-green-300 bg-green-50 cursor-default"
+                          : isChecked
+                          ? "border-green-200 bg-green-50/50"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked || isPrimary}
+                        disabled={isPrimary}
+                        onChange={() => {
+                          if (isPrimary) return;
+                          setAllowedDepartments((prev) =>
+                            prev.includes(fb.value)
+                              ? prev.filter((d) => d !== fb.value)
+                              : [...prev, fb.value]
+                          );
+                        }}
+                        className="accent-green-600 w-4 h-4 shrink-0"
+                      />
+                      <span className="text-sm text-gray-700 leading-tight">
+                        {fb.label}
+                        {isPrimary && <span className="ml-1.5 text-xs text-green-600 font-medium">(Primär)</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Kurzbiografie</label>

@@ -1142,12 +1142,26 @@ export const appRouter = router({
           languages: z.array(z.string()).optional(),
           studyPrograms: z.array(z.string()).optional(),
           maxSupervisions: z.number().optional(),
+          allowedDepartments: z.array(z.string()).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        await upsertExaminerProfile({ userId: ctx.user.id, ...input });
+        const { allowedDepartments, ...profileFields } = input;
+        await upsertExaminerProfile({ userId: ctx.user.id, ...profileFields });
+        // Fachbereich-Zuordnungen speichern
+        if (allowedDepartments && allowedDepartments.length > 0) {
+          const { setExaminerDepartments } = await import('./db');
+          const primaryDept = profileFields.department ?? allowedDepartments[0];
+          await setExaminerDepartments(ctx.user.id, allowedDepartments, primaryDept);
+        }
         return { success: true };
       }),
+
+    // Fachbereich-Zuordnungen des eingeloggten Prüfers laden
+    getDepartments: anyExaminerProcedure.query(async ({ ctx }) => {
+      const { getExaminerDepartments } = await import('./db');
+      return getExaminerDepartments(ctx.user.id);
+    }),
 
     // JWT-gesicherter Endpunkt: Prüfer antwortet per E-Mail-Link (kein Login nötig)
     respondViaToken: publicProcedure
