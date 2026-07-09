@@ -17,6 +17,7 @@ import {
   getAllThesisRequests,
   getAllExaminers,
   getThesisRequestById,
+  getThesisRequestByIdWithNames,
   getUserByOpenId,
   getProfile,
   getUserRoles,
@@ -627,7 +628,7 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   const thesisId = parseInt(req.params.id, 10);
   if (isNaN(thesisId)) return res.status(400).json({ error: "Ungültige Antrags-ID" });
 
-  const thesis = await getThesisRequestById(thesisId);
+  const thesis = await getThesisRequestByIdWithNames(thesisId);
   if (!thesis) return res.status(404).json({ error: "Antrag nicht gefunden" });
 
   // Zugriffskontrolle: nur eigener Antrag, Prüfer:in des Antrags, oder Admin/PAV
@@ -639,6 +640,26 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
     return res.status(403).json({ error: "Keine Berechtigung" });
   }
 
+  // Hilfsfunktion: vollständigen Namen aus DB-Feldern bauen
+  const makeName = (firstName: string | null | undefined, lastName: string | null | undefined, title: string | null | undefined, fallbackName: string | null | undefined): string => {
+    return buildFullName({ firstName: firstName ?? undefined, lastName: lastName ?? undefined, academicTitle: title ?? undefined, name: fallbackName ?? undefined });
+  };
+
+  const studentDisplay = makeName(thesis.studentFirstName, thesis.studentLastName, null, thesis.studentName)
+    || (thesis.studentEmail ?? `ID ${thesis.studentId}`);
+  const firstExaminerDisplay = thesis.examinerId
+    ? makeName(thesis.firstExaminerFirstName, thesis.firstExaminerLastName, thesis.firstExaminerAcademicTitle, thesis.firstExaminerName)
+      || (thesis.firstExaminerEmail ?? `ID ${thesis.examinerId}`)
+    : "–";
+  const secondExaminerDisplay = thesis.secondExaminerId
+    ? makeName(thesis.secondExaminerFirstName, thesis.secondExaminerLastName, thesis.secondExaminerAcademicTitle, thesis.secondExaminerName)
+      || (thesis.secondExaminerEmail ?? `ID ${thesis.secondExaminerId}`)
+    : null;
+  const wantedExaminerDisplay = thesis.wantedExaminerId
+    ? makeName(thesis.wantedExaminerFirstName, thesis.wantedExaminerLastName, thesis.wantedExaminerAcademicTitle, thesis.wantedExaminerName)
+    : null;
+
+  // ── PDF aufbauen ──────────────────────────────────────────────────────────────
   const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
@@ -646,13 +667,25 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   const pageWidth = doc.page.width;
   const margin = 50;
   const usableWidth = pageWidth - 2 * margin;
+  const pageHeight = doc.page.height;
+  const bottomLimit = pageHeight - 60; // Platz für Footer
 
   const statusInfo = getStatusBadge(thesis.status ?? "");
   drawHeader(doc, `Antrag #${thesis.id}`, `Status: ${statusInfo.label} · ${formatDate(thesis.createdAt)}`);
 
   let y = 80;
 
+  // Hilfsfunktion: neue Seite wenn nötig
+  const ensureSpace = (needed: number) => {
+    if (y + needed > bottomLimit) {
+      doc.addPage();
+      y = 80;
+      drawHeader(doc, `Antrag #${thesis.id} (Fortsetzung)`, `Status: ${statusInfo.label}`);
+    }
+  };
+
   // ── Thema ────────────────────────────────────────────────────────────────────
+  ensureSpace(56);
   doc.rect(margin, y, usableWidth, 44).fill(LIGHT_GRAY);
   doc
     .fillColor(HTW_DARK)
@@ -667,95 +700,75 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   y += 56;
 
   // ── Rahmendaten ──────────────────────────────────────────────────────────────
-  doc
-    .fillColor(HTW_DARK)
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .text("Rahmendaten", margin, y);
+  ensureSpace(20 + 5 * 18);
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Rahmendaten", margin, y);
   doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
   y += 20;
 
   y = drawField(doc, "Abschlussart", thesis.degreeType === "master" ? "Master" : "Bachelor", margin, y, usableWidth);
   y = drawField(doc, "Fachbereich", thesis.department ?? "–", margin, y, usableWidth);
   y = drawField(doc, "Zielsemester", thesis.targetSemester ?? "–", margin, y, usableWidth);
-  y = drawField(doc, "Sprache", thesis.language ?? "–", margin, y, usableWidth);
+  y = drawField(doc, "Sprache", thesis.language === "de" ? "Deutsch" : thesis.language === "en" ? "Englisch" : thesis.language ?? "–", margin, y, usableWidth);
   y = drawField(doc, "Eingereicht am", formatDate(thesis.createdAt), margin, y, usableWidth);
   if (thesis.submissionDeadline) y = drawField(doc, "Abgabefrist", formatDate(thesis.submissionDeadline), margin, y, usableWidth);
   if (thesis.defenseDate) y = drawField(doc, "Verteidigungsdatum", formatDate(thesis.defenseDate), margin, y, usableWidth);
   y += 8;
 
   // ── Beteiligte Personen ──────────────────────────────────────────────────────
-  doc
-    .fillColor(HTW_DARK)
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .text("Beteiligte Personen", margin, y);
+  ensureSpace(20 + 3 * 18);
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Beteiligte Personen", margin, y);
   doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
   y += 20;
 
-  // Studierende:r (Name aus DB nicht direkt verfügbar – studentId reicht für ID-Anzeige)
-  y = drawField(doc, "Studierende:r (ID)", String(thesis.studentId ?? "–"), margin, y, usableWidth);
-  y = drawField(doc, "Erstgutachter:in (ID)", thesis.examinerId ? String(thesis.examinerId) : "–", margin, y, usableWidth);
-  if (thesis.secondExaminerId) y = drawField(doc, "Zweitgutachter:in (ID)", String(thesis.secondExaminerId), margin, y, usableWidth);
+  y = drawField(doc, "Studierende:r", studentDisplay, margin, y, usableWidth);
+  y = drawField(doc, "Erstgutachter:in", firstExaminerDisplay, margin, y, usableWidth);
+  if (secondExaminerDisplay) y = drawField(doc, "Zweitgutachter:in", secondExaminerDisplay, margin, y, usableWidth);
+  if (wantedExaminerDisplay && !thesis.examinerId) y = drawField(doc, "Gewünschte Erstgutachter:in", wantedExaminerDisplay, margin, y, usableWidth);
+  // Externer Zweitgutachter
+  if (thesis.externalSecondExaminerFirstName) {
+    const extName = `${thesis.externalSecondExaminerTitle ? thesis.externalSecondExaminerTitle + " " : ""}${thesis.externalSecondExaminerFirstName} ${thesis.externalSecondExaminerLastName ?? ""}`.trim();
+    y = drawField(doc, "Zweitgutachter:in (extern)", extName, margin, y, usableWidth);
+    if (thesis.externalSecondExaminerEmail) y = drawField(doc, "E-Mail extern", thesis.externalSecondExaminerEmail, margin, y, usableWidth);
+  }
   y += 8;
 
   // ── Beschreibung ─────────────────────────────────────────────────────────────
-  if (thesis.description) {
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Beschreibung", margin, y);
+  if (thesis.description && thesis.description.trim() && thesis.description !== "Thema wird noch festgelegt" && thesis.description !== "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in.") {
+    ensureSpace(40);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Beschreibung", margin, y);
     doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
     y += 20;
-
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica")
-      .fontSize(9)
-      .text(thesis.description, margin, y, { width: usableWidth, lineGap: 2 });
+    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(thesis.description, margin, y, { width: usableWidth, lineGap: 2 });
     y = doc.y + 12;
   }
 
   // ── Abstract ─────────────────────────────────────────────────────────────────
-  if ((thesis as any).abstract) {
-    if (y + 60 > doc.page.height - 60) {
-      doc.addPage();
-      y = 80;
-      drawHeader(doc, `Antrag #${thesis.id} (Fortsetzung)`, `Status: ${statusInfo.label}`);
-    }
-
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Abstract", margin, y);
+  if (thesis.abstract && thesis.abstract.trim()) {
+    ensureSpace(40);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Abstract", margin, y);
     doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
     y += 20;
-
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica")
-      .fontSize(9)
-      .text((thesis as any).abstract, margin, y, { width: usableWidth, lineGap: 2 });
+    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(thesis.abstract, margin, y, { width: usableWidth, lineGap: 2 });
     y = doc.y + 12;
   }
 
   // ── Ablehnungsgrund (falls vorhanden) ────────────────────────────────────────
   if (thesis.rejectionReason) {
-    doc
-      .fillColor(HTW_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Ablehnungsgrund", margin, y);
+    ensureSpace(40);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Ablehnungsgrund", margin, y);
     doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
     y += 20;
+    doc.fillColor("#dc2626").font("Helvetica").fontSize(9).text(thesis.rejectionReason, margin, y, { width: usableWidth });
+    y = doc.y + 12;
+  }
 
-    doc
-      .fillColor("#dc2626")
-      .font("Helvetica")
-      .fontSize(9)
-      .text(thesis.rejectionReason, margin, y, { width: usableWidth });
+  // ── Rückzugsgrund (falls vorhanden) ──────────────────────────────────────────
+  if (thesis.withdrawalReason) {
+    ensureSpace(40);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Rückzugsgrund", margin, y);
+    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
+    y += 20;
+    doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(thesis.withdrawalReason, margin, y, { width: usableWidth });
     y = doc.y + 12;
   }
 

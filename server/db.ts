@@ -241,6 +241,71 @@ export async function getThesisRequestById(id: number) {
   return result[0];
 }
 
+/** Wie getThesisRequestById, aber mit aufgelösten Namen für PDF-Export */
+export async function getThesisRequestByIdWithNames(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const studentAlias = aliasedTable(users, "student_pdf");
+  const firstExaminerAlias = aliasedTable(users, "first_examiner_pdf");
+  const secondExaminerAlias = aliasedTable(users, "second_examiner_pdf");
+  const wantedExaminerAlias = aliasedTable(users, "wanted_examiner_pdf");
+  const result = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      description: thesisRequests.description,
+      abstract: thesisRequests.abstract,
+      department: thesisRequests.department,
+      status: thesisRequests.status,
+      targetSemester: thesisRequests.targetSemester,
+      language: thesisRequests.language,
+      degreeType: thesisRequests.degreeType,
+      exposeUrl: thesisRequests.exposeUrl,
+      rejectionReason: thesisRequests.rejectionReason,
+      conditionalAcceptanceReason: thesisRequests.conditionalAcceptanceReason,
+      withdrawalReason: thesisRequests.withdrawalReason,
+      createdAt: thesisRequests.createdAt,
+      submissionDeadline: thesisRequests.submissionDeadline,
+      defenseDate: thesisRequests.defenseDate,
+      studentId: thesisRequests.studentId,
+      examinerId: thesisRequests.examinerId,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      wantedExaminerId: thesisRequests.wantedExaminerId,
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
+      externalSecondExaminerTitle: thesisRequests.externalSecondExaminerTitle,
+      externalSecondExaminerFirstName: thesisRequests.externalSecondExaminerFirstName,
+      externalSecondExaminerLastName: thesisRequests.externalSecondExaminerLastName,
+      externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
+      // Aufgelöste Namen
+      studentName: studentAlias.name,
+      studentFirstName: studentAlias.firstName,
+      studentLastName: studentAlias.lastName,
+      studentEmail: studentAlias.email,
+      firstExaminerName: firstExaminerAlias.name,
+      firstExaminerFirstName: firstExaminerAlias.firstName,
+      firstExaminerLastName: firstExaminerAlias.lastName,
+      firstExaminerAcademicTitle: firstExaminerAlias.academicTitle,
+      firstExaminerEmail: firstExaminerAlias.email,
+      secondExaminerName: secondExaminerAlias.name,
+      secondExaminerFirstName: secondExaminerAlias.firstName,
+      secondExaminerLastName: secondExaminerAlias.lastName,
+      secondExaminerAcademicTitle: secondExaminerAlias.academicTitle,
+      secondExaminerEmail: secondExaminerAlias.email,
+      wantedExaminerName: wantedExaminerAlias.name,
+      wantedExaminerFirstName: wantedExaminerAlias.firstName,
+      wantedExaminerLastName: wantedExaminerAlias.lastName,
+      wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
+    })
+    .from(thesisRequests)
+    .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
+    .where(eq(thesisRequests.id, id))
+    .limit(1);
+  return result[0];
+}
+
 export async function getThesisRequestsByStudent(studentId: number) {
   const db = await getDb();
   if (!db) return [];
