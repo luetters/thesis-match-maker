@@ -875,12 +875,12 @@ export const appRouter = router({
           const db = await getDb();
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB nicht verfügbar" });
           if (input.action === "accept") {
-            await db.execute(`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED' WHERE id = ${input.id}`);
+            await db.execute(sql`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED' WHERE id = ${input.id}`);
             newStatus = "SECOND_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_ACCEPTED";
           } else {
             // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen
-            await db.execute(`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL WHERE id = ${input.id}`);
+            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL WHERE id = ${input.id}`);
             newStatus = "FIRST_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_REJECTED";
           }
