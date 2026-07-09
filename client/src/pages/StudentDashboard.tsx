@@ -1765,6 +1765,7 @@ function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormD
     onSuccess: () => {
       toast.success(t.student.withdrawSuccess);
       utils.thesis.myRequests.invalidate();
+      utils.thesis.hasOpenRequest.invalidate();
     },
     onError: (err) => toast.error(err.message ?? t.student.withdrawError),
   });
