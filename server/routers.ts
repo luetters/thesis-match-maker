@@ -875,14 +875,43 @@ export const appRouter = router({
           const db = await getDb();
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB nicht verfügbar" });
           if (input.action === "accept") {
-            await db.execute(sql`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED' WHERE id = ${input.id}`);
+            await db.execute(sql`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED', second_examiner_accepted_at = NOW() WHERE id = ${input.id}`);
             newStatus = "SECOND_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_ACCEPTED";
+            // E-Mail an Studierenden
+            try {
+              const student = await getUserById(existing.studentId);
+              const examiner = await getUserById(ctx.user.id);
+              if (student?.email) {
+                const { buildSecondExaminerConfirmedEmail } = await import("./emailTemplates");
+                const tpl = buildSecondExaminerConfirmedEmail({
+                  recipientName: student.name ?? "Studierende:r",
+                  recipientRole: "student",
+                  secondExaminerName: examiner?.name ?? ctx.user.name ?? "Zweitgutachter:in",
+                  thesisTitle: existing.title ?? "",
+                });
+                await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
+              }
+            } catch (_) { /* E-Mail-Fehler nicht fatal */ }
           } else {
-            // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen
-            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL WHERE id = ${input.id}`);
+            // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen, Zeitstempel setzen
+            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL, second_examiner_rejected_at = NOW() WHERE id = ${input.id}`);
             newStatus = "FIRST_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_REJECTED";
+            // E-Mail an Studierenden
+            try {
+              const student = await getUserById(existing.studentId);
+              const examiner = await getUserById(ctx.user.id);
+              if (student?.email) {
+                const { buildSecondExaminerRejectedEmail } = await import("./emailTemplates");
+                const tpl = buildSecondExaminerRejectedEmail({
+                  recipientName: student.name ?? "Studierende:r",
+                  secondExaminerName: examiner?.name ?? ctx.user.name ?? "Zweitgutachter:in",
+                  thesisTitle: existing.title ?? "",
+                });
+                await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
+              }
+            } catch (_) { /* E-Mail-Fehler nicht fatal */ }
           }
         } else if (existing.status === "PENDING_FIRST_EXAMINER" || existing.status === "CONDITIONAL_ACCEPTANCE") {
           if (input.action === "accept") {

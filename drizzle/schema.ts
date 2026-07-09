@@ -270,6 +270,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter zugesagt hat
 	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
+	// Zeitstempel: wann der Zweitgutachter abgelehnt hat
+	secondExaminerRejectedAt: datetime("second_examiner_rejected_at", { mode: "string" }),
 	// Referenz auf das gewählte Prüfer-Thema (optional)
 	examinerTopicId: int("examiner_topic_id"),
 });

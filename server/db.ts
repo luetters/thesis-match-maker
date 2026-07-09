@@ -271,6 +271,15 @@ export async function getThesisRequestsByStudent(studentId: number) {
       personalInterests: thesisRequests.personalInterests,
       keywords: thesisRequests.keywords,
       conditionalAcceptanceReason: thesisRequests.conditionalAcceptanceReason,
+      withdrawalReason: thesisRequests.withdrawalReason,
+      // Zweitgutachter-Workflow-Felder
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
+      externalSecondExaminerTitle: thesisRequests.externalSecondExaminerTitle,
+      externalSecondExaminerFirstName: thesisRequests.externalSecondExaminerFirstName,
+      externalSecondExaminerLastName: thesisRequests.externalSecondExaminerLastName,
+      externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
+      secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
+      secondExaminerRejectedAt: thesisRequests.secondExaminerRejectedAt,
       // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
@@ -337,6 +346,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
       secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
       secondExaminerAcceptedAt: thesisRequests.secondExaminerAcceptedAt,
+      secondExaminerRejectedAt: thesisRequests.secondExaminerRejectedAt,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))

@@ -1318,6 +1318,7 @@ function SecondExaminerPicker({
   externalSecondExaminerLastName,
   externalSecondExaminerEmail,
   secondExaminerRequestedAt,
+  secondExaminerRejectedAt,
 }: {
   requestId: number;
   wantedExaminerId?: number | null;
@@ -1327,6 +1328,7 @@ function SecondExaminerPicker({
   externalSecondExaminerLastName?: string | null;
   externalSecondExaminerEmail?: string | null;
   secondExaminerRequestedAt?: string | null;
+  secondExaminerRejectedAt?: string | null;
 }) {
   const { t } = useLanguage();
   const utils = trpc.useUtils();
@@ -1400,6 +1402,96 @@ function SecondExaminerPicker({
     : "";
 
   const isSaving = setMutation.isPending || setExternalMutation.isPending;
+
+  // ── Ansicht: Anfrage abgelehnt (keine aktive Anfrage mehr) ──
+  if (!hasRequest && secondExaminerRejectedAt) {
+    const rejectedDateStr = new Date(secondExaminerRejectedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-50">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+            <span className="text-xs font-semibold text-red-800">Zweitgutachter:in auswählen</span>
+            <span className="ml-auto text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Abgelehnt</span>
+          </div>
+          <p className="text-xs text-red-700 mb-1">
+            Ihre letzte Anfrage wurde am {rejectedDateStr} abgelehnt.
+          </p>
+          <p className="text-xs text-red-600 font-medium">Sie können jetzt eine neue Anfrage stellen.</p>
+        </div>
+        {/* Neues Auswahlformular unterhalb des Hinweises */}
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+            <span className="text-xs font-semibold text-blue-800">Neue Zweitgutachter:in anfragen</span>
+          </div>
+          <p className="text-xs text-blue-600 mb-3">Wählen Sie eine neue Zweitgutachter:in aus.</p>
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 mb-2"
+          >
+            <option value={0}>-- Bitte auswählen --</option>
+            <option value={EXTERNAL_MARKER}>Zweitgutachter:in ist nicht in der Liste</option>
+            <option disabled value="">────────────────────</option>
+            {(() => {
+              const sorted = [...(secondExaminers as any[])]
+                .filter((e: any) => e.id !== wantedExaminerId)
+                .sort((a: any, b: any) => {
+                  const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
+                  const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
+                  return lastA.localeCompare(lastB, "de");
+                });
+              const result: React.ReactNode[] = [];
+              let currentLetter = "";
+              sorted.forEach((e: any) => {
+                const lastName = e.lastName ?? (e.name ?? "").trim().split(" ").pop() ?? "";
+                const letter = lastName.charAt(0).toUpperCase();
+                if (letter !== currentLetter) {
+                  currentLetter = letter;
+                  result.push(<option key={`sep-rej-${letter}`} disabled value="">── {letter} ──</option>);
+                }
+                const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
+                result.push(<option key={e.id} value={e.id}>{displayName}</option>);
+              });
+              return result;
+            })()}
+          </select>
+          {selectedId === EXTERNAL_MARKER && (
+            <div className="space-y-2 mb-3 p-3 bg-white rounded-lg border border-blue-200">
+              <p className="text-xs font-semibold text-gray-700 mb-1">Angaben zur externen Zweitgutachter:in</p>
+              <div className="flex gap-2">
+                <div className="w-28">
+                  <label className="text-xs text-gray-500 mb-0.5 block">Titel (opt.)</label>
+                  <input type="text" value={extTitle} onChange={(e) => setExtTitle(e.target.value)} placeholder="Prof. Dr." className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-0.5 block">Vorname *</label>
+                  <input type="text" value={extFirstName} onChange={(e) => setExtFirstName(e.target.value)} placeholder="Maria" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-0.5 block">Nachname *</label>
+                  <input type="text" value={extLastName} onChange={(e) => setExtLastName(e.target.value)} placeholder="Musterfrau" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-0.5 block">E-Mail-Adresse *</label>
+                <input type="email" value={extEmail} onChange={(e) => setExtEmail(e.target.value)} placeholder="m.musterfrau@beispiel.de" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleSend}
+            disabled={isSaving || selectedId === 0}
+            className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
+            style={{ backgroundColor: "#76B900" }}
+          >
+            {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "E-Mail prüfen & Anfrage senden"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Ansicht: Anfrage bereits gestellt ──
   if (hasRequest) {
@@ -2046,6 +2138,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               externalSecondExaminerLastName={(req as any).externalSecondExaminerLastName}
               externalSecondExaminerEmail={(req as any).externalSecondExaminerEmail}
               secondExaminerRequestedAt={(req as any).secondExaminerRequestedAt}
+              secondExaminerRejectedAt={(req as any).secondExaminerRejectedAt}
             />
           )}
           <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col gap-3">

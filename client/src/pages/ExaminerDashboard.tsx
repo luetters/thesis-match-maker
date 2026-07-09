@@ -771,6 +771,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const isPending = req.status === "PENDING" || req.status === "PENDING_FIRST_EXAMINER";
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
   const isPendingSecond = req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId === user?.id;
+  const isAcceptedSecond = req.status === "SECOND_EXAMINER_ACCEPTED" && (req as any).secondExaminerId === user?.id;
 
   const { data: condDocs } = (trpc.examinerEmailTemplates as any).getConditionalDocuments?.useQuery?.(
     { thesisRequestId: req.id },
@@ -1268,6 +1269,32 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       )}
 
       {/* ── Zweitgutachter-Anfrage: Annehmen/Ablehnen ── */}
+      {isAcceptedSecond && (
+        <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+          <p className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Sie haben die Zweitbetreuung bestätigt
+          </p>
+          <p className="text-xs text-green-700 mb-3">Sie sind als Zweitgutachter:in für diese Abschlussarbeit eingetragen.</p>
+          {req.studentName && (
+            <div className="bg-white rounded-lg border border-green-200 p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-1.5">Kontakt der/des Studierenden</p>
+              <p className="text-sm font-medium text-gray-900">{req.studentName}</p>
+              {req.studentEmail && (
+                <a href={`mailto:${req.studentEmail}`} className="text-xs text-[#006937] hover:underline flex items-center gap-1 mt-0.5">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  {req.studentEmail}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {isPendingSecond && (
         <div className="space-y-3">
           <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
