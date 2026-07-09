@@ -8,6 +8,7 @@
  */
 import type { Express, Request, Response } from "express";
 import PDFDocument from "pdfkit";
+import QRCode from "qrcode";
 import { parse as parseCookieHeader } from "cookie";
 import { jwtVerify } from "jose";
 import { readFileSync } from "fs";
@@ -659,8 +660,34 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
     ? makeName(thesis.wantedExaminerFirstName, thesis.wantedExaminerLastName, thesis.wantedExaminerAcademicTitle, thesis.wantedExaminerName)
     : null;
 
+  // ── QR-Code erzeugen ─────────────────────────────────────────────────────────
+  const origin = (req.headers["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"] ?? req.headers["host"]}` : `http://${req.headers["host"]}`) as string;
+  const summaryUrl = `${origin}/student`;
+  let qrBuffer: Buffer | null = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(summaryUrl, {
+      errorCorrectionLevel: "M",
+      width: 80,
+      margin: 1,
+      color: { dark: "#1a1a2e", light: "#ffffff" },
+    });
+  } catch {
+    // QR-Code-Fehler ignorieren
+  }
+
   // ── PDF aufbauen ──────────────────────────────────────────────────────────────
-  const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
+  const doc = new PDFDocument({
+    size: "A4",
+    margins: { top: 80, bottom: 50, left: 50, right: 50 },
+    bufferPages: true,
+    info: {
+      Title: `HTW Berlin – Antrag #${thesis.id}`,
+      Author: "HTW Berlin – Thesis-Management-System",
+      Subject: thesis.title ?? "Abschlussarbeit",
+      Keywords: "HTW Berlin, Abschlussarbeit, Thesis",
+      CreationDate: new Date(),
+    },
+  });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
@@ -671,6 +698,7 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   const bottomLimit = pageHeight - 60; // Platz für Footer
 
   const statusInfo = getStatusBadge(thesis.status ?? "");
+  const generatedAt = new Date();
   drawHeader(doc, `Antrag #${thesis.id}`, `Status: ${statusInfo.label} · ${formatDate(thesis.createdAt)}`);
 
   let y = 80;
@@ -684,20 +712,51 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
     }
   };
 
-  // ── Thema ────────────────────────────────────────────────────────────────────
-  ensureSpace(56);
-  doc.rect(margin, y, usableWidth, 44).fill(LIGHT_GRAY);
+  // ── Status-Banner (farbig, gut sichtbar) ───────────────────────────────────────────
+  ensureSpace(72);
+  // Hintergrundfarbe je nach Status
+  const statusBgColor = thesis.status === "ACCEPTED" || thesis.status === "COMPLETED" ? "#f0fdf4"
+    : thesis.status === "REJECTED" || thesis.status === "WITHDRAWN" ? "#fef2f2"
+    : thesis.status?.startsWith("PENDING") ? "#fffbeb"
+    : LIGHT_GRAY;
+  const statusBorderColor = thesis.status === "ACCEPTED" || thesis.status === "COMPLETED" ? "#86efac"
+    : thesis.status === "REJECTED" || thesis.status === "WITHDRAWN" ? "#fca5a5"
+    : thesis.status?.startsWith("PENDING") ? "#fcd34d"
+    : BORDER;
+  const statusTextColor = thesis.status === "ACCEPTED" || thesis.status === "COMPLETED" ? "#166534"
+    : thesis.status === "REJECTED" || thesis.status === "WITHDRAWN" ? "#991b1b"
+    : thesis.status?.startsWith("PENDING") ? "#92400e"
+    : HTW_DARK;
+
+  // Status-Banner Hintergrund
+  doc.rect(margin, y, usableWidth, 56).fill(statusBgColor);
+  doc.rect(margin, y, 4, 56).fill(statusBorderColor);
+
+  // Thema
   doc
     .fillColor(HTW_DARK)
     .font("Helvetica-Bold")
     .fontSize(13)
-    .text(thesis.title ?? "–", margin + 12, y + 8, { width: usableWidth - 24 });
+    .text(thesis.title ?? "–", margin + 16, y + 8, { width: usableWidth - 24 });
+
+  // Status-Label
   doc
-    .fillColor(HTW_GREEN)
-    .font("Helvetica")
+    .fillColor(statusTextColor)
+    .font("Helvetica-Bold")
     .fontSize(9)
-    .text(statusInfo.label, margin + 12, y + 30);
-  y += 56;
+    .text(`●  ${statusInfo.label}`, margin + 16, y + 34);
+
+  // Zeitstempel rechts im Banner
+  doc
+    .fillColor(GRAY)
+    .font("Helvetica")
+    .fontSize(7.5)
+    .text(
+      `Erstellt: ${generatedAt.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} Uhr`,
+      margin + 16, y + 46,
+      { width: usableWidth - 32 }
+    );
+  y += 68;
 
   // ── Rahmendaten ──────────────────────────────────────────────────────────────
   ensureSpace(20 + 5 * 18);
@@ -772,11 +831,47 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
     y = doc.y + 12;
   }
 
-  // Footer
+  // ── Footer + Wasserzeichen + QR-Code auf jeder Seite ──────────────────────────────
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
+
+    // Wasserzeichen: diagonal über die Seite
+    const wm = thesis.status === "WITHDRAWN" ? "ZURÜCKGEZOGEN"
+      : thesis.status === "REJECTED" ? "ABGELEHNT"
+      : null;
+    if (wm) {
+      doc.save();
+      doc.opacity(0.07);
+      doc.fillColor("#dc2626");
+      doc.font("Helvetica-Bold").fontSize(72);
+      // Diagonal über die Seite: Mittelpunkt der Seite, rotiert
+      const cx = pageWidth / 2;
+      const cy = pageHeight / 2;
+      doc.rotate(-45, { origin: [cx, cy] });
+      doc.text(wm, 0, cy - 36, { width: pageWidth, align: "center" });
+      doc.restore();
+    }
+
+    // Standard-Footer
     drawFooter(doc, i + 1, range.count);
+
+    // QR-Code + Link in der rechten unteren Ecke des Footers
+    if (qrBuffer) {
+      const qrSize = 48;
+      const qrX = pageWidth - margin - qrSize;
+      const qrY = doc.page.height - 40 - qrSize + 8;
+      try {
+        doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+        doc
+          .fillColor(GRAY)
+          .font("Helvetica")
+          .fontSize(6)
+          .text("Thesis-Portal", qrX, qrY + qrSize + 1, { width: qrSize, align: "center" });
+      } catch {
+        // QR-Code-Rendering ignorieren
+      }
+    }
   }
 
   doc.end();

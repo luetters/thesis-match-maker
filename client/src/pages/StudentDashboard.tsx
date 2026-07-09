@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
+import { SummaryPdfPreviewModal } from "@/components/SummaryPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -1763,7 +1764,10 @@ function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormD
 
   const withdrawMutation = trpc.thesisPhase27.withdraw.useMutation({
     onSuccess: () => {
-      toast.success(t.student.withdrawSuccess);
+      toast.success("Anfrage erfolgreich zurückgezogen. Sie können jetzt eine neue Anfrage stellen.", {
+        duration: 5000,
+        description: "Die Anfrage wurde in Ihre Historie verschoben.",
+      });
       utils.thesis.myRequests.invalidate();
       utils.thesis.hasOpenRequest.invalidate();
     },
@@ -1794,17 +1798,57 @@ function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormD
     );
   }
 
+  const activeRequests = requests.filter((r) => r.status !== "WITHDRAWN");
+  const historicRequests = requests.filter((r) => r.status === "WITHDRAWN");
+
   return (
-    <div className="space-y-4">
-      {requests.map((req) => (
-        <StudentRequestCard key={req.id} req={req} utils={utils} withdrawMutation={withdrawMutation} onReuseRequest={onReuseRequest} />
-      ))}
+    <div className="space-y-6">
+      {/* Aktive Anfragen */}
+      {activeRequests.length > 0 ? (
+        <div className="space-y-4">
+          {activeRequests.map((req) => (
+            <StudentRequestCard key={req.id} req={req} utils={utils} withdrawMutation={withdrawMutation} onReuseRequest={onReuseRequest} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+          <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center mx-auto mb-3 shadow-sm">
+            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-700">Keine aktiven Anfragen</p>
+          <p className="text-xs text-gray-500 mt-0.5">Stellen Sie eine neue Anfrage über den Menüpunkt „Neue Anfrage“.</p>
+        </div>
+      )}
+
+      {/* Historie: Zurückgezogene Anfragen */}
+      {historicRequests.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-px flex-1 bg-gray-200" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+              <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs font-medium text-gray-600">Historie ({historicRequests.length})</span>
+            </div>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+          <div className="space-y-3">
+            {historicRequests.map((req) => (
+              <StudentRequestCard key={req.id} req={req} utils={utils} withdrawMutation={withdrawMutation} onReuseRequest={onReuseRequest} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { req: any; utils: any; withdrawMutation: any; onReuseRequest?: (draft: Partial<FormDraft>) => void }) {
   const [showRegPreview, setShowRegPreview] = useState(false);
+  const [showSummaryPreview, setShowSummaryPreview] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState("");
   const [condDocNote, setCondDocNote] = useState("");
   const [condDocUploading, setCondDocUploading] = useState(false);
@@ -2148,17 +2192,29 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               currentUrl={(req as { exposeUrl?: string | null }).exposeUrl}
               onSuccess={() => utils.thesis.myRequests.invalidate()}
             />
-          {/* Antrag-Zusammenfassung PDF */}
-          <a
-            href={`/api/export/thesis/${req.id}/summary.pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-600 hover:border-[#76B900] hover:text-[#76B900] transition-colors"
-            title="Antrag-Zusammenfassung als PDF herunterladen"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            Zusammenfassung (PDF)
-          </a>
+          {/* Antrag-Zusammenfassung PDF – Vorschau + Download */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSummaryPreview(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-600 hover:border-[#76B900] hover:text-[#76B900] transition-colors flex-1"
+              title="Antrag-Zusammenfassung im Browser ansehen"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Zusammenfassung (PDF)
+            </button>
+            <a
+              href={`/api/export/thesis/${req.id}/summary.pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center p-2 rounded-xl border border-gray-200 text-gray-500 hover:border-[#76B900] hover:text-[#76B900] transition-colors"
+              title="PDF direkt herunterladen"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </a>
+          </div>
           {/* Anmeldedokument – Vorschau + Download */}
           {("FIRST_EXAMINER_ACCEPTED SECOND_EXAMINER_ASSIGNED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && (
             <>
@@ -2192,17 +2248,29 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>{t.student.withdrawConfirmTitle}</AlertDialogTitle>
-                    <AlertDialogDescription>{t.student.withdrawConfirmDesc}</AlertDialogDescription>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Anfrage endgültig zurückziehen?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm text-gray-600 mt-2">
+                      Diese Aktion kann <strong>nicht rückgängig gemacht</strong> werden. Die Anfrage wird als
+                      „Zurückgezogen“ markiert und in die Historie verschoben. Alle beteiligten Prüfer:innen
+                      werden über den Abbruch informiert.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
-                  <div className="px-1 pb-2">
+                  <div className="px-1 pb-2 mt-2">
+                    <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 text-xs text-red-700">
+                      <strong>Betrifft:</strong> „{req.title || "Thema wird noch festgelegt"}“
+                    </div>
                     <label className="text-xs font-medium text-gray-600 block mb-1.5">
                       Grund für den Abbruch <span className="text-gray-400 font-normal">(optional)</span>
                     </label>
                     <textarea
                       value={withdrawReason}
                       onChange={(e) => setWithdrawReason(e.target.value)}
-                      placeholder="z. B. Thema geändert, Prüfer:in gewechselt…"
+                      placeholder="z. B. Thema geändert, Prüfer:in gewechselt…"
                       maxLength={500}
                       rows={3}
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-200"
@@ -2210,7 +2278,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                     <p className="text-right text-xs text-gray-400 mt-0.5">{withdrawReason.length}/500</p>
                   </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setWithdrawReason("")}>{t.student.cancel}</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setWithdrawReason("")}>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-red-600 hover:bg-red-700 text-white"
                       onClick={() => {
@@ -2218,7 +2286,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                         setWithdrawReason("");
                       }}
                     >
-                      {t.student.withdrawBtn}
+                      Ja, Anfrage zurückziehen
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -2252,6 +2320,13 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               thesisId={req.id}
               onClose={() => setShowRegPreview(false)}
               hasSecondExaminer={!!(req as any).secondExaminerId}
+            />
+          )}
+          {showSummaryPreview && (
+            <SummaryPdfPreviewModal
+              thesisId={req.id}
+              thesisTitle={req.title || undefined}
+              onClose={() => setShowSummaryPreview(false)}
             />
           )}
         </div>
