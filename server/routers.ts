@@ -3075,6 +3075,7 @@ export const appRouter = router({
       .input(z.object({
         requestId: z.number().int().positive(),
         secondExaminerId: z.number().int().positive().nullable(),
+        personalNote: z.string().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const result = await setWantedSecondExaminer(input.requestId, ctx.user.id, input.secondExaminerId);
@@ -3084,7 +3085,7 @@ export const appRouter = router({
         // E-Mail-Benachrichtigung an Zweitgutachter:in senden
         if (input.secondExaminerId) {
           const { notifySecondExaminerOfSelection } = await import("./db");
-          notifySecondExaminerOfSelection(input.requestId, input.secondExaminerId).catch(
+          notifySecondExaminerOfSelection(input.requestId, input.secondExaminerId, input.personalNote).catch(
             (e) => console.error("[notifySecondExaminer] E-Mail-Fehler:", e)
           );
         }

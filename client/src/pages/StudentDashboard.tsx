@@ -1340,6 +1340,8 @@ function SecondExaminerPicker({
   const [extFirstName, setExtFirstName] = useState(externalSecondExaminerFirstName ?? "");
   const [extLastName, setExtLastName] = useState(externalSecondExaminerLastName ?? "");
   const [extEmail, setExtEmail] = useState(externalSecondExaminerEmail ?? "");
+  const [personalNote, setPersonalNote] = useState("");
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   const { data: secondExaminers = [] } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
     { firstExaminerId: wantedExaminerId ?? 0 },
@@ -1378,11 +1380,24 @@ function SecondExaminerPicker({
       }
       setExternalMutation.mutate({ requestId, title: extTitle, firstName: extFirstName, lastName: extLastName, email: extEmail });
     } else if (selectedId > 0) {
-      setMutation.mutate({ requestId, secondExaminerId: selectedId });
+      // E-Mail-Vorschau öffnen statt direkt senden
+      setShowEmailPreview(true);
     } else {
       toast.error("Bitte eine Zweitgutachter:in auswählen.");
     }
   };
+
+  const handleConfirmSend = () => {
+    setMutation.mutate({ requestId, secondExaminerId: selectedId, personalNote: personalNote.trim() || undefined });
+    setShowEmailPreview(false);
+  };
+
+  const selectedExaminer = selectedId > 0 && selectedId !== EXTERNAL_MARKER
+    ? (secondExaminers as any[]).find((e: any) => e.id === selectedId)
+    : null;
+  const selectedExaminerName = selectedExaminer
+    ? buildFullName({ firstName: selectedExaminer.firstName, lastName: selectedExaminer.lastName, academicTitle: selectedExaminer.academicTitle ?? selectedExaminer.title, name: selectedExaminer.name })
+    : "";
 
   const isSaving = setMutation.isPending || setExternalMutation.isPending;
 
@@ -1457,6 +1472,7 @@ function SecondExaminerPicker({
 
   // ── Ansicht: Auswahl treffen ──
   return (
+    <>
     <div className="mt-3 pt-3 border-t border-gray-50">
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex items-center gap-2 mb-2">
@@ -1566,10 +1582,82 @@ function SecondExaminerPicker({
           className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
           style={{ backgroundColor: "#76B900" }}
         >
-          {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "Anfrage senden"}
+          {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "E-Mail prüfen & Anfrage senden"}
         </button>
       </div>
     </div>
+
+    {/* E-Mail-Vorschau-Dialog */}
+    {showEmailPreview && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">E-Mail-Vorschau</h3>
+            <button onClick={() => setShowEmailPreview(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {/* Empfänger & Betreff */}
+            <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
+              <div className="flex gap-2">
+                <span className="text-gray-400 w-14 shrink-0">An:</span>
+                <span className="font-medium text-gray-800">{selectedExaminerName}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-400 w-14 shrink-0">Betreff:</span>
+                <span className="text-gray-700">Anfrage als Zweitgutachter:in – [Titel der Arbeit]</span>
+              </div>
+            </div>
+
+            {/* E-Mail-Inhalt Vorschau */}
+            <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-700 space-y-2 border border-gray-100">
+              <p>Guten Tag {selectedExaminerName},</p>
+              <p>Sie wurden als Zweitgutachter:in für eine Abschlussarbeit ausgewählt. Die Details finden Sie in Ihrem Dashboard.</p>
+              {personalNote.trim() && (
+                <div className="mt-3 p-3 bg-green-50 border-l-4 border-green-600 rounded">
+                  <p className="text-xs text-gray-500 font-semibold mb-1">Persönliche Nachricht der/des Studierenden:</p>
+                  <p className="text-gray-800 whitespace-pre-wrap">{personalNote}</p>
+                </div>
+              )}
+              <p className="text-gray-400 italic">[...Thema, Semester und Link zum Dashboard...]</p>
+            </div>
+
+            {/* Persönliche Notiz */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Persönliches Wort ergänzen
+                <span className="font-normal text-gray-400 ml-1">(optional)</span>
+              </label>
+              <textarea
+                rows={4}
+                value={personalNote}
+                onChange={(e) => setPersonalNote(e.target.value)}
+                placeholder="z. B. Ich habe Ihre Forschungsarbeiten zu diesem Thema gelesen und würde mich sehr freuen, wenn Sie meine Anfrage annehmen."
+                maxLength={1000}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-green-300 resize-none bg-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">{personalNote.length}/1000 Zeichen</p>
+            </div>
+          </div>
+          <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+            <button
+              onClick={() => setShowEmailPreview(false)}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Zurück
+            </button>
+            <button
+              onClick={handleConfirmSend}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2.5 rounded-xl text-xs font-semibold text-white disabled:opacity-50 transition-colors"
+              style={{ backgroundColor: "#76B900" }}
+            >
+              {isSaving ? "Wird gesendet…" : "Anfrage jetzt senden"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

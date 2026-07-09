@@ -6110,7 +6110,8 @@ export async function rejectAsSecondExaminer(
  */
 export async function notifySecondExaminerOfSelection(
   thesisRequestId: number,
-  secondExaminerId: number
+  secondExaminerId: number,
+  personalNote?: string
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
@@ -6151,6 +6152,7 @@ export async function notifySecondExaminerOfSelection(
           <tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studierende:r</td><td style="padding:10px 16px;">${studentName}</td></tr>
           ${thesis.targetSemester ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${thesis.targetSemester}</td></tr>` : ""}
         </table>
+        ${personalNote ? `<div style="margin:16px 0;padding:16px;background:#f0fdf4;border-left:4px solid #006937;border-radius:4px;"><p style="margin:0 0 4px 0;font-size:12px;color:#6b7280;font-weight:600;">Persönliche Nachricht der/des Studierenden:</p><p style="margin:0;color:#1f2937;font-size:14px;white-space:pre-wrap;">${personalNote.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p></div>` : ''}
         <p>Bitte melden Sie sich in Ihrem Dashboard an und bestätigen oder lehnen Sie die Anfrage ab.</p>
         <p><a href="${baseUrl}" style="display:inline-block;padding:12px 24px;background:#006937;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Zum Dashboard – Anfrage beantworten</a></p>
         <p style="color:#9ca3af;font-size:12px;margin-top:32px;">HTW Berlin · Thesis Match · Automatisch generierte E-Mail</p>
