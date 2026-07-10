@@ -249,6 +249,7 @@ export async function getThesisRequestByIdWithNames(id: number) {
   const firstExaminerAlias = aliasedTable(users, "first_examiner_pdf");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_pdf");
   const wantedExaminerAlias = aliasedTable(users, "wanted_examiner_pdf");
+  const wantedSecondExaminerAlias = aliasedTable(users, "wanted_second_examiner_pdf");
   const result = await db
     .select({
       id: thesisRequests.id,
@@ -295,12 +296,23 @@ export async function getThesisRequestByIdWithNames(id: number) {
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
       wantedExaminerLastName: wantedExaminerAlias.lastName,
       wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
+      // Gewünschte Zweitprüfer:in
+      wantedSecondExaminerName: wantedSecondExaminerAlias.name,
+      wantedSecondExaminerFirstName: wantedSecondExaminerAlias.firstName,
+      wantedSecondExaminerLastName: wantedSecondExaminerAlias.lastName,
+      wantedSecondExaminerAcademicTitle: wantedSecondExaminerAlias.academicTitle,
+      wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
+      // Studiengang
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
     .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
+    .leftJoin(programmes, eq(studentAlias.programmeId, programmes.id))
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
+    .leftJoin(wantedSecondExaminerAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerAlias.id))
     .where(eq(thesisRequests.id, id))
     .limit(1);
   return result[0];
@@ -313,6 +325,8 @@ export async function getThesisRequestsByStudent(studentId: number) {
   const wantedExaminerAlias = aliasedTable(users, "wanted_examiner");
   const firstExaminerAlias = aliasedTable(users, "first_examiner_tbs");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_tbs");
+  const wantedSecondExaminerAlias = aliasedTable(users, "wanted_second_examiner_tbs");
+  const studentAlias = aliasedTable(users, "student_tbs");
   return db
     .select({
       id: thesisRequests.id,
@@ -350,21 +364,41 @@ export async function getThesisRequestsByStudent(studentId: number) {
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
       wantedExaminerLastName: wantedExaminerAlias.lastName,
       wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
+      wantedExaminerEmail: wantedExaminerAlias.email,
       // Zugewiesene Erstprüfer:in
       firstExaminerName: firstExaminerAlias.name,
       firstExaminerFirstName: firstExaminerAlias.firstName,
       firstExaminerLastName: firstExaminerAlias.lastName,
       firstExaminerAcademicTitle: firstExaminerAlias.academicTitle,
+      firstExaminerEmail: firstExaminerAlias.email,
       // Zugewiesene Zweitprüfer:in
       secondExaminerName: secondExaminerAlias.name,
       secondExaminerFirstName: secondExaminerAlias.firstName,
       secondExaminerLastName: secondExaminerAlias.lastName,
       secondExaminerAcademicTitle: secondExaminerAlias.academicTitle,
+      secondExaminerEmail: secondExaminerAlias.email,
+      // Gewünschte Zweitprüfer:in
+      wantedSecondExaminerName: wantedSecondExaminerAlias.name,
+      wantedSecondExaminerFirstName: wantedSecondExaminerAlias.firstName,
+      wantedSecondExaminerLastName: wantedSecondExaminerAlias.lastName,
+      wantedSecondExaminerAcademicTitle: wantedSecondExaminerAlias.academicTitle,
+      wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
+      // Studierende:r (für Fallback-Anzeige)
+      studentEmail: studentAlias.email,
+      studentName: studentAlias.name,
+      studentFirstName: studentAlias.firstName,
+      studentLastName: studentAlias.lastName,
+      // Studiengang
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(thesisRequests)
+    .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
+    .leftJoin(programmes, eq(studentAlias.programmeId, programmes.id))
     .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(wantedSecondExaminerAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerAlias.id))
     .where(eq(thesisRequests.studentId, studentId))
     .orderBy(desc(thesisRequests.createdAt));
 }

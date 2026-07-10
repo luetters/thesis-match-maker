@@ -659,6 +659,10 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   const wantedExaminerDisplay = thesis.wantedExaminerId
     ? makeName(thesis.wantedExaminerFirstName, thesis.wantedExaminerLastName, thesis.wantedExaminerAcademicTitle, thesis.wantedExaminerName)
     : null;
+  const wantedSecondExaminerDisplay = (thesis as any).wantedSecondExaminerId
+    ? makeName((thesis as any).wantedSecondExaminerFirstName, (thesis as any).wantedSecondExaminerLastName, (thesis as any).wantedSecondExaminerAcademicTitle, (thesis as any).wantedSecondExaminerName)
+      || ((thesis as any).wantedSecondExaminerEmail ?? null)
+    : null;
 
   // ── QR-Code erzeugen ─────────────────────────────────────────────────────────
   const origin = (req.headers["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"] ?? req.headers["host"]}` : `http://${req.headers["host"]}`) as string;
@@ -783,11 +787,17 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   y = drawField(doc, "Erstgutachter:in", firstExaminerDisplay, margin, y, usableWidth);
   if (secondExaminerDisplay) y = drawField(doc, "Zweitgutachter:in", secondExaminerDisplay, margin, y, usableWidth);
   if (wantedExaminerDisplay && !thesis.examinerId) y = drawField(doc, "Gewünschte Erstgutachter:in", wantedExaminerDisplay, margin, y, usableWidth);
+  // Gewünschte Zweitgutachter:in (interner Prüfer, noch nicht bestätigt)
+  if (wantedSecondExaminerDisplay && !thesis.secondExaminerId) y = drawField(doc, "Gewünschte Zweitgutachter:in", wantedSecondExaminerDisplay, margin, y, usableWidth);
   // Externer Zweitgutachter
   if (thesis.externalSecondExaminerFirstName) {
     const extName = `${thesis.externalSecondExaminerTitle ? thesis.externalSecondExaminerTitle + " " : ""}${thesis.externalSecondExaminerFirstName} ${thesis.externalSecondExaminerLastName ?? ""}`.trim();
     y = drawField(doc, "Zweitgutachter:in (extern)", extName, margin, y, usableWidth);
     if (thesis.externalSecondExaminerEmail) y = drawField(doc, "E-Mail extern", thesis.externalSecondExaminerEmail, margin, y, usableWidth);
+  }
+  // Studiengang
+  if ((thesis as any).programmeName) {
+    y = drawField(doc, "Studiengang", (thesis as any).programmeAbbreviation ?? (thesis as any).programmeName, margin, y, usableWidth);
   }
   y += 8;
 
