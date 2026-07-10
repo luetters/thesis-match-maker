@@ -777,29 +777,104 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   if (thesis.defenseDate) y = drawField(doc, "Verteidigungsdatum", formatDate(thesis.defenseDate), margin, y, usableWidth);
   y += 8;
 
-  // ── Beteiligte Personen ──────────────────────────────────────────────────────
-  ensureSpace(20 + 3 * 18);
+  // ── Beteiligte Personen – als Übersichtstabelle ─────────────────────────────────────
+  type PersonRow = { role: string; name: string; contact: string; note: string };
+  const personRows: PersonRow[] = [];
+
+  // Studierende:r
+  personRows.push({
+    role: "Studierende:r",
+    name: studentDisplay,
+    contact: thesis.studentEmail ?? "",
+    note: (thesis as any).programmeName
+      ? ((thesis as any).programmeAbbreviation ?? (thesis as any).programmeName)
+      : "",
+  });
+
+  // Erstgutachter:in
+  if (thesis.examinerId) {
+    personRows.push({ role: "Erstgutachter:in", name: firstExaminerDisplay, contact: thesis.firstExaminerEmail ?? "", note: "zugewiesen" });
+  } else if (wantedExaminerDisplay) {
+    personRows.push({ role: "Erstgutachter:in", name: wantedExaminerDisplay, contact: "", note: "angefragt" });
+  } else {
+    personRows.push({ role: "Erstgutachter:in", name: "–", contact: "", note: "ausstehend" });
+  }
+
+  // Zweitgutachter:in
+  if (thesis.secondExaminerId && secondExaminerDisplay) {
+    personRows.push({ role: "Zweitgutachter:in", name: secondExaminerDisplay, contact: thesis.secondExaminerEmail ?? "", note: "zugewiesen" });
+  } else if (wantedSecondExaminerDisplay) {
+    personRows.push({ role: "Zweitgutachter:in", name: wantedSecondExaminerDisplay, contact: (thesis as any).wantedSecondExaminerEmail ?? "", note: "angefragt" });
+  } else if (thesis.externalSecondExaminerFirstName) {
+    const extName = `${thesis.externalSecondExaminerTitle ? thesis.externalSecondExaminerTitle + " " : ""}${thesis.externalSecondExaminerFirstName} ${thesis.externalSecondExaminerLastName ?? ""}`.trim();
+    personRows.push({ role: "Zweitgutachter:in", name: extName, contact: thesis.externalSecondExaminerEmail ?? "", note: "extern" });
+  }
+
+  // Tabellen-Layout
+  const rowH = 22;
+  const headerH = 18;
+  const colW = [usableWidth * 0.22, usableWidth * 0.29, usableWidth * 0.34, usableWidth * 0.15];
+  const colX = [margin, margin + colW[0], margin + colW[0] + colW[1], margin + colW[0] + colW[1] + colW[2]];
+  const tableH = headerH + personRows.length * rowH;
+
+  ensureSpace(tableH + 28);
+
+  // Abschnitts-Überschrift
   doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Beteiligte Personen", margin, y);
   doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
   y += 20;
 
-  y = drawField(doc, "Studierende:r", studentDisplay, margin, y, usableWidth);
-  y = drawField(doc, "Erstgutachter:in", firstExaminerDisplay, margin, y, usableWidth);
-  if (secondExaminerDisplay) y = drawField(doc, "Zweitgutachter:in", secondExaminerDisplay, margin, y, usableWidth);
-  if (wantedExaminerDisplay && !thesis.examinerId) y = drawField(doc, "Gewünschte Erstgutachter:in", wantedExaminerDisplay, margin, y, usableWidth);
-  // Gewünschte Zweitgutachter:in (interner Prüfer, noch nicht bestätigt)
-  if (wantedSecondExaminerDisplay && !thesis.secondExaminerId) y = drawField(doc, "Gewünschte Zweitgutachter:in", wantedSecondExaminerDisplay, margin, y, usableWidth);
-  // Externer Zweitgutachter
-  if (thesis.externalSecondExaminerFirstName) {
-    const extName = `${thesis.externalSecondExaminerTitle ? thesis.externalSecondExaminerTitle + " " : ""}${thesis.externalSecondExaminerFirstName} ${thesis.externalSecondExaminerLastName ?? ""}`.trim();
-    y = drawField(doc, "Zweitgutachter:in (extern)", extName, margin, y, usableWidth);
-    if (thesis.externalSecondExaminerEmail) y = drawField(doc, "E-Mail extern", thesis.externalSecondExaminerEmail, margin, y, usableWidth);
-  }
-  // Studiengang
-  if ((thesis as any).programmeName) {
-    y = drawField(doc, "Studiengang", (thesis as any).programmeAbbreviation ?? (thesis as any).programmeName, margin, y, usableWidth);
-  }
-  y += 8;
+  // Tabellen-Header
+  doc.rect(margin, y, usableWidth, headerH).fill(HTW_GREEN);
+  ["Rolle", "Name", "Kontakt / E-Mail", "Status"].forEach((h, i) => {
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8)
+      .text(h, colX[i] + 5, y + 5, { width: colW[i] - 10, ellipsis: true });
+  });
+  y += headerH;
+
+  // Datenzeilen
+  personRows.forEach((row, idx) => {
+    const rowBg = idx % 2 === 0 ? "#ffffff" : "#f9fafb";
+    doc.rect(margin, y, usableWidth, rowH).fill(rowBg);
+    doc.moveTo(margin, y).lineTo(margin + usableWidth, y).strokeColor(BORDER).lineWidth(0.3).stroke();
+
+    // Rolle
+    doc.fillColor(GRAY).font("Helvetica-Bold").fontSize(7.5)
+      .text(row.role, colX[0] + 5, y + 7, { width: colW[0] - 10, ellipsis: true });
+
+    // Name
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(8.5)
+      .text(row.name || "–", colX[1] + 5, y + 7, { width: colW[1] - 10, ellipsis: true });
+
+    // Kontakt
+    doc.fillColor(GRAY).font("Helvetica").fontSize(7.5)
+      .text(row.contact || "–", colX[2] + 5, y + 7, { width: colW[2] - 10, ellipsis: true });
+
+    // Status-Pill
+    if (row.note) {
+      const pillColor = row.note === "zugewiesen" ? HTW_GREEN
+        : row.note === "angefragt" ? "#f59e0b"
+        : row.note === "extern" ? "#6366f1"
+        : row.note === "ausstehend" ? "#ef4444"
+        : "#6b7280";
+      const pillW = colW[3] - 10;
+      const pillH = 12;
+      const pillX = colX[3] + 5;
+      const pillY = y + (rowH - pillH) / 2;
+      doc.rect(pillX, pillY, pillW, pillH).fill(pillColor);
+      doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(6.5)
+        .text(row.note, pillX, pillY + 3, { width: pillW, align: "center" });
+    }
+
+    y += rowH;
+  });
+
+  // Rahmen um die gesamte Tabelle
+  const tableTop = y - personRows.length * rowH - headerH;
+  doc.rect(margin, tableTop, usableWidth, personRows.length * rowH + headerH)
+    .strokeColor(BORDER).lineWidth(0.5).stroke();
+
+  y += 10;
 
   // ── Beschreibung ─────────────────────────────────────────────────────────────
   if (thesis.description && thesis.description.trim() && thesis.description !== "Thema wird noch festgelegt" && thesis.description !== "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in.") {
