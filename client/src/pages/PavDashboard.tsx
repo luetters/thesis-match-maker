@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -553,20 +554,17 @@ function AdminWorkflowTab() {
                       </span>
                     )}
                   </div>
-                  {((thesis as any).firstExaminerName || (thesis as any).secondExaminerName) && (
-                    <div className="flex flex-wrap gap-x-3 mt-1">
-                      {(thesis as any).firstExaminerName && (
-                        <span className="text-xs text-gray-500">
-                          <span className="font-medium text-gray-600">Erstgutachter:in:</span>{" "}{(thesis as any).firstExaminerName}
-                        </span>
-                      )}
-                      {(thesis as any).secondExaminerName && (
-                        <span className="text-xs text-gray-500">
-                          <span className="font-medium text-gray-600">Zweitgutachter:in:</span>{" "}{(thesis as any).secondExaminerName}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Beteiligte Personen – Tabelle */}
+                  {(() => {
+                    const rows: PersonRow[] = [];
+                    if ((thesis as any).studentName) rows.push({ role: "Studierende:r", name: (thesis as any).studentName, contact: (thesis as any).studentEmail ?? "", profileId: (thesis as any).studentId ?? null, status: (thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? (thesis as any).department ?? "" });
+                    if ((thesis as any).examinerId) rows.push({ role: "Erstgutachter:in", name: (thesis as any).firstExaminerName ?? "–", contact: (thesis as any).firstExaminerEmail ?? "", profileId: (thesis as any).examinerId, status: "zugewiesen" });
+                    else if ((thesis as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (thesis as any).wantedExaminerName, contact: "", status: "angefragt" });
+                    if ((thesis as any).secondExaminerId) rows.push({ role: "Zweitgutachter:in", name: (thesis as any).secondExaminerName ?? "–", contact: (thesis as any).secondExaminerEmail ?? "", profileId: (thesis as any).secondExaminerId, status: "zugewiesen" });
+                    else if ((thesis as any).wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: (thesis as any).wantedSecondExaminerName, contact: (thesis as any).wantedSecondExaminerEmail ?? "", status: "angefragt" });
+                    if (rows.length === 0) return null;
+                    return <div className="mt-2"><InvolvedPersonsTable rows={rows} compact /></div>;
+                  })()}
                   {thesis.submissionDeadline && (
                     <p className="text-xs text-gray-500 mt-0.5">
                       Abgabefrist: <span className="font-medium">{formatDate(thesis.submissionDeadline)}</span>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import {
   Dialog,
   DialogContent,
@@ -109,25 +110,55 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Anfrage-Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Student:in</label>
-                <p className="text-base font-medium">{request.studentName}</p>
+            {/* Rahmendaten */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <p className="text-xs text-gray-400 mb-0.5">Studiengang</p>
+                <p className="text-sm font-semibold text-gray-900">{request.programmeAbbreviation ?? request.programmeName ?? request.department ?? "–"}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Studiengang</label>
-                <p className="text-base font-medium">{request.department}</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <p className="text-xs text-gray-400 mb-0.5">Semester</p>
+                <p className="text-sm font-semibold text-gray-900">{request.targetSemester ?? "–"}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Semester</label>
-                <p className="text-base font-medium">{request.targetSemester}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Sprache</label>
-                <p className="text-base font-medium">{request.language === "de" ? "Deutsch" : "English"}</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-2">
+                <p className="text-xs text-gray-400 mb-0.5">Sprache</p>
+                <p className="text-sm font-semibold text-gray-900">{request.language === "de" ? "Deutsch" : request.language === "en" ? "Englisch" : request.language ?? "–"}</p>
               </div>
             </div>
+
+            {/* Beteiligte Personen */}
+            {(() => {
+              const rows: PersonRow[] = [];
+              // Studierende:r
+              rows.push({
+                role: "Studierende:r",
+                name: request.studentFirstName || request.studentLastName
+                  ? `${request.studentFirstName ?? ""} ${request.studentLastName ?? ""}`.trim()
+                  : (request.studentName ?? "–"),
+                contact: request.studentEmail ?? "",
+                profileId: request.studentId ?? null,
+                status: request.programmeAbbreviation ?? request.programmeName ?? request.department ?? "",
+                note: request.programmeAbbreviation ?? request.programmeName ?? request.department ?? "",
+              });
+              // Erstgutachter:in
+              if (request.examinerId) {
+                rows.push({ role: "Erstgutachter:in", name: request.firstExaminerName ?? request.examinerName ?? "–", contact: request.firstExaminerEmail ?? "", profileId: request.examinerId, status: "zugewiesen" });
+              } else if (request.wantedExaminerName) {
+                rows.push({ role: "Erstgutachter:in", name: request.wantedExaminerName, contact: "", profileId: request.wantedExaminerId ?? null, status: "angefragt" });
+              } else {
+                rows.push({ role: "Erstgutachter:in", name: "–", contact: "", status: "ausstehend" });
+              }
+              // Zweitgutachter:in
+              if (request.secondExaminerId) {
+                rows.push({ role: "Zweitgutachter:in", name: request.secondExaminerName ?? "–", contact: request.secondExaminerEmail ?? "", profileId: request.secondExaminerId, status: "zugewiesen" });
+              } else if (request.wantedSecondExaminerName) {
+                rows.push({ role: "Zweitgutachter:in", name: request.wantedSecondExaminerName, contact: request.wantedSecondExaminerEmail ?? "", profileId: request.wantedSecondExaminerId ?? null, status: "angefragt" });
+              } else if (request.externalSecondExaminerFirstName) {
+                const extName = `${request.externalSecondExaminerTitle ? request.externalSecondExaminerTitle + " " : ""}${request.externalSecondExaminerFirstName} ${request.externalSecondExaminerLastName ?? ""}`.trim();
+                rows.push({ role: "Zweitgutachter:in", name: extName, contact: request.externalSecondExaminerEmail ?? "", status: "extern" });
+              }
+              return <InvolvedPersonsTable rows={rows} compact />;
+            })()}
 
             {/* Beschreibung */}
             <div>

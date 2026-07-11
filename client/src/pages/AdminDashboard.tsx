@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
@@ -331,18 +332,13 @@ function AllRequests() {
                       <span className="text-sm text-gray-600">{req.targetSemester ?? "–"}</span>
                     </td>
                     <td className="px-5 py-4 hidden xl:table-cell">
-                      <div className="space-y-0.5">
-                        {req.firstExaminerName ? (
-                          <div className="text-xs text-gray-600">
-                            <span className="text-gray-400">1.</span>{" "}{req.firstExaminerName}
-                          </div>
-                        ) : <span className="text-xs text-gray-400">–</span>}
-                        {req.secondExaminerName && (
-                          <div className="text-xs text-gray-600">
-                            <span className="text-gray-400">2.</span>{" "}{req.secondExaminerName}
-                          </div>
-                        )}
-                      </div>
+                      {(() => {
+                        const rows: PersonRow[] = [];
+                        if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
+                        else rows.push({ role: "Erstgutachter:in", name: "–", contact: "", status: "ausstehend" });
+                        if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
+                        return <InvolvedPersonsTable rows={rows} compact />;
+                      })()}
                     </td>
                     <td className="px-5 py-4 hidden xl:table-cell">
                       <span className="text-xs text-gray-500">
@@ -1251,20 +1247,17 @@ function Overview() {
                           </span>
                         )}
                       </div>
-                      {(req.firstExaminerName || req.secondExaminerName) && (
-                        <div className="flex flex-wrap gap-x-3 mt-1">
-                          {req.firstExaminerName && (
-                            <span className="text-xs text-gray-500">
-                              <span className="font-medium">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
-                            </span>
-                          )}
-                          {req.secondExaminerName && (
-                            <span className="text-xs text-gray-500">
-                              <span className="font-medium">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {/* Beteiligte Personen – Tabelle */}
+                      {(() => {
+                        const rows: PersonRow[] = [];
+                        if (req.studentName) rows.push({ role: "Studierende:r", name: req.studentName, contact: (req as any).studentEmail ?? "", profileId: (req as any).studentId ?? null, status: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "" });
+                        if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
+                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: "", status: "angefragt" });
+                        if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
+                        else if ((req as any).wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: (req as any).wantedSecondExaminerName, contact: (req as any).wantedSecondExaminerEmail ?? "", status: "angefragt" });
+                        if (rows.length === 0) return null;
+                        return <div className="mt-2"><InvolvedPersonsTable rows={rows} compact /></div>;
+                      })()}
                     </div>
                     <StatusBadge status={req.status} />
                   </div>

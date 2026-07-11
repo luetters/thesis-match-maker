@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import Profile from "@/pages/Profile";
 import SupervisionCapacities from "@/pages/SupervisionCapacities";
@@ -555,7 +556,7 @@ function ConditionalReasonBox({ requestId, reason, onUpdated }: { requestId: num
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -804,20 +805,17 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               </span>
             )}
           </div>
-          {(req.firstExaminerName || req.secondExaminerName) && (
-            <div className="flex flex-wrap gap-x-3 mt-1">
-              {req.firstExaminerName && (
-                <span className="text-xs text-gray-500">
-                  <span className="font-medium text-gray-600">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
-                </span>
-              )}
-              {req.secondExaminerName && (
-                <span className="text-xs text-gray-500">
-                  <span className="font-medium text-gray-600">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
-                </span>
-              )}
-            </div>
-          )}
+          {/* Beteiligte Personen – Tabelle */}
+          {(() => {
+            const rows: PersonRow[] = [];
+            if (req.studentName) rows.push({ role: "Studierende:r", name: req.studentName, contact: req.studentEmail ?? "", profileId: req.studentId ?? null, status: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "" });
+            if (req.examinerId) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName ?? "–", contact: req.firstExaminerEmail ?? "", profileId: req.examinerId, status: "zugewiesen" });
+            else if (req.wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: req.wantedExaminerName, contact: "", status: "angefragt" });
+            if (req.secondExaminerId) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName ?? "–", contact: req.secondExaminerEmail ?? "", profileId: req.secondExaminerId, status: "zugewiesen" });
+            else if (req.wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.wantedSecondExaminerName, contact: req.wantedSecondExaminerEmail ?? "", status: "angefragt" });
+            if (rows.length === 0) return null;
+            return <div className="mt-3"><InvolvedPersonsTable rows={rows} compact /></div>;
+          })()}
         </div>
         <StatusBadge status={req.status} />
       </div>
@@ -2903,20 +2901,17 @@ function Overview() {
                         </span>
                       )}
                     </div>
-                    {(req.firstExaminerName || req.secondExaminerName) && (
-                      <div className="flex flex-wrap gap-x-3 mt-1">
-                        {req.firstExaminerName && (
-                          <span className="text-xs text-gray-500">
-                            <span className="font-medium">Erstgutachter:in:</span>{" "}{req.firstExaminerName}
-                          </span>
-                        )}
-                        {req.secondExaminerName && (
-                          <span className="text-xs text-gray-500">
-                            <span className="font-medium">Zweitgutachter:in:</span>{" "}{req.secondExaminerName}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {/* Beteiligte Personen – Tabelle */}
+                    {(() => {
+                      const rows: PersonRow[] = [];
+                      if (req.studentName) rows.push({ role: "Studierende:r", name: req.studentName, contact: req.studentEmail ?? "", status: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "" });
+                      if (req.examinerId) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName ?? "–", contact: req.firstExaminerEmail ?? "", profileId: req.examinerId, status: "zugewiesen" });
+                      else if (req.wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: req.wantedExaminerName, contact: "", status: "angefragt" });
+                      if (req.secondExaminerId) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName ?? "–", contact: req.secondExaminerEmail ?? "", profileId: req.secondExaminerId, status: "zugewiesen" });
+                      else if (req.wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.wantedSecondExaminerName, contact: req.wantedSecondExaminerEmail ?? "", status: "angefragt" });
+                      if (rows.length === 0) return null;
+                      return <div className="mt-2"><InvolvedPersonsTable rows={rows} compact /></div>;
+                    })()}
                   </div>
                   <StatusBadge status={req.status} />
                 </div>
