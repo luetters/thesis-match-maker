@@ -102,6 +102,8 @@ function AvailabilityBadge({
   );
 }
 
+type SortMode = "load" | "name";
+
 export function AdminAssignExaminersModal({
   open,
   onClose,
@@ -110,6 +112,7 @@ export function AdminAssignExaminersModal({
 }: Props) {
   const [firstSearch, setFirstSearch] = useState("");
   const [secondSearch, setSecondSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("load");
   const [selectedFirstId, setSelectedFirstId] = useState<number | null>(
     thesis.examinerId ?? null
   );
@@ -153,25 +156,47 @@ export function AdminAssignExaminersModal({
     [examiners]
   );
 
+  /** Auslastungs-Ratio: 0 = frei, 1+ = voll/über */
+  function loadRatio(e: ExaminerEntry, slot: "first" | "second"): number {
+    const cur = slot === "first" ? e.activeFirstSupervisions : e.activeSecondSupervisions;
+    const max = slot === "first" ? e.semesterMaxFirst : e.semesterMaxSecond;
+    if (max === null || max === 0) return 0; // keine Grenze → ganz vorne
+    return cur / max;
+  }
+
+  function sortList(list: ExaminerEntry[], slot: "first" | "second"): ExaminerEntry[] {
+    if (sortMode === "name") {
+      return [...list].sort((a, b) => displayName(a).localeCompare(displayName(b), "de"));
+    }
+    // load: aufsteigend nach Auslastungsquote, dann alphabetisch
+    return [...list].sort((a, b) => {
+      const diff = loadRatio(a, slot) - loadRatio(b, slot);
+      if (diff !== 0) return diff;
+      return displayName(a).localeCompare(displayName(b), "de");
+    });
+  }
+
   const filteredFirst = useMemo(() => {
     const q = firstSearch.toLowerCase();
-    return firstExaminers.filter(
+    const filtered = firstExaminers.filter(
       (e: ExaminerEntry) =>
         displayName(e).toLowerCase().includes(q) ||
         e.email.toLowerCase().includes(q) ||
         (e.department ?? "").toLowerCase().includes(q)
     );
-  }, [firstExaminers, firstSearch]);
+    return sortList(filtered, "first");
+  }, [firstExaminers, firstSearch, sortMode]);
 
   const filteredSecond = useMemo(() => {
     const q = secondSearch.toLowerCase();
-    return secondExaminers.filter(
+    const filtered = secondExaminers.filter(
       (e: ExaminerEntry) =>
         displayName(e).toLowerCase().includes(q) ||
         e.email.toLowerCase().includes(q) ||
         (e.department ?? "").toLowerCase().includes(q)
     );
-  }, [secondExaminers, secondSearch]);
+    return sortList(filtered, "second");
+  }, [secondExaminers, secondSearch, sortMode]);
 
   const handleAssign = () => {
     if (!selectedFirstId && !selectedSecondId) {
@@ -292,7 +317,7 @@ export function AdminAssignExaminersModal({
           </div>
         </DialogHeader>
 
-        {/* Auslastungs-Zusammenfassung */}
+        {/* Auslastungs-Zusammenfassung + Sortier-Toggle */}
         {!isLoading && (examiners as ExaminerEntry[]).length > 0 && (
           <div className="flex items-center gap-4 px-3 py-2 bg-gray-50 rounded-lg border text-xs text-gray-600">
             <TrendingUp className="w-4 h-4 text-gray-400 shrink-0" />
@@ -306,6 +331,30 @@ export function AdminAssignExaminersModal({
             <span className="text-red-600">
               <span className="font-semibold">{stats.overloaded}</span> ausgelastet
             </span>
+            {/* Sortier-Toggle */}
+            <div className="ml-auto flex items-center gap-1">
+              <span className="text-gray-400">Sortierung:</span>
+              <button
+                onClick={() => setSortMode("load")}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                  sortMode === "load"
+                    ? "bg-[#76B900] text-white border-[#76B900]"
+                    : "border-gray-300 text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                Auslastung ↑
+              </button>
+              <button
+                onClick={() => setSortMode("name")}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                  sortMode === "name"
+                    ? "bg-[#76B900] text-white border-[#76B900]"
+                    : "border-gray-300 text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                Name A–Z
+              </button>
+            </div>
           </div>
         )}
 
