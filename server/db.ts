@@ -2322,6 +2322,7 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
   const firstExaminerAlias = aliasedTable(users, "first_examiner_ea");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_ea");
   const wantedSecondExaminerAlias = aliasedTable(users, "wanted_second_examiner_ea");
+  const wantedSecondExaminerProfileAlias = aliasedTable(examinerProfiles, "wanted_second_examiner_profile_ea");
   return db
     .select({
       id: thesisRequests.id,
@@ -2350,6 +2351,11 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       wantedSecondExaminerName: wantedSecondExaminerAlias.name,
       wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
       wantedSecondExaminerAvatarUrl: wantedSecondExaminerAlias.avatarUrl,
+      wantedSecondExaminerAcademicTitle: wantedSecondExaminerAlias.academicTitle,
+      wantedSecondExaminerDepartment: wantedSecondExaminerProfileAlias.department,
+      wantedSecondExaminerPhone: wantedSecondExaminerProfileAlias.phone,
+      wantedSecondExaminerOfficeHours: wantedSecondExaminerProfileAlias.officeHours,
+      secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
@@ -2357,6 +2363,7 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .leftJoin(wantedSecondExaminerAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerAlias.id))
+    .leftJoin(wantedSecondExaminerProfileAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerProfileAlias.userId))
     .where(
       and(
         // Alle Status, in denen die Anfrage als "angenommen" gilt (inkl. Suche nach Zweitgutachter)

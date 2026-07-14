@@ -2750,31 +2750,90 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                           const name = req.wantedSecondExaminerName ?? req.secondExaminerName;
                           const avatar = req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl;
                           const profileId = req.wantedSecondExaminerId ?? req.secondExaminerId;
+                          const email = req.wantedSecondExaminerEmail ?? req.secondExaminerEmail;
+                          const department = (req as any).wantedSecondExaminerDepartment;
+                          const phone = (req as any).wantedSecondExaminerPhone;
+                          const officeHours = (req as any).wantedSecondExaminerOfficeHours;
+                          const academicTitle = (req as any).wantedSecondExaminerAcademicTitle;
+                          const requestedAt = (req as any).secondExaminerRequestedAt;
                           const initials = (name as string).split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase();
-                          const inner = (
-                            <span className="inline-flex items-center gap-2">
-                              {avatar ? (
-                                <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover border-2 border-amber-300 flex-shrink-0" />
-                              ) : (
-                                <span className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center justify-center flex-shrink-0 border-2 border-amber-300">{initials}</span>
-                              )}
-                              <span className="font-semibold text-amber-900">{name}</span>
-                            </span>
+                          // Tage seit Anfrage berechnen
+                          const daysSince = requestedAt
+                            ? Math.floor((Date.now() - new Date(requestedAt).getTime()) / 86400000)
+                            : null;
+                          const avatarEl = avatar ? (
+                            <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover border-2 border-amber-300 flex-shrink-0" />
+                          ) : (
+                            <span className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center justify-center flex-shrink-0 border-2 border-amber-300">{initials}</span>
+                          );
+                          const nameEl = (
+                            <span className="font-semibold text-amber-900">{academicTitle ? `${academicTitle} ${name}` : name}</span>
+                          );
+                          // Tooltip-Inhalt
+                          const tooltip = (
+                            <div className="absolute z-50 left-0 top-full mt-1.5 w-64 bg-white rounded-xl shadow-lg border border-gray-100 p-3 text-left pointer-events-none"
+                              style={{ minWidth: '220px' }}>
+                              <div className="flex items-center gap-2.5 mb-2">
+                                {avatar ? (
+                                  <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0" />
+                                ) : (
+                                  <span className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 text-xs font-bold inline-flex items-center justify-center flex-shrink-0">{initials}</span>
+                                )}
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900 leading-tight">{academicTitle ? `${academicTitle} ${name}` : name}</p>
+                                  {department && <p className="text-xs text-gray-500 mt-0.5">{department}</p>}
+                                </div>
+                              </div>
+                              <div className="space-y-1 border-t border-gray-50 pt-2">
+                                {email && (
+                                  <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    {email}
+                                  </p>
+                                )}
+                                {phone && (
+                                  <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                    {phone}
+                                  </p>
+                                )}
+                                {officeHours && (
+                                  <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    {officeHours}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           );
                           return (
-                            <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
-                              <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wide whitespace-nowrap">Zweitgutachter:in angefragt</span>
-                              <span className="text-amber-300">·</span>
-                              {profileId ? (
-                                <a
-                                  href={`/examiner/profile/${profileId}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="hover:underline text-xs"
-                                >
-                                  {inner}
-                                </a>
-                              ) : (
-                                <span className="text-xs">{inner}</span>
+                            <div className="flex items-center justify-between gap-2 mt-1.5 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wide whitespace-nowrap">Zweitgutachter:in angefragt</span>
+                                <span className="text-amber-300">·</span>
+                                <div className="relative group/tooltip">
+                                  {profileId ? (
+                                    <a
+                                      href={`/examiner/profile/${profileId}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="hover:underline text-xs inline-flex items-center gap-2"
+                                    >
+                                      {avatarEl}{nameEl}
+                                    </a>
+                                  ) : (
+                                    <span className="text-xs inline-flex items-center gap-2">{avatarEl}{nameEl}</span>
+                                  )}
+                                  <div className="hidden group-hover/tooltip:block">{tooltip}</div>
+                                </div>
+                              </div>
+                              {daysSince !== null && (
+                                <span className={`text-[10px] font-medium whitespace-nowrap px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                                  daysSince > 14 ? 'bg-red-100 text-red-700' :
+                                  daysSince > 7  ? 'bg-orange-100 text-orange-700' :
+                                                   'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {daysSince === 0 ? 'Heute' : daysSince === 1 ? 'Seit 1 Tag' : `Seit ${daysSince} Tagen`}
+                                </span>
                               )}
                             </div>
                           );
