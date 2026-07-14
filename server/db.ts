@@ -2342,6 +2342,7 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
+      firstExaminerEmail: firstExaminerAlias.email,
       firstExaminerAvatarUrl: firstExaminerAlias.avatarUrl,
       secondExaminerName: secondExaminerAlias.name,
       secondExaminerEmail: secondExaminerAlias.email,

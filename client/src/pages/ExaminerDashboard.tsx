@@ -2573,25 +2573,63 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
     ["SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED", "ACCEPTED", "REGISTERED", "COMPLETED"].includes(r.status)
   );
 
-  const handleExportCSV = () => {
-    const headers = ["Titel", "Studierende:r", "E-Mail", "Studiengang", "Semester", "Status", "Eingereicht am"];
-    const rows = list.map((r: any) => [
-      `"${(r.title ?? "").replace(/"/g, '""')}"`,
-      `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
-      `"${(r.studentEmail ?? "").replace(/"/g, '""')}"`,
-      `"${(r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "").replace(/"/g, '""')}"`,
-      `"${(r.targetSemester ?? "").replace(/"/g, '""')}"`,
-      `"${(r.status ?? "").replace(/"/g, '""')}"`,
-      `"${r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : ""}"`,
-    ]);
-    const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+  const downloadCSV = (rows: string[][], filename: string) => {
+    const csv = rows.map((r) => r.join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `betreute-studierende-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Titel", "Studierende:r", "E-Mail Studierende:r", "Studiengang", "Semester", "Erstgutachter:in", "Zweitgutachter:in", "Status", "Eingereicht am"];
+    const rows = [
+      headers,
+      ...list.map((r: any) => [
+        `"${(r.title ?? "").replace(/"/g, '""')}"`,
+        `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.studentEmail ?? "").replace(/"/g, '""')}"`,
+        `"${(r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "").replace(/"/g, '""')}"`,
+        `"${(r.targetSemester ?? "").replace(/"/g, '""')}"`,
+        `"${(r.firstExaminerName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.secondExaminerName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.status ?? "").replace(/"/g, '""')}"`,
+        `"${r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : ""}"`,
+      ]),
+    ];
+    downloadCSV(rows, `betreute-studierende-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  const handleExportThesisMatchCSV = () => {
+    const headers = [
+      "Nr.", "Titel", "Studierende:r", "E-Mail Studierende:r",
+      "Studiengang", "Semester", "Abschlussart",
+      "Erstgutachter:in", "E-Mail Erstgutachter:in",
+      "Zweitgutachter:in", "E-Mail Zweitgutachter:in",
+      "Status", "Eingereicht am",
+    ];
+    const rows = [
+      headers,
+      ...thesisMatch.map((r: any, i: number) => [
+        String(i + 1),
+        `"${(r.title ?? "").replace(/"/g, '""')}"`,
+        `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.studentEmail ?? "").replace(/"/g, '""')}"`,
+        `"${(r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "").replace(/"/g, '""')}"`,
+        `"${(r.targetSemester ?? "").replace(/"/g, '""')}"`,
+        `"${r.degreeType === "master" ? "Master" : r.degreeType === "bachelor" ? "Bachelor" : (r.degreeType ?? "")}"`,
+        `"${(r.firstExaminerName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.firstExaminerEmail ?? "").replace(/"/g, '""')}"`,
+        `"${(r.secondExaminerName ?? "").replace(/"/g, '""')}"`,
+        `"${(r.secondExaminerEmail ?? "").replace(/"/g, '""')}"`,
+        `"${(r.status ?? "").replace(/"/g, '""')}"`,
+        `"${r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : ""}"`,
+      ]),
+    ];
+    downloadCSV(rows, `thesis-match-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const StudentRow = ({ req }: { req: any }) => (
@@ -2636,10 +2674,22 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
     </button>
   );
 
-  const SectionHeader = ({ title, count, color }: { title: string; count: number; color: string }) => (
-    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl mb-2 ${color}`}>
-      <span className="text-sm font-semibold">{title}</span>
-      <span className="text-xs font-medium bg-white/60 rounded-full px-2 py-0.5">{count}</span>
+  const SectionHeader = ({ title, count, color, onExport }: { title: string; count: number; color: string; onExport?: () => void }) => (
+    <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl mb-2 ${color}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold">{title}</span>
+        <span className="text-xs font-medium bg-white/60 rounded-full px-2 py-0.5">{count}</span>
+      </div>
+      {onExport && (
+        <button
+          onClick={onExport}
+          title="Als CSV exportieren"
+          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white border border-current/20 transition-colors"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          CSV
+        </button>
+      )}
     </div>
   );
 
@@ -2740,7 +2790,7 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
           {/* Abschnitt 3: Thesis Match – beide Gutachter vorhanden */}
           {thesisMatch.length > 0 && (
             <div>
-              <SectionHeader title="Thesis Match" count={thesisMatch.length} color="bg-blue-50 text-blue-800" />
+              <SectionHeader title="Thesis Match" count={thesisMatch.length} color="bg-blue-50 text-blue-800" onExport={handleExportThesisMatchCSV} />
               <div className="space-y-0.5">
                 {thesisMatch.map((req: any) => (
                   <button
