@@ -195,12 +195,19 @@ function AllRequests() {
     targetSemester?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
   } | null>(null);
   const [remindingId, setRemindingId] = useState<number | null>(null);
+  // Cooldown: requestId -> timestamp of last sent reminder (10 min)
+  const [reminderCooldowns, setReminderCooldowns] = useState<Record<number, number>>({});
+  // Log: requestId -> { sentTo, sentAt }
+  const [reminderLog, setReminderLog] = useState<Record<number, { sentTo: string[]; sentAt: Date }>>({});
   const utils = trpc.useUtils();
 
   const sendReminderMutation = (trpc as any).admin.sendExaminerReminder.useMutation({
-    onSuccess: (data: { sentTo: string[] }) => {
-      toast.success(`Erinnerung gesendet an: ${data.sentTo.join(", ")}`);
+    onSuccess: (data: { sentTo: string[] }, variables: { thesisRequestId: number }) => {
+      const now = new Date();
+      toast.success(`✅ Erinnerung gesendet an: ${data.sentTo.join(", ")}`);
       setRemindingId(null);
+      setReminderCooldowns((prev) => ({ ...prev, [variables.thesisRequestId]: Date.now() }));
+      setReminderLog((prev) => ({ ...prev, [variables.thesisRequestId]: { sentTo: data.sentTo, sentAt: now } }));
     },
     onError: (err: { message: string }) => {
       toast.error(`Erinnerung fehlgeschlagen: ${err.message}`);
@@ -392,19 +399,32 @@ function AllRequests() {
                         {(
                           ((req as any).wantedExaminerId && !(req as any).examinerId) ||
                           ((req as any).wantedSecondExaminerId && !(req as any).secondExaminerId)
-                        ) && (
-                          <button
-                            onClick={() => {
-                              setRemindingId(req.id);
-                              sendReminderMutation.mutate({ thesisRequestId: req.id });
-                            }}
-                            disabled={remindingId === req.id}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
-                            title="Erinnerungsmail an ausstehende Gutachter:in senden"
-                          >
-                            {remindingId === req.id ? "Sendet…" : "🔔 Reminder"}
-                          </button>
-                        )}
+                        ) && (() => {
+                          const cooldownTs = reminderCooldowns[req.id];
+                          const cooldownActive = cooldownTs && (Date.now() - cooldownTs) < 10 * 60 * 1000;
+                          const log = reminderLog[req.id];
+                          return (
+                            <div className="flex flex-col items-start gap-0.5">
+                              <button
+                                onClick={() => {
+                                  if (cooldownActive) return;
+                                  setRemindingId(req.id);
+                                  sendReminderMutation.mutate({ thesisRequestId: req.id });
+                                }}
+                                disabled={remindingId === req.id || !!cooldownActive}
+                                className="px-2 py-1 rounded text-[11px] font-medium border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={cooldownActive ? "Cooldown aktiv – bitte 10 Minuten warten" : "Erinnerungsmail an ausstehende Gutachter:in senden"}
+                              >
+                                {remindingId === req.id ? "Sendet…" : cooldownActive ? "⏳ Cooldown" : "🔔 Reminder"}
+                              </button>
+                              {log && (
+                                <span className="text-[10px] text-gray-400 leading-tight">
+                                  Gesendet {log.sentAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} an {log.sentTo.length} Empf.
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <button
                           onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: req.deadline })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"

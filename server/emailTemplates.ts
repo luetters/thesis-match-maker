@@ -690,32 +690,42 @@ export function buildExaminerReminderEmail(opts: {
   const body = `
     ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
     ${p(`dies ist eine freundliche Erinnerung: Sie wurden als ${strong(roleDE)} für folgende Abschlussarbeit angefragt und haben die Anfrage noch nicht beantwortet.`)}
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
-      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
-      ${opts.studentName ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studierende:r</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>` : ""}
-      ${opts.studiengang ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studiengang</td><td style="padding:10px 16px;">${opts.studiengang}</td></tr>` : ""}
-      ${opts.semester ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
-    </table>
+    <!-- Thema-Highlight-Box -->
+    <div style="background:#f0f7e6;border-left:4px solid #76B900;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0;">
+      <p style="margin:0 0 4px 0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5a8c00;font-weight:700;">Thema der Abschlussarbeit</p>
+      <p style="margin:0;font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.4;">${opts.thesisTitle}</p>
+      ${opts.studentName ? `<p style="margin:8px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Studierende:r:</span> ${opts.studentName}</p>` : ""}
+      ${opts.studiengang ? `<p style="margin:4px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Studiengang:</span> ${opts.studiengang}</p>` : ""}
+      ${opts.semester ? `<p style="margin:4px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Semester:</span> ${opts.semester}</p>` : ""}
+    </div>
     ${requestedNote}
     ${p("Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:")}
     ${ctaDE}
-    <p style="margin:8px 0 16px 0;font-size:13px;color:#6b7280">Alternativ können Sie sich direkt im Portal anmelden: <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:600">${SITE_URL_BASE}</a></p>
+    <!-- Login-Link hervorgehoben -->
+    <div style="background:#f0f7e6;border:1px solid #c3e88d;border-radius:8px;padding:12px 16px;margin:12px 0 16px 0;">
+      <p style="margin:0;font-size:13px;color:#374151;">🔗 <strong>Direkter Zugang zum Portal:</strong> <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:700;text-decoration:underline;">${SITE_URL_BASE}</a></p>
+    </div>
     ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
 
     ${p(`Dear ${opts.examinerName ?? "Examiner"},`)}
     ${p(`This is a friendly reminder: you have been requested as ${strong(roleEN)} for the following thesis and have not yet responded.`)}
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
-      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Title</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
-      ${opts.studentName ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Student</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>` : ""}
-      ${opts.studiengang ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Programme</td><td style="padding:10px 16px;">${opts.studiengang}</td></tr>` : ""}
-      ${opts.semester ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
-    </table>
+    <!-- Thesis highlight box -->
+    <div style="background:#f0f7e6;border-left:4px solid #76B900;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0;">
+      <p style="margin:0 0 4px 0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5a8c00;font-weight:700;">Thesis Title</p>
+      <p style="margin:0;font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.4;">${opts.thesisTitle}</p>
+      ${opts.studentName ? `<p style="margin:8px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Student:</span> ${opts.studentName}</p>` : ""}
+      ${opts.studiengang ? `<p style="margin:4px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Programme:</span> ${opts.studiengang}</p>` : ""}
+      ${opts.semester ? `<p style="margin:4px 0 0 0;font-size:13px;color:#374151;"><span style="color:#76B900;font-weight:600;">Semester:</span> ${opts.semester}</p>` : ""}
+    </div>
     ${requestedNoteEN}
     ${p("Please accept or decline the request:")}
     ${ctaEN}
-    <p style="margin:8px 0 16px 0;font-size:13px;color:#6b7280">Alternatively, you can log in directly at: <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:600">${SITE_URL_BASE}</a></p>
+    <!-- Login link highlighted -->
+    <div style="background:#f0f7e6;border:1px solid #c3e88d;border-radius:8px;padding:12px 16px;margin:12px 0 16px 0;">
+      <p style="margin:0;font-size:13px;color:#374151;">🔗 <strong>Direct portal access:</strong> <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:700;text-decoration:underline;">${SITE_URL_BASE}</a></p>
+    </div>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
 
