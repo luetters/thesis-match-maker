@@ -283,17 +283,36 @@ function AllRequests() {
 
       {/* Export-Button */}
       <div className="flex justify-end mb-2">
-        <a
-          href={`/api/export/theses.pdf${filter !== 'ALL' ? `?status=${filter}` : ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={async () => {
+            try {
+              const url = `/api/export/theses.pdf${filter !== 'ALL' ? `?status=${filter}` : ''}`;
+              const res = await fetch(url, { credentials: 'include' });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+                toast.error(err.error ?? 'PDF-Export fehlgeschlagen');
+                return;
+              }
+              const blob = await res.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = `HTW_Antraege_${new Date().toISOString().slice(0, 10)}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(blobUrl);
+            } catch {
+              toast.error('PDF-Export fehlgeschlagen');
+            }
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
           style={{ backgroundColor: '#76B900' }}
           title="Aktuelle Ansicht als PDF herunterladen"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
           Als PDF exportieren
-        </a>
+        </button>
       </div>
 
       {/* Sortier-Leiste */}
