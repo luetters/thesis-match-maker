@@ -226,10 +226,14 @@ function AllRequests() {
   const filtered = requests?.filter((r) => {
     const matchFilter = filter === "ALL" || r.status === filter;
     const progLabel = r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "";
+    const q = search.toLowerCase();
     const matchSearch = !search ||
-      r.title.toLowerCase().includes(search.toLowerCase()) ||
-      progLabel.toLowerCase().includes(search.toLowerCase()) ||
-      (r.studentName ?? "").toLowerCase().includes(search.toLowerCase());
+      r.title.toLowerCase().includes(q) ||
+      progLabel.toLowerCase().includes(q) ||
+      (r.studentName ?? "").toLowerCase().includes(q) ||
+      (r.firstExaminerName ?? "").toLowerCase().includes(q) ||
+      (r.secondExaminerName ?? "").toLowerCase().includes(q) ||
+      ((r as any).wantedExaminerName ?? "").toLowerCase().includes(q);
     return matchFilter && matchSearch;
   });
 
@@ -259,7 +263,7 @@ function AllRequests() {
           </svg>
           <input
             type="text"
-            placeholder="Suche nach Titel, Fachbereich..."
+            placeholder="Suche nach Titel, Prüfer:in, Fachbereich..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
