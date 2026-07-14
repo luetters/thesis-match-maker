@@ -640,3 +640,84 @@ export function buildSecondExaminerRequestEmail(opts: {
   const text = `${opts.studentName} hat Sie als Zweitgutachter:in für "${opts.thesisTitle}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`;
   return { subject, html: htmlWrapper(body), text };
 }
+
+// ─── Erinnerungsmail an Gutachter:in ─────────────────────────────────────────
+export function buildExaminerReminderEmail(opts: {
+  examinerName?: string | null;
+  role: "first" | "second";
+  thesisTitle: string;
+  studentName?: string | null;
+  studiengang?: string | null;
+  semester?: string | null;
+  requestedAt?: string | null;
+  acceptUrl?: string;
+  declineUrl?: string;
+  dashboardUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const roleDE = opts.role === "first" ? "Erstgutachter:in" : "Zweitgutachter:in";
+  const roleEN = opts.role === "first" ? "first examiner" : "second examiner";
+  const subject = `HTW Berlin – Erinnerung: Ausstehende Anfrage als ${roleDE} / Reminder: Pending request as ${roleEN}`;
+
+  const ctaDE = opts.acceptUrl && opts.declineUrl
+    ? `<p style="margin:20px 0 12px 0">
+        <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Anfrage annehmen</a>
+        <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Anfrage ablehnen</a>
+       </p>`
+    : opts.dashboardUrl
+    ? `<p style="margin:20px 0 12px 0"><a href="${opts.dashboardUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard – Anfrage beantworten</a></p>`
+    : "";
+
+  const ctaEN = opts.acceptUrl && opts.declineUrl
+    ? `<p style="margin:20px 0 12px 0">
+        <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Accept request</a>
+        <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
+       </p>`
+    : opts.dashboardUrl
+    ? `<p style="margin:20px 0 12px 0"><a href="${opts.dashboardUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>`
+    : "";
+
+  const requestedNote = opts.requestedAt
+    ? `<p style="color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;font-size:13px;margin:12px 0;">
+        ⏰ Diese Anfrage wurde am ${new Date(opts.requestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })} gestellt und wartet noch auf Ihre Antwort.
+       </p>`
+    : "";
+  const requestedNoteEN = opts.requestedAt
+    ? `<p style="color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;font-size:13px;margin:12px 0;">
+        ⏰ This request was sent on ${new Date(opts.requestedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })} and is still awaiting your response.
+       </p>`
+    : "";
+
+  const body = `
+    ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
+    ${p(`dies ist eine freundliche Erinnerung: Sie wurden als ${strong(roleDE)} für folgende Abschlussarbeit angefragt und haben die Anfrage noch nicht beantwortet.`)}
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Thema</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
+      ${opts.studentName ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studierende:r</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>` : ""}
+      ${opts.studiengang ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Studiengang</td><td style="padding:10px 16px;">${opts.studiengang}</td></tr>` : ""}
+      ${opts.semester ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
+    </table>
+    ${requestedNote}
+    ${p("Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:")}
+    ${ctaDE}
+    ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
+
+    ${divider()}
+
+    ${p(`Dear ${opts.examinerName ?? "Examiner"},`)}
+    ${p(`This is a friendly reminder: you have been requested as ${strong(roleEN)} for the following thesis and have not yet responded.`)}
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#f9fafb;border-radius:8px;overflow:hidden;">
+      <tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Title</td><td style="padding:10px 16px;font-weight:600;">${opts.thesisTitle}</td></tr>
+      ${opts.studentName ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Student</td><td style="padding:10px 16px;">${opts.studentName}</td></tr>` : ""}
+      ${opts.studiengang ? `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Programme</td><td style="padding:10px 16px;">${opts.studiengang}</td></tr>` : ""}
+      ${opts.semester ? `<tr style="background:#fff;"><td style="padding:10px 16px;color:#6b7280;font-size:13px;">Semester</td><td style="padding:10px 16px;">${opts.semester}</td></tr>` : ""}
+    </table>
+    ${requestedNoteEN}
+    ${p("Please accept or decline the request:")}
+    ${ctaEN}
+    ${p("Kind regards,<br>HTW Berlin – Examination Office")}
+  `;
+
+  const text = `Erinnerung: Ausstehende Anfrage als ${roleDE} für "${opts.thesisTitle}"${opts.studentName ? ` von ${opts.studentName}` : ""}.\n\nBitte beantworten Sie die Anfrage über das Portal.`;
+
+  return { subject, html: htmlWrapper(body), text };
+}

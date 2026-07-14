@@ -302,6 +302,8 @@ export async function getThesisRequestByIdWithNames(id: number) {
       wantedSecondExaminerLastName: wantedSecondExaminerAlias.lastName,
       wantedSecondExaminerAcademicTitle: wantedSecondExaminerAlias.academicTitle,
       wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
+      // Zeitstempel
+      secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
       // Studiengang
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,

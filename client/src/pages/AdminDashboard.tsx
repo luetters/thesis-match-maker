@@ -194,7 +194,19 @@ function AllRequests() {
     id: number; title?: string | null; studentName?: string | null;
     targetSemester?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
   } | null>(null);
+  const [remindingId, setRemindingId] = useState<number | null>(null);
   const utils = trpc.useUtils();
+
+  const sendReminderMutation = (trpc as any).admin.sendExaminerReminder.useMutation({
+    onSuccess: (data: { sentTo: string[] }) => {
+      toast.success(`Erinnerung gesendet an: ${data.sentTo.join(", ")}`);
+      setRemindingId(null);
+    },
+    onError: (err: { message: string }) => {
+      toast.error(`Erinnerung fehlgeschlagen: ${err.message}`);
+      setRemindingId(null);
+    },
+  });
 
   const updateStatus = trpc.thesis.updateStatus.useMutation({
     onSuccess: () => {
@@ -376,6 +388,23 @@ function AllRequests() {
                         >
                           Zuweisen
                         </button>
+                        {/* Erinnerung senden – nur wenn Gutachter:in angefragt aber noch nicht bestätigt */}
+                        {(
+                          ((req as any).wantedExaminerId && !(req as any).examinerId) ||
+                          ((req as any).wantedSecondExaminerId && !(req as any).secondExaminerId)
+                        ) && (
+                          <button
+                            onClick={() => {
+                              setRemindingId(req.id);
+                              sendReminderMutation.mutate({ thesisRequestId: req.id });
+                            }}
+                            disabled={remindingId === req.id}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                            title="Erinnerungsmail an ausstehende Gutachter:in senden"
+                          >
+                            {remindingId === req.id ? "Sendet…" : "🔔 Reminder"}
+                          </button>
+                        )}
                         <button
                           onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: req.deadline })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
