@@ -2985,6 +2985,31 @@ export const appRouter = router({
           toStatus: "PENDING_FIRST_EXAMINER",
         });
 
+        // E-Mail sofort an Wunsch-Erstgutachter:in senden
+        try {
+          const examinerUser = await getUserById(input.wantedExaminerId);
+          const examinerEmailTo = await resolveExaminerEmail(input.wantedExaminerId) ?? examinerUser?.email;
+          const student = await getUserById(ctx.user.id);
+          const origin = (input as any).origin ?? process.env.SITE_URL ?? "https://thesis.htw-berlin.com";
+          if (examinerEmailTo) {
+            const acceptUrl = `${origin}/examiner/respond?token=${token}&action=accept`;
+            const rejectUrl = `${origin}/examiner/respond?token=${token}&action=reject`;
+            await sendExaminerCTAEmail({
+              to: examinerEmailTo,
+              examinerName: examinerUser?.name ?? "Prüfer:in",
+              studentName: student?.name ?? ctx.user.email ?? "Studierende:r",
+              thesisTitle: input.title,
+              department: input.department ?? "",
+              acceptUrl,
+              rejectUrl,
+              lang: (examinerUser?.preferredLanguage as "de" | "en") ?? "de",
+            });
+            console.log(`[createWithWantedExaminer] E-Mail an ${examinerEmailTo} gesendet.`);
+          }
+        } catch (emailErr) {
+          console.warn("[createWithWantedExaminer] E-Mail-Fehler (nicht kritisch):", emailErr);
+        }
+
         return { success: true, insertId, token };
       }),
 
@@ -3125,12 +3150,34 @@ export const appRouter = router({
         if (!result.success) {
           throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
         }
-        // E-Mail-Benachrichtigung an Zweitgutachter:in senden
+        // E-Mail mit direktem Bestätigungs-Token an Zweitgutachter:in senden
         if (input.secondExaminerId) {
-          const { notifySecondExaminerOfSelection } = await import("./db");
-          notifySecondExaminerOfSelection(input.requestId, input.secondExaminerId, input.personalNote).catch(
-            (e) => console.error("[notifySecondExaminer] E-Mail-Fehler:", e)
-          );
+          try {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 14); // 14 Tage gültig
+            const secToken = await createExaminerActionToken(input.requestId, input.secondExaminerId, expiresAt);
+            const secondExaminerUser = await getUserById(input.secondExaminerId);
+            const secondExaminerEmailTo = await resolveExaminerEmail(input.secondExaminerId) ?? secondExaminerUser?.email;
+            const student = await getUserById(ctx.user.id);
+            const origin = (input as any).origin ?? process.env.SITE_URL ?? "https://thesis.htw-berlin.com";
+            if (secondExaminerEmailTo) {
+              const acceptUrl = `${origin}/examiner/respond?token=${secToken}&action=accept`;
+              const rejectUrl = `${origin}/examiner/respond?token=${secToken}&action=reject`;
+              await sendExaminerCTAEmail({
+                to: secondExaminerEmailTo,
+                examinerName: secondExaminerUser?.name ?? "Prüfer:in",
+                studentName: student?.name ?? ctx.user.email ?? "Studierende:r",
+                thesisTitle: (await getThesisRequestById(input.requestId))?.title ?? "Abschlussarbeit",
+                department: "",
+                acceptUrl,
+                rejectUrl,
+                lang: (secondExaminerUser?.preferredLanguage as "de" | "en") ?? "de",
+              });
+              console.log(`[setWantedSecondExaminer] E-Mail an ${secondExaminerEmailTo} gesendet.`);
+            }
+          } catch (emailErr) {
+            console.warn("[setWantedSecondExaminer] E-Mail-Fehler (nicht kritisch):", emailErr);
+          }
         }
         return { success: true };
       }),
