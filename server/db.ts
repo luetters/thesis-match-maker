@@ -471,6 +471,7 @@ export async function getAllThesisRequests() {
   if (!db) return [];
   const firstExaminerAlias = aliasedTable(users, "first_examiner");
   const secondExaminerAlias = aliasedTable(users, "second_examiner");
+  const wantedExaminerAlias = aliasedTable(users, "wanted_examiner");
   return db
     .select({
       id: thesisRequests.id,
@@ -503,13 +504,19 @@ export async function getAllThesisRequests() {
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
+      firstExaminerEmail: firstExaminerAlias.email,
       secondExaminerName: secondExaminerAlias.name,
+      secondExaminerEmail: secondExaminerAlias.email,
+      wantedExaminerName: wantedExaminerAlias.name,
+      wantedExaminerEmail: wantedExaminerAlias.email,
+      wantedExaminerAcademicTitle: wantedExaminerAlias.academicTitle,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(wantedExaminerAlias, eq(thesisRequests.wantedExaminerId, wantedExaminerAlias.id))
     .orderBy(desc(thesisRequests.createdAt));
 }
 

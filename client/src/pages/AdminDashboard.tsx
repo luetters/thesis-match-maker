@@ -335,6 +335,7 @@ function AllRequests() {
                       {(() => {
                         const rows: PersonRow[] = [];
                         if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
+                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: (req as any).wantedExaminerEmail ?? "", profileId: (req as any).wantedExaminerId ?? null, status: "angefragt" });
                         else rows.push({ role: "Erstgutachter:in", name: "–", contact: "", status: "ausstehend" });
                         if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
                         return <InvolvedPersonsTable rows={rows} compact />;
@@ -1252,7 +1253,7 @@ function Overview() {
                         const rows: PersonRow[] = [];
                         if (req.studentName) rows.push({ role: "Studierende:r", name: req.studentName, contact: (req as any).studentEmail ?? "", profileId: (req as any).studentId ?? null, status: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "" });
                         if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
-                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: "", status: "angefragt" });
+                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: (req as any).wantedExaminerEmail ?? "", profileId: (req as any).wantedExaminerId ?? null, status: "angefragt" });
                         if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
                         else if ((req as any).wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: (req as any).wantedSecondExaminerName, contact: (req as any).wantedSecondExaminerEmail ?? "", status: "angefragt" });
                         if (rows.length === 0) return null;
