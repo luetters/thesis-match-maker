@@ -6534,3 +6534,40 @@ export async function adminDirectAssignExaminers(
 
   return { success: true, newStatus };
 }
+
+/**
+ * Ermöglicht Studierenden, ihre Einreichung bei CONDITIONAL_ACCEPTANCE zu überarbeiten.
+ * Aktualisiert Titel, Beschreibung, Sprache, Semester und Abschlussart.
+ * Setzt den Status zurück auf PENDING_FIRST_EXAMINER, damit der Prüfer die
+ * überarbeitete Fassung erneut prüfen kann.
+ */
+export async function reviseThesisSubmission(
+  id: number,
+  studentId: number,
+  data: {
+    title: string;
+    description: string;
+    language?: string;
+    targetSemester?: string;
+    degreeType?: "bachelor" | "master";
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await getThesisRequestById(id);
+  if (!existing) throw new Error("Antrag nicht gefunden");
+  if (existing.studentId !== studentId) throw new Error("Keine Berechtigung");
+  if (existing.status !== "CONDITIONAL_ACCEPTANCE") {
+    throw new Error("Überarbeitung nur bei Status 'Zusage unter Vorbehalt' möglich");
+  }
+
+  await db.update(thesisRequests).set({
+    title: data.title,
+    description: data.description,
+    ...(data.language ? { language: data.language } : {}),
+    ...(data.targetSemester ? { targetSemester: data.targetSemester } : {}),
+    ...(data.degreeType ? { degreeType: data.degreeType } : {}),
+    status: "PENDING_FIRST_EXAMINER" as any,
+  }).where(eq(thesisRequests.id, id));
+}

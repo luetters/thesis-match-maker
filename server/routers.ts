@@ -191,6 +191,7 @@ import {
   getExaminersWithAvailability,
   adminDirectAssignExaminers,
   getThesisRequestByIdWithNames,
+  reviseThesisSubmission,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -1135,6 +1136,43 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return getThesisRequestById(input.id);
+      }),
+
+    // Studierende:r: Einreichung bei CONDITIONAL_ACCEPTANCE überarbeiten
+    reviseSubmission: studentProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        title: z.string().min(3, "Titel zu kurz").max(512),
+        description: z.string().min(10, "Beschreibung zu kurz").max(10000),
+        language: z.enum(["de", "en"]).optional(),
+        targetSemester: z.string().max(32).optional(),
+        degreeType: z.enum(["bachelor", "master"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          await reviseThesisSubmission(input.thesisRequestId, ctx.user.id, {
+            title: input.title,
+            description: input.description,
+            language: input.language,
+            targetSemester: input.targetSemester,
+            degreeType: input.degreeType,
+          });
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg === "Antrag nicht gefunden") throw new TRPCError({ code: "NOT_FOUND", message: msg });
+          if (msg === "Keine Berechtigung") throw new TRPCError({ code: "FORBIDDEN", message: msg });
+          if (msg.includes("Überarbeitung nur bei Status")) throw new TRPCError({ code: "BAD_REQUEST", message: msg });
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+        }
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "THESIS_REVISED",
+          toStatus: "PENDING_FIRST_EXAMINER",
+          reason: `Einreichung überarbeitet: Titel: "${input.title}"`,
+        });
+        return { success: true };
       }),
   }),
 

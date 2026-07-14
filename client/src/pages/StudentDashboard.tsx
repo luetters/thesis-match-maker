@@ -1853,6 +1853,12 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
   const [condDocNote, setCondDocNote] = useState("");
   const [condDocUploading, setCondDocUploading] = useState(false);
   const condDocFileRef = useRef<HTMLInputElement>(null);
+  // Einreichung überarbeiten (bei CONDITIONAL_ACCEPTANCE)
+  const [showReviseForm, setShowReviseForm] = useState(false);
+  const [reviseTitle, setReviseTitle] = useState(req.title ?? "");
+  const [reviseDescription, setReviseDescription] = useState(req.description ?? "");
+  const [reviseLanguage, setReviseLanguage] = useState<"de" | "en">(req.language === "en" ? "en" : "de");
+  const [reviseSemester, setReviseSemester] = useState(req.targetSemester ?? "");
   const { t } = useLanguage();
 
   const { user } = useAuth();
@@ -1862,6 +1868,16 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
     { thesisRequestId: req.id },
     { enabled: isConditional }
   );
+
+  const reviseMutation = trpc.thesis.reviseSubmission.useMutation({
+    onSuccess: () => {
+      toast.success("Einreichung erfolgreich überarbeitet. Ihr Betreuer wird erneut benachrichtigt.");
+      setShowReviseForm(false);
+      utils.thesis.myRequests.invalidate();
+      utils.thesis.hasOpenRequest.invalidate();
+    },
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
 
   const deleteCondDocMutation = trpc.examinerEmailTemplates.deleteConditionalDocument.useMutation({
     onSuccess: () => { refetchCondDocs(); toast.success("Dokument gelöscht."); },
@@ -2052,13 +2068,82 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                   <p className="text-xs text-amber-700 leading-relaxed">
                     Ihre Betreuungsperson hat grundsätzliche Bereitschaft zur Betreuung signalisiert, jedoch noch nicht endgültig zugesagt. Bitte klären Sie die offenen Punkte direkt mit Ihrer Betreuungsperson.
                   </p>
-                  {(req as any).conditionalAcceptanceReason && (
+                                    {(req as any).conditionalAcceptanceReason && (
                     <div className="mt-2 pt-2 border-t border-amber-200">
                       <p className="text-xs font-medium text-amber-800 mb-0.5">Vorbehalt / Hinweis der Betreuungsperson:</p>
                       <p className="text-xs text-amber-700 whitespace-pre-wrap">{(req as any).conditionalAcceptanceReason}</p>
                     </div>
                   )}
-
+                  {/* Einreichung überarbeiten */}
+                  <div className="mt-3 pt-3 border-t border-amber-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-amber-800">Einreichung überarbeiten</p>
+                      <button
+                        onClick={() => { setShowReviseForm(v => !v); setReviseTitle(req.title ?? ""); setReviseDescription(req.description ?? ""); setReviseLanguage(req.language === "en" ? "en" : "de"); setReviseSemester(req.targetSemester ?? ""); }}
+                        className="text-xs text-amber-700 hover:text-amber-900 underline"
+                      >
+                        {showReviseForm ? "Abbrechen" : "Jetzt bearbeiten"}
+                      </button>
+                    </div>
+                    <p className="text-xs text-amber-700 mb-2">
+                      Sie können Titel, Beschreibung, Sprache und Zielsemester ändern und die überarbeitete Einreichung erneut einreichen. Ihr Betreuer wird automatisch benachrichtigt.
+                    </p>
+                    {showReviseForm && (
+                      <div className="space-y-3 mt-3 p-3 bg-white rounded-lg border border-amber-200">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Titel der Arbeit *</label>
+                          <input
+                            type="text"
+                            value={reviseTitle}
+                            onChange={e => setReviseTitle(e.target.value)}
+                            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            placeholder="Titel der Abschlussarbeit"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Beschreibung / Exposé *</label>
+                          <textarea
+                            value={reviseDescription}
+                            onChange={e => setReviseDescription(e.target.value)}
+                            rows={5}
+                            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+                            placeholder="Kurzbeschreibung des Themas und der geplanten Vorgehensweise..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Sprache</label>
+                            <select
+                              value={reviseLanguage}
+                              onChange={e => setReviseLanguage(e.target.value as "de" | "en")}
+                              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            >
+                              <option value="de">Deutsch</option>
+                              <option value="en">Englisch</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Zielsemester</label>
+                            <select
+                              value={reviseSemester}
+                              onChange={e => setReviseSemester(e.target.value)}
+                              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            >
+                              <option value="">Bitte wählen</option>
+                              {getNextSemesters().map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <button
+                          disabled={reviseMutation.isPending || !reviseTitle.trim() || !reviseDescription.trim()}
+                          onClick={() => reviseMutation.mutate({ thesisRequestId: req.id, title: reviseTitle, description: reviseDescription, language: reviseLanguage, targetSemester: reviseSemester || undefined })}
+                          className="w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          {reviseMutation.isPending ? "Wird eingereicht..." : "Überarbeitete Einreichung absenden"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {/* Upload-Bereich */}
                   <div className="mt-3 pt-3 border-t border-amber-200">
                     <p className="text-xs font-semibold text-amber-800 mb-2">Dokumente einreichen</p>
