@@ -529,22 +529,22 @@ export function buildSecondExaminerConfirmedEmail(opts: {
     ? `${p(`Sehr geehrte/r ${opts.recipientName ?? "Studierende/r"},`)}
        ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> bestätigt. Ihr Prüfungsteam ist nun vollständig.`)}
        ${p("Sie können jetzt Ihr aktualisiertes Anmeldedokument (mit Zweitgutachter:in) herunterladen.")}
-       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
        ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}`
     : `${p(`Sehr geehrte/r ${opts.recipientName ?? "Prüfer:in"},`)}
        ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung für folgende Abschlussarbeit bestätigt: <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong>`)}
-       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
        ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}`;
 
   const bodyEN = opts.recipientRole === "student"
     ? `${p(`Dear ${opts.recipientName ?? "Student"},`)}
        ${p(`<strong>${opts.secondExaminerName}</strong> has confirmed the second supervision for your thesis <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>. Your examination team is now complete.`)}
        ${p("You can now download your updated registration document (including the second examiner).")}
-       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
        ${p("Kind regards,<br>HTW Berlin – Examination Office")}`
     : `${p(`Dear ${opts.recipientName ?? "Examiner"},`)}
        ${p(`<strong>${opts.secondExaminerName}</strong> has confirmed the second supervision for the thesis: <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>`)}
-       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+       <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
        ${p("Kind regards,<br>HTW Berlin – Examination Office")}`;
 
   const body = `${bodyDE}${divider()}${bodyEN}`;
@@ -571,7 +571,7 @@ export function buildSecondExaminerRejectedEmail(opts: {
     ${p(`<strong>${opts.secondExaminerName}</strong> hat die Zweitbetreuung Ihrer Abschlussarbeit <strong>&bdquo;${opts.thesisTitle}&ldquo;</strong> leider abgelehnt.`)}
     ${reasonDE}
     ${p("Bitte wählen Sie in Ihrem Dashboard eine andere Zweitgutachter:in aus.")}
-    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a></p>
     ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
@@ -580,7 +580,7 @@ export function buildSecondExaminerRejectedEmail(opts: {
     ${p(`<strong>${opts.secondExaminerName}</strong> has unfortunately declined the second supervision for your thesis <strong>&ldquo;${opts.thesisTitle}&rdquo;</strong>.`)}
     ${reasonEN}
     ${p("Please select a different second examiner in your dashboard.")}
-    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
   const text = `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" abgelehnt.${opts.rejectionReason ? `\nBegründung: ${opts.rejectionReason}` : ""}\n\nBitte wählen Sie eine andere Person.\n\nDashboard: ${baseUrl}`;
@@ -620,7 +620,7 @@ export function buildSecondExaminerRequestEmail(opts: {
     </table>
     ${personalNoteBlockDE}
     ${p("Bitte melden Sie sich in Ihrem Dashboard an und bestätigen oder lehnen Sie die Anfrage ab.")}
-    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard – Anfrage beantworten</a></p>
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard – Anfrage beantworten</a></p>
     ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
@@ -634,7 +634,7 @@ export function buildSecondExaminerRequestEmail(opts: {
     </table>
     ${personalNoteBlockEN}
     ${p("Please log in to your dashboard and accept or decline the request.")}
-    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#006937;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>
+    <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
   const text = `${opts.studentName} hat Sie als Zweitgutachter:in für "${opts.thesisTitle}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`;
@@ -661,7 +661,7 @@ export function buildExaminerReminderEmail(opts: {
   const ctaDE = opts.acceptUrl && opts.declineUrl
     ? `<p style="margin:20px 0 12px 0">
         <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Anfrage annehmen</a>
-        <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Anfrage ablehnen</a>
+        <a href="${opts.declineUrl}" style="background:#cc0000;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Anfrage ablehnen</a>
        </p>`
     : opts.dashboardUrl
     ? `<p style="margin:20px 0 12px 0"><a href="${opts.dashboardUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard – Anfrage beantworten</a></p>`
@@ -670,7 +670,7 @@ export function buildExaminerReminderEmail(opts: {
   const ctaEN = opts.acceptUrl && opts.declineUrl
     ? `<p style="margin:20px 0 12px 0">
         <a href="${opts.acceptUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;margin-right:8px;display:inline-block">Accept request</a>
-        <a href="${opts.declineUrl}" style="background:#dc2626;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
+        <a href="${opts.declineUrl}" style="background:#cc0000;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Decline request</a>
        </p>`
     : opts.dashboardUrl
     ? `<p style="margin:20px 0 12px 0"><a href="${opts.dashboardUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>`
@@ -699,6 +699,7 @@ export function buildExaminerReminderEmail(opts: {
     ${requestedNote}
     ${p("Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab:")}
     ${ctaDE}
+    <p style="margin:8px 0 16px 0;font-size:13px;color:#6b7280">Alternativ können Sie sich direkt im Portal anmelden: <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:600">${SITE_URL_BASE}</a></p>
     ${p("Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung")}
 
     ${divider()}
@@ -714,6 +715,7 @@ export function buildExaminerReminderEmail(opts: {
     ${requestedNoteEN}
     ${p("Please accept or decline the request:")}
     ${ctaEN}
+    <p style="margin:8px 0 16px 0;font-size:13px;color:#6b7280">Alternatively, you can log in directly at: <a href="${SITE_URL_BASE}" style="color:#76B900;font-weight:600">${SITE_URL_BASE}</a></p>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
 
