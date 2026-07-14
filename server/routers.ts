@@ -2026,10 +2026,123 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { resetAdminOverride } = await import("./db");
         await resetAdminOverride(input.examinerId, input.semester);
-        return { success: true };
+                return { success: true };
+      }),
+    // Admin: Prüfer:innen mit Verfügbarkeits-Info abrufen
+    getExaminersWithAvailability: adminProcedure
+      .input(z.object({ semester: z.string().optional() }))
+      .query(async ({ input }) => {
+        return getExaminersWithAvailability(input.semester);
+      }),
+    // Admin: Direkte Zuweisung von Erst- und/oder Zweitgutachter:in
+    assignExaminers: adminProcedure
+      .input(z.object({
+        thesisRequestId: z.number(),
+        firstExaminerId: z.number().nullable().optional(),
+        secondExaminerId: z.number().nullable().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await adminDirectAssignExaminers(
+          input.thesisRequestId,
+          ctx.user.id,
+          { firstExaminerId: input.firstExaminerId, secondExaminerId: input.secondExaminerId }
+        );
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: "admin",
+          action: "ADMIN_ASSIGN_EXAMINERS",
+          toStatus: result.newStatus,
+          reason: `Admin-Zuweisung: Erstgutachter:in=${input.firstExaminerId ?? "–"}, Zweitgutachter:in=${input.secondExaminerId ?? "–"}`,
+          createdAt: new Date().toISOString(),
+        });
+        return result;
+      }),
+    // Admin: Erinnerungsmail an ausstehende Gutachter:in senden
+    sendExaminerReminder: adminProcedure
+      .input(z.object({ thesisRequestId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const thesis = await getThesisRequestByIdWithNames(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden" });
+        const sent: string[] = [];
+        const origin = process.env.APP_ORIGIN ?? "https://thesis.htw-berlin.com";
+        const needsFirstReminder = (
+          thesis.wantedExaminerId &&
+          !thesis.examinerId &&
+          thesis.status !== "FIRST_EXAMINER_ACCEPTED" &&
+          thesis.status !== "FIRST_EXAMINER_ASSIGNED"
+        );
+        if (needsFirstReminder) {
+          const examinerUser = await getUserById(thesis.wantedExaminerId!);
+          if (examinerUser) {
+            const token = await createExaminerActionToken(
+              thesis.id,
+              examinerUser.id,
+              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            );
+            const acceptUrl = `${origin}/examiner/respond?token=${token}&action=accept`;
+            const declineUrl = `${origin}/examiner/respond?token=${token}&action=reject`;
+            const tpl = buildExaminerReminderEmail({
+              examinerName: [examinerUser.academicTitle, examinerUser.firstName, examinerUser.lastName].filter(Boolean).join(" ") || examinerUser.name || examinerUser.email,
+              role: "first",
+              thesisTitle: thesis.title ?? "(kein Titel)",
+              studentName: thesis.studentName,
+              studiengang: thesis.programmeName,
+              semester: thesis.targetSemester,
+              requestedAt: thesis.createdAt,
+              acceptUrl,
+              declineUrl,
+            });
+            await sendEmail({ to: examinerUser.email ?? "", subject: tpl.subject, html: tpl.html });
+            sent.push(`Erstgutachter:in (${examinerUser.email})`);
+          }
+        }
+        const needsSecondReminder = (
+          thesis.wantedSecondExaminerId &&
+          !thesis.secondExaminerId &&
+          thesis.status !== "SECOND_EXAMINER_ASSIGNED"
+        );
+        if (needsSecondReminder) {
+          const secondUser = await getUserById(thesis.wantedSecondExaminerId!);
+          if (secondUser) {
+            const token = await createExaminerActionToken(
+              thesis.id,
+              secondUser.id,
+              new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+            );
+            const acceptUrl = `${origin}/examiner/respond?token=${token}&action=accept`;
+            const declineUrl = `${origin}/examiner/respond?token=${token}&action=reject`;
+            const tpl = buildExaminerReminderEmail({
+              examinerName: [secondUser.academicTitle, secondUser.firstName, secondUser.lastName].filter(Boolean).join(" ") || secondUser.name || secondUser.email,
+              role: "second",
+              thesisTitle: thesis.title ?? "(kein Titel)",
+              studentName: thesis.studentName,
+              studiengang: thesis.programmeName,
+              semester: thesis.targetSemester,
+              requestedAt: thesis.secondExaminerRequestedAt ?? undefined,
+              acceptUrl,
+              declineUrl,
+            });
+            await sendEmail({ to: secondUser.email ?? "", subject: tpl.subject, html: tpl.html });
+            sent.push(`Zweitgutachter:in (${secondUser.email})`);
+          }
+        }
+        if (sent.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Keine ausstehenden Gutachter-Anfragen gefunden." });
+        }
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: "admin",
+          action: "REMINDER_SENT",
+          toStatus: thesis.status,
+          reason: `Erinnerung gesendet an: ${sent.join(", ")}`,
+          createdAt: new Date().toISOString(),
+        });
+        return { success: true, sentTo: sent };
       }),
   }),
-
   // --- Onboarding: Rolle nach erstem Login setzen ---
   onboarding: router({
     setRole: protectedProcedure
@@ -2111,131 +2224,6 @@ export const appRouter = router({
     myExaminerColloquiums: anyExaminerProcedure.query(async ({ ctx }) => {
       return getColloquiumsByExaminer(ctx.user.id);
     }),
-    // Admin: Prüfer:innen mit Verfügbarkeits-Info abrufen
-    getExaminersWithAvailability: adminProcedure
-      .input(z.object({ semester: z.string().optional() }))
-      .query(async ({ input }) => {
-        return getExaminersWithAvailability(input.semester);
-      }),
-    // Admin: Direkte Zuweisung von Erst- und/oder Zweitgutachter:in
-    assignExaminers: adminProcedure
-      .input(z.object({
-        thesisRequestId: z.number(),
-        firstExaminerId: z.number().nullable().optional(),
-        secondExaminerId: z.number().nullable().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const result = await adminDirectAssignExaminers(
-          input.thesisRequestId,
-          ctx.user.id,
-          { firstExaminerId: input.firstExaminerId, secondExaminerId: input.secondExaminerId }
-        );
-        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
-        // Audit-Log
-        await createAuditLogEntry({
-          thesisRequestId: input.thesisRequestId,
-          actorId: ctx.user.id,
-          actorRole: "admin",
-          action: "ADMIN_ASSIGN_EXAMINERS",
-          toStatus: result.newStatus,
-          reason: `Admin-Zuweisung: Erstgutachter:in=${input.firstExaminerId ?? "–"}, Zweitgutachter:in=${input.secondExaminerId ?? "–"}`,
-          createdAt: new Date().toISOString(),
-        });
-        return result;
-      }),
-    // Admin: Erinnerungsmail an ausstehende Gutachter:in senden
-    sendExaminerReminder: adminProcedure
-      .input(z.object({ thesisRequestId: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const thesis = await getThesisRequestByIdWithNames(input.thesisRequestId);
-        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden" });
-
-        const sent: string[] = [];
-        const origin = process.env.APP_ORIGIN ?? "https://thesis.htw-berlin.com";
-
-        // Erstgutachter:in erinnern (wenn angefragt aber noch nicht bestätigt)
-        const needsFirstReminder = (
-          thesis.wantedExaminerId &&
-          !thesis.examinerId &&
-          thesis.status !== "FIRST_EXAMINER_ACCEPTED" &&
-          thesis.status !== "FIRST_EXAMINER_REJECTED"
-        );
-        if (needsFirstReminder) {
-          const examinerUser = await getUserById(thesis.wantedExaminerId!);
-          if (examinerUser) {
-            // Token erneuern oder vorhandenen Token verwenden
-            const token = await createExaminerActionToken(
-              thesis.id,
-              examinerUser.id,
-              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            );
-            const acceptUrl = `${origin}/examiner/respond?token=${token}&action=accept`;
-            const declineUrl = `${origin}/examiner/respond?token=${token}&action=reject`;
-            const tpl = buildExaminerReminderEmail({
-              examinerName: [examinerUser.academicTitle, examinerUser.firstName, examinerUser.lastName].filter(Boolean).join(" ") || examinerUser.name || examinerUser.email,
-              role: "first",
-              thesisTitle: thesis.title ?? "(kein Titel)",
-              studentName: thesis.studentName,
-              studiengang: thesis.programmeName,
-              semester: thesis.targetSemester,
-              requestedAt: thesis.createdAt,
-              acceptUrl,
-              declineUrl,
-            });
-            await sendEmail({ to: examinerUser.email ?? "", subject: tpl.subject, html: tpl.html });
-            sent.push(`Erstgutachter:in (${examinerUser.email})`);
-          }
-        }
-
-        // Zweitgutachter:in erinnern (wenn angefragt aber noch nicht bestätigt)
-        const needsSecondReminder = (
-          thesis.wantedSecondExaminerId &&
-          !thesis.secondExaminerId &&
-          thesis.status !== "SECOND_EXAMINER_ASSIGNED"
-        );
-        if (needsSecondReminder) {
-          const secondUser = await getUserById(thesis.wantedSecondExaminerId!);
-          if (secondUser) {
-            const token = await createExaminerActionToken(
-              thesis.id,
-              secondUser.id,
-              new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-            );
-            const acceptUrl = `${origin}/examiner/respond?token=${token}&action=accept`;
-            const declineUrl = `${origin}/examiner/respond?token=${token}&action=reject`;
-            const tpl = buildExaminerReminderEmail({
-              examinerName: [secondUser.academicTitle, secondUser.firstName, secondUser.lastName].filter(Boolean).join(" ") || secondUser.name || secondUser.email,
-              role: "second",
-              thesisTitle: thesis.title ?? "(kein Titel)",
-              studentName: thesis.studentName,
-              studiengang: thesis.programmeName,
-              semester: thesis.targetSemester,
-              requestedAt: thesis.secondExaminerRequestedAt ?? undefined,
-              acceptUrl,
-              declineUrl,
-            });
-            await sendEmail({ to: secondUser.email ?? "", subject: tpl.subject, html: tpl.html });
-            sent.push(`Zweitgutachter:in (${secondUser.email})`);
-          }
-        }
-
-        if (sent.length === 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Keine ausstehende Gutachter-Anfrage gefunden, an die eine Erinnerung gesendet werden kann." });
-        }
-
-        // Audit-Log
-        await createAuditLogEntry({
-          thesisRequestId: thesis.id,
-          actorId: ctx.user.id,
-          actorRole: "admin",
-          action: "REMINDER_SENT",
-          toStatus: thesis.status,
-          reason: `Erinnerung gesendet an: ${sent.join(", ")}`,
-          createdAt: new Date().toISOString(),
-        });
-
-        return { success: true, sentTo: sent };
-      }),
   }),
   // --- Superadmin: Systemkonfiguration ---
   superadmin: router({
