@@ -2356,6 +2356,14 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       wantedSecondExaminerPhone: wantedSecondExaminerProfileAlias.phone,
       wantedSecondExaminerOfficeHours: wantedSecondExaminerProfileAlias.officeHours,
       secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
+      // Externe Einladungs-Felder
+      secondExaminerInviteToken: thesisRequests.secondExaminerInviteToken,
+      secondExaminerInviteSentAt: thesisRequests.secondExaminerInviteSentAt,
+      externalSecondExaminerFirstName: thesisRequests.externalSecondExaminerFirstName,
+      externalSecondExaminerLastName: thesisRequests.externalSecondExaminerLastName,
+      externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
+      externalSecondExaminerTitle: thesisRequests.externalSecondExaminerTitle,
+      degreeType: thesisRequests.degreeType,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))

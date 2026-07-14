@@ -2564,6 +2564,12 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestSuccess, setSuggestSuccess] = useState(false);
   const [suggestError, setSuggestError] = useState('');
+  // Resend-Einladung State
+  const [resendingId, setResendingId] = useState<number | null>(null);
+  const [resendSuccessId, setResendSuccessId] = useState<number | null>(null);
+  // Filter für Prüfer-Auswahl
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterTag, setFilterTag] = useState('');
   const utils = trpc.useUtils();
   const { data: refreshed = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const list: any[] = (refreshed as any[]).length > 0 ? (refreshed as any[]) : acceptedStudents;
@@ -2621,14 +2627,29 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
   const { data: examinerListData = [] } = (trpc.examiner as any).list.useQuery();
   const allExaminers: any[] = examinerListData as any[];
 
+  // Eindeutige Fachbereiche und Tags aus der Prüfer-Liste
+  const allDepartments = Array.from(new Set(
+    allExaminers.map((ex: any) => ex.profile?.department ?? '').filter(Boolean)
+  )).sort();
+  const allTags = Array.from(new Set(
+    allExaminers.flatMap((ex: any) => {
+      const tags = ex.profile?.tags;
+      return Array.isArray(tags) ? tags as string[] : [];
+    })
+  )).sort();
+
   // Gefilterte Prüfer (ohne den Erstgutachter selbst)
   const filteredExaminers = allExaminers.filter((ex: any) => {
-    if (!examinerSearch.trim()) return true;
+    if (ex.user?.id === suggestModalReq?.examinerId) return false;
     const q = examinerSearch.toLowerCase();
-    return (
+    const matchesSearch = !q ||
       (ex.user?.name ?? '').toLowerCase().includes(q) ||
-      (ex.profile?.department ?? '').toLowerCase().includes(q)
+      (ex.profile?.department ?? '').toLowerCase().includes(q);
+    const matchesDept = !filterDepartment || (ex.profile?.department ?? '') === filterDepartment;
+    const matchesTag = !filterTag || (
+      Array.isArray(ex.profile?.tags) && (ex.profile.tags as string[]).includes(filterTag)
     );
+    return matchesSearch && matchesDept && matchesTag;
   });
 
   const openSuggestModal = (req: any) => {
@@ -2636,6 +2657,8 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
     setSuggestMode('select');
     setSelectedExaminerId(null);
     setExaminerSearch('');
+    setFilterDepartment('');
+    setFilterTag('');
     setInviteName('');
     setInviteEmail('');
     setInviteSuccess(false);
@@ -2685,6 +2708,23 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
       setInviteError(e?.message ?? 'Fehler beim Einladen.');
     } finally {
       setInviteLoading(false);
+    }
+  };
+
+  const handleResendInvite = async (reqId: number) => {
+    setResendingId(reqId);
+    try {
+      await (trpc.thesis as any).resendSecondExaminerInvite.mutateAsync({
+        thesisRequestId: reqId,
+        origin: window.location.origin,
+      });
+      setResendSuccessId(reqId);
+      setTimeout(() => setResendSuccessId(null), 3000);
+      utils.examiner.getAcceptedRequests.invalidate();
+    } catch (e: any) {
+      alert(e?.message ?? 'Fehler beim erneuten Versenden.');
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -2807,6 +2847,42 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                 {firstExaminerOnly.map((req: any) => (
                   <div key={req.id} className="group relative">
                     <StudentRow req={req} />
+                    {/* Status-Badge: Einladung ausstehend */}
+                    {req.secondExaminerInviteToken && !req.secondExaminerId && (
+                      <div className="px-3 pb-1 -mt-1 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          Einladung ausstehend
+                          {req.externalSecondExaminerEmail && (
+                            <span className="text-orange-500 font-normal">– {req.externalSecondExaminerEmail}</span>
+                          )}
+                          {req.secondExaminerInviteSentAt && (
+                            <span className="text-orange-400 font-normal">
+                              ({new Date(req.secondExaminerInviteSentAt).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })})
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleResendInvite(req.id); }}
+                          disabled={resendingId === req.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                        >
+                          {resendSuccessId === req.id ? (
+                            <>
+                              <svg className="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                              Gesendet!
+                            </>
+                          ) : resendingId === req.id ? (
+                            'Senden...'
+                          ) : (
+                            <>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                              Erneut senden
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                     {/* Schalter: Zweitgutachter:in vorschlagen */}
                     <div className="px-3 pb-2 -mt-1">
                       <button
@@ -3100,14 +3176,49 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                     </div>
                   ) : (
                     <>
+                      {/* Suchfeld */}
                       <input
                         type="text"
-                        placeholder="Suche nach Name oder Fachbereich..."
+                        placeholder="Suche nach Name..."
                         value={examinerSearch}
                         onChange={(e) => setExaminerSearch(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
                       />
-                      <div className="space-y-1 max-h-64 overflow-y-auto">
+                      {/* Filter: Fachbereich und Forschungsschwerpunkt */}
+                      <div className="flex gap-2">
+                        <select
+                          value={filterDepartment}
+                          onChange={(e) => setFilterDepartment(e.target.value)}
+                          className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 bg-white text-gray-700"
+                        >
+                          <option value="">Alle Fachbereiche</option>
+                          {allDepartments.map((d: string) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={filterTag}
+                          onChange={(e) => setFilterTag(e.target.value)}
+                          className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 bg-white text-gray-700"
+                        >
+                          <option value="">Alle Schwerpunkte</option>
+                          {allTags.map((t: string) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                        {(filterDepartment || filterTag) && (
+                          <button
+                            onClick={() => { setFilterDepartment(''); setFilterTag(''); }}
+                            className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg"
+                            title="Filter zurücksetzen"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                      {/* Ergebnis-Zähler */}
+                      <p className="text-xs text-gray-400">{filteredExaminers.length} Prüfer:in{filteredExaminers.length !== 1 ? 'nen' : ''} gefunden</p>
+                      <div className="space-y-1 max-h-56 overflow-y-auto">
                         {filteredExaminers.length === 0 && (
                           <p className="text-sm text-gray-400 text-center py-4">Keine Prüfer:innen gefunden.</p>
                         )}
@@ -3117,8 +3228,7 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                           const avatar = ex.profile?.photoUrl ?? ex.user?.avatarUrl;
                           const initials = name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase();
                           const isSelected = selectedExaminerId === ex.user?.id;
-                          // Nicht den Erstgutachter selbst anzeigen
-                          if (ex.user?.id === suggestModalReq?.examinerId) return null;
+                          const tags: string[] = Array.isArray(ex.profile?.tags) ? ex.profile.tags : [];
                           return (
                             <button
                               key={ex.user?.id}
@@ -3132,9 +3242,17 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                               ) : (
                                 <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-bold inline-flex items-center justify-center flex-shrink-0">{initials}</span>
                               )}
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
                                 {dept && <p className="text-xs text-gray-500 truncate">{dept}</p>}
+                                {tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {tags.slice(0, 3).map((tag: string) => (
+                                      <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${filterTag === tag ? 'bg-[#76B900]/15 border-[#76B900]/40 text-[#006937] font-medium' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>{tag}</span>
+                                    ))}
+                                    {tags.length > 3 && <span className="text-[10px] text-gray-400">+{tags.length - 3}</span>}
+                                  </div>
+                                )}
                               </div>
                               {isSelected && (
                                 <svg className="w-4 h-4 text-[#76B900] ml-auto flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>

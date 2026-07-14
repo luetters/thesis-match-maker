@@ -4129,6 +4129,61 @@ export const appRouter = router({
         return { success: true, token };
       }),
 
+    // Einladungs-E-Mail erneut versenden
+    resendSecondExaminerInvite: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        const isFirstExaminer = req.examinerId === ctx.user.id;
+        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isFirstExaminer && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen können Einladungen erneut versenden." });
+        const inviteToken = (req as any).secondExaminerInviteToken;
+        const inviteeEmail = (req as any).externalSecondExaminerEmail;
+        if (!inviteToken || !inviteeEmail)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Keine ausstehende Einladung für diese Anfrage vorhanden." });
+        // Zeitstempel aktualisieren
+        const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { thesisRequests: tr } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        await db.update(tr)
+          .set({ secondExaminerInviteSentAt: now } as any)
+          .where(eqDrizzle(tr.id, input.thesisRequestId));
+        // E-Mail erneut senden
+        const registerUrl = `${input.origin}/register?inviteToken=${inviteToken}&role=second_examiner&email=${encodeURIComponent(inviteeEmail)}&thesisId=${input.thesisRequestId}`;
+        const { sendEmail } = await import("./emailHelper");
+        const firstName = (req as any).externalSecondExaminerFirstName ?? "";
+        const lastName = (req as any).externalSecondExaminerLastName ?? "";
+        const inviteeName = `${firstName} ${lastName}`.trim() || inviteeEmail;
+        const studentName = (req as any).studentName ?? "Studierende:r";
+        const firstExaminerName = ctx.user.name ?? "Erstgutachter:in";
+        const thesisTitle = req.title ?? "(kein Titel)";
+        await sendEmail({
+          to: inviteeEmail,
+          subject: `Erinnerung: Einladung als Zweitgutachter:in – Thesis Match HTW Berlin`,
+          html: `<p>Sehr geehrte:r ${inviteeName},</p>
+<p>Dies ist eine Erinnerung: Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p>
+<p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p>
+<p>Bitte registrieren Sie sich im Thesis-Match-System der HTW Berlin, um die Einladung anzunehmen:</p>
+<p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p>
+<p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
+          text: `Erinnerung: Sie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
+        });
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "FIRST_EXAMINER_RESENT_INVITE",
+          reason: `Einladungs-E-Mail erneut an ${inviteeEmail} gesendet.`,
+        });
+        return { success: true };
+      }),
+
     updateConditionalReason: anyExaminerProcedure
       .input(z.object({
         thesisRequestId: z.number(),
