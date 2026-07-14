@@ -2745,23 +2745,40 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
                             <MiniAvatar name={req.studentName} avatarUrl={req.studentAvatarUrl} />
                           </p>
                         )}
-                        {/* Zweitgutachter-Suche: angefragte oder zugewiesene Person anzeigen */}
-                        {(req.wantedSecondExaminerName || req.secondExaminerName) && (
-                          <p className="text-xs text-amber-700 mt-1">
-                            <span className="font-medium">Zweitgutachter:in angefragt:</span>{" "}
-                            {req.wantedSecondExaminerId ? (
-                              <a
-                                href={`/examiner/profile/${req.wantedSecondExaminerId}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="underline hover:text-amber-900 inline-flex items-center gap-1"
-                              >
-                                <MiniAvatar name={req.wantedSecondExaminerName ?? req.secondExaminerName} avatarUrl={req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl} />
-                              </a>
-                            ) : (
-                              <MiniAvatar name={req.wantedSecondExaminerName ?? req.secondExaminerName} avatarUrl={req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl} />
-                            )}
-                          </p>
-                        )}
+                        {/* Zweitgutachter-Suche: angefragte Person prominent anzeigen */}
+                        {(req.wantedSecondExaminerName || req.secondExaminerName) && (() => {
+                          const name = req.wantedSecondExaminerName ?? req.secondExaminerName;
+                          const avatar = req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl;
+                          const profileId = req.wantedSecondExaminerId ?? req.secondExaminerId;
+                          const initials = (name as string).split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase();
+                          const inner = (
+                            <span className="inline-flex items-center gap-2">
+                              {avatar ? (
+                                <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover border-2 border-amber-300 flex-shrink-0" />
+                              ) : (
+                                <span className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center justify-center flex-shrink-0 border-2 border-amber-300">{initials}</span>
+                              )}
+                              <span className="font-semibold text-amber-900">{name}</span>
+                            </span>
+                          );
+                          return (
+                            <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                              <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wide whitespace-nowrap">Zweitgutachter:in angefragt</span>
+                              <span className="text-amber-300">·</span>
+                              {profileId ? (
+                                <a
+                                  href={`/examiner/profile/${profileId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="hover:underline text-xs"
+                                >
+                                  {inner}
+                                </a>
+                              ) : (
+                                <span className="text-xs">{inner}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                           {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
                             <span className="text-xs text-gray-500">
