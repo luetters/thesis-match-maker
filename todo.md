@@ -1134,3 +1134,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Betreuungskapazitäten-Block aus Profile.tsx entfernt
 - [x] Vollständige DE/EN-Übersetzungen in LanguageContext.tsx (supervisionCapacitiesPage)
 - [x] 61 Tests grün
+
+## Admin-Zuweisung von Gutachter:innen
+- [ ] Admin-Zuweisung: DB-Query getExaminersWithAvailability (Kapazität, aktive Betreuungen, Semester-Präferenzen)
+- [ ] Admin-Zuweisung: tRPC-Prozedur adminAssignExaminers (Erst- und/oder Zweitgutachter:in direkt zuweisen)
+- [ ] Admin-Zuweisung: AdminAssignExaminersModal mit Verfügbarkeits-Anzeige und Suchfeld
+- [ ] Admin-Zuweisung: Zuweisen-Button in AdminDashboard-Übersicht (Alle Anfragen) einbauen

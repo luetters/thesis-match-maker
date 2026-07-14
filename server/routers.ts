@@ -188,6 +188,8 @@ import {
   createExaminerTopic,
   updateExaminerTopic,
   deleteExaminerTopic,
+  getExaminersWithAvailability,
+  adminDirectAssignExaminers,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -2108,6 +2110,38 @@ export const appRouter = router({
     myExaminerColloquiums: anyExaminerProcedure.query(async ({ ctx }) => {
       return getColloquiumsByExaminer(ctx.user.id);
     }),
+    // Admin: Prüfer:innen mit Verfügbarkeits-Info abrufen
+    getExaminersWithAvailability: adminProcedure
+      .input(z.object({ semester: z.string().optional() }))
+      .query(async ({ input }) => {
+        return getExaminersWithAvailability(input.semester);
+      }),
+    // Admin: Direkte Zuweisung von Erst- und/oder Zweitgutachter:in
+    assignExaminers: adminProcedure
+      .input(z.object({
+        thesisRequestId: z.number(),
+        firstExaminerId: z.number().nullable().optional(),
+        secondExaminerId: z.number().nullable().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await adminDirectAssignExaminers(
+          input.thesisRequestId,
+          ctx.user.id,
+          { firstExaminerId: input.firstExaminerId, secondExaminerId: input.secondExaminerId }
+        );
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+        // Audit-Log
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: "admin",
+          action: "ADMIN_ASSIGN_EXAMINERS",
+          toStatus: result.newStatus,
+          reason: `Admin-Zuweisung: Erstgutachter:in=${input.firstExaminerId ?? "–"}, Zweitgutachter:in=${input.secondExaminerId ?? "–"}`,
+          createdAt: new Date().toISOString(),
+        });
+        return result;
+      }),
   }),
   // --- Superadmin: Systemkonfiguration ---
   superadmin: router({

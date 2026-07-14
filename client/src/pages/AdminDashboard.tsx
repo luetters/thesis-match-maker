@@ -1,4 +1,5 @@
 import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
+import { AdminAssignExaminersModal } from "@/components/AdminAssignExaminersModal";
 import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
@@ -189,6 +190,10 @@ function AllRequests() {
   const [sortKey, setSortKey] = useState<AdminSortKey>("date");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
   const [deadlineModal, setDeadlineModal] = useState<{ id: number; title: string; deadline?: Date | string | null } | null>(null);
+  const [adminAssignModal, setAdminAssignModal] = useState<{
+    id: number; title?: string | null; studentName?: string | null;
+    targetSemester?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
+  } | null>(null);
   const utils = trpc.useUtils();
 
   const updateStatus = trpc.thesis.updateStatus.useMutation({
@@ -358,6 +363,20 @@ function AllRequests() {
                           Prüfer:in
                         </button>
                         <button
+                          onClick={() => setAdminAssignModal({
+                            id: req.id,
+                            title: req.title,
+                            studentName: req.studentName,
+                            targetSemester: req.targetSemester,
+                            examinerId: (req as any).examinerId ?? null,
+                            secondExaminerId: (req as any).secondExaminerId ?? null,
+                          })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-green-300 text-green-700 hover:bg-green-50 transition-colors"
+                          title="Gutachter:innen direkt zuweisen (mit Verfügbarkeits-Prüfung)"
+                        >
+                          Zuweisen
+                        </button>
+                        <button
                           onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: req.deadline })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                           title={req.deadline ? `Deadline: ${new Date(req.deadline).toLocaleDateString("de-DE")}` : "Deadline setzen"}
@@ -417,6 +436,14 @@ function AllRequests() {
           thesisId={assignModal.id}
           thesisTitle={assignModal.title}
           onClose={() => setAssignModal(null)}
+        />
+      )}
+      {adminAssignModal && (
+        <AdminAssignExaminersModal
+          open={true}
+          thesis={adminAssignModal}
+          onClose={() => setAdminAssignModal(null)}
+          onSuccess={() => { utils.thesis.all.invalidate(); setAdminAssignModal(null); }}
         />
       )}
       {deadlineModal && (

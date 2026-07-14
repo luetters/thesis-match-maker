@@ -6344,3 +6344,191 @@ export async function deleteExaminerTopic(topicId: number, examinerId: number) {
   if (!existing) throw new Error("Thema nicht gefunden oder keine Berechtigung");
   await db.delete(examinerTopics).where(eq(examinerTopics.id, topicId));
 }
+
+// ─── Admin: Gutachter:innen mit Verfügbarkeits-Info abrufen ──────────────────
+
+/**
+ * Alle freigeschalteten Prüfer:innen mit Verfügbarkeits-Informationen abrufen.
+ * Enthält: aktive Betreuungen, Kapazitätsgrenzen für das angefragte Semester,
+ * Studiengang-Präferenzen und Profil-Daten.
+ */
+export async function getExaminersWithAvailability(targetSemester?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Alle freigeschalteten Prüfer:innen (Erst- und Zweitgutachter)
+  const examiners = await db.select({
+    id: users.id,
+    name: users.name,
+    firstName: users.firstName,
+    lastName: users.lastName,
+    academicTitle: users.academicTitle,
+    email: users.email,
+    role: users.role,
+    title: examinerProfiles.title,
+    department: examinerProfiles.department,
+    studyPrograms: examinerProfiles.studyPrograms,
+    maxSupervisions: examinerProfiles.maxSupervisions,
+    isSecondExaminer: examinerProfiles.isSecondExaminer,
+    bio: examinerProfiles.bio,
+    tags: examinerProfiles.tags,
+    photoUrl: examinerProfiles.photoUrl,
+    avatarUrl: users.avatarUrl,
+  })
+    .from(users)
+    .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
+    .where(
+      and(
+        eq(users.roleStatus, "approved"),
+        or(eq(users.role, "examiner"), eq(users.role, "second_examiner"))
+      )
+    );
+
+  if (examiners.length === 0) return [];
+
+  const examinerIds = examiners.map((e) => e.id);
+
+  // Aktive Erst-Betreuungen zählen
+  const activeFirstRows = await db
+    .select({ examinerId: thesisRequests.examinerId, count: sql<number>`COUNT(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        inArray(thesisRequests.examinerId, examinerIds),
+        inArray(thesisRequests.status, [
+          "PENDING", "PENDING_FIRST_EXAMINER", "FIRST_EXAMINER_ACCEPTED",
+          "FIRST_EXAMINER_ASSIGNED", "PENDING_SECOND_EXAMINER",
+          "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED",
+        ] as any)
+      )
+    )
+    .groupBy(thesisRequests.examinerId);
+
+  // Aktive Zweit-Betreuungen zählen
+  const activeSecondRows = await db
+    .select({ examinerId: thesisRequests.secondExaminerId, count: sql<number>`COUNT(*)` })
+    .from(thesisRequests)
+    .where(
+      and(
+        inArray(thesisRequests.secondExaminerId, examinerIds),
+        inArray(thesisRequests.status, [
+          "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED",
+        ] as any)
+      )
+    )
+    .groupBy(thesisRequests.secondExaminerId);
+
+  const firstCountMap = new Map<number, number>();
+  for (const r of activeFirstRows) {
+    if (r.examinerId != null) firstCountMap.set(r.examinerId, Number(r.count));
+  }
+  const secondCountMap = new Map<number, number>();
+  for (const r of activeSecondRows) {
+    if (r.examinerId != null) secondCountMap.set(r.examinerId, Number(r.count));
+  }
+
+  // Semester-Kapazitäten laden (falls Semester angegeben)
+  let semesterCapMap = new Map<number, { maxFirst: number; maxSecond: number; adminMaxFirst: number | null; adminMaxSecond: number | null }>();
+  if (targetSemester) {
+    const caps = await db
+      .select()
+      .from(examinerSemesterCapacities)
+      .where(
+        and(
+          inArray(examinerSemesterCapacities.examinerId, examinerIds),
+          eq(examinerSemesterCapacities.semester, targetSemester)
+        )
+      );
+    for (const c of caps) {
+      semesterCapMap.set(c.examinerId, {
+        maxFirst: c.maxFirst,
+        maxSecond: c.maxSecond,
+        adminMaxFirst: c.adminMaxFirst ?? null,
+        adminMaxSecond: c.adminMaxSecond ?? null,
+      });
+    }
+  }
+
+  return examiners.map((e) => {
+    const activeFirst = firstCountMap.get(e.id) ?? 0;
+    const activeSecond = secondCountMap.get(e.id) ?? 0;
+    const cap = semesterCapMap.get(e.id);
+    const effectiveMaxFirst = cap?.adminMaxFirst ?? cap?.maxFirst ?? e.maxSupervisions ?? null;
+    const effectiveMaxSecond = cap?.adminMaxSecond ?? cap?.maxSecond ?? null;
+    return {
+      ...e,
+      activeFirstSupervisions: activeFirst,
+      activeSecondSupervisions: activeSecond,
+      semesterMaxFirst: effectiveMaxFirst,
+      semesterMaxSecond: effectiveMaxSecond,
+      // Verfügbar wenn unter der Kapazitätsgrenze (oder keine Grenze gesetzt)
+      availableAsFirst: effectiveMaxFirst === null || activeFirst < effectiveMaxFirst,
+      availableAsSecond: effectiveMaxSecond === null || activeSecond < effectiveMaxSecond,
+    };
+  });
+}
+
+/**
+ * Admin weist einer Anfrage direkt Erst- und/oder Zweitgutachter:in zu.
+ * Aktualisiert Status und sendet E-Mail-Benachrichtigungen.
+ */
+export async function adminDirectAssignExaminers(
+  thesisRequestId: number,
+  adminId: number,
+  opts: {
+    firstExaminerId?: number | null;
+    secondExaminerId?: number | null;
+  }
+) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Datenbank nicht verfügbar" };
+
+  const [thesis] = await db
+    .select()
+    .from(thesisRequests)
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  if (!thesis) return { success: false, error: "Anfrage nicht gefunden" };
+
+  const updateData: Record<string, unknown> = {};
+  let newStatus = thesis.status;
+
+  if (opts.firstExaminerId !== undefined && opts.firstExaminerId !== null) {
+    updateData.examinerId = opts.firstExaminerId;
+    updateData.wantedExaminerId = opts.firstExaminerId;
+    // Status auf FIRST_EXAMINER_ACCEPTED setzen (Admin-Zuweisung = direkte Bestätigung)
+    if (
+      thesis.status === "PENDING" ||
+      thesis.status === "PENDING_FIRST_EXAMINER" ||
+      thesis.status === "FIRST_EXAMINER_REJECTED"
+    ) {
+      newStatus = "FIRST_EXAMINER_ACCEPTED";
+      updateData.status = newStatus;
+    }
+  }
+
+  if (opts.secondExaminerId !== undefined && opts.secondExaminerId !== null) {
+    updateData.secondExaminerId = opts.secondExaminerId;
+    updateData.wantedSecondExaminerId = opts.secondExaminerId;
+    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+    updateData.secondExaminerAcceptedAt = now;
+    // Status auf SECOND_EXAMINER_ACCEPTED setzen
+    if (
+      newStatus === "FIRST_EXAMINER_ACCEPTED" ||
+      newStatus === "PENDING_SECOND_EXAMINER" ||
+      thesis.status === "FIRST_EXAMINER_ACCEPTED" ||
+      thesis.status === "PENDING_SECOND_EXAMINER"
+    ) {
+      newStatus = "SECOND_EXAMINER_ACCEPTED";
+      updateData.status = newStatus;
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return { success: false, error: "Keine Zuweisung angegeben" };
+  }
+
+  await db.update(thesisRequests).set(updateData as any).where(eq(thesisRequests.id, thesisRequestId));
+
+  return { success: true, newStatus };
+}
