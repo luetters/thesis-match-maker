@@ -430,13 +430,17 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       studentId: thesisRequests.studentId,
       studentName: users.name,
       studentEmail: users.email,
+      studentAvatarUrl: users.avatarUrl,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
+      firstExaminerAvatarUrl: firstExaminerAlias.avatarUrl,
       secondExaminerName: secondExaminerAlias.name,
       secondExaminerEmail: secondExaminerAlias.email,
+      secondExaminerAvatarUrl: secondExaminerAlias.avatarUrl,
       wantedSecondExaminerName: wantedSecondExaminerAlias.name,
       wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
+      wantedSecondExaminerAvatarUrl: wantedSecondExaminerAlias.avatarUrl,
       wantedExaminerId: thesisRequests.wantedExaminerId,
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
@@ -2317,6 +2321,7 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
   if (!db) return [];
   const firstExaminerAlias = aliasedTable(users, "first_examiner_ea");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_ea");
+  const wantedSecondExaminerAlias = aliasedTable(users, "wanted_second_examiner_ea");
   return db
     .select({
       id: thesisRequests.id,
@@ -2330,29 +2335,40 @@ export async function getExaminerAcceptedRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       examinerId: thesisRequests.examinerId,
       secondExaminerId: thesisRequests.secondExaminerId,
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
+      studentAvatarUrl: users.avatarUrl,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
+      firstExaminerAvatarUrl: firstExaminerAlias.avatarUrl,
       secondExaminerName: secondExaminerAlias.name,
+      secondExaminerEmail: secondExaminerAlias.email,
+      secondExaminerAvatarUrl: secondExaminerAlias.avatarUrl,
+      wantedSecondExaminerName: wantedSecondExaminerAlias.name,
+      wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
+      wantedSecondExaminerAvatarUrl: wantedSecondExaminerAlias.avatarUrl,
     })
     .from(thesisRequests)
     .leftJoin(users, eq(thesisRequests.studentId, users.id))
     .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(wantedSecondExaminerAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondExaminerAlias.id))
     .where(
       and(
-        // Alle Status, in denen die Anfrage als "angenommen" gilt
+        // Alle Status, in denen die Anfrage als "angenommen" gilt (inkl. Suche nach Zweitgutachter)
         inArray(thesisRequests.status, [
           "FIRST_EXAMINER_ACCEPTED",
+          "PENDING_SECOND_EXAMINER",
           "SECOND_EXAMINER_ASSIGNED",
           "SECOND_EXAMINER_SET",
           "MATCHED",
           "ACCEPTED",
           "REGISTERED",
           "COMPLETED",
+          "CONDITIONAL_ACCEPTANCE",
         ] as any),
         // Prüfer:in ist Erst-, Zweit- oder Wunschprüfer:in
         or(

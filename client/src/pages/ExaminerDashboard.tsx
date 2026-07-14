@@ -2531,54 +2531,57 @@ function ProgrammeSettings() {
   );
 }
 
+// ─── Mini-Avatar-Komponente ──────────────────────────────────────────────────
+function MiniAvatar({ name, avatarUrl }: { name?: string | null; avatarUrl?: string | null }) {
+  if (!name) return null;
+  const initials = name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <span className="inline-flex items-center gap-1 align-middle">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={name} className="w-5 h-5 rounded-full object-cover inline-block border border-gray-200 flex-shrink-0" />
+      ) : (
+        <span className="w-5 h-5 rounded-full bg-[#76B900]/20 text-[#006937] text-[9px] font-bold inline-flex items-center justify-center flex-shrink-0 border border-[#76B900]/30">{initials}</span>
+      )}
+      <span>{name}</span>
+    </span>
+  );
+}
+
 // ─── AcceptedStudentsSection ────────────────────────────────────────────────
 function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[] }) {
-  const [filterSemester, setFilterSemester] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"date" | "semester" | "status" | "name">("date");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data: refreshed = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const list: any[] = (refreshed as any[]).length > 0 ? (refreshed as any[]) : acceptedStudents;
 
-  const STATUS_LABELS: Record<string, string> = {
-    FIRST_EXAMINER_ACCEPTED: "Erstprüfer:in zugestimmt",
-    SECOND_EXAMINER_ASSIGNED: "Zweitprüfer:in zugewiesen",
-    SECOND_EXAMINER_SET: "Zweitprüfer:in gesetzt",
-    MATCHED: "Matched",
-    ACCEPTED: "Genehmigt",
-    REGISTERED: "Angemeldet",
-    COMPLETED: "Abgeschlossen",
-  };
+  // Abschnitt 1: Erstgutachter zugesagt, aber noch kein Zweitgutachter vorhanden
+  // Status: FIRST_EXAMINER_ACCEPTED oder CONDITIONAL_ACCEPTANCE ohne secondExaminerId
+  const firstExaminerOnly = list.filter((r: any) =>
+    (r.status === "FIRST_EXAMINER_ACCEPTED" || r.status === "CONDITIONAL_ACCEPTANCE") &&
+    !r.secondExaminerId
+  );
 
-  const semesters = Array.from(new Set(list.map((r: any) => r.targetSemester).filter(Boolean))) as string[];
-  const statuses = Array.from(new Set(list.map((r: any) => r.status).filter(Boolean))) as string[];
+  // Abschnitt 2: Auf Suche nach Zweitgutachter (PENDING_SECOND_EXAMINER oder SECOND_EXAMINER_ASSIGNED ohne Accepted)
+  const searchingSecond = list.filter((r: any) =>
+    r.status === "PENDING_SECOND_EXAMINER" ||
+    (r.status === "SECOND_EXAMINER_ASSIGNED" && !r.secondExaminerId)
+  );
 
-  const filtered = list.filter((r: any) => {
-    if (filterSemester !== "all" && r.targetSemester !== filterSemester) return false;
-    if (filterStatus !== "all" && r.status !== filterStatus) return false;
-    return true;
-  });
-
-  const sorted = [...filtered].sort((a: any, b: any) => {
-    let cmp = 0;
-    if (sortBy === "date") cmp = (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
-    else if (sortBy === "semester") cmp = (a.targetSemester ?? "").localeCompare(b.targetSemester ?? "");
-    else if (sortBy === "status") cmp = (a.status ?? "").localeCompare(b.status ?? "");
-    else if (sortBy === "name") cmp = (a.studentName ?? "").localeCompare(b.studentName ?? "");
-    return sortDir === "asc" ? cmp : -cmp;
-  });
+  // Abschnitt 3: Thesis Match – beide Gutachter vorhanden
+  const thesisMatch = list.filter((r: any) =>
+    r.secondExaminerId != null &&
+    ["SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "MATCHED", "ACCEPTED", "REGISTERED", "COMPLETED"].includes(r.status)
+  );
 
   const handleExportCSV = () => {
     const headers = ["Titel", "Studierende:r", "E-Mail", "Studiengang", "Semester", "Status", "Eingereicht am"];
-    const rows = sorted.map((r: any) => [
+    const rows = list.map((r: any) => [
       `"${(r.title ?? "").replace(/"/g, '""')}"`,
       `"${(r.studentName ?? "").replace(/"/g, '""')}"`,
       `"${(r.studentEmail ?? "").replace(/"/g, '""')}"`,
       `"${(r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "").replace(/"/g, '""')}"`,
       `"${(r.targetSemester ?? "").replace(/"/g, '""')}"`,
-      `"${(STATUS_LABELS[r.status] ?? r.status ?? "").replace(/"/g, '""')}"`,
+      `"${(r.status ?? "").replace(/"/g, '""')}"`,
       `"${r.createdAt ? new Date(r.createdAt).toLocaleDateString("de-DE") : ""}"`,
     ]);
     const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
@@ -2591,20 +2594,61 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
     URL.revokeObjectURL(url);
   };
 
-  const toggleSort = (field: "date" | "semester" | "status" | "name") => {
-    if (sortBy === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortBy(field); setSortDir("asc"); }
-  };
-  const SortIcon = ({ field }: { field: string }) => (
-    <span className="ml-1 text-gray-400">{sortBy === field ? (sortDir === "asc" ? "▲" : "▼") : "△"}</span>
+  const StudentRow = ({ req }: { req: any }) => (
+    <button
+      onClick={() => { setSelectedRequest(req); setIsModalOpen(true); }}
+      className="w-full text-left py-3 px-3 border-b border-gray-50 last:border-0 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-gray-900 truncate group-hover:text-[#76B900] transition-colors">
+            {req.title || "(kein Titel)"}
+          </p>
+          {req.studentName && (
+            <p className="text-xs font-medium text-[#76B900] mt-0.5">
+              <MiniAvatar name={req.studentName} avatarUrl={req.studentAvatarUrl} />
+            </p>
+          )}
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+            {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+              <span className="text-xs text-gray-500">
+                <span className="font-medium">Studiengang:</span>{" "}
+                {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+              </span>
+            )}
+            {req.targetSemester && (
+              <span className="text-xs text-gray-500">
+                <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+              </span>
+            )}
+            {req.createdAt && (
+              <span className="text-xs text-gray-400">
+                {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={req.status} />
+          <svg className="w-4 h-4 text-gray-300 group-hover:text-[#76B900] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        </div>
+      </div>
+    </button>
+  );
+
+  const SectionHeader = ({ title, count, color }: { title: string; count: number; color: string }) => (
+    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl mb-2 ${color}`}>
+      <span className="text-sm font-semibold">{title}</span>
+      <span className="text-xs font-medium bg-white/60 rounded-full px-2 py-0.5">{count}</span>
+    </div>
   );
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-gray-900">Betreute Studierende</h2>
-          <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{sorted.length}</span>
+          <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{list.length}</span>
         </div>
         <button
           onClick={handleExportCSV}
@@ -2615,89 +2659,158 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <select
-          value={filterSemester}
-          onChange={(e) => setFilterSemester(e.target.value)}
-          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#76B900]"
-        >
-          <option value="all">Alle Semester</option>
-          {sortSemesters(semesters).map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#76B900]"
-        >
-          <option value="all">Alle Status</option>
-          {statuses.map((s) => <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>)}
-        </select>
-        <div className="flex items-center gap-1 ml-auto">
-          <span className="text-xs text-gray-400">Sortieren:</span>
-          {(["name", "semester", "status", "date"] as const).map((field) => (
-            <button
-              key={field}
-              onClick={() => toggleSort(field)}
-              className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
-                sortBy === field ? "border-[#76B900] bg-[#76B900]/10 text-[#76B900] font-medium" : "border-gray-200 text-gray-500 hover:border-gray-300"
-              }`}
-            >
-              {{ name: "Name", semester: "Semester", status: "Status", date: "Datum" }[field]}
-              <SortIcon field={field} />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {!sorted.length ? (
-        <p className="text-sm text-gray-500">
-          {list.length === 0 ? "Noch keine angenommenen Anfragen vorhanden." : "Keine Einträge für die gewählten Filter."}
-        </p>
+      {list.length === 0 ? (
+        <p className="text-sm text-gray-500">Noch keine angenommenen Anfragen vorhanden.</p>
       ) : (
-        <div className="space-y-1">
-          {sorted.map((req: any) => (
-            <button
-              key={req.id}
-              onClick={() => { setSelectedRequest(req); setIsModalOpen(true); }}
-              className="w-full text-left py-3 px-3 border-b border-gray-50 last:border-0 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-[#76B900] transition-colors">
-                    {req.title || "(kein Titel)"}
-                  </p>
-                  {req.studentName && (
-                    <p className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</p>
-                  )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                    {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
-                      <span className="text-xs text-gray-500">
-                        <span className="font-medium">Studiengang:</span>{" "}
-                        {req.programmeAbbreviation ?? req.programmeName ?? req.department}
-                      </span>
-                    )}
-                    {req.targetSemester && (
-                      <span className="text-xs text-gray-500">
-                        <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
-                      </span>
-                    )}
-                    {req.createdAt && (
-                      <span className="text-xs text-gray-400">
-                        {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
-                      </span>
-                    )}
-                  </div>
-                  {req.studentEmail && (
-                    <p className="text-xs text-gray-400 mt-0.5">{req.studentEmail}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={req.status} />
-                  <svg className="w-4 h-4 text-gray-300 group-hover:text-[#76B900] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </div>
+        <div className="space-y-6">
+
+          {/* Abschnitt 1: Zusagen als Erstgutachter */}
+          {firstExaminerOnly.length > 0 && (
+            <div>
+              <SectionHeader title="Zusagen als Erstgutachter:in" count={firstExaminerOnly.length} color="bg-[#76B900]/10 text-[#006937]" />
+              <div className="space-y-0.5">
+                {firstExaminerOnly.map((req: any) => <StudentRow key={req.id} req={req} />)}
               </div>
-            </button>
-          ))}
+            </div>
+          )}
+
+          {/* Abschnitt 2: Auf Suche nach Zweitgutachter */}
+          {searchingSecond.length > 0 && (
+            <div>
+              <SectionHeader title="Auf der Suche nach Zweitgutachter:in" count={searchingSecond.length} color="bg-amber-50 text-amber-800" />
+              <div className="space-y-0.5">
+                {searchingSecond.map((req: any) => (
+                  <button
+                    key={req.id}
+                    onClick={() => { setSelectedRequest(req); setIsModalOpen(true); }}
+                    className="w-full text-left py-3 px-3 border-b border-gray-50 last:border-0 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-[#76B900] transition-colors">
+                          {req.title || "(kein Titel)"}
+                        </p>
+                        {req.studentName && (
+                          <p className="text-xs font-medium text-[#76B900] mt-0.5">
+                            <MiniAvatar name={req.studentName} avatarUrl={req.studentAvatarUrl} />
+                          </p>
+                        )}
+                        {/* Zweitgutachter-Suche: angefragte oder zugewiesene Person anzeigen */}
+                        {(req.wantedSecondExaminerName || req.secondExaminerName) && (
+                          <p className="text-xs text-amber-700 mt-1">
+                            <span className="font-medium">Zweitgutachter:in angefragt:</span>{" "}
+                            {req.wantedSecondExaminerId ? (
+                              <a
+                                href={`/examiner/profile/${req.wantedSecondExaminerId}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="underline hover:text-amber-900 inline-flex items-center gap-1"
+                              >
+                                <MiniAvatar name={req.wantedSecondExaminerName ?? req.secondExaminerName} avatarUrl={req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl} />
+                              </a>
+                            ) : (
+                              <MiniAvatar name={req.wantedSecondExaminerName ?? req.secondExaminerName} avatarUrl={req.wantedSecondExaminerAvatarUrl ?? req.secondExaminerAvatarUrl} />
+                            )}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                          {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Studiengang:</span>{" "}
+                              {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                            </span>
+                          )}
+                          {req.targetSemester && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={req.status} />
+                        <svg className="w-4 h-4 text-gray-300 group-hover:text-[#76B900] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Abschnitt 3: Thesis Match – beide Gutachter vorhanden */}
+          {thesisMatch.length > 0 && (
+            <div>
+              <SectionHeader title="Thesis Match" count={thesisMatch.length} color="bg-blue-50 text-blue-800" />
+              <div className="space-y-0.5">
+                {thesisMatch.map((req: any) => (
+                  <button
+                    key={req.id}
+                    onClick={() => { setSelectedRequest(req); setIsModalOpen(true); }}
+                    className="w-full text-left py-3 px-3 border-b border-gray-50 last:border-0 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-[#76B900] transition-colors">
+                          {req.title || "(kein Titel)"}
+                        </p>
+                        {req.studentName && (
+                          <p className="text-xs font-medium text-[#76B900] mt-0.5">
+                            <MiniAvatar name={req.studentName} avatarUrl={req.studentAvatarUrl} />
+                          </p>
+                        )}
+                        {/* Erst- und Zweitgutachter anzeigen */}
+                        <div className="flex flex-wrap gap-x-4 mt-1">
+                          {req.firstExaminerName && (
+                            <span className="text-xs text-gray-600">
+                              <span className="font-medium text-gray-400">Erst:</span>{" "}
+                              <MiniAvatar name={req.firstExaminerName} avatarUrl={req.firstExaminerAvatarUrl} />
+                            </span>
+                          )}
+                          {req.secondExaminerName && (
+                            <span className="text-xs text-gray-600">
+                              <span className="font-medium text-gray-400">Zweit:</span>{" "}
+                              {req.secondExaminerId ? (
+                                <a
+                                  href={`/examiner/profile/${req.secondExaminerId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="underline hover:text-blue-700 inline-flex items-center gap-1"
+                                >
+                                  <MiniAvatar name={req.secondExaminerName} avatarUrl={req.secondExaminerAvatarUrl} />
+                                </a>
+                              ) : (
+                                <MiniAvatar name={req.secondExaminerName} avatarUrl={req.secondExaminerAvatarUrl} />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                          {(req.programmeAbbreviation ?? req.programmeName ?? req.department) && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Studiengang:</span>{" "}
+                              {req.programmeAbbreviation ?? req.programmeName ?? req.department}
+                            </span>
+                          )}
+                          {req.targetSemester && (
+                            <span className="text-xs text-gray-500">
+                              <span className="font-medium">Semester:</span>{" "}{req.targetSemester}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={req.status} />
+                        <svg className="w-4 h-4 text-gray-300 group-hover:text-[#76B900] transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(firstExaminerOnly.length + searchingSecond.length + thesisMatch.length) === 0 && (
+            <p className="text-sm text-gray-500">Keine Einträge vorhanden.</p>
+          )}
         </div>
       )}
 
