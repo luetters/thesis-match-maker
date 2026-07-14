@@ -4066,6 +4066,69 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Erstgutachter:in lädt eine externe Person als Zweitgutachter:in ein
+    inviteExternalSecondExaminer: anyExaminerProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        inviteeEmail: z.string().email(),
+        inviteeName: z.string().min(1),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getThesisRequestById(input.thesisRequestId);
+        if (!req) throw new TRPCError({ code: "NOT_FOUND" });
+        const isFirstExaminer = req.examinerId === ctx.user.id;
+        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
+        if (!isFirstExaminer && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen können externe Zweitgutachter:innen einladen." });
+        if (req.status !== "FIRST_EXAMINER_ACCEPTED")
+          throw new TRPCError({ code: "BAD_REQUEST", message: 'Einladung nur bei Status "Erstgutachter:in zugesagt" möglich.' });
+        // Einladungstoken generieren
+        const crypto = await import("crypto");
+        const token = crypto.randomBytes(32).toString("hex");
+        const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { thesisRequests: tr } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        // Externe Daten und Token speichern
+        await db.update(tr)
+          .set({
+            externalSecondExaminerFirstName: input.inviteeName.split(" ").slice(0, -1).join(" ") || input.inviteeName,
+            externalSecondExaminerLastName: input.inviteeName.split(" ").slice(-1)[0] || "",
+            externalSecondExaminerEmail: input.inviteeEmail,
+            secondExaminerInviteToken: token,
+            secondExaminerInviteSentAt: now,
+            secondExaminerRequestedAt: now,
+          } as any)
+          .where(eqDrizzle(tr.id, input.thesisRequestId));
+        // Einladungs-E-Mail senden
+        const registerUrl = `${input.origin}/register?inviteToken=${token}&role=second_examiner&email=${encodeURIComponent(input.inviteeEmail)}&thesisId=${input.thesisRequestId}`;
+        const { sendEmail } = await import("./emailHelper");
+        const studentName = (req as any).studentName ?? "Studierende:r";
+        const firstExaminerName = ctx.user.name ?? "Erstgutachter:in";
+        const thesisTitle = req.title ?? "(kein Titel)";
+        await sendEmail({
+          to: input.inviteeEmail,
+          subject: `Einladung als Zweitgutachter:in – Thesis Match HTW Berlin`,
+          html: `<p>Sehr geehrte:r ${input.inviteeName},</p>
+<p>Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p>
+<p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p>
+<p>Um die Einladung anzunehmen, registrieren Sie sich bitte im Thesis-Match-System der HTW Berlin:</p>
+<p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p>
+<p>Der Link ist 14 Tage gültig.</p>
+<p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
+          text: `Sehr geehrte:r ${input.inviteeName},\n\nSie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
+        });
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "FIRST_EXAMINER_INVITED_EXTERNAL_SECOND",
+          reason: `Erstgutachter:in hat externe Person (${input.inviteeEmail}) als Zweitgutachter:in eingeladen.`,
+        });
+        return { success: true, token };
+      }),
+
     updateConditionalReason: anyExaminerProcedure
       .input(z.object({
         thesisRequestId: z.number(),

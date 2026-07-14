@@ -266,6 +266,9 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	externalSecondExaminerFirstName: varchar("external_second_examiner_first_name", { length: 128 }),
 	externalSecondExaminerLastName: varchar("external_second_examiner_last_name", { length: 128 }),
 	externalSecondExaminerEmail: varchar("external_second_examiner_email", { length: 320 }),
+	// Einladungstoken für externe Zweitgutachter-Einladung (Person noch nicht im System)
+	secondExaminerInviteToken: varchar("second_examiner_invite_token", { length: 128 }),
+	secondExaminerInviteSentAt: datetime("second_examiner_invite_sent_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter angefragt wurde
 	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter zugesagt hat

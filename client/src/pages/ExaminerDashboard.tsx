@@ -2551,6 +2551,20 @@ function MiniAvatar({ name, avatarUrl }: { name?: string | null; avatarUrl?: str
 function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[] }) {
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Zweitgutachter-Vorschlag-Modal
+  const [suggestModalReq, setSuggestModalReq] = useState<any>(null);
+  const [suggestMode, setSuggestMode] = useState<'select' | 'invite'>('select');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [examinerSearch, setExaminerSearch] = useState('');
+  const [selectedExaminerId, setSelectedExaminerId] = useState<number | null>(null);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestSuccess, setSuggestSuccess] = useState(false);
+  const [suggestError, setSuggestError] = useState('');
+  const utils = trpc.useUtils();
   const { data: refreshed = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const list: any[] = (refreshed as any[]).length > 0 ? (refreshed as any[]) : acceptedStudents;
 
@@ -2601,6 +2615,77 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
       ]),
     ];
     downloadCSV(rows, `betreute-studierende-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  // Prüfer-Liste für Auswahl
+  const { data: examinerListData = [] } = (trpc.examiner as any).list.useQuery();
+  const allExaminers: any[] = examinerListData as any[];
+
+  // Gefilterte Prüfer (ohne den Erstgutachter selbst)
+  const filteredExaminers = allExaminers.filter((ex: any) => {
+    if (!examinerSearch.trim()) return true;
+    const q = examinerSearch.toLowerCase();
+    return (
+      (ex.user?.name ?? '').toLowerCase().includes(q) ||
+      (ex.profile?.department ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  const openSuggestModal = (req: any) => {
+    setSuggestModalReq(req);
+    setSuggestMode('select');
+    setSelectedExaminerId(null);
+    setExaminerSearch('');
+    setInviteName('');
+    setInviteEmail('');
+    setInviteSuccess(false);
+    setSuggestSuccess(false);
+    setInviteError('');
+    setSuggestError('');
+  };
+
+  const closeSuggestModal = () => {
+    setSuggestModalReq(null);
+    setInviteSuccess(false);
+    setSuggestSuccess(false);
+  };
+
+  const handleSuggestExisting = async () => {
+    if (!suggestModalReq || !selectedExaminerId) return;
+    setSuggestLoading(true);
+    setSuggestError('');
+    try {
+      await (trpc.thesis as any).setWantedSecondExaminerByFirstExaminer.mutateAsync({
+        thesisRequestId: suggestModalReq.id,
+        secondExaminerId: selectedExaminerId,
+      });
+      setSuggestSuccess(true);
+      utils.examiner.getAcceptedRequests.invalidate();
+    } catch (e: any) {
+      setSuggestError(e?.message ?? 'Fehler beim Vorschlagen.');
+    } finally {
+      setSuggestLoading(false);
+    }
+  };
+
+  const handleInviteExternal = async () => {
+    if (!suggestModalReq || !inviteName.trim() || !inviteEmail.trim()) return;
+    setInviteLoading(true);
+    setInviteError('');
+    try {
+      await (trpc.thesis as any).inviteExternalSecondExaminer.mutateAsync({
+        thesisRequestId: suggestModalReq.id,
+        inviteeName: inviteName.trim(),
+        inviteeEmail: inviteEmail.trim(),
+        origin: window.location.origin,
+      });
+      setInviteSuccess(true);
+      utils.examiner.getAcceptedRequests.invalidate();
+    } catch (e: any) {
+      setInviteError(e?.message ?? 'Fehler beim Einladen.');
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const handleExportThesisMatchCSV = () => {
@@ -2719,7 +2804,21 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
             <div>
               <SectionHeader title="Zusagen als Erstgutachter:in" count={firstExaminerOnly.length} color="bg-[#76B900]/10 text-[#006937]" />
               <div className="space-y-0.5">
-                {firstExaminerOnly.map((req: any) => <StudentRow key={req.id} req={req} />)}
+                {firstExaminerOnly.map((req: any) => (
+                  <div key={req.id} className="group relative">
+                    <StudentRow req={req} />
+                    {/* Schalter: Zweitgutachter:in vorschlagen */}
+                    <div className="px-3 pb-2 -mt-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openSuggestModal(req); }}
+                        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[#76B900]/40 text-[#006937] bg-[#76B900]/5 hover:bg-[#76B900] hover:text-white hover:border-[#76B900] transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                        Zweitgutachter:in vorschlagen
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -2947,6 +3046,178 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
           request={selectedRequest}
           onStatusChange={() => (trpc.examiner as any).getAcceptedRequests?.invalidate?.()}
         />
+      )}
+
+      {/* Zweitgutachter:in vorschlagen Modal */}
+      {suggestModalReq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-semibold text-gray-900">Zweitgutachter:in vorschlagen</h3>
+                <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{suggestModalReq.title}</p>
+              </div>
+              <button onClick={closeSuggestModal} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Tab-Schalter */}
+            <div className="flex border-b border-gray-100 px-6 pt-4 gap-1">
+              <button
+                onClick={() => setSuggestMode('select')}
+                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                  suggestMode === 'select' ? 'bg-[#76B900]/10 text-[#006937] border-b-2 border-[#76B900]' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Aus Liste wählen
+              </button>
+              <button
+                onClick={() => setSuggestMode('invite')}
+                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                  suggestMode === 'invite' ? 'bg-amber-50 text-amber-800 border-b-2 border-amber-500' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Zweitgutachter:in ins System einladen
+              </button>
+            </div>
+
+            {/* Inhalt */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+
+              {/* Modus: Aus Liste wählen */}
+              {suggestMode === 'select' && (
+                <div className="space-y-3">
+                  {suggestSuccess ? (
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <div className="w-12 h-12 rounded-full bg-[#76B900]/15 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-[#76B900]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">Vorschlag gespeichert!</p>
+                      <p className="text-xs text-gray-500 text-center">Der/die Zweitgutachter:in wurde benachrichtigt und kann die Anfrage annehmen oder ablehnen.</p>
+                      <button onClick={closeSuggestModal} className="mt-2 px-4 py-2 rounded-lg bg-[#76B900] text-white text-sm font-medium">Schließen</button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Suche nach Name oder Fachbereich..."
+                        value={examinerSearch}
+                        onChange={(e) => setExaminerSearch(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#76B900]/30"
+                      />
+                      <div className="space-y-1 max-h-64 overflow-y-auto">
+                        {filteredExaminers.length === 0 && (
+                          <p className="text-sm text-gray-400 text-center py-4">Keine Prüfer:innen gefunden.</p>
+                        )}
+                        {filteredExaminers.map((ex: any) => {
+                          const name = ex.user?.name ?? '?';
+                          const dept = ex.profile?.department ?? '';
+                          const avatar = ex.profile?.photoUrl ?? ex.user?.avatarUrl;
+                          const initials = name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase();
+                          const isSelected = selectedExaminerId === ex.user?.id;
+                          // Nicht den Erstgutachter selbst anzeigen
+                          if (ex.user?.id === suggestModalReq?.examinerId) return null;
+                          return (
+                            <button
+                              key={ex.user?.id}
+                              onClick={() => setSelectedExaminerId(ex.user?.id)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                                isSelected ? 'bg-[#76B900]/10 border border-[#76B900]/40' : 'hover:bg-gray-50 border border-transparent'
+                              }`}
+                            >
+                              {avatar ? (
+                                <img src={avatar} alt={name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-bold inline-flex items-center justify-center flex-shrink-0">{initials}</span>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+                                {dept && <p className="text-xs text-gray-500 truncate">{dept}</p>}
+                              </div>
+                              {isSelected && (
+                                <svg className="w-4 h-4 text-[#76B900] ml-auto flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {suggestError && <p className="text-xs text-red-600">{suggestError}</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Modus: Externe Person einladen */}
+              {suggestMode === 'invite' && (
+                <div className="space-y-4">
+                  {inviteSuccess ? (
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">Einladung versendet!</p>
+                      <p className="text-xs text-gray-500 text-center">Die Person erhält eine E-Mail mit einem Registrierungslink und wird automatisch dieser Anfrage zugeordnet.</p>
+                      <button onClick={closeSuggestModal} className="mt-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium">Schließen</button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600">Die eingeladene Person erhält eine E-Mail mit einem Registrierungslink. Nach der Registrierung wird sie automatisch als Zweitgutachter:in für diese Anfrage vorgemerkt.</p>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Vollständiger Name</label>
+                          <input
+                            type="text"
+                            placeholder="z. B. Prof. Dr. Maria Müller"
+                            value={inviteName}
+                            onChange={(e) => setInviteName(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">E-Mail-Adresse</label>
+                          <input
+                            type="email"
+                            placeholder="vorname.nachname@htw-berlin.de"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+                          />
+                        </div>
+                      </div>
+                      {inviteError && <p className="text-xs text-red-600">{inviteError}</p>}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {!suggestSuccess && !inviteSuccess && (
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+                <button onClick={closeSuggestModal} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Abbrechen</button>
+                {suggestMode === 'select' ? (
+                  <button
+                    onClick={handleSuggestExisting}
+                    disabled={!selectedExaminerId || suggestLoading}
+                    className="px-5 py-2 rounded-lg bg-[#76B900] text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#5a8c00] transition-colors"
+                  >
+                    {suggestLoading ? 'Speichern...' : 'Vorschlag speichern'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleInviteExternal}
+                    disabled={!inviteName.trim() || !inviteEmail.trim() || inviteLoading}
+                    className="px-5 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-600 transition-colors"
+                  >
+                    {inviteLoading ? 'Einladung wird gesendet...' : 'Einladung senden'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
