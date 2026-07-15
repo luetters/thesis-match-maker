@@ -576,9 +576,15 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                     <button
                       key={topic.id}
                       type="button"
-                      disabled={topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)}
+                      disabled={(
+                        (topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1) ||
+                        (topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments))
+                      )}
                       onClick={() => {
-                        if (topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)) return;
+                        const isBooked =
+                          (topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1) ||
+                          (topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments));
+                        if (isBooked) return;
                         setSelectedTopicId(topic.id);
                         setForm(f => ({
                           ...f,
@@ -590,8 +596,9 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                         }));
                       }}
                       className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
-                        topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments)
-                          ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                        (topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1) ||
+                        (topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments))
+                          ? "border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed grayscale"
                           : selectedTopicId === topic.id
                             ? "border-[#76B900] bg-[#f6ffe0]"
                             : "border-gray-200 bg-white hover:border-gray-300"
@@ -605,12 +612,25 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
                             <span className="text-xs text-[#4a7a00] font-medium">{topic.examinerName}</span>
                             {topic.degreeType && <span className="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
                             <span className="px-1.5 py-0.5 rounded text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
-                            {topic.allowMultiple === 0 && <span className="px-1.5 py-0.5 rounded text-xs bg-orange-50 text-orange-600">Einmalig</span>}
-                            {topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments) && (
-                              <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-600 font-medium">Vergeben</span>
+                            {/* Einmalig-Badge: nur anzeigen wenn noch nicht ausgebucht */}
+                            {topic.allowMultiple === 0 && Number(topic.assignmentCount) < 1 && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-orange-50 text-orange-600 font-medium">Einmalig</span>
                             )}
+                            {/* Ausgebucht-Badge: allowMultiple=0 und bereits vergeben */}
+                            {topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1 && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700 font-semibold">Ausgebucht</span>
+                            )}
+                            {/* Ausgebucht-Badge: maxAssignments erreicht */}
+                            {topic.allowMultiple !== 0 && topic.maxAssignments !== null && Number(topic.assignmentCount) >= Number(topic.maxAssignments) && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700 font-semibold">Ausgebucht</span>
+                            )}
+                            {/* Vergabe-Zähler: nur wenn noch Plätze frei und maxAssignments gesetzt */}
                             {topic.maxAssignments !== null && Number(topic.assignmentCount) < Number(topic.maxAssignments) && (
                               <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">{Number(topic.assignmentCount)}/{topic.maxAssignments} vergeben</span>
+                            )}
+                            {/* Vergabe-Zähler für allowMultiple=0 (1/1) */}
+                            {topic.allowMultiple === 0 && topic.maxAssignments === null && Number(topic.assignmentCount) >= 1 && (
+                              <span className="px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-500">1/1 vergeben</span>
                             )}
                           </div>
                           {topic.tags && (

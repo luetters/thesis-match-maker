@@ -6269,11 +6269,28 @@ export async function notifySecondExaminerOfSelection(
 export async function getTopicsByExaminer(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
+  const et = examinerTopics;
   return db
-    .select()
-    .from(examinerTopics)
-    .where(eq(examinerTopics.examinerId, examinerId))
-    .orderBy(desc(examinerTopics.createdAt));
+    .select({
+      id: et.id,
+      examinerId: et.examinerId,
+      title: et.title,
+      description: et.description,
+      validFromSemester: et.validFromSemester,
+      validUntilSemester: et.validUntilSemester,
+      degreeType: et.degreeType,
+      language: et.language,
+      isActive: et.isActive,
+      allowMultiple: et.allowMultiple,
+      maxAssignments: et.maxAssignments,
+      tags: et.tags,
+      createdAt: et.createdAt,
+      updatedAt: et.updatedAt,
+      assignmentCount: sql<number>`(SELECT COUNT(*) FROM thesis_requests tr WHERE tr.examiner_topic_id = ${et.id} AND tr.status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER'))`,
+    })
+    .from(et)
+    .where(eq(et.examinerId, examinerId))
+    .orderBy(desc(et.createdAt));
 }
 
 export async function getActiveTopicsForExaminer(examinerId: number) {

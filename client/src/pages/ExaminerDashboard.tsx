@@ -4285,7 +4285,21 @@ function ExaminerTopicsManager() {
                     {topic.isActive ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktiv</span> : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Inaktiv</span>}
                     {topic.degreeType && <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">{topic.degreeType === "bachelor" ? "Bachelor" : "Master"}</span>}
                     <span className="px-2 py-0.5 rounded-full text-xs bg-gray-50 text-gray-600">{topic.language === "en" ? "Englisch" : topic.language === "both" ? "DE & EN" : "Deutsch"}</span>
-                    {!topic.allowMultiple && <span className="px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-600">Einmalig</span>}
+                    {/* Einmalig-Badge: nur wenn noch nicht ausgebucht */}
+                    {topic.allowMultiple === 0 && Number(topic.assignmentCount) < 1 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-orange-50 text-orange-600 font-medium">Einmalig</span>
+                    )}
+                    {/* Ausgebucht-Badge: allowMultiple=0 und bereits vergeben */}
+                    {topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-semibold">Ausgebucht</span>
+                    )}
+                    {/* Vergabe-Zähler für allowMultiple=0 ohne maxAssignments */}
+                    {topic.allowMultiple === 0 && topic.maxAssignments == null && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${Number(topic.assignmentCount) >= 1 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
+                        {Number(topic.assignmentCount)}/1 vergeben
+                      </span>
+                    )}
+                    {/* Vergabe-Zähler für maxAssignments */}
                     {topic.maxAssignments != null && (
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ Number(topic.assignmentCount) >= Number(topic.maxAssignments) ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600' }`}>
                         {Number(topic.assignmentCount)}/{topic.maxAssignments} vergeben
