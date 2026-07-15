@@ -1866,10 +1866,38 @@ function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormD
   );
 }
 
+const EDITABLE_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER"];
+
 function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { req: any; utils: any; withdrawMutation: any; onReuseRequest?: (draft: Partial<FormDraft>) => void }) {
   const [showRegPreview, setShowRegPreview] = useState(false);
   const [showSummaryPreview, setShowSummaryPreview] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState("");
+  // Bearbeiten-Modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: req.title ?? "",
+    description: req.description ?? "",
+    department: req.department ?? "",
+    abstract: req.abstract ?? "",
+    targetSemester: req.targetSemester ?? "",
+    language: (req.language === "en" ? "en" : "de") as "de" | "en",
+    degreeType: (req.degreeType === "master" ? "master" : "bachelor") as "bachelor" | "master",
+    studySpecializations: req.studySpecializations ?? "",
+    personalInterests: req.personalInterests ?? "",
+    keywords: Array.isArray(req.keywords)
+      ? req.keywords.join(", ")
+      : typeof req.keywords === "string"
+        ? (() => { try { return JSON.parse(req.keywords).join(", "); } catch { return req.keywords; } })()
+        : "",
+  });
+  const editMutation = trpc.thesisPhase27.editRequest.useMutation({
+    onSuccess: () => {
+      toast.success("Anfrage erfolgreich aktualisiert.");
+      setShowEditModal(false);
+      utils.thesis.myRequests.invalidate();
+    },
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
   const [condDocNote, setCondDocNote] = useState("");
   const [condDocUploading, setCondDocUploading] = useState(false);
   const condDocFileRef = useRef<HTMLInputElement>(null);
@@ -2336,6 +2364,37 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               </button>
             </>
           )}
+          {/* Anfrage bearbeiten – nur bei noch nicht beantworteten Anfragen */}
+          {EDITABLE_STATUSES.includes(req.status) && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditForm({
+                  title: req.title ?? "",
+                  description: req.description ?? "",
+                  department: req.department ?? "",
+                  abstract: req.abstract ?? "",
+                  targetSemester: req.targetSemester ?? "",
+                  language: (req.language === "en" ? "en" : "de") as "de" | "en",
+                  degreeType: (req.degreeType === "master" ? "master" : "bachelor") as "bachelor" | "master",
+                  studySpecializations: req.studySpecializations ?? "",
+                  personalInterests: req.personalInterests ?? "",
+                  keywords: Array.isArray(req.keywords)
+                    ? req.keywords.join(", ")
+                    : typeof req.keywords === "string"
+                      ? (() => { try { return JSON.parse(req.keywords).join(", "); } catch { return req.keywords; } })()
+                      : "",
+                });
+                setShowEditModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-blue-600 border border-blue-200 hover:bg-blue-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Bearbeiten
+            </button>
+          )}
           {/* Anfrage zurückziehen – nur bei noch nicht beantworteten Anfragen */}
           {WITHDRAWABLE_STATUSES.includes(req.status) && (
               <AlertDialog>
@@ -2420,6 +2479,128 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               </button>
             )}
           </div>
+          {/* Bearbeiten-Modal */}
+          {showEditModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+                  <h2 className="text-lg font-semibold text-gray-900">Anfrage bearbeiten</h2>
+                  <button onClick={() => setShowEditModal(false)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+                    <strong>Hinweis:</strong> Sie können Ihre Anfrage bearbeiten, solange die Prüfer:in noch keine Entscheidung getroffen hat.
+                  </div>
+                  {/* Titel */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Titel der Abschlussarbeit <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))}
+                      maxLength={512}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  {/* Beschreibung */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung <span className="text-red-500">*</span></label>
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                      rows={4}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  {/* Abstract */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Abstract <span className="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea
+                      value={editForm.abstract}
+                      onChange={(e) => setEditForm(f => ({ ...f, abstract: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                  {/* Zeile: Semester + Sprache + Abschlussart */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Zielsemester</label>
+                      <input
+                        type="text"
+                        value={editForm.targetSemester}
+                        onChange={(e) => setEditForm(f => ({ ...f, targetSemester: e.target.value }))}
+                        placeholder="z. B. WS2025"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sprache</label>
+                      <select
+                        value={editForm.language}
+                        onChange={(e) => setEditForm(f => ({ ...f, language: e.target.value as "de" | "en" }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value="de">Deutsch</option>
+                        <option value="en">Englisch</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Abschluss</label>
+                      <select
+                        value={editForm.degreeType}
+                        onChange={(e) => setEditForm(f => ({ ...f, degreeType: e.target.value as "bachelor" | "master" }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value="bachelor">Bachelor</option>
+                        <option value="master">Master</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* Stichwörter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stichwörter <span className="text-gray-400 font-normal">(kommagetrennt, optional)</span></label>
+                    <input
+                      type="text"
+                      value={editForm.keywords}
+                      onChange={(e) => setEditForm(f => ({ ...f, keywords: e.target.value }))}
+                      placeholder="z. B. KI, Nachhaltigkeit, Datenanalyse"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={() => editMutation.mutate({
+                      thesisRequestId: req.id,
+                      title: editForm.title.trim(),
+                      description: editForm.description.trim(),
+                      department: editForm.department || undefined,
+                      abstract: editForm.abstract || undefined,
+                      targetSemester: editForm.targetSemester,
+                      language: editForm.language,
+                      degreeType: editForm.degreeType,
+                      studySpecializations: editForm.studySpecializations || undefined,
+                      personalInterests: editForm.personalInterests || undefined,
+                      keywords: editForm.keywords || undefined,
+                    })}
+                    disabled={editMutation.isPending || !editForm.title.trim() || !editForm.description.trim()}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {editMutation.isPending ? "Wird gespeichert…" : "Speichern"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {showRegPreview && (
             <RegistrationPdfPreviewModal
               thesisId={req.id}

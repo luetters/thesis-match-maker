@@ -3230,6 +3230,61 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Student: Eingereichte Anfrage bearbeiten (nur bei PENDING / PENDING_FIRST_EXAMINER)
+    editRequest: studentProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        title: z.string().min(1).max(512),
+        description: z.string().min(1),
+        department: z.string().max(255).optional(),
+        abstract: z.string().optional(),
+        targetSemester: z.string(),
+        language: z.enum(["de", "en"]).default("de"),
+        degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
+        studySpecializations: z.string().max(1000).optional(),
+        personalInterests: z.string().max(1000).optional(),
+        keywords: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbank nicht verfügbar" });
+        const [request] = await db
+          .select({ id: thesisRequests.id, studentId: thesisRequests.studentId, status: thesisRequests.status })
+          .from(thesisRequests)
+          .where(eq(thesisRequests.id, input.thesisRequestId))
+          .limit(1);
+        if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden" });
+        if (request.studentId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung" });
+        const editableStatuses = ["PENDING", "PENDING_FIRST_EXAMINER"];
+        if (!editableStatuses.includes(request.status)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Anfrage kann nicht mehr bearbeitet werden, da sie bereits von einer Prüfer:in bearbeitet wird." });
+        }
+        await db.update(thesisRequests)
+          .set({
+            title: input.title,
+            description: input.description,
+            department: input.department ?? undefined,
+            abstract: input.abstract ?? undefined,
+            targetSemester: input.targetSemester,
+            language: input.language,
+            degreeType: input.degreeType,
+            studySpecializations: input.studySpecializations ?? undefined,
+            personalInterests: input.personalInterests ?? undefined,
+            keywords: input.keywords
+              ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0))
+              : undefined,
+            updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          } as any)
+          .where(eq(thesisRequests.id, input.thesisRequestId));
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "THESIS_UPDATED_BY_STUDENT",
+          toStatus: request.status as any,
+        });
+        return { success: true };
+      }),
     // Gutachter:in: Anfrage akzeptieren (via Token)
     acceptRequest: publicProcedure
       .input(z.object({ token: z.string() }))
