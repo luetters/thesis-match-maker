@@ -591,6 +591,31 @@ export async function getAllAuditLogs() {
  * chronologisch zusammengeführt.
  */
 export async function getStudentThesisHistory(thesisRequestId: number, studentId: number) {
+  // Zweitgutachter-Felder und Erstgutachter-Name aus der Anfrage laden
+  const secondExaminerAlias = aliasedTable(users, "second_ex_user");
+  const firstExaminerAlias = aliasedTable(users, "first_ex_user");
+  const wantedSecondAlias = aliasedTable(users, "wanted_second_user");
+  const [reqRow] = await (await getDb())!
+    .select({
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
+      wantedSecondExaminerName: wantedSecondAlias.name,
+      secondExaminerId: thesisRequests.secondExaminerId,
+      secondExaminerName: secondExaminerAlias.name,
+      firstExaminerId: thesisRequests.examinerId,
+      firstExaminerName: firstExaminerAlias.name,
+      secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
+      secondExaminerAcceptedAt: thesisRequests.secondExaminerAcceptedAt,
+      externalSecondExaminerFirstName: thesisRequests.externalSecondExaminerFirstName,
+      externalSecondExaminerLastName: thesisRequests.externalSecondExaminerLastName,
+      externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
+    })
+    .from(thesisRequests)
+    .leftJoin(wantedSecondAlias, eq(thesisRequests.wantedSecondExaminerId, wantedSecondAlias.id))
+    .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
+    .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+
   const db = await getDb();
   if (!db) return [];
 
@@ -663,7 +688,60 @@ export async function getStudentThesisHistory(thesisRequestId: number, studentId
     read: r.read === 1,
   }));
 
-  const combined = [...auditEntries, ...notifEntries].sort(
+  // Synthetische Einträge für Zweitgutachter-Status
+  const syntheticEntries: HistoryEntry[] = [];
+
+  if (reqRow) {
+    const now = new Date().toISOString();
+
+    if (!reqRow.wantedSecondExaminerId && !reqRow.secondExaminerId) {
+      // Kein Zweitgutachter angefragt
+      syntheticEntries.push({
+        id: "synthetic-no-second",
+        kind: "audit",
+        title: "SECOND_EXAMINER_STATUS",
+        detail: "Bisher kein Zweitgutachter angefragt.",
+        fromStatus: null,
+        toStatus: null,
+        actorName: null,
+        actorRole: null,
+        createdAt: now,
+      });
+    } else if (reqRow.wantedSecondExaminerId && !reqRow.secondExaminerId) {
+      // Zweitgutachter angefragt aber noch nicht bestätigt
+      const wantedName = reqRow.wantedSecondExaminerName ?? "Unbekannt";
+      const requestedAt = reqRow.secondExaminerRequestedAt ?? now;
+      syntheticEntries.push({
+        id: "synthetic-second-requested",
+        kind: "audit",
+        title: "SECOND_EXAMINER_STATUS",
+        detail: `Zweitgutachter:in ${wantedName} angefragt.`,
+        fromStatus: null,
+        toStatus: null,
+        actorName: null,
+        actorRole: null,
+        createdAt: requestedAt,
+      });
+    } else if (reqRow.secondExaminerId) {
+      // Zweitgutachter bestätigt → Thesis Match
+      const firstExaminerName = reqRow.firstExaminerName ?? "Erstgutachter:in";
+      const secondExaminerName = reqRow.secondExaminerName ?? "Zweitgutachter:in";
+      const acceptedAt = reqRow.secondExaminerAcceptedAt ?? now;
+      syntheticEntries.push({
+        id: "synthetic-thesis-match",
+        kind: "audit",
+        title: "THESIS_MATCH",
+        detail: `Kommission gebildet aus ${firstExaminerName} (Erstgutachter:in) und ${secondExaminerName} (Zweitgutachter:in) am ${new Date(acceptedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}.`,
+        fromStatus: null,
+        toStatus: null,
+        actorName: null,
+        actorRole: null,
+        createdAt: acceptedAt,
+      });
+    }
+  }
+
+  const combined = [...auditEntries, ...notifEntries, ...syntheticEntries].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
