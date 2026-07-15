@@ -3130,25 +3130,31 @@ export const appRouter = router({
           }
         }
 
-        const result = await createThesisRequest({
-          studentId: ctx.user.id,
-          wantedExaminerId: input.wantedExaminerId,
-          title: input.title,
-          description: input.description,
-          department: input.department ?? "",
-          abstract: input.abstract ?? "",
-          targetSemester: input.targetSemester,
-          language: input.language,
-          degreeType: input.degreeType,
-          exposeUrl: input.exposeUrl,
-          exposeKey: input.exposeKey,
-          status: "PENDING_FIRST_EXAMINER",
-          studySpecializations: input.studySpecializations ?? null,
-          personalInterests: input.personalInterests ?? null,
-          keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
-          examinerTopicId: input.examinerTopicId ?? null,
-          hasOwnTopic: input.hasOwnTopic ? 1 : 0,
-        } as any);
+        let result: any;
+        try {
+          result = await createThesisRequest({
+            studentId: ctx.user.id,
+            wantedExaminerId: input.wantedExaminerId,
+            title: input.title,
+            description: input.description,
+            department: input.department ?? "",
+            abstract: input.abstract ?? "",
+            targetSemester: input.targetSemester,
+            language: input.language,
+            degreeType: input.degreeType,
+            exposeUrl: input.exposeUrl,
+            exposeKey: input.exposeKey,
+            status: "PENDING_FIRST_EXAMINER",
+            studySpecializations: input.studySpecializations ?? null,
+            personalInterests: input.personalInterests ?? null,
+            keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
+            examinerTopicId: input.examinerTopicId ?? null,
+            hasOwnTopic: input.hasOwnTopic ? 1 : 0,
+          } as any);
+        } catch (dbErr: any) {
+          console.error("[createWithWantedExaminer] DB Insert Fehler:", dbErr?.message ?? dbErr);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Datenbankfehler beim Erstellen der Anfrage: ${dbErr?.message ?? "Unbekannter Fehler"}` });
+        }
 
         const insertId = (result as { insertId: number }).insertId;
         
