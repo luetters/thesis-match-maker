@@ -3097,13 +3097,36 @@ export const appRouter = router({
         exposeKey: z.string().optional(),
         studySpecializations: z.string().max(1000).optional(),
         personalInterests: z.string().max(1000).optional(),
-        keywords: z.string().max(500).optional(),
+                keywords: z.string().max(500).optional(),
+        examinerTopicId: z.number().int().positive().optional(),
+        hasOwnTopic: z.boolean().default(true).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        
         // Prüfe ob Student offene Anfrage hat
         if (await hasOpenThesisRequest(ctx.user.id)) {
           throw new TRPCError({ code: "CONFLICT", message: "Student hat bereits eine offene Anfrage" });
+        }
+
+        // Prüfen ob Thema-Limit erreicht ist (allowMultiple=0 oder maxAssignments)
+        if (input.examinerTopicId) {
+          const db = await getDb();
+          if (db) {
+            const tid = input.examinerTopicId;
+            const rows = await db.execute(
+              sql`SELECT allow_multiple, max_assignments, (SELECT COUNT(*) FROM thesis_requests WHERE examiner_topic_id = ${tid} AND status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER')) AS assignment_count FROM examiner_topics WHERE id = ${tid}`
+            ) as any;
+            const topic = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0][0] : rows[0]) : null;
+            if (topic) {
+              // allowMultiple=0 bedeutet: Thema darf nur 1x vergeben werden
+              if (Number(topic.allow_multiple) === 0 && Number(topic.assignment_count) >= 1) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema kann nur einmal vergeben werden und ist bereits belegt.' });
+              }
+              // maxAssignments-Limit prüfen
+              if (topic.max_assignments !== null && Number(topic.assignment_count) >= Number(topic.max_assignments)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema hat die maximale Anzahl an Vergaben erreicht und kann nicht mehr gewählt werden.' });
+              }
+            }
+          }
         }
 
         const result = await createThesisRequest({
@@ -3122,7 +3145,9 @@ export const appRouter = router({
           studySpecializations: input.studySpecializations ?? null,
           personalInterests: input.personalInterests ?? null,
           keywords: input.keywords ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0)) : null,
-        });
+          examinerTopicId: input.examinerTopicId ?? null,
+          hasOwnTopic: input.hasOwnTopic ? 1 : 0,
+        } as any);
 
         const insertId = (result as { insertId: number }).insertId;
         
