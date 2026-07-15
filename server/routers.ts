@@ -1,7 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { sql } from "drizzle-orm";
+import { sql, eq, and, notInArray, aliasedTable } from "drizzle-orm";
+import { examinerTopics, users, thesisRequests } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
   assignExaminerToThesis,
@@ -3487,6 +3488,68 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         await deleteExaminerTopic(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // Prüfer:in: Studierende zu einem Thema abrufen
+    getStudentsByTopic: protectedProcedure
+      .input(z.object({ topicId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const db = await getDb();
+        if (!db) return [];
+        const studentAlias = aliasedTable(users, "topic_student");
+        const rows = await db
+          .select({
+            requestId: thesisRequests.id,
+            title: thesisRequests.title,
+            status: thesisRequests.status,
+            createdAt: thesisRequests.createdAt,
+            studentId: studentAlias.id,
+            studentName: studentAlias.name,
+            studentEmail: studentAlias.email,
+            studentAvatarUrl: studentAlias.avatarUrl,
+          })
+          .from(thesisRequests)
+          .innerJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
+          .where(
+            and(
+              eq(thesisRequests.examinerTopicId, input.topicId),
+              notInArray(thesisRequests.status, ['WITHDRAWN', 'REJECTED', 'CANCELLED'] as const)
+            )
+          )
+          .orderBy(thesisRequests.createdAt);
+        return rows;
+      }),
+
+    // Prüfer:in: Vergabelimit eines Themas erhöhen
+    increaseTopicLimit: protectedProcedure
+      .input(z.object({
+        topicId: z.number().int().positive(),
+        newMaxAssignments: z.number().int().min(1).max(999),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        // Sicherstellen dass das Thema dem Prüfer gehört
+        const [topic] = await db
+          .select({ id: examinerTopics.id, examinerId: examinerTopics.examinerId, maxAssignments: examinerTopics.maxAssignments, allowMultiple: examinerTopics.allowMultiple })
+          .from(examinerTopics)
+          .where(eq(examinerTopics.id, input.topicId))
+          .limit(1);
+        if (!topic) throw new TRPCError({ code: "NOT_FOUND", message: "Thema nicht gefunden." });
+        if (topic.examinerId !== ctx.user.id && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Dieses Thema gehört Ihnen nicht." });
+        }
+        await db
+          .update(examinerTopics)
+          .set({ maxAssignments: input.newMaxAssignments, allowMultiple: 1 })
+          .where(eq(examinerTopics.id, input.topicId));
         return { success: true };
       }),
   }),

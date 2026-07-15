@@ -4120,6 +4120,33 @@ function SelectedDropZone({ isOver }: { isOver: boolean }) {
   );
 }
 
+
+// ─── TopicStudentsList ────────────────────────────────────────────────────────
+function TopicStudentsList({ topicId }: { topicId: number }) {
+  const { data: students = [], isLoading } = trpc.thesisPhase27.getStudentsByTopic.useQuery({ topicId });
+  if (isLoading) return <p className="text-xs text-gray-400">Lade Studierende…</p>;
+  if (students.length === 0) return <p className="text-xs text-gray-400">Keine Studierenden zugeordnet.</p>;
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-700 mb-1.5">Vergebene Studierende:</p>
+      <div className="space-y-1.5">
+        {students.map((s: any) => (
+          <div key={s.requestId} className="flex items-center gap-2">
+            {s.studentAvatarUrl ? (
+              <img src={s.studentAvatarUrl} alt={s.studentName ?? ""} className="w-6 h-6 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                <span className="text-xs font-semibold text-gray-500">{(s.studentName ?? "?")[0]?.toUpperCase()}</span>
+              </div>
+            )}
+            <a href={`/profile/${s.studentId}`} className="text-xs font-medium text-[#4a7a00] hover:underline">{s.studentName}</a>
+            <span className="text-xs text-gray-400">• {s.title}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 // ─── Examiner Topics Manager ──────────────────────────────────────────────────────
 function ExaminerTopicsManager() {
   const utils = trpc.useUtils();
@@ -4140,6 +4167,14 @@ function ExaminerTopicsManager() {
     tags: "",
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [expandedTopicId, setExpandedTopicId] = useState<number | null>(null);
+  const [increaseLimitTopicId, setIncreaseLimitTopicId] = useState<number | null>(null);
+  const [newLimitValue, setNewLimitValue] = useState<string>("");
+
+  const increaseTopicLimitMutation = trpc.thesisPhase27.increaseTopicLimit.useMutation({
+    onSuccess: () => { toast.success("Vergabelimit erfolgreich erhöht."); utils.thesisPhase27.getMyTopics.invalidate(); setIncreaseLimitTopicId(null); setNewLimitValue(""); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const createMutation = trpc.thesisPhase27.createTopic.useMutation({
     onSuccess: () => { toast.success("Thema erfolgreich angelegt."); utils.thesisPhase27.getMyTopics.invalidate(); resetForm(); },
@@ -4325,6 +4360,61 @@ function ExaminerTopicsManager() {
                   <button type="button" onClick={() => setDeleteConfirmId(topic.id)} className="px-2.5 py-1 rounded-lg text-xs border border-red-200 text-red-600 hover:bg-red-50">Löschen</button>
                 </div>
               </div>
+
+              {/* Ausgebucht: Limit erhöhen + Studierende anzeigen */}
+              {(() => {
+                const isBooked =
+                  (topic.allowMultiple === 0 && Number(topic.assignmentCount) >= 1) ||
+                  (topic.maxAssignments != null && Number(topic.assignmentCount) >= Number(topic.maxAssignments));
+                if (!isBooked) return null;
+                return (
+                  <div className="mt-3 pt-3 border-t border-red-100">
+                    {/* Limit erhöhen */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-medium text-red-700">Thema ausgebucht — Limit erhöhen?</span>
+                      {increaseLimitTopicId === topic.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            type="number"
+                            min={Number(topic.assignmentCount) + 1}
+                            max={999}
+                            value={newLimitValue}
+                            onChange={e => setNewLimitValue(e.target.value)}
+                            placeholder={`Neues Limit (min. ${Number(topic.assignmentCount) + 1})`}
+                            className="h-7 text-xs w-44"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = parseInt(newLimitValue, 10);
+                              if (!val || val <= Number(topic.assignmentCount)) {
+                                toast.error(`Bitte einen Wert größer als ${topic.assignmentCount} eingeben.`);
+                                return;
+                              }
+                              increaseTopicLimitMutation.mutate({ topicId: topic.id, newMaxAssignments: val });
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-xs bg-green-600 text-white hover:bg-green-700 font-medium"
+                          >
+                            Speichern
+                          </button>
+                          <button type="button" onClick={() => { setIncreaseLimitTopicId(null); setNewLimitValue(""); }} className="px-2.5 py-1 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50">Abbrechen</button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setIncreaseLimitTopicId(topic.id); setNewLimitValue(""); }}
+                          className="px-2.5 py-1 rounded-lg text-xs border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium"
+                        >
+                          + Limit erhöhen
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Vergebene Studierende */}
+                    <TopicStudentsList topicId={topic.id} />
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
