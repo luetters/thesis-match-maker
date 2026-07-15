@@ -541,6 +541,14 @@ function AuditLogView() {
     SECOND_EXAMINER_ASSIGNED: "Zweitprüfer:in zugewiesen",
     EXAMINER_ACCEPTED: "Prüfer:in angenommen",
     EXAMINER_REJECTED: "Prüfer:in abgelehnt",
+    THESIS_UPDATED_BY_STUDENT: "Anfrage bearbeitet",
+    THESIS_WITHDRAWN: "Anfrage zurückgezogen",
+    SECOND_EXAMINER_INVITED: "Zweitgutachter:in eingeladen",
+    SECOND_EXAMINER_SUGGESTED: "Zweitgutachter:in vorgeschlagen",
+    CONDITIONAL_ACCEPTANCE: "Bedingte Annahme",
+    SECOND_EXAMINER_ACCEPTED: "Zweitgutachter:in bestätigt",
+    SECOND_EXAMINER_REJECTED: "Zweitgutachter:in abgelehnt",
+    THESIS_MATCHED: "Thesis Match",
   };
 
   const actionColors: Record<string, string> = {
@@ -550,7 +558,46 @@ function AuditLogView() {
     SECOND_EXAMINER_ASSIGNED: "bg-primary/10 text-primary",
     EXAMINER_ACCEPTED: "bg-primary/10 text-primary",
     EXAMINER_REJECTED: "bg-red-100 text-red-700",
+    THESIS_UPDATED_BY_STUDENT: "bg-indigo-100 text-indigo-700",
+    THESIS_WITHDRAWN: "bg-red-100 text-red-700",
+    SECOND_EXAMINER_INVITED: "bg-amber-100 text-amber-700",
+    SECOND_EXAMINER_SUGGESTED: "bg-amber-100 text-amber-700",
+    CONDITIONAL_ACCEPTANCE: "bg-orange-100 text-orange-700",
+    SECOND_EXAMINER_ACCEPTED: "bg-primary/10 text-primary",
+    SECOND_EXAMINER_REJECTED: "bg-red-100 text-red-700",
+    THESIS_MATCHED: "bg-purple-100 text-purple-700",
   };
+
+  // Diff-Anzeige für THESIS_UPDATED_BY_STUDENT
+  function DiffView({ metadata }: { metadata: unknown }) {
+    if (!metadata || typeof metadata !== "object") return null;
+    const meta = metadata as { diff?: Array<{ field: string; label: string; oldValue: string | null; newValue: string | null }>; changedFieldCount?: number };
+    if (!meta.diff || meta.diff.length === 0) return <span className="text-xs text-gray-400">Keine Änderungen</span>;
+    return (
+      <div className="space-y-1.5 mt-1">
+        {meta.diff.map((d) => (
+          <div key={d.field} className="text-xs">
+            <span className="font-medium text-gray-700">{d.label}:</span>
+            <div className="ml-2 mt-0.5 space-y-0.5">
+              {d.oldValue !== null && (
+                <div className="flex items-start gap-1">
+                  <span className="text-red-500 font-mono text-[10px] mt-0.5 flex-shrink-0">−</span>
+                  <span className="text-red-700 bg-red-50 px-1.5 py-0.5 rounded line-clamp-2 break-all">{d.oldValue}</span>
+                </div>
+              )}
+              {d.newValue !== null && (
+                <div className="flex items-start gap-1">
+                  <span className="text-green-500 font-mono text-[10px] mt-0.5 flex-shrink-0">+</span>
+                  <span className="text-green-700 bg-green-50 px-1.5 py-0.5 rounded line-clamp-2 break-all">{d.newValue}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const [expandedDiffId, setExpandedDiffId] = useState<number | null>(null);
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>;
@@ -580,45 +627,72 @@ function AuditLogView() {
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Aktion</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Anfrage-ID</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Von → Nach</th>
-              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Notiz</th>
+              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Notiz / Änderungen</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
-              <tr key={log.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-                <td className="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
-                  {new Date(log.createdAt).toLocaleString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </td>
-                <td className="px-5 py-3">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${actionColors[log.action] ?? "bg-gray-100 text-gray-700"}`}>
-                    {actionLabels[log.action] ?? log.action}
-                  </span>
-                </td>
-                <td className="px-5 py-3 hidden md:table-cell">
-                  <span className="text-xs text-gray-600 font-mono">#{log.thesisRequestId}</span>
-                </td>
-                <td className="px-5 py-3 hidden lg:table-cell">
-                  {log.fromStatus || log.toStatus ? (
-                    <span className="text-xs text-gray-600">
-                      {log.fromStatus && <StatusBadge status={log.fromStatus} />}
-                      {log.fromStatus && log.toStatus && <span className="mx-1.5 text-gray-400">→</span>}
-                      {log.toStatus && <StatusBadge status={log.toStatus} />}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
+            {logs.map((log) => {
+              const hasDiff: boolean = log.action === "THESIS_UPDATED_BY_STUDENT" && !!log.metadata && typeof log.metadata === "object" && Array.isArray((log.metadata as any).diff) && (log.metadata as any).diff.length > 0;
+              const isExpanded = expandedDiffId === log.id;
+              return (
+                <>
+                  <tr key={log.id} className={`border-b border-gray-50 last:border-0 transition-colors ${hasDiff ? "cursor-pointer hover:bg-indigo-50/40" : "hover:bg-gray-50/50"}`}
+                    onClick={() => hasDiff ? setExpandedDiffId(isExpanded ? null : log.id) : undefined}
+                  >
+                    <td className="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString("de-DE", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${actionColors[log.action] ?? "bg-gray-100 text-gray-700"}`}>
+                          {actionLabels[log.action] ?? log.action}
+                        </span>
+                        {hasDiff && (
+                          <span className="text-xs text-indigo-500 font-medium">
+                            {String((log.metadata as { changedFieldCount?: number }).changedFieldCount ?? 0)} Feld{(log.metadata as { changedFieldCount?: number }).changedFieldCount !== 1 ? "er" : ""} geändert
+                            <span className="ml-1">{isExpanded ? "▲" : "▼"}</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 hidden md:table-cell">
+                      <span className="text-xs text-gray-600 font-mono">#{log.thesisRequestId}</span>
+                    </td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      {log.fromStatus || log.toStatus ? (
+                        <span className="text-xs text-gray-600">
+                          {log.fromStatus && <StatusBadge status={log.fromStatus} />}
+                          {log.fromStatus && log.toStatus && <span className="mx-1.5 text-gray-400">→</span>}
+                          {log.toStatus && <StatusBadge status={log.toStatus} />}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      {hasDiff
+                        ? <span className="text-xs text-indigo-500">{isExpanded ? "Zum Schließen klicken" : "Zum Anzeigen klicken"}</span>
+                        : <span className="text-xs text-gray-500 line-clamp-1">{log.reason ?? "—"}</span>
+                      }
+                    </td>
+                  </tr>
+                  {hasDiff && isExpanded && (
+                    <tr key={`diff-${log.id}`} className="bg-indigo-50/60 border-b border-indigo-100">
+                      <td colSpan={5} className="px-8 py-4">
+                        <div className="text-xs font-semibold text-indigo-700 mb-2">Geänderte Felder im Vergleich zur vorherigen Version:</div>
+                        <DiffView metadata={log.metadata} />
+                      </td>
+                    </tr>
                   )}
-                </td>
-                <td className="px-5 py-3 hidden lg:table-cell">
-                  <span className="text-xs text-gray-500 line-clamp-1">{log.reason ?? "—"}</span>
-                </td>
-              </tr>
-            ))}
+                </>
+              );
+            })}
           </tbody>
         </table>
       </div>

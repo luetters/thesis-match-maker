@@ -3259,6 +3259,59 @@ export const appRouter = router({
         if (!editableStatuses.includes(request.status)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Anfrage kann nicht mehr bearbeitet werden, da sie bereits von einer Prüfer:in bearbeitet wird." });
         }
+        // Vorherige Werte laden für Diff
+        const [oldData] = await db
+          .select({
+            title: thesisRequests.title,
+            description: thesisRequests.description,
+            department: thesisRequests.department,
+            abstract: thesisRequests.abstract,
+            targetSemester: thesisRequests.targetSemester,
+            language: thesisRequests.language,
+            degreeType: thesisRequests.degreeType,
+            studySpecializations: thesisRequests.studySpecializations,
+            personalInterests: thesisRequests.personalInterests,
+            keywords: thesisRequests.keywords,
+          })
+          .from(thesisRequests)
+          .where(eq(thesisRequests.id, input.thesisRequestId))
+          .limit(1);
+        const newKeywords = input.keywords
+          ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0))
+          : undefined;
+        // Diff berechnen
+        const FIELD_LABELS: Record<string, string> = {
+          title: "Titel",
+          description: "Beschreibung",
+          department: "Fachbereich",
+          abstract: "Abstract",
+          targetSemester: "Zielsemester",
+          language: "Sprache",
+          degreeType: "Abschlussart",
+          studySpecializations: "Studienvertiefungen",
+          personalInterests: "Persönliche Interessen",
+          keywords: "Stichwörter",
+        };
+        const diffEntries: { field: string; label: string; oldValue: string | null; newValue: string | null }[] = [];
+        const compareFields: Array<{ key: keyof typeof oldData; newVal: string | null | undefined }> = [
+          { key: "title", newVal: input.title },
+          { key: "description", newVal: input.description },
+          { key: "department", newVal: input.department ?? null },
+          { key: "abstract", newVal: input.abstract ?? null },
+          { key: "targetSemester", newVal: input.targetSemester },
+          { key: "language", newVal: input.language },
+          { key: "degreeType", newVal: input.degreeType },
+          { key: "studySpecializations", newVal: input.studySpecializations ?? null },
+          { key: "personalInterests", newVal: input.personalInterests ?? null },
+          { key: "keywords", newVal: newKeywords ?? null },
+        ];
+        for (const { key, newVal } of compareFields) {
+          const oldVal = oldData ? (oldData[key] as string | null ?? null) : null;
+          const nv = newVal ?? null;
+          if (oldVal !== nv) {
+            diffEntries.push({ field: key, label: FIELD_LABELS[key] ?? key, oldValue: oldVal, newValue: nv });
+          }
+        }
         await db.update(thesisRequests)
           .set({
             title: input.title,
@@ -3270,9 +3323,7 @@ export const appRouter = router({
             degreeType: input.degreeType,
             studySpecializations: input.studySpecializations ?? undefined,
             personalInterests: input.personalInterests ?? undefined,
-            keywords: input.keywords
-              ? JSON.stringify(input.keywords.split(",").map((k: string) => k.trim()).filter((k: string) => k.length > 0))
-              : undefined,
+            keywords: newKeywords ?? undefined,
             updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
           } as any)
           .where(eq(thesisRequests.id, input.thesisRequestId));
@@ -3282,6 +3333,7 @@ export const appRouter = router({
           actorRole: ctx.user.role,
           action: "THESIS_UPDATED_BY_STUDENT",
           toStatus: request.status as any,
+          metadata: { diff: diffEntries, changedFieldCount: diffEntries.length } as any,
         });
         return { success: true };
       }),
