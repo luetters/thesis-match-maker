@@ -2040,6 +2040,20 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               <StatusBadge status={req.status} />
+              {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full max-w-[180px]">
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <span className="truncate">
+                    {buildFullName({
+                      firstName: (req as any).wantedSecondExaminerFirstName,
+                      lastName: (req as any).wantedSecondExaminerLastName,
+                      academicTitle: (req as any).wantedSecondExaminerAcademicTitle,
+                      name: (req as any).wantedSecondExaminerName,
+                    }) || `2. Pr\u00fcfer:in #${(req as any).wantedSecondExaminerId}`}
+                  </span>
+                  <span className="text-[10px] text-amber-400 flex-shrink-0">(angefragt)</span>
+                </span>
+              )}
             </div>
           </div>
 

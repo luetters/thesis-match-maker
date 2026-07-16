@@ -1177,3 +1177,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend ExaminerDashboard: Auffälliges Badge "Unter Vorbehalt" in der Antragsübersichtsliste
 - [x] Frontend ExaminerDashboard: Zeitstempel der Vorbehalt-Erteilung neben dem Vorbehalt-Text anzeigen
 - [x] Frontend ExaminerDashboard: Button "Vorbehalt aufheben" (1-Klick → reguläre Zusage)
+
+## Feature: Zweitgutachter-Name unter StatusBadge in Studierenden-Anfragenliste
+
+- [x] StudentDashboard: Wenn wantedSecondExaminerId gesetzt ist, Name des angefragten Zweitgutachters unter dem StatusBadge anzeigen
