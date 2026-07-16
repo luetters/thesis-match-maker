@@ -1943,10 +1943,13 @@ function RequestsView() {
     // Ausstehende Freigaben (PENDING_FIRST_EXAMINER) – noch nicht in assignedRequests enthalten
   const assignedIds = new Set(((assignedRequests ?? []) as any[]).map((r: any) => r.id));
   const newPending = ((pendingRequests ?? []) as any[]).filter((r: any) => !assignedIds.has(r.id));
-  // Alle Anfragen zusammenführen: zuerst ausstehende Freigaben, dann zugewiesene
+  // Alle Anfragen zusammenführen: assignedRequests hat Vorrang (aktuellerer Status)
+  // newPending ergänzt nur Anfragen, die noch nicht in assignedRequests sind
   const allRequests = [
-    ...newPending.map((r) => ({ ...r, exposeUrl: (r as any).exposeUrl ?? null, degreeType: (r as any).degreeType ?? null, language: (r as any).language ?? null })),
     ...(assignedRequests ?? []),
+    ...newPending
+      .filter((r: any) => !assignedIds.has(r.id))
+      .map((r) => ({ ...r, exposeUrl: (r as any).exposeUrl ?? null, degreeType: (r as any).degreeType ?? null, language: (r as any).language ?? null })),
   ];
   // Alle verfügbaren Semester extrahieren
   const allSemesters = sortSemesters(

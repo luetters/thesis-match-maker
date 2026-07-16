@@ -1185,3 +1185,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## Feature: Warnung bei überfälliger Zweitgutachter-Anfrage
 
 - [x] StudentDashboard: Badge wird rot + Warnsymbol wenn secondExaminerRequestedAt > 7 Tage ohne Antwort
+
+## Bug: Doppelte Anfragen im Prüferinnen-Dashboard (offen + Unter Vorbehalt)
+
+- [x] Backend db.ts: getThesisRequestsByExaminer dedupliziert Ergebnisse (CONDITIONAL_ACCEPTANCE nicht in pending-Zählung)
+- [x] Frontend ExaminerDashboard: stats.pending schließt CONDITIONAL_ACCEPTANCE explizit aus
