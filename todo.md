@@ -1158,3 +1158,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend DashboardLayout: Menü-Sichtbarkeit für 'programme_director' ergänzen
 - [x] Frontend Login/Home: Routing für 'programme_director' → /admin oder /examiner
 - [x] Frontend RoleApprovalTab: 'programme_director' in VERWALTUNG_ROLES aufnehmen
+
+## Feature: Vorbehalt-Dialog – größeres Textfeld + BCC an Absender
+
+- [x] Frontend ExaminerDashboard: Vorbehalt-Dialog auf max-w-2xl vergrößern, Textarea auf rows={10} und resize-y setzen, Dialog-Höhe auf max-h-[90vh] mit overflow-y-auto
+- [x] Backend routers.ts: Bei conditional-E-Mail BCC an den sendenden Prüfer (ctx.user.email) hinzufügen

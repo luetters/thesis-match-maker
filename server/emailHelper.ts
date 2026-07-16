@@ -180,12 +180,14 @@ export async function sendEmail({
   html,
   text,
   attachments,
+  bcc,
 }: {
   to: string;
   subject: string;
   html: string;
   text?: string;
   attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>;
+  bcc?: string;
 }): Promise<boolean> {
   const cfg = getTransporter();
   if (!cfg) {
@@ -193,7 +195,7 @@ export async function sendEmail({
     return false;
   }
   try {
-    const info = await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text, attachments });
+    const info = await cfg.transporter.sendMail({ from: cfg.from, to, subject, html, text, attachments, ...(bcc ? { bcc } : {}) });
     console.log(`[Email] Gesendet an ${to} | Betreff: ${subject} | ID: ${info.messageId}`);
     return true;
   } catch (err: unknown) {

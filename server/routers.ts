@@ -972,7 +972,14 @@ export const appRouter = router({
               reason: input.conditionalReason ?? "",
               lang: studentLang,
             });
-            await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
+            // BCC an den sendenden Prüfer (Absender erhält eine Kopie)
+            const examinerBcc = examiner?.email ?? null;
+            await sendEmail({
+              to: student.email,
+              subject: tpl.subject,
+              html: tpl.html,
+              ...(examinerBcc ? { bcc: examinerBcc } : {}),
+            });
           }
         } else {
           await notifyThesisParticipants({

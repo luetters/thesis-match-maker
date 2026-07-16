@@ -1436,7 +1436,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       {showConditionalDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowConditionalDialog(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col"
+            style={{ maxHeight: "90vh" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -1453,11 +1454,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Vorbehalt / Begründung <span className="text-red-500">*</span></label>
                 <textarea
-                  rows={4}
+                  rows={10}
                   value={conditionalReason}
                   onChange={(e) => setConditionalReason(e.target.value)}
                   placeholder="z.B. Thema muss noch konkretisiert werden, Expose ausstehend, Rücksprache mit Fachbereich nötig ..."
-                  className="w-full px-3 py-2 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                  className="w-full px-3 py-2 border border-amber-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-y min-h-[200px]"
                 />
               </div>
             </div>
