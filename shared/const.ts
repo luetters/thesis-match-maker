@@ -45,6 +45,37 @@ export function getStatusBadge(status: string) {
   return STATUS_BADGE[status] ?? { label: status, className: "bg-gray-100 text-gray-600 border border-gray-200", hex: "#9CA3AF" };
 }
 
+/**
+ * Gibt die Initialen aus Vor- und Nachname zurück (je 1. Buchstabe).
+ * Akademischer Titel wird bewusst ignoriert.
+ * Fallback: erstes und zweites Wort des name-Feldes, dann E-Mail-Anfang.
+ */
+export function getInitialsFromParts(opts: {
+  firstName?: string | null;
+  lastName?: string | null;
+  name?: string | null;
+  email?: string | null;
+}): string {
+  const first = opts.firstName?.trim();
+  const last = opts.lastName?.trim();
+  if (first && last) return (first[0] + last[0]).toUpperCase();
+  if (first) return first.slice(0, 2).toUpperCase();
+  if (last) return last.slice(0, 2).toUpperCase();
+  // Fallback: name-Feld (ohne Titel – letzten und ersten Buchstaben der Wörter)
+  if (opts.name) {
+    const parts = opts.name.trim().split(/\s+/);
+    // Überspringe bekannte Titel-Präfixe
+    const titlePrefixes = new Set(["prof.", "dr.", "prof", "dr", "dipl.", "dipl", "ing.", "ing"]);
+    const nameParts = parts.filter(p => !titlePrefixes.has(p.toLowerCase()));
+    if (nameParts.length >= 2) return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    if (nameParts.length === 1) return nameParts[0].slice(0, 2).toUpperCase();
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return opts.name.slice(0, 2).toUpperCase();
+  }
+  if (opts.email) return opts.email.slice(0, 2).toUpperCase();
+  return "??";
+}
+
 export function buildFullName(opts: {
   firstName?: string | null;
   lastName?: string | null;

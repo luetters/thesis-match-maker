@@ -59,8 +59,11 @@ function formatDate(date: Date | string | null | undefined, lang: string): strin
 function getInitials(name: string | null | undefined, email: string | null | undefined): string {
   if (name) {
     const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
+    const titlePrefixes = new Set(["prof.", "dr.", "prof", "dr", "dipl.", "dipl", "ing.", "ing", "jun."]);
+    const nameParts = parts.filter(p => !titlePrefixes.has(p.toLowerCase()));
+    const effective = nameParts.length > 0 ? nameParts : parts;
+    if (effective.length >= 2) return (effective[0][0] + effective[effective.length - 1][0]).toUpperCase();
+    return effective[0]?.slice(0, 2).toUpperCase() ?? name.slice(0, 2).toUpperCase();
   }
   if (email) return email.slice(0, 2).toUpperCase();
   return "??";

@@ -246,7 +246,18 @@ function DashboardLayoutContent({
                 >
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
-                      {(buildFullName({ firstName: (user as any)?.firstName, lastName: (user as any)?.lastName, academicTitle: (user as any)?.academicTitle, name: user?.name }) || "-").charAt(0).toUpperCase()}
+                      {(() => {
+                            const fn = (user as any)?.firstName?.trim();
+                            const ln = (user as any)?.lastName?.trim();
+                            if (fn && ln) return (fn[0] + ln[0]).toUpperCase();
+                            if (fn) return fn[0].toUpperCase();
+                            if (ln) return ln[0].toUpperCase();
+                            const n = (user?.name ?? "").trim();
+                            const tp = new Set(["prof.","dr.","prof","dr","dipl.","dipl","ing.","ing","jun."]);
+                            const parts = n.split(/\s+/).filter(p => !tp.has(p.toLowerCase()));
+                            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                            return n.slice(0, 1).toUpperCase() || "-";
+                          })()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
