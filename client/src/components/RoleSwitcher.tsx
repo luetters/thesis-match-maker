@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
+import { getRoleBadge } from "@shared/const";
 
 type Role = "admin" | "examiner" | "student";
 
@@ -17,12 +18,6 @@ const ROLE_LABELS: Record<Role, string> = {
   admin: "Verwaltung",
   examiner: "Prüfer:in",
   student: "Studierende:r",
-};
-
-const ROLE_COLORS: Record<Role, string> = {
-  admin: "bg-red-100 text-red-800",
-  examiner: "bg-blue-100 text-blue-800",
-  student: "bg-primary/15 text-primary",
 };
 
 export function RoleSwitcher() {
@@ -64,11 +59,7 @@ export function RoleSwitcher() {
           className="gap-2"
           disabled={switchRoleMutation.isPending}
         >
-          <span
-            className={`px-2 py-1 rounded text-xs font-semibold ${
-              ROLE_COLORS[currentRole]
-            }`}
-          >
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadge(currentRole).className}`}>
             {ROLE_LABELS[currentRole]}
           </span>
           <ChevronDown className="w-4 h-4" />
@@ -90,7 +81,7 @@ export function RoleSwitcher() {
             disabled={role === currentRole || switchRoleMutation.isPending}
             className="cursor-pointer"
           >
-            <span className={`px-2 py-1 rounded text-xs font-semibold mr-2 ${ROLE_COLORS[role]}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold mr-2 ${getRoleBadge(role).className}`}>
               {ROLE_LABELS[role]}
             </span>
             {role === currentRole && <span className="text-xs text-gray-500">(aktuell)</span>}

@@ -10,7 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getRoleBadge } from "@shared/const";
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,20 +19,18 @@ const ROLE_LABELS: Record<string, string> = {
   examiner: "Prüfer:in",
   student: "Studierende:r",
   user: "Nutzer:in",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  superadmin: "bg-purple-100 text-purple-800 border border-purple-200",
-  admin: "bg-blue-100 text-blue-800 border border-blue-200",
-  examiner: "bg-primary/15 text-primary border border-primary/20",
-  student: "bg-amber-100 text-amber-800 border border-amber-200",
-  user: "bg-gray-100 text-gray-700 border border-gray-200",
+  second_examiner: "Zweitprüfer:in",
+  pav: "PA-Vorsitzende:r",
+  dean: "Dekan:in",
+  vice_dean: "Prodekan:in",
+  programme_director: "Studiengangsleitung",
 };
 
 function RoleBadge({ role }: { role: string }) {
+  const badge = getRoleBadge(role);
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-700"}`}>
-      {ROLE_LABELS[role] ?? role}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.className}`}>
+      {ROLE_LABELS[role] ?? badge.label}
     </span>
   );
 }

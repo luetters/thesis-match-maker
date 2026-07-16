@@ -1195,3 +1195,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 - [x] AdminDashboard: setLocation() in Render-Phase durch useEffect ersetzen (war Ursache des Infinite Loops)
 - [x] AdminDashboard: Rollen-Badges deduplizieren (Array.from(new Set())) und Index-basierten Key verwenden (kein doppelter key="admin")
+
+## Feature: Rollen-Badge-Farben
+
+- [x] shared/const.ts: ROLE_BADGE_COLORS Mapping (eine Farbe pro Rolle) als zentrale Konstante
+- [x] AdminDashboard: Rollen-Badges nutzen ROLE_BADGE_COLORS
+- [x] RoleApprovalTab: Rollen-Badges nutzen ROLE_BADGE_COLORS
+- [x] RoleSwitcher: Rollen-Badges nutzen ROLE_BADGE_COLORS
+- [x] SuperadminDashboard: Rollen-Badges nutzen ROLE_BADGE_COLORS

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { buildFullName } from "@shared/const";
+import { buildFullName, getRoleBadge } from "@shared/const";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Studierende:r",
@@ -80,6 +80,7 @@ function UserCard({
   }) || user.email || `Nutzer:in #${user.id}`;
 
   const requestedLabel = ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–";
+  const requestedBadge = getRoleBadge(user.requestedRole ?? "");
   const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
 
   return (
@@ -90,9 +91,9 @@ function UserCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-gray-900 truncate">{displayName}</span>
-              <Badge variant="outline" className="text-xs shrink-0">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${requestedBadge.className}`}>
                 {requestedLabel}
-              </Badge>
+              </span>
               <button
                 onClick={() => onEditRole(user)}
                 className="text-gray-400 hover:text-blue-600 transition-colors"

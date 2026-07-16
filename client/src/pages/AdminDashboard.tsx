@@ -11,7 +11,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Cart
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { buildFullName, getStatusBadge } from "@shared/const";
+import { buildFullName, getStatusBadge, getRoleBadge } from "@shared/const";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -1076,19 +1076,22 @@ function UserManagement() {
                   <td className="px-5 py-3">
                     {/* Multi-Rollen: alle Rollen als Badges anzeigen */}
                     <div className="flex flex-wrap gap-1">
-                      {Array.from(new Set<string>((user as any).roles?.length ? (user as any).roles : [user.role])).map((r: string, idx: number) => (
-                        <span key={`${r}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                          {roleLabels[r] ?? r}
-                          {((user as any).roles?.length ?? 0) > 1 && (
-                            <button
-                              type="button"
-                              title={`Rolle "${roleLabels[r] ?? r}" entfernen`}
-                              onClick={() => removeRole.mutate({ userId: user.id, role: r as any })}
-                              className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors leading-none"
-                            >×</button>
-                          )}
-                        </span>
-                      ))}
+                      {Array.from(new Set<string>((user as any).roles?.length ? (user as any).roles : [user.role])).map((r: string, idx: number) => {
+                          const badge = getRoleBadge(r);
+                          return (
+                            <span key={`${r}-${idx}`} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${badge.className}`}>
+                              {badge.label}
+                              {((user as any).roles?.length ?? 0) > 1 && (
+                                <button
+                                  type="button"
+                                  title={`Rolle "${badge.label}" entfernen`}
+                                  onClick={() => removeRole.mutate({ userId: user.id, role: r as any })}
+                                  className="ml-0.5 opacity-60 hover:opacity-100 hover:text-red-600 transition-opacity leading-none"
+                                >×</button>
+                              )}
+                            </span>
+                          );
+                        })}
                       {/* Rolle hinzufügen */}
                       <select
                         value=""

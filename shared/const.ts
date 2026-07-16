@@ -76,6 +76,28 @@ export function getInitialsFromParts(opts: {
   return "??";
 }
 
+/**
+ * Tailwind-CSS-Klassen für Rollen-Badges (bg + text + border).
+ * Jede Rolle erhält eine eigene Farbe für schnelle visuelle Unterscheidung.
+ */
+export const ROLE_BADGE: Record<string, { label: string; className: string }> = {
+  student:           { label: "Studierende:r",       className: "bg-sky-100 text-sky-800 border border-sky-200" },
+  examiner:          { label: "Prüfer:in",            className: "bg-violet-100 text-violet-800 border border-violet-200" },
+  second_examiner:   { label: "Zweitprüfer:in",       className: "bg-purple-100 text-purple-800 border border-purple-200" },
+  admin:             { label: "Admin",                className: "bg-rose-100 text-rose-800 border border-rose-200" },
+  superadmin:        { label: "Superadmin",           className: "bg-red-100 text-red-800 border border-red-200" },
+  user:              { label: "Nutzer:in",            className: "bg-gray-100 text-gray-700 border border-gray-200" },
+  pav:               { label: "PA-Vorsitzende:r",     className: "bg-teal-100 text-teal-800 border border-teal-200" },
+  dean:              { label: "Dekan:in",             className: "bg-emerald-100 text-emerald-800 border border-emerald-200" },
+  vice_dean:         { label: "Prodekan:in",          className: "bg-green-100 text-green-800 border border-green-200" },
+  programme_director:{ label: "Studiengangsleitung",  className: "bg-amber-100 text-amber-800 border border-amber-200" },
+};
+
+/** Gibt className + label für eine Rolle zurück (Fallback: grau). */
+export function getRoleBadge(role: string) {
+  return ROLE_BADGE[role] ?? { label: role, className: "bg-gray-100 text-gray-700 border border-gray-200" };
+}
+
 export function buildFullName(opts: {
   firstName?: string | null;
   lastName?: string | null;
