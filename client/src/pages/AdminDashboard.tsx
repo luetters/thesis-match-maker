@@ -379,14 +379,28 @@ function AllRequests() {
                       <span className="text-sm text-gray-600">{req.targetSemester ?? "–"}</span>
                     </td>
                     <td className="px-5 py-4 hidden xl:table-cell">
-                      {(() => {
-                        const rows: PersonRow[] = [];
-                        if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
-                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: (req as any).wantedExaminerEmail ?? "", profileId: (req as any).wantedExaminerId ?? null, status: "angefragt" });
-                        else rows.push({ role: "Erstgutachter:in", name: "–", contact: "", status: "ausstehend" });
-                        if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
-                        return <InvolvedPersonsTable rows={rows} compact />;
-                      })()}
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-20 shrink-0">Erst:</span>
+                          {req.firstExaminerName ? (
+                            <span className="text-xs font-medium text-gray-800 truncate max-w-[140px]">{req.firstExaminerName}</span>
+                          ) : (req as any).wantedExaminerName ? (
+                            <span className="text-xs font-medium text-amber-700 truncate max-w-[140px]">{(req as any).wantedExaminerName} <span className="text-[10px] text-amber-400">(angefragt)</span></span>
+                          ) : (
+                            <span className="text-xs text-gray-300">–</span>
+                          )}
+                        </div>
+                        {(req.secondExaminerName || (req as any).wantedSecondExaminerName) && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-20 shrink-0">Zweit:</span>
+                            {req.secondExaminerName ? (
+                              <span className="text-xs font-medium text-gray-800 truncate max-w-[140px]">{req.secondExaminerName}</span>
+                            ) : (
+                              <span className="text-xs font-medium text-amber-700 truncate max-w-[140px]">{(req as any).wantedSecondExaminerName} <span className="text-[10px] text-amber-400">(angefragt)</span></span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4 hidden xl:table-cell">
                       <span className="text-xs text-gray-500">
@@ -1421,17 +1435,29 @@ function Overview() {
                           </span>
                         )}
                       </div>
-                      {/* Beteiligte Personen – Tabelle */}
-                      {(() => {
-                        const rows: PersonRow[] = [];
-                        if (req.studentName) rows.push({ role: "Studierende:r", name: req.studentName, contact: (req as any).studentEmail ?? "", profileId: (req as any).studentId ?? null, status: req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "" });
-                        if (req.firstExaminerName) rows.push({ role: "Erstgutachter:in", name: req.firstExaminerName, contact: (req as any).firstExaminerEmail ?? "", profileId: (req as any).examinerId ?? null, status: "zugewiesen" });
-                        else if ((req as any).wantedExaminerName) rows.push({ role: "Erstgutachter:in", name: (req as any).wantedExaminerName, contact: (req as any).wantedExaminerEmail ?? "", profileId: (req as any).wantedExaminerId ?? null, status: "angefragt" });
-                        if (req.secondExaminerName) rows.push({ role: "Zweitgutachter:in", name: req.secondExaminerName, contact: (req as any).secondExaminerEmail ?? "", profileId: (req as any).secondExaminerId ?? null, status: "zugewiesen" });
-                        else if ((req as any).wantedSecondExaminerName) rows.push({ role: "Zweitgutachter:in", name: (req as any).wantedSecondExaminerName, contact: (req as any).wantedSecondExaminerEmail ?? "", status: "angefragt" });
-                        if (rows.length === 0) return null;
-                        return <div className="mt-2"><InvolvedPersonsTable rows={rows} compact /></div>;
-                      })()}
+                      {/* Beteiligte Personen – kompakte Pill-Liste */}
+                      <div className="mt-2 flex flex-col gap-1">
+                        {(req.firstExaminerName || (req as any).wantedExaminerName) && (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-gray-400 shrink-0">Erstgutachter:in:</span>
+                            {req.firstExaminerName ? (
+                              <span className="font-medium text-gray-800 truncate">{req.firstExaminerName}</span>
+                            ) : (
+                              <span className="font-medium text-amber-700 truncate">{(req as any).wantedExaminerName} <span className="text-[10px] text-amber-500">(angefragt)</span></span>
+                            )}
+                          </div>
+                        )}
+                        {(req.secondExaminerName || (req as any).wantedSecondExaminerName) && (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-gray-400 shrink-0">Zweitgutachter:in:</span>
+                            {req.secondExaminerName ? (
+                              <span className="font-medium text-gray-800 truncate">{req.secondExaminerName}</span>
+                            ) : (
+                              <span className="font-medium text-amber-700 truncate">{(req as any).wantedSecondExaminerName} <span className="text-[10px] text-amber-500">(angefragt)</span></span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <StatusBadge status={req.status} />
                   </div>
