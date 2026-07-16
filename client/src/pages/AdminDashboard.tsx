@@ -5,7 +5,7 @@ import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1076,8 +1076,8 @@ function UserManagement() {
                   <td className="px-5 py-3">
                     {/* Multi-Rollen: alle Rollen als Badges anzeigen */}
                     <div className="flex flex-wrap gap-1">
-                      {((user as any).roles?.length ? (user as any).roles : [user.role]).map((r: string) => (
-                        <span key={r} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                      {Array.from(new Set<string>((user as any).roles?.length ? (user as any).roles : [user.role])).map((r: string, idx: number) => (
+                        <span key={`${r}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
                           {roleLabels[r] ?? r}
                           {((user as any).roles?.length ?? 0) > 1 && (
                             <button
@@ -1628,14 +1628,16 @@ function StatisticsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  
-  // Zugriffskontrolle: Nur Admins und Superadmins
-  if (user && !hasRole("admin") && !hasRole("superadmin")) {
-    setLocation("/");
-    return null;
-  }
-  
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates">("overview");
+
+  // Zugriffskontrolle: Nur Admins und Superadmins – navigate in useEffect, nie in Render-Phase
+  useEffect(() => {
+    if (user && !hasRole("admin") && !hasRole("superadmin")) {
+      setLocation("/");
+    }
+  }, [user, hasRole, setLocation]);
+
+  if (user && !hasRole("admin") && !hasRole("superadmin")) return null;
   const { data: pendingForNav } = trpc.roleApproval.getPending.useQuery(undefined, { refetchInterval: 60000 });
   const pendingNavCount = (pendingForNav ?? []).length;
   const navItems = useNavItems(pendingNavCount);

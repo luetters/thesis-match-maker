@@ -1190,3 +1190,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 - [x] Backend db.ts: getThesisRequestsByExaminer dedupliziert Ergebnisse (CONDITIONAL_ACCEPTANCE nicht in pending-Zählung)
 - [x] Frontend ExaminerDashboard: stats.pending schließt CONDITIONAL_ACCEPTANCE explizit aus
+
+## Bug: Absturz "An unexpected error occurred" (React Infinite Loop)
+
+- [x] AdminDashboard: setLocation() in Render-Phase durch useEffect ersetzen (war Ursache des Infinite Loops)
+- [x] AdminDashboard: Rollen-Badges deduplizieren (Array.from(new Set())) und Index-basierten Key verwenden (kein doppelter key="admin")
