@@ -297,7 +297,7 @@ export default function Home() {
     const roles: string[] = (user as any).roles ?? (role ? [role] : []);
     const hasR = (r: string) => roles.includes(r);
     if (hasR("superadmin")) navigate("/superadmin");
-    else if (hasR("admin") || hasR("pav") || hasR("dean") || hasR("vice_dean")) navigate("/admin");
+    else if (hasR("admin") || hasR("pav") || hasR("dean") || hasR("vice_dean") || hasR("programme_director")) navigate("/admin");
     else if (hasR("student")) navigate("/student");
     else if (hasR("examiner") || hasR("second_examiner")) navigate("/examiner");
   }, [isAuthenticated, loading, user, navigate]);

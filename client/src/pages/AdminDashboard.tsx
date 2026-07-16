@@ -938,18 +938,22 @@ function UserManagement() {
     pav: "PA-Vorsitzende:r",
     dean: "Dekan:in",
     vice_dean: "Prodekan:in",
+    programme_director: "Studiengangsleitung",
   };
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>;
   }
 
-  const examinerRoles = ["examiner", "second_examiner", "pav", "dean", "vice_dean", "admin", "user"];
+  const examinerRoles = ["examiner", "second_examiner", "programme_director", "pav", "dean", "vice_dean", "admin", "user"];
   const studentRoles = ["student"];
   const query = searchQuery.trim().toLowerCase();
   const filteredUsers = users?.filter(({ user }) => {
-    // Multi-Rollen: Tab-Filter nutzt user.role (Legacy-Feld) als Haupt-Rolle
-    const matchesTab = userTab === "examiners" ? examinerRoles.includes(user.role) : studentRoles.includes(user.role);
+    // Multi-Rollen: Tab-Filter prüft alle Rollen des Nutzers
+    const allRoles: string[] = (user as any).roles?.length ? (user as any).roles : [user.role];
+    const matchesTab = userTab === "examiners"
+      ? allRoles.some((r) => examinerRoles.includes(r))
+      : allRoles.some((r) => studentRoles.includes(r));
     if (!matchesTab) return false;
     if (!query) return true;
     return (
@@ -1105,6 +1109,7 @@ function UserManagement() {
                         <option value="pav">PA-Vorsitzende:r</option>
                         <option value="dean">Dekan:in</option>
                         <option value="vice_dean">Prodekan:in</option>
+                        <option value="programme_director">Studiengangsleitung</option>
                         <option value="admin">Admin</option>
                         <option value="user">Nutzer:in</option>
                       </select>

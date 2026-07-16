@@ -242,7 +242,7 @@ const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 // Zweitprüfer:innen-Prozedur: Rolle 'examiner' ODER 'second_examiner' (+ Admin)
 const anyExaminerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (!userHasRole(ctx.user, "examiner") && !userHasRole(ctx.user, "second_examiner") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
+  if (!userHasRole(ctx.user, "examiner") && !userHasRole(ctx.user, "second_examiner") && !userHasRole(ctx.user, "programme_director") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen haben Zugriff." });
   }
   return next({ ctx });
@@ -522,7 +522,7 @@ export const appRouter = router({
           lastName: z.string().max(128).optional(),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
-          role: z.enum(["student", "examiner", "second_examiner", "admin"]),
+          role: z.enum(["student", "examiner", "second_examiner", "admin", "programme_director"]),
           matrikelNr: z.string().optional(),
           programmeId: z.number().int().positive().optional(),
           department: z.string().optional(),
@@ -550,11 +550,11 @@ export const appRouter = router({
               message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.",
             });
           }
-        } else if (input.role === "examiner" || input.role === "admin") {
+        } else if (input.role === "examiner" || input.role === "admin" || input.role === "programme_director") {
           if (!isHtwEmail) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit einer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
+              message: "Prüfer:innen, Studiengangsleitung und Verwaltungsmitarbeitende müssen sich mit einer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
             });
           }
         }
@@ -653,6 +653,7 @@ export const appRouter = router({
               examiner: "Prüfer:in (Erstprüfer:in)",
               second_examiner: "Zweitprüfer:in",
               admin: "Verwaltung",
+              programme_director: "Studiengangsleitung",
             };
             const roleLabel = roleLabels[input.role] ?? input.role;
             const siteOrigin = input.origin ?? "https://thesis.htw-berlin.com";
@@ -1865,7 +1866,7 @@ export const appRouter = router({
     addUserRole: adminProcedure
       .input(z.object({
         userId: z.number(),
-        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean"]),
+        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean", "programme_director"]),
       }))
       .mutation(async ({ ctx, input }) => {
         await addUserRole(input.userId, input.role as AppRole, ctx.user.id);
@@ -1880,7 +1881,7 @@ export const appRouter = router({
     removeUserRole: adminProcedure
       .input(z.object({
         userId: z.number(),
-        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean"]),
+        role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean", "programme_director"]),
       }))
       .mutation(async ({ ctx, input }) => {
         const currentRoles = await getUserRoles(input.userId);
@@ -1899,7 +1900,7 @@ export const appRouter = router({
       .input(
         z.object({
           userId: z.number(),
-          role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean"]),
+          role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean", "programme_director"]),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -2316,7 +2317,7 @@ export const appRouter = router({
       .input(
         z.object({
           userId: z.number().int().positive(),
-          role: z.enum(["student", "examiner", "second_examiner", "pav", "admin", "dean", "vice_dean", "superadmin"]),
+          role: z.enum(["student", "examiner", "second_examiner", "pav", "admin", "dean", "vice_dean", "superadmin", "programme_director"]),
         })
       )
       .mutation(async ({ input }) => {

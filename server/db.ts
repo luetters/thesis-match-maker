@@ -964,7 +964,6 @@ export async function updateExaminerByAdmin(
 export async function getAllUsersWithProfiles() {
   const db = await getDb();
   if (!db) return [];
-
   const result = await db
     .select({
       user: users,
@@ -973,8 +972,22 @@ export async function getAllUsersWithProfiles() {
     .from(users)
     .leftJoin(examinerProfiles, eq(users.id, examinerProfiles.userId))
     .orderBy(desc(users.createdAt));
-
-  return result;
+  // Multi-Rollen: roles[] aus user_roles laden und an jeden Nutzer hängen
+  const allRoleRows = await db
+    .select({ userId: userRoles.userId, role: userRoles.role })
+    .from(userRoles);
+  const rolesMap = new Map<number, string[]>();
+  for (const r of allRoleRows) {
+    if (!rolesMap.has(r.userId)) rolesMap.set(r.userId, []);
+    rolesMap.get(r.userId)!.push(r.role);
+  }
+  return result.map((row) => ({
+    ...row,
+    user: {
+      ...row.user,
+      roles: rolesMap.get(row.user.id) ?? [row.user.role],
+    },
+  }));
 }
 
 /**
@@ -1549,7 +1562,7 @@ export async function getAllUsersWithRoles() {
 /** Rolle eines Nutzers setzen (SuperAdmin) */
 export async function setUserRole(
   userId: number,
-  role: "student" | "examiner" | "second_examiner" | "pav" | "admin" | "dean" | "vice_dean" | "superadmin"
+  role: "student" | "examiner" | "second_examiner" | "pav" | "admin" | "dean" | "vice_dean" | "superadmin" | "programme_director"
 ) {
   const db = await getDb();
   if (!db) return;
@@ -4081,6 +4094,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
         dean: "Dekan:in",
         vice_dean: "Prodekan:in",
         superadmin: "Superadmin",
+        programme_director: "Studiengangsleitung",
       };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
       const dashboardLinks: Record<string, string> = {
@@ -4138,7 +4152,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     );
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung" };
+      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", programme_director: "Studiengangsleitung" };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
       const reasonBlock = reason
         ? `<p style="color:#474747;line-height:1.6"><strong>Begründung:</strong> ${reason}</p>`
@@ -5122,7 +5136,7 @@ export async function triggerDefenseEligibilityCheck(thesisRequestId: number) {
 
 // ─── Multi-Rollen-Hilfsfunktionen ────────────────────────────────────────────
 
-export type AppRole = "user" | "admin" | "student" | "examiner" | "second_examiner" | "superadmin" | "pav" | "dean" | "vice_dean";
+export type AppRole = "user" | "admin" | "student" | "examiner" | "second_examiner" | "superadmin" | "pav" | "dean" | "vice_dean" | "programme_director";
 
 /** Alle Rollen eines Nutzers aus user_roles abrufen */
 export async function getUserRoles(userId: number): Promise<AppRole[]> {
@@ -5176,7 +5190,7 @@ export async function removeUserRole(userId: number, role: AppRole): Promise<voi
  * Priorität: student > examiner > second_examiner > pav > dean > vice_dean > admin > superadmin > user
  */
 const ROLE_PRIORITY: AppRole[] = [
-  "student", "examiner", "second_examiner", "pav", "dean", "vice_dean", "admin", "superadmin", "user"
+  "student", "examiner", "second_examiner", "programme_director", "pav", "dean", "vice_dean", "admin", "superadmin", "user"
 ];
 
 async function syncPrimaryRole(userId: number): Promise<void> {

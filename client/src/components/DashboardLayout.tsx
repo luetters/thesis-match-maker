@@ -30,11 +30,11 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Startseite", path: "/", roles: ["student", "examiner", "second_examiner", "admin", "pav", "dean", "vice_dean", "superadmin"] },
-  { icon: Users, label: "Pruefer:innen", path: "/examiners", roles: ["student", "admin", "pav", "dean", "superadmin"] },
+  { icon: LayoutDashboard, label: "Startseite", path: "/", roles: ["student", "examiner", "second_examiner", "programme_director", "admin", "pav", "dean", "vice_dean", "superadmin"] },
+  { icon: Users, label: "Pruefer:innen", path: "/examiners", roles: ["student", "admin", "pav", "dean", "programme_director", "superadmin"] },
   { icon: LayoutDashboard, label: "Meine Anfragen", path: "/student", roles: ["student"] },
-  { icon: LayoutDashboard, label: "Anfragen", path: "/examiner", roles: ["examiner", "second_examiner"] },
-  { icon: LayoutDashboard, label: "Verwaltung", path: "/admin", roles: ["admin", "pav", "dean", "vice_dean"] },
+  { icon: LayoutDashboard, label: "Anfragen", path: "/examiner", roles: ["examiner", "second_examiner", "programme_director"] },
+  { icon: LayoutDashboard, label: "Verwaltung", path: "/admin", roles: ["admin", "pav", "dean", "vice_dean", "programme_director"] },
   { icon: Users, label: "Nutzer", path: "/superadmin", roles: ["superadmin"] },
 ];
 

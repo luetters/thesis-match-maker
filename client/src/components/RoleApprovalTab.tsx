@@ -21,6 +21,7 @@ const ROLE_LABELS: Record<string, string> = {
   vice_dean: "Prodekan:in",
   superadmin: "Superadmin",
   user: "Unbekannt",
+  programme_director: "Studiengangsleitung",
 };
 
 const ALL_ASSIGNABLE_ROLES = [
@@ -31,6 +32,7 @@ const ALL_ASSIGNABLE_ROLES = [
   "pav",
   "dean",
   "vice_dean",
+  "programme_director",
 ] as const;
 
 type PendingUser = {
@@ -283,7 +285,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
   const pending = pendingQuery.data ?? [];
 
   // Gruppen aufteilen nach requestedRole
-  const VERWALTUNG_ROLES = ["admin", "pav", "dean", "vice_dean", "superadmin"];
+  const VERWALTUNG_ROLES = ["admin", "pav", "dean", "vice_dean", "superadmin", "programme_director"];
   const PRUEFER_ROLES = ["examiner", "second_examiner"];
   const STUDENT_ROLES = ["student"];
 

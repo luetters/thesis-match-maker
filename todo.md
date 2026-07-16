@@ -1140,3 +1140,21 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Admin-Zuweisung: tRPC-Prozedur adminAssignExaminers (Erst- und/oder Zweitgutachter:in direkt zuweisen)
 - [ ] Admin-Zuweisung: AdminAssignExaminersModal mit Verfügbarkeits-Anzeige und Suchfeld
 - [ ] Admin-Zuweisung: Zuweisen-Button in AdminDashboard-Übersicht (Alle Anfragen) einbauen
+
+## Feature: Rolle „Studiengangsleitung" + Multi-Rollen-Anzeige-Fix
+
+- [x] DB: Enum users.role, users.requestedRole und user_roles.role um 'programme_director' erweitern (ALTER TABLE per SQL)
+- [x] Backend db.ts: AppRole-Typ um 'programme_director' erweitern
+- [x] Backend db.ts: ROLE_PRIORITY um 'programme_director' ergänzen
+- [x] Backend db.ts: roleLabels um 'programme_director' → 'Studiengangsleitung' ergänzen
+- [x] Backend db.ts: getAllUsersWithProfiles liefert roles[] (JOIN user_roles)
+- [x] Backend routers.ts: anyExaminerProcedure erlaubt 'programme_director'
+- [x] Backend routers.ts: addUserRole/removeUserRole Zod-Enum um 'programme_director' erweitern
+- [x] Backend routers.ts: setUserRole Zod-Enum um 'programme_director' erweitern
+- [x] Backend routers.ts: roleLabels in register-E-Mail um 'programme_director' ergänzen
+- [x] Frontend AdminDashboard: roleLabels um 'programme_director' ergänzen
+- [x] Frontend AdminDashboard: examinerRoles um 'programme_director' ergänzen (Ta- [x] Frontend AdminDashboard: Dropdown „+ Rolle“ um 'programme_director' ergänzen ergänzen
+- [x] Frontend AdminDashboard: Multi-Rollen-Anzeige-Bug fixen (roles[] korrekt aus Backend nutzen)
+- [x] Frontend DashboardLayout: Menü-Sichtbarkeit für 'programme_director' ergänzen
+- [x] Frontend Login/Home: Routing für 'programme_director' → /admin oder /examiner
+- [x] Frontend RoleApprovalTab: 'programme_director' in VERWALTUNG_ROLES aufnehmen

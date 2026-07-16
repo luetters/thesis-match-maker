@@ -24,7 +24,7 @@ import { trpc } from "@/lib/trpc";
 import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type Role = "student" | "examiner" | "second_examiner" | "admin";
+type Role = "student" | "examiner" | "second_examiner" | "admin" | "programme_director";
 
 /**
  * Login-Flow:
@@ -76,6 +76,14 @@ export default function Login() {
       icon: <Settings className="w-7 h-7" />,
       accentColor: "#a855f7",
       bgColor: "rgba(168,85,247,0.08)",
+    },
+    {
+      id: "programme_director",
+      label: lang === "de" ? "Studiengangsleitung" : "Programme Director",
+      description: lang === "de" ? "Ich leite einen Studiengang und möchte Zweitgutachter zulassen und zuteilen." : "I manage a study programme and want to approve and assign second examiners.",
+      icon: <Settings className="w-7 h-7" />,
+      accentColor: "#0e7490",
+      bgColor: "rgba(14,116,144,0.08)",
     },
   ];
 
@@ -158,7 +166,7 @@ export default function Login() {
         else if (hasR("admin")) target = "/admin";
         else if (hasR("student")) target = "/student";
         else if (hasR("examiner") || hasR("second_examiner")) target = "/examiner";
-        else if (hasR("pav") || hasR("dean") || hasR("vice_dean")) target = "/admin";
+        else if (hasR("pav") || hasR("dean") || hasR("vice_dean") || hasR("programme_director")) target = "/admin";
         else target = "/";
       }
       setLocation(target);
