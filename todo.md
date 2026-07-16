@@ -1163,3 +1163,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 - [x] Frontend ExaminerDashboard: Vorbehalt-Dialog auf max-w-2xl vergrößern, Textarea auf rows={10} und resize-y setzen, Dialog-Höhe auf max-h-[90vh] mit overflow-y-auto
 - [x] Backend routers.ts: Bei conditional-E-Mail BCC an den sendenden Prüfer (ctx.user.email) hinzufügen
+
+## Feature: Vorbehalt-Feld nach Absenden vorausgefüllt
+
+- [x] Frontend ExaminerDashboard: Nach erfolgreichem Absenden der Vorbehalt-E-Mail wird der gesendete Text in die ConditionalReasonBox übernommen (optimistisches Update via query invalidation + conditionalAcceptanceReason im req-Objekt)
+- [x] Frontend ExaminerDashboard: Dialog öffnet mit vorhandenem Vorbehalt-Text vorausgefüllt (wenn req.conditionalAcceptanceReason bereits gesetzt ist)

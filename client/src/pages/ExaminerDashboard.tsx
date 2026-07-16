@@ -1410,7 +1410,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           {/* Zusage unter Vorbehalt – nur bei PENDING_FIRST_EXAMINER */}
           {isPending && (
             <button
-              onClick={() => { setConditionalReason(""); setShowConditionalDialog(true); }}
+              onClick={() => { setConditionalReason((req as any).conditionalAcceptanceReason ?? ""); setShowConditionalDialog(true); }}
               disabled={examinerRespond.isPending}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-amber-700 border border-amber-300 bg-amber-50 hover:bg-amber-100 transition-colors"
             >
@@ -1473,6 +1473,8 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                     { id: req.id, action: "conditional", conditionalReason: conditionalReason.trim() },
                     {
                       onSuccess: () => {
+                        // Den gesendeten Text optimistisch ins req-Objekt übernehmen
+                        (req as any).conditionalAcceptanceReason = conditionalReason.trim();
                         toast.success("Zusage unter Vorbehalt gespeichert.");
                         setShowConditionalDialog(false);
                       },
