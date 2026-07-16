@@ -2040,20 +2040,45 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               <StatusBadge status={req.status} />
-              {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && (
-                <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full max-w-[180px]">
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                  <span className="truncate">
-                    {buildFullName({
-                      firstName: (req as any).wantedSecondExaminerFirstName,
-                      lastName: (req as any).wantedSecondExaminerLastName,
-                      academicTitle: (req as any).wantedSecondExaminerAcademicTitle,
-                      name: (req as any).wantedSecondExaminerName,
-                    }) || `2. Pr\u00fcfer:in #${(req as any).wantedSecondExaminerId}`}
-                  </span>
-                  <span className="text-[10px] text-amber-400 flex-shrink-0">(angefragt)</span>
-                </span>
-              )}
+              {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && (() => {
+                const requestedAt = (req as any).secondExaminerRequestedAt;
+                const isOverdue = requestedAt
+                  ? (Date.now() - new Date(requestedAt).getTime()) > 7 * 24 * 60 * 60 * 1000
+                  : false;
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border ${
+                        isOverdue
+                          ? "text-red-700 bg-red-50 border-red-300 animate-pulse"
+                          : "text-amber-700 bg-amber-50 border-amber-200"
+                      }`}>
+                        {isOverdue ? (
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                        ) : (
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        )}
+                        <span className="truncate">
+                          {buildFullName({
+                            firstName: (req as any).wantedSecondExaminerFirstName,
+                            lastName: (req as any).wantedSecondExaminerLastName,
+                            academicTitle: (req as any).wantedSecondExaminerAcademicTitle,
+                            name: (req as any).wantedSecondExaminerName,
+                          }) || `2. Pr\u00fcfer:in #${(req as any).wantedSecondExaminerId}`}
+                        </span>
+                        <span className={`text-[10px] flex-shrink-0 ${isOverdue ? "text-red-400" : "text-amber-400"}`}>
+                          {isOverdue ? "(überfällig)" : "(angefragt)"}
+                        </span>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      {isOverdue
+                        ? `Anfrage seit mehr als 7 Tagen unbeantwortet${requestedAt ? " (seit " + new Date(requestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" }) + ")" : ""}.`
+                        : `Anfrage gestellt${requestedAt ? " am " + new Date(requestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" }) : ""}.`}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })()}
             </div>
           </div>
 

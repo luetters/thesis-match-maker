@@ -1181,3 +1181,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## Feature: Zweitgutachter-Name unter StatusBadge in Studierenden-Anfragenliste
 
 - [x] StudentDashboard: Wenn wantedSecondExaminerId gesetzt ist, Name des angefragten Zweitgutachters unter dem StatusBadge anzeigen
+
+## Feature: Warnung bei überfälliger Zweitgutachter-Anfrage
+
+- [x] StudentDashboard: Badge wird rot + Warnsymbol wenn secondExaminerRequestedAt > 7 Tage ohne Antwort
