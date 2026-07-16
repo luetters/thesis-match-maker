@@ -496,12 +496,16 @@ function MarkdownNote({ content }: { content: string }) {
   return <div className="text-sm text-gray-800 space-y-0.5 [&_li]:list-disc [&_li]:ml-4" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function ConditionalReasonBox({ requestId, reason, onUpdated }: { requestId: number; reason: string; onUpdated: () => void }) {
+function ConditionalReasonBox({ requestId, reason, conditionalAt, onUpdated }: { requestId: number; reason: string; conditionalAt?: string | null; onUpdated: () => void }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(reason);
   const updateMutation = trpc.examinerEmailTemplates.updateConditionalReason.useMutation({
     onSuccess: () => { setEditing(false); onUpdated(); toast.success("Vorbehalt aktualisiert."); },
     onError: (e: { message: string }) => toast.error(e.message),
+  });
+  const liftMutation = (trpc.examinerEmailTemplates as any).liftConditional?.useMutation?.({
+    onSuccess: () => { onUpdated(); toast.success("Vorbehalt aufgehoben – reguläre Zusage erteilt."); },
+    onError: (e: any) => toast.error(e.message ?? "Fehler beim Aufheben des Vorbehalts."),
   });
   return (
     <div className="px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
@@ -548,7 +552,23 @@ function ConditionalReasonBox({ requestId, reason, onUpdated }: { requestId: num
               </div>
             </div>
           ) : (
-            <p className="text-xs text-amber-700 whitespace-pre-wrap">{reason || <span className="italic text-amber-500">Kein Vorbehalt eingetragen.</span>}</p>
+            <div className="space-y-1.5">
+              <p className="text-xs text-amber-700 whitespace-pre-wrap">{reason || <span className="italic text-amber-500">Kein Vorbehalt eingetragen.</span>}</p>
+              {conditionalAt && (
+                <p className="text-xs text-amber-500 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Erteilt am {new Date(conditionalAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}, {new Date(conditionalAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+                </p>
+              )}
+              <button
+                onClick={() => liftMutation?.mutate?.({ thesisRequestId: requestId })}
+                disabled={liftMutation?.isPending}
+                className="mt-1 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                {liftMutation?.isPending ? "Wird aufgehoben..." : "Vorbehalt aufheben – reguläre Zusage erteilen"}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -556,7 +576,7 @@ function ConditionalReasonBox({ requestId, reason, onUpdated }: { requestId: num
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -817,7 +837,15 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             return <div className="mt-3"><InvolvedPersonsTable rows={rows} compact /></div>;
           })()}
         </div>
-        <StatusBadge status={req.status} />
+        <div className="flex flex-col items-end gap-1.5">
+          <StatusBadge status={req.status} />
+          {isConditional && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm animate-pulse">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+              Unter Vorbehalt
+            </span>
+          )}
+        </div>
       </div>
       {/* Beschreibung – aufklappbar */}
       <div className="mb-3">
@@ -1337,6 +1365,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             <ConditionalReasonBox
               requestId={req.id}
               reason={(req as any).conditionalAcceptanceReason ?? ""}
+              conditionalAt={(req as any).conditionalAcceptanceAt ?? null}
               onUpdated={() => utils.thesis.examinerRequests.invalidate()}
             />
           )}

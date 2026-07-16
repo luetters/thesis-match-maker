@@ -4423,6 +4423,59 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Vorbehalt aufheben: CONDITIONAL_ACCEPTANCE → FIRST_EXAMINER_ACCEPTED
+    liftConditional: anyExaminerProcedure
+      .input(z.object({ thesisRequestId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getThesisRequestById(input.thesisRequestId);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        if (existing.status !== "CONDITIONAL_ACCEPTANCE") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Nur bei Status 'Zusage unter Vorbehalt' möglich." });
+        }
+        const isAssigned = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
+        const isAdmin = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isAssigned && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { thesisRequests: tr } = await import("../drizzle/schema");
+        const { eq: eqDrizzle } = await import("drizzle-orm");
+        const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        await db.update(tr)
+          .set({
+            status: "FIRST_EXAMINER_ACCEPTED",
+            conditionalAcceptanceReason: null,
+            updatedAt: now,
+          })
+          .where(eqDrizzle(tr.id, input.thesisRequestId));
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          action: "EXAMINER_ACCEPTED",
+          fromStatus: "CONDITIONAL_ACCEPTANCE",
+          toStatus: "FIRST_EXAMINER_ACCEPTED",
+          reason: "Vorbehalt aufgehoben – reguläre Zusage erteilt",
+        });
+        // E-Mail an Studierenden
+        try {
+          const { getUserById } = await import("./db");
+          const student = await getUserById(existing.studentId);
+          const examiner = await getUserById(ctx.user.id);
+          if (student?.email) {
+            const studentLang: Lang = (student.preferredLanguage as Lang) ?? "de";
+            const { statusChangeEmail } = await import("./emailTemplates");
+            const tpl = statusChangeEmail({
+              recipientName: student.name,
+              thesisTitle: existing.title ?? "",
+              statusTextDE: `Ihr Betreuer ${examiner?.name ?? ""} hat den Vorbehalt zu Ihrer Betreuungsanfrage \u201e${existing.title}\u201c aufgehoben. Ihre Anfrage ist nun regulär angenommen.`,
+              statusTextEN: `Your supervisor ${examiner?.name ?? ""} has lifted the conditional acceptance of your thesis request "${existing.title}". Your request is now fully accepted.`,
+              lang: studentLang,
+            });
+            await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
+          }
+        } catch (_) { /* E-Mail-Fehler nicht fatal */ }
+        return { success: true };
+      }),
+
     getConditionalDocuments: protectedProcedure
       .input(z.object({ thesisRequestId: z.number() }))
       .query(async ({ ctx, input }) => {

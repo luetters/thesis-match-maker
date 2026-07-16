@@ -1168,3 +1168,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 - [x] Frontend ExaminerDashboard: Nach erfolgreichem Absenden der Vorbehalt-E-Mail wird der gesendete Text in die ConditionalReasonBox übernommen (optimistisches Update via query invalidation + conditionalAcceptanceReason im req-Objekt)
 - [x] Frontend ExaminerDashboard: Dialog öffnet mit vorhandenem Vorbehalt-Text vorausgefüllt (wenn req.conditionalAcceptanceReason bereits gesetzt ist)
+
+## Feature: Vorbehalt-Badge, Zeitstempel und Aufheben-Button
+
+- [x] DB-Schema: conditional_acceptance_at Feld prüfen (bereits vorhanden?)
+- [x] Backend: liftConditional-Prozedur implementieren (CONDITIONAL_ACCEPTANCE → FIRST_EXAMINER_ACCEPTED + E-Mail)
+- [x] Backend: getThesisRequestsByExaminer liefert conditional_acceptance_at
+- [x] Frontend ExaminerDashboard: Auffälliges Badge "Unter Vorbehalt" in der Antragsübersichtsliste
+- [x] Frontend ExaminerDashboard: Zeitstempel der Vorbehalt-Erteilung neben dem Vorbehalt-Text anzeigen
+- [x] Frontend ExaminerDashboard: Button "Vorbehalt aufheben" (1-Klick → reguläre Zusage)
