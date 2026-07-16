@@ -452,6 +452,7 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
       secondExaminerAcceptedAt: thesisRequests.secondExaminerAcceptedAt,
       secondExaminerRejectedAt: thesisRequests.secondExaminerRejectedAt,
+      conditionalAcceptanceReason: thesisRequests.conditionalAcceptanceReason,
     })
     .from(thesisRequests)
     .innerJoin(users, eq(thesisRequests.studentId, users.id))
