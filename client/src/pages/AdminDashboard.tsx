@@ -639,6 +639,7 @@ function AuditLogView() {
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Zeitpunkt</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Aktion</th>
+              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden sm:table-cell">Nutzer:in</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Anfrage-ID</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Von → Nach</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Notiz / Änderungen</th>
@@ -675,6 +676,9 @@ function AuditLogView() {
                         )}
                       </div>
                     </td>
+                    <td className="px-5 py-3 hidden sm:table-cell">
+                      <span className="text-xs text-gray-700 font-medium">{(log as any).actorName ?? <span className="text-gray-400">System</span>}</span>
+                    </td>
                     <td className="px-5 py-3 hidden md:table-cell">
                       <span className="text-xs text-gray-600 font-mono">#{log.thesisRequestId}</span>
                     </td>
@@ -698,7 +702,7 @@ function AuditLogView() {
                   </tr>
                   {hasDiff && isExpanded && (
                     <tr key={`diff-${log.id}`} className="bg-indigo-50/60 border-b border-indigo-100">
-                      <td colSpan={5} className="px-8 py-4">
+                      <td colSpan={6} className="px-8 py-4">
                         <div className="text-xs font-semibold text-indigo-700 mb-2">Geänderte Felder im Vergleich zur vorherigen Version:</div>
                         <DiffView metadata={log.metadata} />
                       </td>
@@ -1459,9 +1463,20 @@ function Overview() {
                           <div className="flex items-center gap-1.5 text-xs">
                             <span className="text-gray-400 shrink-0">Zweitgutachter:in:</span>
                             {req.secondExaminerName ? (
-                              <span className="font-medium text-gray-800 truncate">{req.secondExaminerName}</span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-medium text-gray-800 truncate">{req.secondExaminerName}</span>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700">Zugesagt</span>
+                              </span>
+                            ) : (req as any).secondExaminerRejectedAt ? (
+                              <span className="flex items-center gap-1">
+                                <span className="font-medium text-red-700 truncate">{(req as any).wantedSecondExaminerName}</span>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">Abgelehnt</span>
+                              </span>
                             ) : (
-                              <span className="font-medium text-amber-700 truncate">{(req as any).wantedSecondExaminerName} <span className="text-[10px] text-amber-500">(angefragt)</span></span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-medium text-amber-700 truncate">{(req as any).wantedSecondExaminerName}</span>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">Angefragt</span>
+                              </span>
                             )}
                           </div>
                         )}

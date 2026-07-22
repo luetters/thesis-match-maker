@@ -1209,3 +1209,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Backend db.ts: getExaminerPendingRequests um PENDING_SECOND_EXAMINER (wantedSecondExaminerId) erweitern – OR-Bedingung
 - [x] Frontend ExaminerDashboard: Zweitgutachter-Anfragen als eigene Kategorie "Anfrage als Zweitgutachter:in" anzeigen
 - [x] Frontend ExaminerDashboard: Annahme/Ablehnung für Zweitgutachter-Anfragen funktioniert korrekt
+
+## Feature: Fünf Verbesserungen (22.07.2026)
+
+- [x] Audit-Log: Username des auslösenden Nutzers anzeigen (JOIN auf users-Tabelle)
+- [x] Alle Anfragen: Zweitgutachter-Status mit Name und Status-Badge darstellen
+- [x] Zweitgutachter-Karte: Erstgutachter-Anmerkungen/Vorbehalt anzeigen
+- [x] Ablehnung Zweitgutachter: optionales Textfeld für Ablehnungsgrund
+- [x] Student + Erstgutachter: visuelle Statusaktualisierung ob Zweitgutachter angenommen/abgelehnt hat

@@ -2040,7 +2040,34 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
               <StatusBadge status={req.status} />
-              {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && (() => {
+              {/* Zweitgutachter zugesagt */}
+              {(req as any).secondExaminerId && (req as any).secondExaminerName && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-green-700 bg-green-50 border-green-300">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span className="truncate">{(req as any).secondExaminerName}</span>
+                      <span className="text-[10px] flex-shrink-0 text-green-500">(Zugesagt)</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Zweitgutachter:in hat die Betreuung bestätigt.</TooltipContent>
+                </Tooltip>
+              )}
+              {/* Zweitgutachter abgelehnt */}
+              {!(req as any).secondExaminerId && (req as any).secondExaminerRejectedAt && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-red-700 bg-red-50 border-red-300 animate-pulse">
+                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <span className="truncate">Zweitgutachter:in</span>
+                      <span className="text-[10px] flex-shrink-0 text-red-400">(Abgelehnt)</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">Die angefragte Person hat die Zweitbetreuung abgelehnt. Bitte wählen Sie eine andere Person.</TooltipContent>
+                </Tooltip>
+              )}
+              {/* Zweitgutachter angefragt (noch keine Antwort) */}
+              {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && !(req as any).secondExaminerRejectedAt && (() => {
                 const requestedAt = (req as any).secondExaminerRequestedAt;
                 const isOverdue = requestedAt
                   ? (Date.now() - new Date(requestedAt).getTime()) > 7 * 24 * 60 * 60 * 1000

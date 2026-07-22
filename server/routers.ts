@@ -901,7 +901,8 @@ export const appRouter = router({
             } catch (_) { /* E-Mail-Fehler nicht fatal */ }
           } else {
             // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen, Zeitstempel setzen
-            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL, second_examiner_rejected_at = NOW() WHERE id = ${input.id}`);
+            const rejReasonSql = input.rejectionReason ? sql`, rejection_reason = ${input.rejectionReason}` : sql``;
+            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL, second_examiner_rejected_at = NOW()${rejReasonSql} WHERE id = ${input.id}`);
             newStatus = "FIRST_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_REJECTED";
             // E-Mail an Studierenden
@@ -914,6 +915,7 @@ export const appRouter = router({
                   recipientName: student.name ?? "Studierende:r",
                   secondExaminerName: examiner?.name ?? ctx.user.name ?? "Zweitgutachter:in",
                   thesisTitle: existing.title ?? "",
+                  rejectionReason: input.rejectionReason,
                 });
                 await sendEmail({ to: student.email, subject: tpl.subject, html: tpl.html });
               }
