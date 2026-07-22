@@ -472,7 +472,17 @@ function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId:
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <StatusBadge status={req.status} />
+                      <div className="flex flex-col gap-1">
+                        <StatusBadge status={req.status} />
+                        {/* Angefragter Zweitgutachter-Name unter dem Badge */}
+                        {req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && !(req as any).secondExaminerRejectedAt && (
+                          <span className="text-[11px] text-amber-700 font-medium leading-tight">
+                            {(req as any).wantedSecondExaminerName
+                              ? (req as any).wantedSecondExaminerName
+                              : `ID #${(req as any).wantedSecondExaminerId}`}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
