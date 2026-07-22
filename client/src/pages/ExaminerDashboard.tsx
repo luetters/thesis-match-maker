@@ -1980,7 +1980,9 @@ function RequestsView() {
   const awaitingApproval = sortRequests(filteredRequests.filter((r) => r.status === "PENDING_FIRST_EXAMINER"), sortKey);
   const conditionalList = sortRequests(filteredRequests.filter((r) => r.status === "CONDITIONAL_ACCEPTANCE"), sortKey);
   const pending = sortRequests(filteredRequests.filter((r) => r.status === "PENDING"), sortKey);
-  const others = sortRequests(filteredRequests.filter((r) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER" && r.status !== "CONDITIONAL_ACCEPTANCE"), sortKey);
+  // Zweitgutachter-Anfragen: PENDING_SECOND_EXAMINER wo der aktuelle Nutzer wantedSecondExaminer ist
+  const pendingSecond = sortRequests(filteredRequests.filter((r: any) => r.status === "PENDING_SECOND_EXAMINER" && r.requestRole === "second"), sortKey);
+  const others = sortRequests(filteredRequests.filter((r: any) => r.status !== "PENDING" && r.status !== "PENDING_FIRST_EXAMINER" && r.status !== "CONDITIONAL_ACCEPTANCE" && !(r.status === "PENDING_SECOND_EXAMINER" && r.requestRole === "second")), sortKey);
 
   const sortOptions: { value: RequestSortKey; label: string }[] = [
     { value: "date", label: "Neueste zuerst" },
@@ -2048,6 +2050,17 @@ function RequestsView() {
           </h3>
           <div className="space-y-4">
             {awaitingApproval.map((req) => <RequestCard key={req.id} req={req} />)}
+          </div>
+        </div>
+      )}
+      {pendingSecond.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            Anfragen als Zweitgutachter:in ({pendingSecond.length})
+          </h3>
+          <div className="space-y-4">
+            {pendingSecond.map((req) => <RequestCard key={req.id} req={req} />)}
           </div>
         </div>
       )}

@@ -2375,7 +2375,8 @@ export async function getExaminerPendingRequests(examinerId: number) {
   if (!db) return [];
   const firstExaminerAlias = aliasedTable(users, "first_examiner_ep");
   const secondExaminerAlias = aliasedTable(users, "second_examiner_ep");
-  return db
+  // Beide Anfrage-Typen: Erstgutachter (PENDING_FIRST_EXAMINER) und Zweitgutachter (PENDING_SECOND_EXAMINER)
+  const rows = await db
     .select({
       id: thesisRequests.id,
       title: thesisRequests.title,
@@ -2388,6 +2389,8 @@ export async function getExaminerPendingRequests(examinerId: number) {
       createdAt: thesisRequests.createdAt,
       examinerId: thesisRequests.examinerId,
       secondExaminerId: thesisRequests.secondExaminerId,
+      wantedExaminerId: thesisRequests.wantedExaminerId,
+      wantedSecondExaminerId: thesisRequests.wantedSecondExaminerId,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
@@ -2401,12 +2404,23 @@ export async function getExaminerPendingRequests(examinerId: number) {
     .leftJoin(firstExaminerAlias, eq(thesisRequests.examinerId, firstExaminerAlias.id))
     .leftJoin(secondExaminerAlias, eq(thesisRequests.secondExaminerId, secondExaminerAlias.id))
     .where(
-      and(
-        eq(thesisRequests.wantedExaminerId, examinerId),
-        eq(thesisRequests.status, "PENDING_FIRST_EXAMINER")
+      or(
+        and(
+          eq(thesisRequests.wantedExaminerId, examinerId),
+          eq(thesisRequests.status, "PENDING_FIRST_EXAMINER")
+        ),
+        and(
+          eq(thesisRequests.wantedSecondExaminerId, examinerId),
+          eq(thesisRequests.status, "PENDING_SECOND_EXAMINER")
+        )
       )
     )
     .orderBy(desc(thesisRequests.createdAt));
+  // requestRole-Feld: 'first' oder 'second'
+  return rows.map(r => ({
+    ...r,
+    requestRole: r.wantedSecondExaminerId === examinerId ? "second" as const : "first" as const,
+  }));
 }
 
 export async function getExaminerAcceptedRequests(examinerId: number) {

@@ -1203,3 +1203,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] RoleApprovalTab: Rollen-Badges nutzen ROLE_BADGE_COLORS
 - [x] RoleSwitcher: Rollen-Badges nutzen ROLE_BADGE_COLORS
 - [x] SuperadminDashboard: Rollen-Badges nutzen ROLE_BADGE_COLORS
+
+## Bug: Zweitgutachter sieht keine Anfragen im Dashboard
+
+- [x] Backend db.ts: getExaminerPendingRequests um PENDING_SECOND_EXAMINER (wantedSecondExaminerId) erweitern – OR-Bedingung
+- [x] Frontend ExaminerDashboard: Zweitgutachter-Anfragen als eigene Kategorie "Anfrage als Zweitgutachter:in" anzeigen
+- [x] Frontend ExaminerDashboard: Annahme/Ablehnung für Zweitgutachter-Anfragen funktioniert korrekt
