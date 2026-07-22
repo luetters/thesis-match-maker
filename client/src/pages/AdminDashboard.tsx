@@ -7,7 +7,8 @@ import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -475,13 +476,28 @@ function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId:
                       <div className="flex flex-col gap-1">
                         <StatusBadge status={req.status} />
                         {/* Angefragter Zweitgutachter-Name unter dem Badge */}
-                        {req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && !(req as any).secondExaminerRejectedAt && (
-                          <span className="text-[11px] text-amber-700 font-medium leading-tight">
-                            {(req as any).wantedSecondExaminerName
-                              ? (req as any).wantedSecondExaminerName
-                              : `ID #${(req as any).wantedSecondExaminerId}`}
-                          </span>
-                        )}
+                        {req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && !(req as any).secondExaminerRejectedAt && (() => {
+                          const requestedAt = (req as any).secondExaminerRequestedAt;
+                          const dateStr = requestedAt
+                            ? new Date(requestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })
+                            : null;
+                          return (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-[11px] text-amber-700 font-medium leading-tight cursor-default underline decoration-dotted decoration-amber-400 underline-offset-2">
+                                  {(req as any).wantedSecondExaminerName
+                                    ? (req as any).wantedSecondExaminerName
+                                    : `ID #${(req as any).wantedSecondExaminerId}`}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                {dateStr
+                                  ? `Angefragt am ${dateStr}`
+                                  : "Anfragedatum nicht bekannt"}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-5 py-4">
@@ -1457,7 +1473,7 @@ function Overview() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+                <RechartsTooltip />
                 <Bar dataKey="value" name="Anfragen" radius={[4, 4, 0, 0]}>
                   {statusData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -1477,7 +1493,7 @@ function Overview() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+                <RechartsTooltip />
                 <Line type="monotone" dataKey="count" name="Anfragen" stroke="#76B900" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -1724,7 +1740,7 @@ function StatisticsView() {
                   <Cell key={entry.name} fill={STATUS_COLORS[entry.name] ?? "#76B900"} />
                 ))}
               </Pie>
-              <Tooltip />
+              <RechartsTooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -1735,7 +1751,7 @@ function StatisticsView() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
+              <RechartsTooltip />
               <Bar dataKey="value" fill="#76B900" radius={[4, 4, 0, 0]} name="Anfragen" />
             </BarChart>
           </ResponsiveContainer>
@@ -1749,7 +1765,7 @@ function StatisticsView() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
+              <RechartsTooltip />
               <Legend />
               <Line type="monotone" dataKey="count" stroke="#76B900" strokeWidth={2} dot={{ r: 4 }} name="Anfragen" />
             </LineChart>
