@@ -1225,3 +1225,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend AdminDashboard: Audit-Log Suchfunktion nach Nutzername
 - [x] Frontend AdminDashboard: Alle-Anfragen Filter nach Zweitgutachter-Status
 - [x] Frontend StudentDashboard: Ablehnungsgrund des Zweitgutachters anzeigen
+## Feature: Nutzer-Filter-Navigation aus Nutzerverwaltung
+- [x] Frontend AdminDashboard: Klick auf Person in Nutzerverwaltung öffnet Alle-Anfragen gefiltert nach dieser Person
+- [x] Frontend AllRequests: userFilter-Prop + Filterlogik nach studentId/examinerId/secondExaminerId/wantedExaminerId
+- [x] Frontend AllRequests: Nutzer-Filter-Badge mit "Filter aufheben"-Button
+- [x] Frontend UserManagement: "Anfragen"-Button in jeder Nutzer-Zeile
+- [x] Frontend AdminDashboard: selectedUserFilter State + Tab-Wechsel zu "requests"

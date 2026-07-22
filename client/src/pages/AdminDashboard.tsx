@@ -183,7 +183,7 @@ function DeadlineModal({
 // ─── All Requests ─────────────────────────────────────────────────────────────
 type AdminSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
 
-function AllRequests() {
+function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId: number; userName: string } | null; onClearUserFilter?: () => void } = {}) {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
   const [secondExaminerFilter, setSecondExaminerFilter] = useState<"ALL" | "NONE" | "REQUESTED" | "ACCEPTED" | "REJECTED">("ALL");
@@ -246,7 +246,19 @@ function AllRequests() {
     } else if (secondExaminerFilter === "REJECTED") {
       matchSecondExaminer = !!(r as any).secondExaminerRejectedAt && !r.secondExaminerId;
     }
-    return matchFilter && matchSearch && matchSecondExaminer;
+    // Nutzer-Filter (aus Nutzerverwaltung)
+    let matchUser = true;
+    if (userFilter?.userId) {
+      const uid = userFilter.userId;
+      matchUser = (
+        (r as any).studentId === uid ||
+        (r as any).examinerId === uid ||
+        (r as any).secondExaminerId === uid ||
+        (r as any).wantedExaminerId === uid ||
+        (r as any).wantedSecondExaminerId === uid
+      );
+    }
+    return matchFilter && matchSearch && matchSecondExaminer && matchUser;
   });
 
   const sorted = filtered ? [...filtered].sort((a, b) => {
@@ -267,6 +279,20 @@ function AllRequests() {
 
   return (
     <div>
+      {/* Nutzer-Filter-Badge */}
+      {userFilter && (
+        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+          <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="text-sm text-blue-800 font-medium">Gefiltert nach: <span className="font-semibold">{userFilter.userName}</span></span>
+          <button
+            onClick={onClearUserFilter}
+            className="ml-auto text-blue-500 hover:text-blue-700 transition-colors text-xs font-semibold flex items-center gap-1"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            Filter aufheben
+          </button>
+        </div>
+      )}
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-48">
@@ -942,7 +968,7 @@ function RoleChangeConfirmDialog({
 }
 
 // ─── User Management ──────────────────────────────────────────────────────────────────────────────────
-function UserManagement() {
+function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (userId: number, userName: string) => void } = {}) {
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
@@ -1191,6 +1217,21 @@ function UserManagement() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* Anfragen dieser Person anzeigen */}
+                      {onNavigateToRequests && (
+                        <button
+                          type="button"
+                          title="Alle Anfragen dieser Person anzeigen"
+                          onClick={() => onNavigateToRequests(
+                            user.id,
+                            buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name }) || user.email || `Nutzer:in #${user.id}`
+                          )}
+                          className="px-2 py-1 rounded-lg text-xs font-semibold border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          Anfragen
+                        </button>
+                      )}
                       {/* Multi-Rollen: Onboarding-Reset nur wenn examiner in Rollen */}
                       {((user as any).roles?.length ? (user as any).roles : [user.role]).includes("examiner") && (
                         <button
@@ -1714,6 +1755,7 @@ export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates">("overview");
+  const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
 
   // Zugriffskontrolle: Nur Admins und Superadmins – navigate in useEffect, nie in Render-Phase
   useEffect(() => {
@@ -1753,9 +1795,9 @@ export default function AdminDashboard() {
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
       {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={true} />}
       {activeTab === "overview" && <Overview />}
-      {activeTab === "requests" && <AllRequests />}
+      {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} />}
       {activeTab === "audit" && <AuditLogView />}
-      {activeTab === "users" && <UserManagement />}
+      {activeTab === "users" && <UserManagement onNavigateToRequests={(userId, userName) => { setSelectedUserFilter({ userId, userName }); setActiveTab("requests"); }} />}
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
