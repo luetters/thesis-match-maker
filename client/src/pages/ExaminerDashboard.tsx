@@ -2008,6 +2008,8 @@ function RequestsView() {
   const [semesterFilter, setSemesterFilter] = useState<string>("all");
   const { data: assignedRequests, isLoading: loadingAssigned } = trpc.thesis.examinerRequests.useQuery();
   const { data: pendingRequests, isLoading: loadingPending } = trpc.examiner.getPendingRequests.useQuery();
+  const { data: myProfile } = trpc.examiner.myProfile.useQuery();
+  const isSecondExaminer = (myProfile as any)?.isSecondExaminer === 1;
   const isLoading = loadingAssigned || loadingPending;
 
   if (isLoading) {
@@ -2047,6 +2049,19 @@ function RequestsView() {
         </div>
         <h3 className="text-gray-900 font-semibold mb-1">Keine offenen Anfragen</h3>
         <p className="text-gray-500 text-sm">Sobald Studierende eine Anfrage stellen, erscheint sie hier.</p>
+        {/* Zweitgutachter-Hinweis */}
+        <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${
+          isSecondExaminer
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-gray-50 border-gray-200 text-gray-500"
+        }`}>
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            isSecondExaminer ? "bg-green-500" : "bg-gray-300"
+          }`} />
+          {isSecondExaminer
+            ? "Sie sind als Zweitgutachter:in eingetragen – Anfragen erscheinen hier, sobald Studierende Sie anfragen."
+            : "Sie sind aktuell nicht als Zweitgutachter:in eingetragen."}
+        </div>
       </div>
     );
   }
@@ -3558,7 +3573,7 @@ function Overview() {
       {/* Ausstehende Einladungen */}
       <PendingInvitationsPanel onChanged={() => utils.thesis.examinerRequests.invalidate()} />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         {[
           { label: t.examiner.statsTotal ?? "Gesamt", value: stats.total, color: "text-gray-900" },
           { label: t.examiner.statsOpen ?? "Offen", value: stats.pending, color: "text-amber-600" },
@@ -3572,6 +3587,25 @@ function Overview() {
             <div className="text-sm text-gray-500">{stat.label}</div>
           </div>
         ))}
+        {/* Zweitgutachter-Status-Kachel */}
+        {(() => {
+          const isSecond = (myProfile as any)?.isSecondExaminer === 1;
+          return (
+            <div className={`rounded-2xl p-5 border shadow-sm ${
+              isSecond ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-100"
+            }`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                  isSecond ? "bg-green-500" : "bg-gray-300"
+                }`} />
+                <span className={`text-sm font-bold ${
+                  isSecond ? "text-green-700" : "text-gray-400"
+                }`}>{isSecond ? "Ja" : "Nein"}</span>
+              </div>
+              <div className="text-sm text-gray-500 leading-tight">Zweitgutachter:in</div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Auslastungsübersicht */}
