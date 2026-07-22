@@ -1340,6 +1340,7 @@ function SecondExaminerPicker({
   externalSecondExaminerEmail,
   secondExaminerRequestedAt,
   secondExaminerRejectedAt,
+  secondExaminerRejectionReason,
 }: {
   requestId: number;
   wantedExaminerId?: number | null;
@@ -1350,6 +1351,7 @@ function SecondExaminerPicker({
   externalSecondExaminerEmail?: string | null;
   secondExaminerRequestedAt?: string | null;
   secondExaminerRejectedAt?: string | null;
+  secondExaminerRejectionReason?: string | null;
 }) {
   const { t } = useLanguage();
   const utils = trpc.useUtils();
@@ -1438,6 +1440,11 @@ function SecondExaminerPicker({
           <p className="text-xs text-red-700 mb-1">
             Ihre letzte Anfrage wurde am {rejectedDateStr} abgelehnt.
           </p>
+          {secondExaminerRejectionReason && (
+            <p className="text-xs text-red-700 bg-red-100 border border-red-200 rounded-lg px-2.5 py-1.5 mb-1">
+              <span className="font-semibold">Begründung:</span> {secondExaminerRejectionReason}
+            </p>
+          )}
           <p className="text-xs text-red-600 font-medium">Sie können jetzt eine neue Anfrage stellen.</p>
         </div>
         {/* Neues Auswahlformular unterhalb des Hinweises */}
@@ -2055,16 +2062,23 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               )}
               {/* Zweitgutachter abgelehnt */}
               {!(req as any).secondExaminerId && (req as any).secondExaminerRejectedAt && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-red-700 bg-red-50 border-red-300 animate-pulse">
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <span className="truncate">Zweitgutachter:in</span>
-                      <span className="text-[10px] flex-shrink-0 text-red-400">(Abgelehnt)</span>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">Die angefragte Person hat die Zweitbetreuung abgelehnt. Bitte wählen Sie eine andere Person.</TooltipContent>
-                </Tooltip>
+                <div className="flex flex-col gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-red-700 bg-red-50 border-red-300 animate-pulse">
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span className="truncate">Zweitgutachter:in</span>
+                        <span className="text-[10px] flex-shrink-0 text-red-400">(Abgelehnt)</span>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">Die angefragte Person hat die Zweitbetreuung abgelehnt. Bitte wählen Sie eine andere Person.</TooltipContent>
+                  </Tooltip>
+                  {(req as any).secondExaminerRejectionReason && (
+                    <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 max-w-[280px]">
+                      <span className="font-semibold">Begründung:</span> {(req as any).secondExaminerRejectionReason}
+                    </div>
+                  )}
+                </div>
               )}
               {/* Zweitgutachter angefragt (noch keine Antwort) */}
               {(req as any).wantedSecondExaminerId && !(req as any).secondExaminerId && !(req as any).secondExaminerRejectedAt && (() => {
@@ -2383,6 +2397,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               externalSecondExaminerEmail={(req as any).externalSecondExaminerEmail}
               secondExaminerRequestedAt={(req as any).secondExaminerRequestedAt}
               secondExaminerRejectedAt={(req as any).secondExaminerRejectedAt}
+              secondExaminerRejectionReason={(req as any).secondExaminerRejectionReason}
             />
           )}
           <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col gap-3">

@@ -275,6 +275,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter abgelehnt hat
 	secondExaminerRejectedAt: datetime("second_examiner_rejected_at", { mode: "string" }),
+	// Optionaler Ablehnungsgrund des Zweitgutachters
+	secondExaminerRejectionReason: text("second_examiner_rejection_reason"),
 	// Referenz auf das gewählte Prüfer-Thema (optional)
 	examinerTopicId: int("examiner_topic_id"),
 });

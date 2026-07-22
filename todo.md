@@ -1217,3 +1217,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zweitgutachter-Karte: Erstgutachter-Anmerkungen/Vorbehalt anzeigen
 - [x] Ablehnung Zweitgutachter: optionales Textfeld für Ablehnungsgrund
 - [x] Student + Erstgutachter: visuelle Statusaktualisierung ob Zweitgutachter angenommen/abgelehnt hat
+
+## Feature: Vier Verbesserungen (22.07.2026 – Batch 2)
+
+- [x] Backend: E-Mail an Zweitgutachter bei Anfrage durch Studierenden prüfen und sicherstellen
+- [x] Backend: secondExaminerRejectionReason in DB speichern und in getThesisRequestsByStudent liefern
+- [x] Frontend AdminDashboard: Audit-Log Suchfunktion nach Nutzername
+- [x] Frontend AdminDashboard: Alle-Anfragen Filter nach Zweitgutachter-Status
+- [x] Frontend StudentDashboard: Ablehnungsgrund des Zweitgutachters anzeigen

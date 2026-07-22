@@ -361,6 +361,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
       externalSecondExaminerEmail: thesisRequests.externalSecondExaminerEmail,
       secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
       secondExaminerRejectedAt: thesisRequests.secondExaminerRejectedAt,
+      secondExaminerRejectionReason: thesisRequests.secondExaminerRejectionReason,
       // Angefragte Prüfer:in
       wantedExaminerName: wantedExaminerAlias.name,
       wantedExaminerFirstName: wantedExaminerAlias.firstName,
@@ -511,6 +512,7 @@ export async function getAllThesisRequests() {
       keywords: thesisRequests.keywords,
       secondExaminerRequestedAt: thesisRequests.secondExaminerRequestedAt,
       secondExaminerRejectedAt: thesisRequests.secondExaminerRejectedAt,
+      secondExaminerRejectionReason: thesisRequests.secondExaminerRejectionReason,
       studentName: users.name,
       studentEmail: users.email,
       programmeName: programmes.name,
@@ -6307,12 +6309,15 @@ export async function rejectAsSecondExaminer(
     throw new Error("Diese Anfrage wartet nicht auf Ihre Bestätigung als Zweitgutachter:in");
 
   // Status aktualisieren – secondExaminerId und wantedSecondExaminerId zurücksetzen, damit neu gewählt werden kann
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   await db.update(thesisRequests)
     .set({
       status: "FIRST_EXAMINER_ACCEPTED", // Zurück zu: Erstgutachter hat zugesagt, Zweitgutachter fehlt noch
       secondExaminerId: null,
       wantedSecondExaminerId: null,
-      updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+      secondExaminerRejectedAt: now,
+      secondExaminerRejectionReason: rejectionReason ?? null,
+      updatedAt: now,
     })
     .where(eq(thesisRequests.id, thesisRequestId));
 

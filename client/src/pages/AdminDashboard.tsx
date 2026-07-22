@@ -186,6 +186,7 @@ type AdminSortKey = "name" | "programme" | "semester" | "title" | "date" | "stat
 function AllRequests() {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
+  const [secondExaminerFilter, setSecondExaminerFilter] = useState<"ALL" | "NONE" | "REQUESTED" | "ACCEPTED" | "REJECTED">("ALL");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<AdminSortKey>("date");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
@@ -234,7 +235,18 @@ function AllRequests() {
       (r.firstExaminerName ?? "").toLowerCase().includes(q) ||
       (r.secondExaminerName ?? "").toLowerCase().includes(q) ||
       ((r as any).wantedExaminerName ?? "").toLowerCase().includes(q);
-    return matchFilter && matchSearch;
+    // Zweitgutachter-Filter
+    let matchSecondExaminer = true;
+    if (secondExaminerFilter === "NONE") {
+      matchSecondExaminer = !r.secondExaminerId && !(r as any).wantedSecondExaminerId;
+    } else if (secondExaminerFilter === "REQUESTED") {
+      matchSecondExaminer = !!(r as any).wantedSecondExaminerId && !r.secondExaminerId && !(r as any).secondExaminerRejectedAt;
+    } else if (secondExaminerFilter === "ACCEPTED") {
+      matchSecondExaminer = !!r.secondExaminerId;
+    } else if (secondExaminerFilter === "REJECTED") {
+      matchSecondExaminer = !!(r as any).secondExaminerRejectedAt && !r.secondExaminerId;
+    }
+    return matchFilter && matchSearch && matchSecondExaminer;
   });
 
   const sorted = filtered ? [...filtered].sort((a, b) => {
@@ -282,6 +294,32 @@ function AllRequests() {
               {s === "ALL" ? "Alle" : s === "PENDING" ? "Ausstehend" : s === "ACCEPTED" ? "Angenommen" : s === "REJECTED" ? "Abgelehnt" : "Matched"}
             </button>
           ))}
+        </div>
+        {/* Zweitgutachter-Filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Zweitgutachter:in:</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {([
+              { value: "ALL" as const, label: "Alle" },
+              { value: "NONE" as const, label: "Kein" },
+              { value: "REQUESTED" as const, label: "Angefragt" },
+              { value: "ACCEPTED" as const, label: "Zugesagt" },
+              { value: "REJECTED" as const, label: "Abgelehnt" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setSecondExaminerFilter(opt.value)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  secondExaminerFilter === opt.value
+                    ? opt.value === "REJECTED" ? "bg-red-500 text-white border-red-500" : opt.value === "ACCEPTED" ? "bg-green-600 text-white border-green-600" : opt.value === "REQUESTED" ? "bg-amber-500 text-white border-amber-500" : opt.value === "NONE" ? "bg-gray-600 text-white border-gray-600" : "text-white border-transparent"
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
+                style={secondExaminerFilter === opt.value && opt.value === "ALL" ? { backgroundColor: "#76B900" } : undefined}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -547,6 +585,7 @@ function AllRequests() {
 // ─── Audit Log ────────────────────────────────────────────────────────────────
 function AuditLogView() {
   const { data: logs, isLoading } = trpc.auditLog.all.useQuery();
+  const [auditSearch, setAuditSearch] = useState("");
 
   const actionLabels: Record<string, string> = {
     THESIS_CREATED: "Anfrage erstellt",
@@ -613,6 +652,16 @@ function AuditLogView() {
   }
   const [expandedDiffId, setExpandedDiffId] = useState<number | null>(null);
 
+  const filteredLogs = logs?.filter((log) => {
+    if (!auditSearch) return true;
+    const q = auditSearch.toLowerCase();
+    return (
+      ((log as any).actorName ?? "").toLowerCase().includes(q) ||
+      (log.action ?? "").toLowerCase().includes(q) ||
+      String(log.thesisRequestId ?? "").includes(q)
+    );
+  });
+
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>;
   }
@@ -632,6 +681,23 @@ function AuditLogView() {
   }
 
   return (
+    <div className="space-y-4">
+      {/* Suchfeld */}
+      <div className="relative max-w-sm">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Nach Nutzer:in oder Aktion suchen..."
+          value={auditSearch}
+          onChange={(e) => setAuditSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+        />
+      </div>
+      {filteredLogs?.length === 0 && auditSearch && (
+        <p className="text-sm text-gray-500 py-4 text-center">Keine Einträge für „{auditSearch}“ gefunden.</p>
+      )}
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -646,7 +712,7 @@ function AuditLogView() {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => {
+            {(filteredLogs ?? []).map((log) => {
               const hasDiff: boolean = log.action === "THESIS_UPDATED_BY_STUDENT" && !!log.metadata && typeof log.metadata === "object" && Array.isArray((log.metadata as any).diff) && (log.metadata as any).diff.length > 0;
               const isExpanded = expandedDiffId === log.id;
               return (
@@ -714,6 +780,7 @@ function AuditLogView() {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }
