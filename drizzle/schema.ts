@@ -589,3 +589,14 @@ export const loginAttempts = mysqlTable("login_attempts", {
 ]);
 export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
 export type SelectLoginAttempt = typeof loginAttempts.$inferSelect;
+
+// ─── Neue Prüfer:innen – Badge-Tracking ──────────────────────────────────────
+export const examinerSeenNotifications = mysqlTable("examiner_seen_notifications", {
+  id: int().autoincrement().notNull().primaryKey(),
+  userId: int("user_id").notNull(),
+  lastSeenAt: timestamp("last_seen_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+  index("idx_esn_user").on(table.userId),
+]);
+export type InsertExaminerSeenNotification = typeof examinerSeenNotifications.$inferInsert;
+export type SelectExaminerSeenNotification = typeof examinerSeenNotifications.$inferSelect;

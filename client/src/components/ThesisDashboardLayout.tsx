@@ -246,6 +246,7 @@ function NavItem({
   onClick,
   disabled,
   disabledTooltip,
+  badge,
 }: {
   href: string;
   label: string;
@@ -254,6 +255,7 @@ function NavItem({
   onClick: () => void;
   disabled?: boolean;
   disabledTooltip?: string;
+  badge?: number;
 }) {
   const btn = (
     <button
@@ -270,7 +272,12 @@ function NavItem({
       aria-current={active ? "page" : undefined}
     >
       <span className="w-5 h-5 flex-shrink-0">{icon}</span>
-      {label}
+      <span className="flex-1 text-left">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </button>
   );
   if (disabled && disabledTooltip) {
@@ -290,7 +297,7 @@ function NavItem({
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-type NavEntry = { href: string; label: string; icon: React.ReactNode; onClick?: () => void; disabled?: boolean; disabledTooltip?: string };
+type NavEntry = { href: string; label: string; icon: React.ReactNode; onClick?: () => void; disabled?: boolean; disabledTooltip?: string; badge?: number };
 
 function Sidebar({
   navItems,
@@ -365,6 +372,7 @@ function Sidebar({
               active={location === item.href}
               disabled={item.disabled}
               disabledTooltip={item.disabledTooltip}
+              badge={item.badge}
               onClick={() => {
                 if (item.disabled) return;
                 navigate(item.href);

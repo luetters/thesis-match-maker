@@ -196,6 +196,9 @@ import {
   logLoginAttempt,
   getLoginAttempts,
   getLastPasswordResetSent,
+  getNewExaminersCount,
+  getNewExaminers,
+  markNewExaminersAsSeen,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -5046,6 +5049,21 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // --- Neue Prüfer:innen – Badge-Tracking ---
+  newExaminers: {
+    getCount: protectedProcedure.query(async ({ ctx }) => {
+      const count = await getNewExaminersCount(ctx.user.id);
+      return { count };
+    }),
+    getList: protectedProcedure.query(async ({ ctx }) => {
+      return getNewExaminers(ctx.user.id);
+    }),
+    markAsSeen: protectedProcedure.mutation(async ({ ctx }) => {
+      await markNewExaminersAsSeen(ctx.user.id);
+      return { success: true };
+    }),
+  },
 
 });
 export type AppRouter = typeof appRouter;

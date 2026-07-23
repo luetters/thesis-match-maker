@@ -1231,3 +1231,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend AllRequests: Nutzer-Filter-Badge mit "Filter aufheben"-Button
 - [x] Frontend UserManagement: "Anfragen"-Button in jeder Nutzer-Zeile
 - [x] Frontend AdminDashboard: selectedUserFilter State + Tab-Wechsel zu "requests"
+
+## Neue Prüfer:innen-Benachrichtigungs-Workflow (Variante C)
+- [ ] DB: examiner_seen_notifications Tabelle für Badge-Tracking anlegen
+- [ ] Backend: E-Mail an Verwaltung bei Genehmigung neuer Prüfer:in
+- [ ] Backend: getNewExaminers Prozedur (seit letztem Login)
+- [ ] Backend: markExaminersAsSeen Prozedur
+- [ ] Frontend: Sidebar-Badge für neue Prüfer:innen
+- [ ] Frontend: Neue-Prüfer:innen-Übersichtsseite mit Präferenz-Button

@@ -26,6 +26,7 @@ import {
   deadlineChanges,
   examinerTopics,
   loginAttempts,
+  examinerSeenNotifications,
   passwordResetTokens,
   InsertPasswordResetToken,
 } from "../drizzle/schema";
@@ -4165,6 +4166,29 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
         console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err);
       }
     }
+    // Bei Genehmigung eines neuen Prüfers: E-Mail an alle bestehenden Prüfer:innen senden
+    if (requestedRole === "examiner") {
+      try {
+        const { sendEmail } = await import("./emailHelper");
+        const examinerRows = await db.execute(
+          `SELECT email, name FROM users WHERE role = 'examiner' AND roleStatus = 'approved' AND id != ${userId} AND email IS NOT NULL`
+        );
+        const examiners = (examinerRows[0] as unknown as any[]);
+        for (const ex of examiners) {
+          if (!ex.email) continue;
+          const subject = `Neue Prüfer:in im System: ${user.name ?? "Unbekannt"}`;
+          const html = `<p>Sehr geehrte/r ${ex.name ?? "Prüfer:in"},</p>
+<p>eine neue Prüfer:in hat sich im HTW Berlin Thesis-Management-System registriert und wurde freigeschaltet:</p>
+<p><strong>${user.name ?? "Unbekannt"}</strong></p>
+<p>Sie können diese Person in Ihrem Dashboard unter <em>Neue Prüfer:innen</em> ansehen und Ihrer persönlichen Präferenzliste hinzufügen.</p>
+<p>Mit freundlichen Grüßen<br/>HTW Berlin Thesis-Management</p>`;
+          const text = `Neue Prüfer:in: ${user.name ?? "Unbekannt"}. Bitte melden Sie sich im System an, um diese Person Ihrer Präferenzliste hinzuzufügen.`;
+          await sendEmail({ to: ex.email as string, subject, html, text }).catch(() => {});
+        }
+      } catch (err) {
+        console.warn("[RoleApproval] Benachrichtigung an Prüfer:innen fehlgeschlagen:", err);
+      }
+    }
     return { success: true };
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Bestätigen der Rolle:", error);
@@ -6806,4 +6830,73 @@ export async function getLastPasswordResetSent(userId: number): Promise<string |
     .orderBy(desc(passwordResetTokens.createdAt))
     .limit(1);
   return rows[0]?.createdAt ?? null;
+}
+
+// ─── Neue Prüfer:innen – Badge-Tracking ──────────────────────────────────────
+export async function getNewExaminersCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  // Letzter Zeitpunkt, zu dem der Nutzer neue Prüfer:innen gesehen hat
+  const seenRows = await db
+    .select({ lastSeenAt: examinerSeenNotifications.lastSeenAt })
+    .from(examinerSeenNotifications)
+    .where(eq(examinerSeenNotifications.userId, userId))
+    .limit(1);
+  const lastSeen = seenRows[0]?.lastSeenAt ?? "1970-01-01 00:00:00";
+  // Anzahl Prüfer:innen, die seit lastSeen genehmigt wurden
+  const rows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(users)
+    .where(
+      and(
+        eq(users.role, "examiner"),
+        eq(users.roleStatus, "approved"),
+        gt(users.roleConfirmedAt, lastSeen)
+      )
+    );
+  return Number(rows[0]?.count ?? 0);
+}
+
+export async function getNewExaminers(userId: number): Promise<Array<{
+  id: number; name: string | null; email: string | null;
+  department: string | null; title: string | null;
+  roleConfirmedAt: string | null; studyPrograms: unknown;
+}>> {
+  const db = await getDb();
+  if (!db) return [];
+  const seenRows = await db
+    .select({ lastSeenAt: examinerSeenNotifications.lastSeenAt })
+    .from(examinerSeenNotifications)
+    .where(eq(examinerSeenNotifications.userId, userId))
+    .limit(1);
+  const lastSeen = seenRows[0]?.lastSeenAt ?? "1970-01-01 00:00:00";
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      department: users.department,
+      title: examinerProfiles.title,
+      roleConfirmedAt: users.roleConfirmedAt,
+      studyPrograms: examinerProfiles.studyPrograms,
+    })
+    .from(users)
+    .leftJoin(examinerProfiles, eq(examinerProfiles.userId, users.id))
+    .where(
+      and(
+        eq(users.role, "examiner"),
+        eq(users.roleStatus, "approved"),
+        gt(users.roleConfirmedAt, lastSeen)
+      )
+    )
+    .orderBy(desc(users.roleConfirmedAt));
+}
+
+export async function markNewExaminersAsSeen(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(examinerSeenNotifications)
+    .values({ userId, lastSeenAt: new Date().toISOString().slice(0, 19).replace("T", " ") })
+    .onDuplicateKeyUpdate({ set: { lastSeenAt: new Date().toISOString().slice(0, 19).replace("T", " ") } });
 }
