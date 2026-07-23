@@ -922,7 +922,59 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   );
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm relative pb-[72px] sm:pb-0">
+      {/* ── Mobile Sticky Action Bar ─────────────────────────────────────── */}
+      {(isPending || isConditional || isPendingSecond) && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 flex gap-2 shadow-lg">
+          {isPendingSecond && (
+            <>
+              <button
+                onClick={() => {
+                  const el = document.getElementById(`second-accept-${req.id}`);
+                  el?.click();
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                Zusagen
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById(`second-reject-${req.id}`);
+                  el?.click();
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 border border-red-200 bg-red-50"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                Ablehnen
+              </button>
+            </>
+          )}
+          {(isPending || isConditional) && (
+            <>
+              <button
+                onClick={() => openEmailDialog("accept")}
+                disabled={examinerRespond.isPending}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                style={{ backgroundColor: "#76B900" }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                {isConditional ? "Endgültig zusagen" : "Annehmen"}
+              </button>
+              <button
+                onClick={() => openEmailDialog("reject")}
+                disabled={examinerRespond.isPending}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 border border-red-200 bg-red-50 disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                Ablehnen
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      <div className="p-5">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-gray-900 truncate">{req.title || "(Thema wird noch festgelegt)"}</h3>
@@ -2005,10 +2057,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           </div>
         </div>
       )}
+      </div>{/* end p-5 */}
     </div>
   );
 }
-
 // ─── Requests View ────────────────────────────────────────────────────────────
 type RequestSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
 const STATUS_SORT_ORDER: Record<string, number> = {
@@ -3650,7 +3702,36 @@ function Overview() {
       {capacityRows.length > 0 && (
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-4">Betreuungsauslastung</h2>
-          <div className="overflow-x-auto">
+          {/* Mobile: gestapelte Karten */}
+          <div className="sm:hidden space-y-3">
+            {capacityRows.map((row) => {
+              const freeFirst = Math.max(0, row.maxFirst - row.usedFirst);
+              const freeSecond = Math.max(0, row.maxSecond - row.usedSecond);
+              const overFirst = row.usedFirst > row.maxFirst && row.maxFirst > 0;
+              const overSecond = row.usedSecond > row.maxSecond && row.maxSecond > 0;
+              return (
+                <div key={row.semester} className="rounded-xl border border-gray-100 overflow-hidden">
+                  <div className="px-4 py-2" style={{ background: "linear-gradient(90deg, #76B900 0%, #5a8f00 100%)" }}>
+                    <span className="text-sm font-bold text-white">{row.semester}</span>
+                  </div>
+                  <div className="grid grid-cols-2 divide-x divide-gray-100">
+                    <div className="p-3 text-center">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Erstbetreuung</p>
+                      <p className={`text-xl font-bold ${overFirst ? 'text-red-600' : 'text-gray-800'}`}>{row.usedFirst}<span className="text-sm font-normal text-gray-400"> / {row.maxFirst}</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">{freeFirst} frei</p>
+                    </div>
+                    <div className="p-3 text-center">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Zweitbetreuung</p>
+                      <p className={`text-xl font-bold ${overSecond ? 'text-red-600' : 'text-gray-800'}`}>{row.usedSecond}<span className="text-sm font-normal text-gray-400"> / {row.maxSecond}</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">{freeSecond} frei</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop: Grid */}
+          <div className="hidden sm:block overflow-x-auto">
           <div className="space-y-2 min-w-[360px]">
             {/* Header */}
             <div className="grid grid-cols-5 gap-2 px-4 pb-1">
@@ -3685,8 +3766,8 @@ function Overview() {
                 </div>
               );
             })}
-          </div>{/* end min-w-[360px] */}
-          </div>{/* end overflow-x-auto */}
+          </div>
+          </div>
           <p className="text-xs text-gray-400 mt-3 px-1">Kapazitäten können unter Mein Profil angepasst werden.</p>
         </div>
       )}

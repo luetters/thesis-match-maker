@@ -141,7 +141,7 @@ export function InvolvedPersonsTable({ rows, compact = false }: InvolvedPersonsT
                 </span>
               </div>
 
-              {/* Name + Kontakt */}
+              {/* Name + Kontakt + Aktions-Buttons */}
               <div className="px-3 py-2.5">
                 {row.profileId ? (
                   <Link
@@ -168,6 +168,32 @@ export function InvolvedPersonsTable({ rows, compact = false }: InvolvedPersonsT
                     {row.note}
                   </span>
                 )}
+                {/* Aktions-Buttons */}
+                <div className="flex gap-2 mt-2.5 flex-wrap">
+                  {row.contact && (
+                    <a
+                      href={`mailto:${row.contact}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#76B900]/10 text-[#4a7a00] border border-[#76B900]/20 hover:bg-[#76B900]/20 active:scale-95 transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
+                      E-Mail
+                    </a>
+                  )}
+                  {row.profileId && (
+                    <Link
+                      href={`/profile/${row.profileId}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 active:scale-95 transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                      Profil
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           );

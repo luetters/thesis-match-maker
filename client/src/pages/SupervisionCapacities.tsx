@@ -241,7 +241,59 @@ export default function SupervisionCapacities() {
       ) : (
         <>
           {/* ─── Kapazitätstabelle ──────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+          {/* ── Mobile-Karten ─────────────────────────────────────────── */}
+          <div className="sm:hidden space-y-3">
+            {allSemesters.map((sem) => {
+              const cap = capacities.find((c) => c.semester === sem) ?? { semester: sem, maxFirst: 0, maxSecond: 0 };
+              const usage = usageArr.find((u) => u.semester === sem);
+              const usedFirst = usage?.usedFirst ?? 0;
+              const usedSecond = usage?.usedSecond ?? 0;
+              const usedConditional = usage?.usedConditional ?? 0;
+              const overFirst = usedFirst > cap.maxFirst && cap.maxFirst > 0;
+              const overSecond = usedSecond > cap.maxSecond && cap.maxSecond > 0;
+              return (
+                <div key={sem} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "linear-gradient(90deg, #76B900 0%, #5a8f00 100%)" }}>
+                    <span className="text-sm font-bold text-white">{semesterLabel(sem)}</span>
+                  </div>
+                  <div className="p-4 grid grid-cols-2 gap-3">
+                    {/* Erstbetreuung */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{de ? "Erstbetreuung" : "1st Supervision"}</p>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => handleChange(sem, "maxFirst", -1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm font-medium">−</button>
+                        <input type="number" min={0} max={50} value={cap.maxFirst} onChange={(e) => handleInputChange(sem, "maxFirst", parseInt(e.target.value))} className="w-12 text-center text-sm font-bold text-gray-900 border border-gray-200 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <button type="button" onClick={() => handleChange(sem, "maxFirst", 1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm font-medium">+</button>
+                      </div>
+                      <p className="text-xs text-gray-400">{de ? `Belegt: ${usedFirst}` : `Used: ${usedFirst}`}{cap.maxFirst > 0 ? ` / ${cap.maxFirst}` : ""}</p>
+                      {cap.maxFirst > 0 && <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, (usedFirst / cap.maxFirst) * 100)}%`, backgroundColor: overFirst ? "#dc2626" : "#76B900" }} /></div>}
+                    </div>
+                    {/* Zweitbetreuung */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{de ? "Zweitbetreuung" : "2nd Supervision"}</p>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => handleChange(sem, "maxSecond", -1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm font-medium">−</button>
+                        <input type="number" min={0} max={50} value={cap.maxSecond} onChange={(e) => handleInputChange(sem, "maxSecond", parseInt(e.target.value))} className="w-12 text-center text-sm font-bold text-gray-900 border border-gray-200 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <button type="button" onClick={() => handleChange(sem, "maxSecond", 1)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm font-medium">+</button>
+                      </div>
+                      <p className="text-xs text-gray-400">{de ? `Belegt: ${usedSecond}` : `Used: ${usedSecond}`}{cap.maxSecond > 0 ? ` / ${cap.maxSecond}` : ""}</p>
+                      {cap.maxSecond > 0 && <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, (usedSecond / cap.maxSecond) * 100)}%`, backgroundColor: overSecond ? "#dc2626" : "#76B900" }} /></div>}
+                    </div>
+                    {/* Vorbehalt */}
+                    {usedConditional > 0 && (
+                      <div className="col-span-2 flex items-center gap-2 pt-1 border-t border-gray-50">
+                        <span className="text-xs text-amber-600 font-semibold">{de ? "Unter Vorbehalt:" : "Conditional:"}</span>
+                        <span className="text-sm font-bold text-amber-600">{usedConditional}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Desktop-Tabelle (ab sm) ──────────────────────────────────── */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
             {/* Tabellen-Header */}
             <div className="min-w-[640px]">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
