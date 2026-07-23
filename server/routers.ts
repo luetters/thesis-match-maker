@@ -1983,6 +1983,48 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+    // Admin: Passwort-Reset-E-Mail an Nutzer:in senden
+    sendPasswordResetEmail: adminProcedure
+      .input(z.object({ userId: z.number(), origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(input.userId);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Nutzer:in nicht gefunden." });
+        if (!user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Keine E-Mail-Adresse hinterlegt." });
+        if (!user.passwordHash) throw new TRPCError({ code: "BAD_REQUEST", message: "Dieses Konto verwendet kein Passwort-Login." });
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 Stunde
+        await createPasswordResetToken(user.id, token, expiresAt);
+        const resetUrl = `${input.origin}/reset-password?token=${token}`;
+        const { sendEmail } = await import("./emailHelper");
+        await sendEmail({
+          to: user.email,
+          subject: "Neues Passwort anfordern – HTW Berlin Thesis Match Maker",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+              <div style="background: #006937; padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin – Thesis Match Maker</h1>
+              </div>
+              <div style="padding: 32px; background: #f9f9f9;">
+                <h2 style="color: #1a1a1a; margin-top: 0;">Passwort zurücksetzen</h2>
+                <p style="color: #444;">Die Verwaltung der HTW Berlin hat für Sie einen Passwort-Reset-Link erstellt. Klicken Sie auf den folgenden Button, um ein neues Passwort zu vergeben:</p>
+                <div style="text-align: center; margin: 32px 0;">
+                  <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Neues Passwort vergeben</a>
+                </div>
+                <p style="color: #888; font-size: 13px;">Dieser Link ist 1 Stunde gültig. Falls Sie diese Anfrage nicht gestellt haben, wenden Sie sich bitte an die Verwaltung.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                <p style="color: #aaa; font-size: 12px;">© ${new Date().getFullYear()} HTW Berlin – Hochschule für Technik und Wirtschaft</p>
+              </div>
+            </div>
+          `,
+        });
+        await createAuditLogEntry({
+          action: "ADMIN_PASSWORD_RESET_SENT",
+          actorId: ctx.user.id,
+          metadata: { targetUserId: input.userId, targetEmail: user.email },
+        });
+        return { success: true };
+      }),
     setDeadline: adminProcedure
       .input(
         z.object({

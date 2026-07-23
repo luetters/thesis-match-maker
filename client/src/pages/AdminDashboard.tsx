@@ -1003,6 +1003,7 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 15;
   const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
+  const [capacityFilter, setCapacityFilter] = useState<"all" | "hasCapacity" | "noCapacity">("all");
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
@@ -1033,6 +1034,11 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
       toast.success("Nutzer:in gelöscht!");
       utils.admin.users.invalidate();
     },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const sendPasswordReset = trpc.admin.sendPasswordResetEmail.useMutation({
+    onSuccess: () => toast.success("Passwort-Reset-E-Mail wurde versendet!"),
     onError: (err) => toast.error(err.message),
   });
 
@@ -1071,13 +1077,19 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
   const examinerRoles = ["examiner", "second_examiner", "programme_director", "pav", "dean", "vice_dean", "admin", "user"];
   const studentRoles = ["student"];
   const query = searchQuery.trim().toLowerCase();
-  const filteredUsers = users?.filter(({ user }) => {
+  const filteredUsers = users?.filter(({ user, profile }) => {
     // Multi-Rollen: Tab-Filter prüft alle Rollen des Nutzers
     const allRoles: string[] = (user as any).roles?.length ? (user as any).roles : [user.role];
     const matchesTab = userTab === "examiners"
       ? allRoles.some((r) => examinerRoles.includes(r))
       : allRoles.some((r) => studentRoles.includes(r));
     if (!matchesTab) return false;
+    // Kapazitäts-Filter (nur für Prüfer:innen relevant)
+    if (userTab === "examiners" && capacityFilter !== "all") {
+      const maxSup = (profile as any)?.maxSupervisions ?? 0;
+      if (capacityFilter === "hasCapacity" && maxSup <= 0) return false;
+      if (capacityFilter === "noCapacity" && maxSup > 0) return false;
+    }
     if (!query) return true;
     return (
       buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }).toLowerCase().includes(query) ||
@@ -1126,6 +1138,7 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
       </div>
       {/* Tab-Navigation */}
       <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
           <button
             onClick={() => { setUserTab("examiners"); setCurrentPage(1); }}
@@ -1153,6 +1166,24 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
               ({users?.filter(({ user }) => studentRoles.includes(user.role)).length ?? 0})
             </span>
           </button>
+        </div>
+        {userTab === "examiners" && (
+          <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+            {(["all", "hasCapacity", "noCapacity"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => { setCapacityFilter(f); setCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  capacityFilter === f
+                    ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {f === "all" ? "Alle" : f === "hasCapacity" ? "Freie Kapazität" : "Keine Kapazität"}
+              </button>
+            ))}
+          </div>
+        )}
         </div>
         {userTab === "examiners" && (
           <button
@@ -1283,6 +1314,18 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
                           {(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "2º Prüfer:in" : "1º Prüfer:in"}
                         </button>
                       )}
+                      <button
+                        onClick={() => {
+                          if (confirm(`Passwort-Reset-E-Mail an "${user.email}" senden?`)) {
+                            sendPasswordReset.mutate({ userId: user.id, origin: window.location.origin });
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        title="Neues Passwort senden"
+                        disabled={sendPasswordReset.isPending}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      </button>
                       <button
                         onClick={() => {
                           if (confirm(`Nutzer:in "${buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email}" wirklich löschen?`)) {
