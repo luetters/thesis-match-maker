@@ -3650,7 +3650,8 @@ function Overview() {
       {capacityRows.length > 0 && (
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-4">Betreuungsauslastung</h2>
-          <div className="space-y-2">
+          <div className="overflow-x-auto">
+          <div className="space-y-2 min-w-[360px]">
             {/* Header */}
             <div className="grid grid-cols-5 gap-2 px-4 pb-1">
               <span className="text-xs font-medium text-gray-400 col-span-1">Semester</span>
@@ -3684,7 +3685,8 @@ function Overview() {
                 </div>
               );
             })}
-          </div>
+          </div>{/* end min-w-[360px] */}
+          </div>{/* end overflow-x-auto */}
           <p className="text-xs text-gray-400 mt-3 px-1">Kapazitäten können unter Mein Profil angepasst werden.</p>
         </div>
       )}

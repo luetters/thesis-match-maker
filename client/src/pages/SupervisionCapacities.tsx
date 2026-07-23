@@ -241,8 +241,9 @@ export default function SupervisionCapacities() {
       ) : (
         <>
           {/* ─── Kapazitätstabelle ──────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
             {/* Tabellen-Header */}
+            <div className="min-w-[640px]">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
               <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-3 items-center">
                 {/* Semester */}
@@ -463,6 +464,7 @@ export default function SupervisionCapacities() {
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/60">
               <p className="text-xs text-gray-400">{sc.tableFootnote}</p>
             </div>
+            </div>{/* end min-w-[640px] */}
           </div>
 
           {/* ─── Aktionsleiste ──────────────────────────────────────────────── */}
