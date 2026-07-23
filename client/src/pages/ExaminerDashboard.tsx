@@ -2266,13 +2266,16 @@ function ProfileEdit() {
   }, [savedCapacities, capsLoading]);
   const handleSaveCapacities = async () => {
     try {
-      // Optimistisch den Cache direkt setzen (verhindert Reset auf 0)
-      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
+      // Erst alle Mutations abschließen, dann den Cache aktualisieren
       for (const cap of capacities) {
         await upsertCapacity.mutateAsync({ semester: cap.semester, maxFirst: cap.maxFirst, maxSecond: cap.maxSecond });
       }
+      // Optimistisch den Cache mit den gespeicherten Werten setzen
+      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
+      // hasHydrated bleibt true – verhindert, dass useEffect den State überschreibt
+      hasHydrated.current = true;
       toast.success("Kapazitäten gespeichert!");
-      // Cache im Hintergrund aktualisieren – hasHydrated bleibt true, kein Überschreiben
+      // Im Hintergrund aktualisieren (hasHydrated=true verhindert Überschreiben)
       utils.examiner.getSemesterCapacities.invalidate();
     } catch (err: any) {
       toast.error(err?.message ?? "Fehler beim Speichern");

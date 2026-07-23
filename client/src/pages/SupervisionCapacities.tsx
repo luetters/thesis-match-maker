@@ -96,17 +96,19 @@ export default function SupervisionCapacities() {
   const handleSave = async () => {
     if (capacities.length === 0) return;
     try {
-      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
-      hasHydrated.current = false;
+      // Erst alle Mutations abschließen, dann den Cache aktualisieren
       for (const cap of capacities) {
         await upsertCapacity.mutateAsync(cap);
       }
-      toast.success(de ? "Kapazitäten gespeichert!" : "Capacities saved!");
-    } catch (err: any) {
+      // Optimistisch den Cache mit den gespeicherten Werten setzen
+      utils.examiner.getSemesterCapacities.setData(undefined, capacities as any);
+      // hasHydrated bleibt true – verhindert, dass useEffect den State überschreibt
       hasHydrated.current = true;
-      toast.error(err?.message ?? (de ? "Fehler beim Speichern" : "Error saving"));
-    } finally {
+      toast.success(de ? "Kapazitäten gespeichert!" : "Capacities saved!");
+      // Im Hintergrund aktualisieren (hasHydrated=true verhindert Überschreiben)
       utils.examiner.getSemesterCapacities.invalidate();
+    } catch (err: any) {
+      toast.error(err?.message ?? (de ? "Fehler beim Speichern" : "Error saving"));
     }
   };
 
