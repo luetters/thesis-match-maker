@@ -193,6 +193,9 @@ import {
   adminDirectAssignExaminers,
   getThesisRequestByIdWithNames,
   reviseThesisSubmission,
+  logLoginAttempt,
+  getLoginAttempts,
+  getLastPasswordResetSent,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -708,10 +711,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
         if (!user || !user.passwordHash) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "user_not_found", ipAddress: ctx.req.ip, userAgent: ctx.req.headers["user-agent"] });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
         }
         const valid = await bcrypt.compare(input.password, user.passwordHash);
         if (!valid) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "wrong_password", ipAddress: ctx.req.ip, userAgent: ctx.req.headers["user-agent"] });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
         }
         // Freischaltungs-Prüfung
@@ -1982,6 +1987,19 @@ export const appRouter = router({
           metadata: { deletedUserId: input.userId },
         });
         return { success: true };
+      }),
+    // Admin: Login-Fehler-Protokoll abrufen
+    getLoginAttempts: adminProcedure
+      .input(z.object({ email: z.string().optional(), onlyFailed: z.boolean().optional(), limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return getLoginAttempts({ email: input.email, onlyFailed: input.onlyFailed, limit: input.limit });
+      }),
+    // Admin: Letzten Passwort-Reset-Zeitstempel abrufen
+    getLastPasswordResetSent: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const ts = await getLastPasswordResetSent(input.userId);
+        return { lastSentAt: ts };
       }),
     // Admin: Passwort-Reset-E-Mail an Nutzer:in senden
     sendPasswordResetEmail: adminProcedure

@@ -573,3 +573,19 @@ export const examinerTopics = mysqlTable("examiner_topics", {
 });
 export type InsertExaminerTopic = typeof examinerTopics.$inferInsert;
 export type SelectExaminerTopic = typeof examinerTopics.$inferSelect;
+
+// ─── Login-Fehler-Protokoll ───────────────────────────────────────────────────
+export const loginAttempts = mysqlTable("login_attempts", {
+  id: int().autoincrement().notNull().primaryKey(),
+  email: varchar({ length: 320 }).notNull(),
+  success: tinyint().default(0).notNull(),
+  failureReason: varchar("failure_reason", { length: 128 }),
+  ipAddress: varchar("ip_address", { length: 64 }),
+  userAgent: varchar("user_agent", { length: 512 }),
+  createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+  index("idx_la_email").on(table.email),
+  index("idx_la_created").on(table.createdAt),
+]);
+export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
+export type SelectLoginAttempt = typeof loginAttempts.$inferSelect;

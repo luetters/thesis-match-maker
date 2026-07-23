@@ -25,6 +25,9 @@ import {
   userRoles,
   deadlineChanges,
   examinerTopics,
+  loginAttempts,
+  passwordResetTokens,
+  InsertPasswordResetToken,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
@@ -1262,7 +1265,6 @@ export async function upsertSystemSetting(key: string, value: string, updatedByI
 }
 
 // ─── Password Reset Tokens ────────────────────────────────────────────────────
-import { passwordResetTokens, InsertPasswordResetToken } from "../drizzle/schema";
 
 export async function createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<void> {
   const db = await getDb();
@@ -6756,4 +6758,52 @@ export async function reviseThesisSubmission(
     ...(data.degreeType ? { degreeType: data.degreeType } : {}),
     status: "PENDING_FIRST_EXAMINER" as any,
   }).where(eq(thesisRequests.id, id));
+}
+
+// ─── Login-Fehler-Protokoll ───────────────────────────────────────────────────
+export async function logLoginAttempt(data: {
+  email: string;
+  success: boolean;
+  failureReason?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(loginAttempts).values({
+    email: data.email,
+    success: data.success ? 1 : 0,
+    failureReason: data.failureReason ?? null,
+    ipAddress: data.ipAddress ?? null,
+    userAgent: data.userAgent ? data.userAgent.substring(0, 512) : null,
+  });
+}
+
+export async function getLoginAttempts(opts?: { email?: string; onlyFailed?: boolean; limit?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (opts?.email) conditions.push(eq(loginAttempts.email, opts.email));
+  if (opts?.onlyFailed) conditions.push(eq(loginAttempts.success, 0));
+  const query = db
+    .select()
+    .from(loginAttempts)
+    .orderBy(desc(loginAttempts.createdAt))
+    .limit(opts?.limit ?? 200);
+  if (conditions.length > 0) {
+    return query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
+  }
+  return query;
+}
+
+export async function getLastPasswordResetSent(userId: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({ createdAt: passwordResetTokens.createdAt })
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.userId, userId))
+    .orderBy(desc(passwordResetTokens.createdAt))
+    .limit(1);
+  return rows[0]?.createdAt ?? null;
 }

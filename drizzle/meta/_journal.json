@@ -470,6 +470,13 @@
       "when": 1784041868968,
       "tag": "0066_fearless_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "5",
+      "when": 1784788913678,
+      "tag": "0067_sleepy_celestials",
+      "breakpoints": true
     }
   ]
 }

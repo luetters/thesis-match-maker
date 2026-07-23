@@ -5,7 +5,8 @@ import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,6 +39,7 @@ function useNavItems(pendingCount = 0) {
     { href: "/admin/stats", label: t.admin.stats, icon: IconStats },
     { href: "/admin/colloquiums", label: t.admin.colloquiums, icon: IconCalendar },
     { href: "/admin/email-templates", label: "E-Mail-Vorlagen", icon: Icons.list },
+    { href: "/admin/login-attempts", label: "Login-Protokoll", icon: Icons.log },
   ];
 }
 
@@ -994,6 +996,16 @@ function RoleChangeConfirmDialog({
 }
 
 // ─── User Management ──────────────────────────────────────────────────────────────────────────────────
+function LastResetInfo({ userId }: { userId: number }) {
+  const { data } = trpc.admin.getLastPasswordResetSent.useQuery({ userId });
+  if (!data?.lastSentAt) return <span className="block mt-2 text-xs text-gray-400">Noch kein Reset-Link gesendet.</span>;
+  return (
+    <span className="block mt-2 text-xs text-gray-400">
+      Zuletzt gesendet: {new Date(data.lastSentAt).toLocaleString("de-DE")}
+    </span>
+  );
+}
+
 function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (userId: number, userName: string) => void } = {}) {
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
@@ -1314,29 +1326,55 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
                           {(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "2º Prüfer:in" : "1º Prüfer:in"}
                         </button>
                       )}
-                      <button
-                        onClick={() => {
-                          if (confirm(`Passwort-Reset-E-Mail an "${user.email}" senden?`)) {
-                            sendPasswordReset.mutate({ userId: user.id, origin: window.location.origin });
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        title="Neues Passwort senden"
-                        disabled={sendPasswordReset.isPending}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Nutzer:in "${buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email}" wirklich löschen?`)) {
-                            deleteUser.mutate({ userId: user.id });
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Löschen"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 rounded-lg text-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            title="Neues Passwort senden"
+                            disabled={sendPasswordReset.isPending}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Passwort-Reset-E-Mail senden?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Es wird ein Passwort-Reset-Link an <strong>{user.email}</strong> gesendet. Der Link ist 1 Stunde gültig.
+                              <LastResetInfo userId={user.id} />
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => sendPasswordReset.mutate({ userId: user.id, origin: window.location.origin })}>E-Mail senden</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Nutzer:in löschen"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Nutzer:in wirklich löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              <strong>{buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle, name: user.name }) || user.email}</strong> wird dauerhaft aus dem System entfernt. Alle zugehörigen Daten (Profil, Rollen, Anfragen) werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                              onClick={() => deleteUser.mutate({ userId: user.id })}
+                            >Endgültig löschen</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </td>
                 </tr>
@@ -1819,11 +1857,88 @@ function StatisticsView() {
   );
 }
 
+// ─── Login-Protokoll ─────────────────────────────────────────────────────────
+function LoginAttemptsView() {
+  const [emailFilter, setEmailFilter] = useState("");
+  const [onlyFailed, setOnlyFailed] = useState(true);
+  const { data: attempts, isLoading } = trpc.admin.getLoginAttempts.useQuery(
+    { onlyFailed, limit: 200 },
+    { refetchInterval: 30000 }
+  );
+  const filtered = attempts?.filter((a) =>
+    !emailFilter.trim() || a.email.toLowerCase().includes(emailFilter.trim().toLowerCase())
+  ) ?? [];
+  const failureLabels: Record<string, string> = {
+    user_not_found: "Nutzer:in nicht gefunden",
+    wrong_password: "Falsches Passwort",
+    account_not_approved: "Konto nicht freigeschaltet",
+    account_rejected: "Konto abgelehnt",
+  };
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[220px]">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input
+            type="text"
+            value={emailFilter}
+            onChange={(e) => setEmailFilter(e.target.value)}
+            placeholder="Nach E-Mail filtern..."
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <input type="checkbox" checked={onlyFailed} onChange={(e) => setOnlyFailed(e.target.checked)} className="rounded" />
+          Nur fehlgeschlagene
+        </label>
+        <span className="text-xs text-gray-400">{filtered.length} Eintraege</span>
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Zeitpunkt</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">E-Mail</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Status</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Grund</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">IP-Adresse</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">Lade...</td></tr>
+              )}
+              {!isLoading && filtered.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">Keine Eintraege vorhanden.</td></tr>
+              )}
+              {filtered.map((a) => (
+                <tr key={a.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                  <td className="px-5 py-3 text-sm text-gray-600 whitespace-nowrap">{new Date(a.createdAt).toLocaleString("de-DE")}</td>
+                  <td className="px-5 py-3 text-sm font-medium text-gray-900">{a.email}</td>
+                  <td className="px-5 py-3">
+                    {a.success
+                      ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Erfolgreich</span>
+                      : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Fehlgeschlagen</span>
+                    }
+                  </td>
+                  <td className="px-5 py-3 text-sm text-gray-500">{a.failureReason ? (failureLabels[a.failureReason] ?? a.failureReason) : "—"}</td>
+                  <td className="px-5 py-3 text-sm text-gray-400 hidden md:table-cell font-mono">{a.ipAddress ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates" | "login_attempts">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
 
   // Zugriffskontrolle: Nur Admins und Superadmins – navigate in useEffect, nie in Render-Phase
@@ -1848,6 +1963,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/stats") setActiveTab("stats");
       else if (item.href === "/admin/settings") setActiveTab("settings");
       else if (item.href === "/admin/email-templates") setActiveTab("email_templates");
+      else if (item.href === "/admin/login-attempts") setActiveTab("login_attempts");
     },
   }));
   const titles: Record<string, string> = {
@@ -1859,6 +1975,7 @@ export default function AdminDashboard() {
     stats: "Statistiken",
     settings: "Einstellungen",
     email_templates: "E-Mail-Vorlagen",
+    login_attempts: "Login-Protokoll",
   };
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
@@ -1870,6 +1987,7 @@ export default function AdminDashboard() {
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
+      {activeTab === "login_attempts" && <LoginAttemptsView />}
     </ThesisDashboardLayout>
   );
 }
