@@ -548,6 +548,27 @@ function SecondExaminerRequestBox({ req, openEmailDialog, isPending }: {
         </div>
       )}
 
+      {/* Erstgutachter:in kontaktieren */}
+      {req.firstExaminerEmail && (
+        <button
+          onClick={() => {
+            const firstName = req.firstExaminerName ?? "Erstgutachter:in";
+            const subject = `Rückfrage zur Zweitbetreuung – ${req.title}`;
+            const body =
+              `Sehr geehrte/r ${firstName},\n\n` +
+              `ich wurde als Zweitgutachter:in für die Abschlussarbeit \u201e${req.title}\u201c von ${req.studentName ?? "dem/der Studierenden"} angefragt.\n\n` +
+              `Ich möchte mich kurz bei Ihnen melden:\n\n` +
+              `Mit freundlichen Grüßen`;
+            (req as any)._contactFirstExaminer = { subject, body };
+            openEmailDialog("accept");
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          Erstgutachter:in kontaktieren
+        </button>
+      )}
+
       {/* Buttons */}
       <div className="flex gap-2">
         <button
@@ -889,6 +910,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
   const isPendingSecond = req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId === user?.id;
   const isAcceptedSecond = req.status === "SECOND_EXAMINER_ACCEPTED" && (req as any).secondExaminerId === user?.id;
+  // Ist der eingeloggte Nutzer der Zweitgutachter dieser Anfrage?
+  const iAmSecondExaminer = user?.id !== undefined && (
+    (req as any).secondExaminerId === user.id ||
+    (req as any).wantedSecondExaminerId === user.id
+  );
 
   const { data: condDocs } = (trpc.examinerEmailTemplates as any).getConditionalDocuments?.useQuery?.(
     { thesisRequestId: req.id },
@@ -1329,18 +1355,25 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         </div>
       )}
 
-      {/* E-Mail-Dialog: Zweitgutachter:in kontaktieren */}
+      {/* E-Mail-Dialog: Gutachter:innen kontaktieren */}
       {showSecondExaminerEmailDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900">E-Mail an Zweitgutachter:in</h3>
+              <h3 className="text-base font-semibold text-gray-900">
+                {iAmSecondExaminer ? "E-Mail an Erstgutachter:in" : "E-Mail an Zweitgutachter:in"}
+              </h3>
               <button onClick={() => setShowSecondExaminerEmailDialog(false)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <p className="text-xs text-gray-500 mb-3">
-              Empfänger:in: <strong>{req.secondExaminerName ?? req.wantedSecondExaminerName}</strong> ({req.secondExaminerEmail ?? req.wantedSecondExaminerEmail})
+              Empfänger:in:{" "}
+              {iAmSecondExaminer ? (
+                <><strong>{req.firstExaminerName ?? "Erstgutachter:in"}</strong> ({req.firstExaminerEmail ?? "–"})</>
+              ) : (
+                <><strong>{req.secondExaminerName ?? req.wantedSecondExaminerName}</strong> ({req.secondExaminerEmail ?? req.wantedSecondExaminerEmail})</>
+              )}
             </p>
             <div className="space-y-3">
               <div>
@@ -1370,7 +1403,9 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   thesisRequestId: req.id,
                   subject: secondExaminerEmailSubject,
                   body: secondExaminerEmailBody,
-                  recipientEmail: (req.secondExaminerEmail ?? req.wantedSecondExaminerEmail) as string,
+                  recipientEmail: iAmSecondExaminer
+                    ? (req.firstExaminerEmail as string)
+                    : ((req.secondExaminerEmail ?? req.wantedSecondExaminerEmail) as string),
                 })}
                 className="px-4 py-2 rounded-xl bg-[#76b900] text-white text-sm font-medium hover:bg-[#5a8f00] disabled:opacity-50 transition-colors"
               >

@@ -4281,11 +4281,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const req = await getThesisRequestById(input.thesisRequestId);
         if (!req) throw new TRPCError({ code: "NOT_FOUND" });
-        // Nur Erstgutachter:in oder Admin darf diese Funktion nutzen
+        // Erstgutachter:in, Zweitgutachter:in oder Admin darf diese Funktion nutzen
         const isFirstExaminer = req.examinerId === ctx.user.id || (req as any).wantedExaminerId === ctx.user.id;
+        const isSecondExaminerUser = (req as any).secondExaminerId === ctx.user.id || (req as any).wantedSecondExaminerId === ctx.user.id;
         const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
-        if (!isFirstExaminer && !isAdminUser)
-          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen können Zweitgutachter:innen direkt kontaktieren." });
+        if (!isFirstExaminer && !isSecondExaminerUser && !isAdminUser)
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur beteiligte Gutachter:innen können diese Funktion nutzen." });
         const sent = await sendEmail({
           to: input.recipientEmail,
           subject: input.subject,
