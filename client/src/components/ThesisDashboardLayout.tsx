@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -502,6 +503,8 @@ export function ThesisDashboardLayout({
           <div className="ml-auto flex items-center gap-2">
             {/* Benachrichtigungs-Glocke */}
             <NotificationBell />
+            <div className="w-px h-5 bg-gray-200" />
+            <RoleSwitcher />
             <div className="w-px h-5 bg-gray-200" />
             <LanguageSwitcher />
             <div className="w-px h-5 bg-gray-200" />
