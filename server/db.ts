@@ -4188,29 +4188,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
         console.warn("[RoleApproval] examiner_profiles-Update für second_examiner fehlgeschlagen:", err);
       }
     }
-    // Bei Genehmigung eines neuen Prüfers: E-Mail an alle bestehenden Prüfer:innen senden
-    if (requestedRole === "examiner") {
-      try {
-        const { sendEmail } = await import("./emailHelper");
-        const examinerRows = await db.execute(
-          `SELECT email, name FROM users WHERE role = 'examiner' AND roleStatus = 'approved' AND id != ${userId} AND email IS NOT NULL`
-        );
-        const examiners = (examinerRows[0] as unknown as any[]);
-        for (const ex of examiners) {
-          if (!ex.email) continue;
-          const subject = `Neue Prüfer:in im System: ${user.name ?? "Unbekannt"}`;
-          const html = `<p>Sehr geehrte/r ${ex.name ?? "Prüfer:in"},</p>
-<p>eine neue Prüfer:in hat sich im HTW Berlin Thesis-Management-System registriert und wurde freigeschaltet:</p>
-<p><strong>${user.name ?? "Unbekannt"}</strong></p>
-<p>Sie können diese Person in Ihrem Dashboard unter <em>Neue Prüfer:innen</em> ansehen und Ihrer persönlichen Präferenzliste hinzufügen.</p>
-<p>Mit freundlichen Grüßen<br/>HTW Berlin Thesis-Management</p>`;
-          const text = `Neue Prüfer:in: ${user.name ?? "Unbekannt"}. Bitte melden Sie sich im System an, um diese Person Ihrer Präferenzliste hinzuzufügen.`;
-          await sendEmail({ to: ex.email as string, subject, html, text }).catch(() => {});
-        }
-      } catch (err) {
-        console.warn("[RoleApproval] Benachrichtigung an Prüfer:innen fehlgeschlagen:", err);
-      }
-    }
+    // Neue Prüfer:in wird nur im System angezeigt (Tab "Neue Prüfer:innen") – kein E-Mail-Versand an bestehende Prüfer:innen
     return { success: true };
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Bestätigen der Rolle:", error);
