@@ -1239,3 +1239,15 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Backend: markExaminersAsSeen Prozedur – in db.ts + routers.ts
 - [x] Frontend: Sidebar-Badge für neue Prüfer:innen (in ExaminerDashboard implementiert)
 - [x] Frontend: Neue-Prüfer:innen-Übersichtsseite mit Präferenz-Button (NewExaminersView in ExaminerDashboard)
+
+## Bug-Fix: Rollenänderung vor Freigabe wird nicht übernommen ✅ BEHOBEN
+
+**Problem:** Eine Person registriert sich als Prüfer:in (`examiner`). Die Verwaltung ändert die Rolle im Freischaltungs-Tab auf `Zweitprüfer:in` (`second_examiner`) vor der Freigabe. Nach der Freigabe hatte die Person noch die falsche Rolle.
+
+**Ursache 1:** `approveUserRole` in db.ts aktualisierte zwar `users.role` auf `requestedRole`, aber der `user_roles`-Eintrag blieb auf `examiner`. Beim nächsten Login synchronisierte `syncPrimaryRole` die `users.role` zurück auf `examiner`.
+
+**Ursache 2:** Bei Freigabe von `second_examiner` wurde kein `examiner_profiles`-Eintrag mit `isSecondExaminer=1` angelegt, was dazu führte, dass die Person nicht als Zweitprüferin erkannt wurde.
+
+**Fix:**
+- [x] `approveUserRole`: Alle Prüfer-Rollen aus `user_roles` löschen und neue Rolle eintragen (user_roles-Sync)
+- [x] `approveUserRole`: Bei `second_examiner`-Freigabe `examiner_profiles`-Eintrag mit `isSecondExaminer=1` anlegen/aktualisieren

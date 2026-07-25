@@ -4124,6 +4124,14 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     await db.execute(
       `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`
     );
+    // user_roles-Tabelle synchronisieren: alten examiner/second_examiner-Eintrag ersetzen
+    try {
+      // Alle Prüfer-Rollen des Nutzers entfernen und die neue setzen
+      await db.execute(`DELETE FROM user_roles WHERE user_id = ${userId} AND role IN ('examiner', 'second_examiner', 'student', 'admin', 'pav', 'dean', 'vice_dean', 'programme_director')`);
+      await db.execute(`INSERT IGNORE INTO user_roles (user_id, role, assigned_by, assigned_at) VALUES (${userId}, '${requestedRole}', ${confirmedBy}, NOW())`);
+    } catch (err) {
+      console.warn("[RoleApproval] user_roles-Sync fehlgeschlagen:", err);
+    }
     const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\\'");
     await db.execute(
       `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_APPROVED', '${requestedRole}', '${metaJson}', NOW())`
@@ -4164,6 +4172,20 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
         await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {
         console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err);
+      }
+    }
+    // Bei Genehmigung einer Zweitprüferin: examiner_profiles-Eintrag mit isSecondExaminer=1 anlegen/aktualisieren
+    if (requestedRole === "second_examiner") {
+      try {
+        const epRows = await db.execute(`SELECT id FROM examiner_profiles WHERE user_id = ${userId}`);
+        const epExists = (epRows[0] as unknown as any[]).length > 0;
+        if (epExists) {
+          await db.execute(`UPDATE examiner_profiles SET is_second_examiner = 1 WHERE user_id = ${userId}`);
+        } else {
+          await db.execute(`INSERT INTO examiner_profiles (user_id, is_second_examiner, onboarding_completed) VALUES (${userId}, 1, 0)`);
+        }
+      } catch (err) {
+        console.warn("[RoleApproval] examiner_profiles-Update für second_examiner fehlgeschlagen:", err);
       }
     }
     // Bei Genehmigung eines neuen Prüfers: E-Mail an alle bestehenden Prüfer:innen senden
