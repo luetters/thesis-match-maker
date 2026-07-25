@@ -199,6 +199,10 @@ import {
   getNewExaminersCount,
   getNewExaminers,
   markNewExaminersAsSeen,
+  getNotificationPreferences,
+  setNotificationPreference,
+  NOTIFICATION_TYPES,
+  type NotificationTypeKey,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import bcrypt from "bcryptjs";
@@ -5050,6 +5054,44 @@ export const appRouter = router({
       }),
   }),
 
+  // --- E-Mail-Benachrichtigungs-Einstellungen ---
+  notificationSettings: router({
+    /** Gibt alle Benachrichtigungstypen mit dem aktuellen Aktivierungsstatus des Nutzers zurück. */
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      const prefs = await getNotificationPreferences(ctx.user.id);
+      return NOTIFICATION_TYPES.map((nt) => ({
+        key: nt.key,
+        labelDe: nt.labelDe,
+        descDe: nt.descDe,
+        roles: nt.roles,
+        defaultEnabled: nt.defaultEnabled,
+        enabled: prefs[nt.key],
+      }));
+    }),
+    /** Setzt eine einzelne Benachrichtigungs-Einstellung. */
+    set: protectedProcedure
+      .input(z.object({
+        notificationType: z.string(),
+        enabled: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const validKey = NOTIFICATION_TYPES.find((t) => t.key === input.notificationType);
+        if (!validKey) throw new TRPCError({ code: "BAD_REQUEST", message: "Unbekannter Benachrichtigungstyp." });
+        await setNotificationPreference(ctx.user.id, input.notificationType as NotificationTypeKey, input.enabled);
+        return { success: true };
+      }),
+    /** Setzt alle Benachrichtigungs-Einstellungen auf einmal. */
+    setAll: protectedProcedure
+      .input(z.record(z.string(), z.boolean()))
+      .mutation(async ({ ctx, input }) => {
+        for (const [key, enabled] of Object.entries(input)) {
+          const validKey = NOTIFICATION_TYPES.find((t) => t.key === key);
+          if (!validKey) continue;
+          await setNotificationPreference(ctx.user.id, key as NotificationTypeKey, enabled);
+        }
+        return { success: true };
+      }),
+  }),
   // --- Neue Prüfer:innen – Badge-Tracking ---
   newExaminers: router({
     getCount: protectedProcedure.query(async ({ ctx }) => {

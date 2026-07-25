@@ -31,6 +31,7 @@ import VerifyDocument from "./pages/VerifyDocument";
 import RolePending from "./pages/RolePending";
 import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
+import NotificationSettings from "./pages/NotificationSettings";
 
 function Router() {
   return (
@@ -107,6 +108,9 @@ function Router() {
 
       {/* Studierenden-Bestätigung (Examiner/PAV-initiierter Antrag) */}
       <Route path="/thesis/confirm" component={ThesisConfirm} />
+
+      {/* E-Mail-Benachrichtigungs-Einstellungen */}
+      <Route path="/settings/notifications">{() => <NotificationSettings />}</Route>
 
       {/* Öffentliche Dokumentenverifikation (Login-frei) */}
       <Route path="/verify/:token" component={VerifyDocument} />

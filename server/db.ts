@@ -29,6 +29,7 @@ import {
   examinerSeenNotifications,
   passwordResetTokens,
   InsertPasswordResetToken,
+  notificationPreferences,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
@@ -6899,4 +6900,148 @@ export async function markNewExaminersAsSeen(userId: number): Promise<void> {
     .insert(examinerSeenNotifications)
     .values({ userId, lastSeenAt: new Date().toISOString().slice(0, 19).replace("T", " ") })
     .onDuplicateKeyUpdate({ set: { lastSeenAt: new Date().toISOString().slice(0, 19).replace("T", " ") } });
+}
+
+// ─── E-Mail-Benachrichtigungs-Einstellungen ───────────────────────────────────
+
+/**
+ * Alle verfügbaren Benachrichtigungstypen mit Metadaten.
+ * Schlüssel entsprechen den notification_type-Werten in der DB.
+ */
+export const NOTIFICATION_TYPES = [
+  {
+    key: "new_examiner_colleague",
+    labelDe: "Neue Kolleg:in im System",
+    descDe: "Benachrichtigung, wenn eine neue Prüfer:in freigeschaltet wird.",
+    roles: ["examiner", "second_examiner"],
+    defaultEnabled: false, // opt-in (war vorher Massen-E-Mail)
+  },
+  {
+    key: "thesis_status_change",
+    labelDe: "Statusänderung bei Abschlussarbeit",
+    descDe: "Benachrichtigung bei jeder Statusänderung einer Ihrer Abschlussarbeiten.",
+    roles: ["student", "examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+  {
+    key: "second_examiner_request",
+    labelDe: "Anfrage als Zweitgutachter:in",
+    descDe: "Benachrichtigung, wenn Sie als Zweitgutachter:in für eine Arbeit angefragt werden.",
+    roles: ["examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+  {
+    key: "second_examiner_response",
+    labelDe: "Antwort des Zweitgutachters",
+    descDe: "Benachrichtigung, wenn ein Zweitgutachter auf Ihre Anfrage antwortet.",
+    roles: ["examiner"],
+    defaultEnabled: true,
+  },
+  {
+    key: "role_approved",
+    labelDe: "Rollenfreischaltung",
+    descDe: "Benachrichtigung, wenn Ihre Registrierung freigeschaltet oder abgelehnt wird.",
+    roles: ["student", "examiner", "second_examiner", "admin", "pav", "dean"],
+    defaultEnabled: true,
+  },
+  {
+    key: "colloquium_scheduled",
+    labelDe: "Kolloquium angesetzt",
+    descDe: "Benachrichtigung, wenn ein Kolloquium für Ihre Abschlussarbeit angesetzt wird.",
+    roles: ["student", "examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+  {
+    key: "deadline_reminder",
+    labelDe: "Fristenerinnerungen",
+    descDe: "Erinnerungs-E-Mails für bevorstehende Abgabe- und Bearbeitungsfristen.",
+    roles: ["student", "examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+  {
+    key: "pav_examiner_proposal",
+    labelDe: "PAV-Prüfervorschlag",
+    descDe: "Benachrichtigung, wenn ein PAV-Mitglied Sie als Prüfer:in vorschlägt.",
+    roles: ["examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+] as const;
+
+export type NotificationTypeKey = typeof NOTIFICATION_TYPES[number]["key"];
+
+/**
+ * Lädt alle Benachrichtigungs-Einstellungen eines Nutzers.
+ * Fehlende Einträge werden mit dem systemweiten Standard aufgefüllt.
+ */
+export async function getNotificationPreferences(userId: number): Promise<Record<NotificationTypeKey, boolean>> {
+  const db = await getDb();
+  if (!db) throw new Error("DB nicht verfügbar");
+
+  const rows = await db
+    .select()
+    .from(notificationPreferences)
+    .where(eq(notificationPreferences.userId, userId));
+
+  const result = {} as Record<NotificationTypeKey, boolean>;
+  for (const nt of NOTIFICATION_TYPES) {
+    const row = rows.find((r) => r.notificationType === nt.key);
+    result[nt.key] = row ? row.enabled === 1 : nt.defaultEnabled;
+  }
+  return result;
+}
+
+/**
+ * Setzt eine einzelne Benachrichtigungs-Einstellung für einen Nutzer.
+ */
+export async function setNotificationPreference(
+  userId: number,
+  notificationType: NotificationTypeKey,
+  enabled: boolean
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB nicht verfügbar");
+
+  await db
+    .insert(notificationPreferences)
+    .values({
+      userId,
+      notificationType,
+      enabled: enabled ? 1 : 0,
+      updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+    })
+    .onDuplicateKeyUpdate({
+      set: {
+        enabled: enabled ? 1 : 0,
+        updatedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+      },
+    });
+}
+
+/**
+ * Prüft ob ein Nutzer eine bestimmte E-Mail-Benachrichtigung aktiviert hat.
+ * Gibt den systemweiten Standard zurück wenn kein Eintrag vorhanden.
+ */
+export async function isNotificationEnabled(
+  userId: number,
+  notificationType: NotificationTypeKey
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return true; // Fallback: aktiviert
+
+  const rows = await db
+    .select()
+    .from(notificationPreferences)
+    .where(
+      and(
+        eq(notificationPreferences.userId, userId),
+        eq(notificationPreferences.notificationType, notificationType)
+      )
+    )
+    .limit(1);
+
+  if (rows.length === 0) {
+    const nt = NOTIFICATION_TYPES.find((t) => t.key === notificationType);
+    return nt?.defaultEnabled ?? true;
+  }
+  return rows[0].enabled === 1;
 }

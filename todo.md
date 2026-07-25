@@ -1251,3 +1251,20 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 **Fix:**
 - [x] `approveUserRole`: Alle Prüfer-Rollen aus `user_roles` löschen und neue Rolle eintragen (user_roles-Sync)
 - [x] `approveUserRole`: Bei `second_examiner`-Freigabe `examiner_profiles`-Eintrag mit `isSecondExaminer=1` anlegen/aktualisieren
+
+## Phase 68: E-Mail-Benachrichtigungs-Einstellungen ✅ KOMPLETT
+
+- [x] DB-Tabelle notification_preferences angelegt (user_id, notification_type, enabled)
+- [x] Drizzle-Schema: notificationPreferences-Tabelle in schema.ts hinzugefügt
+- [x] Backend: getNotificationPreferences(userId) – alle Einstellungen eines Nutzers abrufen
+- [x] Backend: setNotificationPreference(userId, type, enabled) – einzelne Einstellung setzen
+- [x] Backend: isNotificationEnabled(userId, type) – Opt-in-Prüfung für E-Mail-Versand
+- [x] Backend: NOTIFICATION_TYPES-Konstante mit 8 Benachrichtigungstypen und Metadaten
+- [x] tRPC: notificationSettings.getAll – alle Typen mit aktuellem Status
+- [x] tRPC: notificationSettings.set – einzelne Einstellung setzen
+- [x] tRPC: notificationSettings.setAll – alle Einstellungen auf einmal setzen
+- [x] Frontend: NotificationSettings.tsx – Einstellungsseite mit Toggle-Schaltern
+- [x] Frontend: Route /settings/notifications in App.tsx registriert
+- [x] Frontend: Link "E-Mail-Benachrichtigungen" im Benutzer-Dropdown (ThesisDashboardLayout)
+- [x] Opt-in-Badge für Benachrichtigungen die standardmäßig deaktiviert sind (new_examiner_colleague)
+- [x] Hinweis auf systemkritische E-Mails (Magic-Link, Passwort-Reset) die nicht deaktivierbar sind

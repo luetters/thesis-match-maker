@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, tinyint, varchar, text, json, timestamp, foreignKey, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, tinyint, varchar, text, json, timestamp, foreignKey, datetime, mysqlEnum, index, uniqueIndex } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const auditLog = mysqlTable("audit_log", {
@@ -600,3 +600,17 @@ export const examinerSeenNotifications = mysqlTable("examiner_seen_notifications
 ]);
 export type InsertExaminerSeenNotification = typeof examinerSeenNotifications.$inferInsert;
 export type SelectExaminerSeenNotification = typeof examinerSeenNotifications.$inferSelect;
+
+// ─── E-Mail-Benachrichtigungs-Einstellungen ──────────────────────────────────────────────
+export const notificationPreferences = mysqlTable("notification_preferences", {
+  id: int().autoincrement().notNull().primaryKey(),
+  userId: int("user_id").notNull(),
+  notificationType: varchar("notification_type", { length: 128 }).notNull(),
+  enabled: tinyint().default(1).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+  index("idx_np_user").on(table.userId),
+  uniqueIndex("idx_np_user_type").on(table.userId, table.notificationType),
+]);
+export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
+export type SelectNotificationPreference = typeof notificationPreferences.$inferSelect;
