@@ -5051,7 +5051,7 @@ export const appRouter = router({
   }),
 
   // --- Neue Prüfer:innen – Badge-Tracking ---
-  newExaminers: {
+  newExaminers: router({
     getCount: protectedProcedure.query(async ({ ctx }) => {
       const count = await getNewExaminersCount(ctx.user.id);
       return { count };
@@ -5063,7 +5063,7 @@ export const appRouter = router({
       await markNewExaminersAsSeen(ctx.user.id);
       return { success: true };
     }),
-  },
+  }),
 
 });
 export type AppRouter = typeof appRouter;
