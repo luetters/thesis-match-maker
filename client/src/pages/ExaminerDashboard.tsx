@@ -4807,7 +4807,7 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
                 className="w-full text-sm font-semibold py-2 rounded-lg transition-colors text-white"
                 style={{ backgroundColor: "#76B900" }}
               >
-                Zu meinen Präferenzen hinzufügen
+                Zu Kommissionspräferenzen hinzufügen
               </button>
             </div>
           );
