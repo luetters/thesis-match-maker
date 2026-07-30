@@ -4,7 +4,7 @@ import { StudentProgrammeSelector } from "@/components/ProgrammeSelector";
 import { ProgrammeSelect } from "@/components/ProgrammeSelect";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1368,10 +1368,12 @@ function SecondExaminerPicker({
   const [personalNote, setPersonalNote] = useState("");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
 
-  const { data: secondExaminers = [] } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
-    { firstExaminerId: wantedExaminerId ?? 0 },
-    { enabled: !!wantedExaminerId && wantedExaminerId > 0 }
+  const firstExaminerIdStable = useMemo(() => wantedExaminerId ?? 0, [wantedExaminerId]);
+  const { data: secondExaminers = [], isLoading: secondExaminersLoading } = trpc.thesisPhase27.getFilteredSecondExaminers.useQuery(
+    { firstExaminerId: firstExaminerIdStable },
+    { enabled: firstExaminerIdStable > 0 }
   );
+  const [secondExaminerSearch, setSecondExaminerSearch] = useState("");
 
   const setMutation = trpc.thesisPhase27.setWantedSecondExaminer.useMutation({
     onSuccess: () => {
@@ -1602,51 +1604,89 @@ function SecondExaminerPicker({
         </div>
         <p className="text-xs text-blue-600 mb-3">Wählen Sie eine Zweitgutachter:in aus. Nach dem Senden wird eine Anfrage gestellt – analog zum Erstgutachter-Prozess.</p>
 
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(parseInt(e.target.value))}
+        {/* Suchfeld */}
+        <input
+          type="text"
+          value={secondExaminerSearch}
+          onChange={(e) => setSecondExaminerSearch(e.target.value)}
+          placeholder="Name suchen…"
           className="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 mb-2"
-        >
-          <option value={0}>-- Bitte auswählen --</option>
-          <option value={EXTERNAL_MARKER}>Zweitgutachter:in ist nicht in der Liste</option>
-          <option disabled value="">────────────────────</option>
-          {(() => {
-            const sorted = [...(secondExaminers as any[])]
+        />
+
+        {/* Ergebnisliste */}
+        {secondExaminersLoading ? (
+          <p className="text-xs text-gray-400 mb-2">Lade Prüfer:innen…</p>
+        ) : (
+          <div className="max-h-48 overflow-y-auto border border-blue-100 rounded-lg bg-white mb-2">
+            {/* Option: Externe Zweitgutachter:in */}
+            <button
+              type="button"
+              onClick={() => { setSelectedId(EXTERNAL_MARKER); setSecondExaminerSearch(""); }}
+              className={`w-full text-left px-3 py-2 text-xs border-b border-gray-50 hover:bg-blue-50 transition-colors ${
+                selectedId === EXTERNAL_MARKER ? "bg-blue-100 font-semibold text-blue-800" : "text-gray-600"
+              }`}
+            >
+              Zweitgutachter:in ist nicht in der Liste (extern)
+            </button>
+            {/* Gefilterte Kandidaten */}
+            {(secondExaminers as any[])
               .filter((e: any) => e.id !== wantedExaminerId)
+              .filter((e: any) => {
+                if (!secondExaminerSearch.trim()) return true;
+                const q = secondExaminerSearch.toLowerCase();
+                return (
+                  (e.firstName ?? "").toLowerCase().includes(q) ||
+                  (e.lastName ?? "").toLowerCase().includes(q) ||
+                  (e.name ?? "").toLowerCase().includes(q) ||
+                  (e.academicTitle ?? "").toLowerCase().includes(q) ||
+                  (e.email ?? "").toLowerCase().includes(q)
+                );
+              })
               .sort((a: any, b: any) => {
                 const lastA = a.lastName ?? (a.name ?? "").trim().split(" ").pop() ?? "";
                 const lastB = b.lastName ?? (b.name ?? "").trim().split(" ").pop() ?? "";
                 return lastA.localeCompare(lastB, "de");
-              });
-            const result: React.ReactNode[] = [];
-            let currentLetter = "";
-            sorted.forEach((e: any) => {
-              const lastName = e.lastName ?? (e.name ?? "").trim().split(" ").pop() ?? "";
-              const letter = lastName.charAt(0).toUpperCase();
-              if (letter !== currentLetter) {
-                currentLetter = letter;
-                result.push(<option key={`sep2-${letter}`} disabled value="">── {letter} ──</option>);
-              }
-              const eActive = (e as any).activeSupervisions as number | undefined;
-              const eMax = (e as any).maxSupervisions as number | undefined;
-              const eHint = eMax != null
-                ? eActive != null && eActive >= eMax
-                     ? ` — Kapazität voll`
-                    : eActive != null && eMax > 0 && eActive / eMax >= 0.8
-                      ? ` — fast voll`
-                    : ""
-                : "";
-              const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
-              const deptInfo = e.department ? ` · ${e.department}` : "";
-              result.push(
-                <option key={e.id} value={e.id} disabled={eMax != null && eActive != null && eActive >= eMax}>
-                  {displayName}{deptInfo}{eHint}
-                </option>
-              );
-            });
-            return result;
-          })()}
-        </select>
+              })
+              .map((e: any) => {
+                const eActive = (e as any).activeSupervisions as number | undefined;
+                const eMax = (e as any).maxSupervisions as number | undefined;
+                const isFull = eMax != null && eActive != null && eActive >= eMax;
+                const displayName = buildFullName({ firstName: e.firstName, lastName: e.lastName, academicTitle: e.academicTitle ?? e.title, name: e.name });
+                return (
+                  <button
+                    key={e.id}
+                    type="button"
+                    disabled={isFull}
+                    onClick={() => { setSelectedId(e.id); setSecondExaminerSearch(""); }}
+                    className={`w-full text-left px-3 py-2 text-xs border-b border-gray-50 last:border-0 transition-colors ${
+                      selectedId === e.id
+                        ? "bg-blue-100 font-semibold text-blue-800"
+                        : isFull
+                        ? "opacity-40 cursor-not-allowed text-gray-400"
+                        : "hover:bg-blue-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-medium">{displayName}</span>
+                    {e.department && <span className="text-gray-400 ml-1">· {e.department}</span>}
+                    {isFull && <span className="text-red-400 ml-1">(Kapazität voll)</span>}
+                  </button>
+                );
+              })
+            }
+            {(secondExaminers as any[]).filter((e: any) => e.id !== wantedExaminerId).length === 0 && !secondExaminersLoading && (
+              <p className="text-xs text-gray-400 px-3 py-2">Keine Zweitgutachter:innen verfügbar.</p>
+            )}
+          </div>
+        )}
+
+        {/* Ausgewählte Person anzeigen */}
+        {selectedId > 0 && selectedId !== EXTERNAL_MARKER && (
+          <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+            <span className="font-semibold text-blue-800">Ausgewählt: </span>
+            <span className="text-blue-700">{selectedExaminerName}</span>
+            <button type="button" onClick={() => setSelectedId(0)} className="ml-2 text-gray-400 hover:text-red-500">✕</button>
+          </div>
+        )}
 
         {selectedId === EXTERNAL_MARKER && (
           <div className="space-y-2 mb-3 p-3 bg-white rounded-lg border border-blue-200">
