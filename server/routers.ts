@@ -3596,8 +3596,9 @@ export const appRouter = router({
     setCommissionPreferences: protectedProcedure
       .input(z.object({ secondExaminerIds: z.array(z.number().int().positive()) }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstprüfer:innen können Kommissionspräferenzen setzen." });
+        const allowedRoles = ["examiner", "second_examiner", "admin", "superadmin"];
+        if (!allowedRoles.includes(ctx.user.role)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen können Kommissionspräferenzen setzen." });
         }
         const success = await setCommissionPreferences(ctx.user.id, input.secondExaminerIds);
         return { success };
