@@ -1374,25 +1374,37 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900]"
             />
             <div className="max-h-48 overflow-y-auto space-y-1 mb-4">
-              {(secondCandidates as any[])
-                .filter((c: any) => !secondSearch || c.name?.toLowerCase().includes(secondSearch.toLowerCase()) || c.email?.toLowerCase().includes(secondSearch.toLowerCase()))
-                .map((c: any) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setSelectedSecondId(c.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
-                      selectedSecondId === c.id
-                        ? "bg-[#76b900] text-white"
-                        : "hover:bg-gray-50 border border-gray-100"
-                    }`}
-                  >
-                    <span className="font-medium">{c.name}</span>
-                    {c.email && <span className="ml-2 text-xs opacity-70">{c.email}</span>}
-                  </button>
-                ))}
-              {(secondCandidates as any[]).filter((c: any) => !secondSearch || c.name?.toLowerCase().includes(secondSearch.toLowerCase()) || c.email?.toLowerCase().includes(secondSearch.toLowerCase())).length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4">Keine Treffer</p>
-              )}
+              {(() => {
+                const q = secondSearch.toLowerCase();
+                const filtered = (secondCandidates as any[]).filter((c: any) => {
+                  if (!secondSearch) return true;
+                  const fullName = [c.academicTitle, c.firstName, c.lastName].filter(Boolean).join(' ');
+                  const displayName = fullName || c.name || '';
+                  return displayName.toLowerCase().includes(q)
+                    || (c.firstName ?? '').toLowerCase().includes(q)
+                    || (c.lastName ?? '').toLowerCase().includes(q)
+                    || (c.email ?? '').toLowerCase().includes(q);
+                });
+                if (filtered.length === 0) return <p className="text-xs text-gray-400 text-center py-4">Keine Treffer</p>;
+                return filtered.map((c: any) => {
+                  const fullName = [c.academicTitle, c.firstName, c.lastName].filter(Boolean).join(' ');
+                  const displayName = fullName || c.name || c.email || 'Unbekannt';
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedSecondId(c.id)}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
+                        selectedSecondId === c.id
+                          ? "bg-[#76b900] text-white"
+                          : "hover:bg-gray-50 border border-gray-100"
+                      }`}
+                    >
+                      <span className="font-medium">{displayName}</span>
+                      {c.email && <span className="ml-2 text-xs opacity-70">{c.email}</span>}
+                    </button>
+                  );
+                });
+              })()}
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowSetSecondDialog(false)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
