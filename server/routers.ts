@@ -2690,7 +2690,7 @@ export const appRouter = router({
     setExaminerProgrammes: protectedProcedure
       .input(z.object({ programmeIds: z.array(z.number().int().positive()) }))
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'examiner' && ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin')
+        if (!['examiner', 'second_examiner', 'admin', 'superadmin'].includes(ctx.user.role))
           throw new TRPCError({ code: 'FORBIDDEN' });
         await setExaminerProgrammes(ctx.user.id, input.programmeIds);
         return { success: true };
@@ -3609,7 +3609,7 @@ export const appRouter = router({
     // Prüfer:in: eigene Themen abrufen
     getMyTopics: protectedProcedure
       .query(async ({ ctx }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         return getTopicsByExaminer(ctx.user.id);
@@ -3641,7 +3641,7 @@ export const appRouter = router({
         tags: z.string().max(512).nullable().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Nur Prüfer:innen können Themen anlegen." });
         }
         await createExaminerTopic({ examinerId: ctx.user.id, ...input });
@@ -3663,7 +3663,7 @@ export const appRouter = router({
         tags: z.string().max(512).nullable().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const { id, ...data } = input;
@@ -3675,7 +3675,7 @@ export const appRouter = router({
     deleteTopic: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         await deleteExaminerTopic(input.id, ctx.user.id);
@@ -3686,7 +3686,7 @@ export const appRouter = router({
     getStudentsByTopic: protectedProcedure
       .input(z.object({ topicId: z.number().int().positive() }))
       .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = await getDb();
@@ -3722,7 +3722,7 @@ export const appRouter = router({
         newMaxAssignments: z.number().int().min(1).max(999),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "examiner" && ctx.user.role !== "admin" && ctx.user.role !== "superadmin") {
+        if (!["examiner", "second_examiner", "admin", "superadmin"].includes(ctx.user.role)) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         const db = await getDb();
