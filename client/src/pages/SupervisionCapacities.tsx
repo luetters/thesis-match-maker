@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { generateLvvoPdf } from "@/lib/generateLvvoPdf";
 
@@ -38,6 +39,8 @@ export default function SupervisionCapacities() {
   const { t, lang } = useLanguage();
   const de = lang === "de";
   const utils = trpc.useUtils();
+  const { user } = useAuth();
+  const isSecondExaminer = user?.role === "second_examiner";
 
   const upcomingSemesters = generateUpcomingSemesters();
 
@@ -256,8 +259,9 @@ export default function SupervisionCapacities() {
                   <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "linear-gradient(90deg, #76B900 0%, #5a8f00 100%)" }}>
                     <span className="text-sm font-bold text-white">{semesterLabel(sem)}</span>
                   </div>
-                  <div className="p-4 grid grid-cols-2 gap-3">
-                    {/* Erstbetreuung */}
+                  <div className={`p-4 grid ${isSecondExaminer ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
+                    {/* Erstbetreuung – nur für Erstprüfer */}
+                    {!isSecondExaminer && (
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{de ? "Erstbetreuung" : "1st Supervision"}</p>
                       <div className="flex items-center gap-2">
@@ -268,6 +272,7 @@ export default function SupervisionCapacities() {
                       <p className="text-xs text-gray-400">{de ? `Belegt: ${usedFirst}` : `Used: ${usedFirst}`}{cap.maxFirst > 0 ? ` / ${cap.maxFirst}` : ""}</p>
                       {cap.maxFirst > 0 && <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, (usedFirst / cap.maxFirst) * 100)}%`, backgroundColor: overFirst ? "#dc2626" : "#76B900" }} /></div>}
                     </div>
+                    )}
                     {/* Zweitbetreuung */}
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{de ? "Zweitbetreuung" : "2nd Supervision"}</p>
@@ -297,42 +302,46 @@ export default function SupervisionCapacities() {
             {/* Tabellen-Header */}
             <div className="min-w-[640px]">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-3 items-center">
+              <div className={`grid ${isSecondExaminer ? "grid-cols-[1fr_1fr_1fr_1fr]" : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr]"} gap-3 items-center`}>
                 {/* Semester */}
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   {sc.semester}
                 </div>
-                {/* Eigene Planung: Erstbetreuung */}
-                <div className="text-center">
-                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                    {sc.ownPlanningFirst}
+                {/* Eigene Planung: Erstbetreuung – nur für Erstprüfer */}
+                {!isSecondExaminer && (
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      {sc.ownPlanningFirst}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">{sc.ownPlanningHint}</div>
                   </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{sc.ownPlanningHint}</div>
-                </div>
+                )}
                 {/* Eigene Planung: Zweitbetreuung */}
                 <div className="text-center">
                   <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                    {sc.ownPlanningSecond}
+                    {isSecondExaminer ? (de ? "Eigene Planung" : "Own Planning") : sc.ownPlanningSecond}
                   </div>
                   <div className="text-[10px] text-gray-400 mt-0.5">{sc.ownPlanningHint}</div>
                 </div>
-                {/* Erteilte Zusagen: Erstbetreuer */}
-                <div className="text-center">
-                  <div
-                    className="text-xs font-semibold uppercase tracking-wide"
-                    style={{ color: "#76B900" }}
-                  >
-                    {sc.grantedFirst}
+                {/* Erteilte Zusagen: Erstbetreuer – nur für Erstprüfer */}
+                {!isSecondExaminer && (
+                  <div className="text-center">
+                    <div
+                      className="text-xs font-semibold uppercase tracking-wide"
+                      style={{ color: "#76B900" }}
+                    >
+                      {sc.grantedFirst}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">{sc.grantedHint}</div>
                   </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{sc.grantedHint}</div>
-                </div>
+                )}
                 {/* Erteilte Zusagen: Zweitbetreuer */}
                 <div className="text-center">
                   <div
                     className="text-xs font-semibold uppercase tracking-wide"
                     style={{ color: "#76B900" }}
                   >
-                    {sc.grantedSecond}
+                    {isSecondExaminer ? (de ? "Erteilte Zusagen" : "Granted") : sc.grantedSecond}
                   </div>
                   <div className="text-[10px] text-gray-400 mt-0.5">{sc.grantedHint}</div>
                 </div>
@@ -367,7 +376,7 @@ export default function SupervisionCapacities() {
                 return (
                   <div
                     key={sem}
-                    className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-3 items-center px-6 py-4 transition-colors ${
+                    className={`grid ${isSecondExaminer ? "grid-cols-[1fr_1fr_1fr_1fr]" : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr]"} gap-3 items-center px-6 py-4 transition-colors ${
                       isEven ? "bg-white" : "bg-gray-50/40"
                     }`}
                   >
@@ -378,7 +387,8 @@ export default function SupervisionCapacities() {
                       </span>
                     </div>
 
-                    {/* Eigene Planung: Max Erstbetreuungen (editierbar) */}
+                    {/* Eigene Planung: Max Erstbetreuungen (editierbar) – nur für Erstprüfer */}
+                    {!isSecondExaminer && (
                     <div className="flex items-center justify-center gap-1.5">
                       <button
                         type="button"
@@ -407,6 +417,7 @@ export default function SupervisionCapacities() {
                         +
                       </button>
                     </div>
+                    )}
 
                     {/* Eigene Planung: Max Zweitbetreuungen (editierbar) */}
                     <div className="flex items-center justify-center gap-1.5">
@@ -438,7 +449,8 @@ export default function SupervisionCapacities() {
                       </button>
                     </div>
 
-                    {/* Erteilte Zusagen: Erstbetreuer */}
+                    {/* Erteilte Zusagen: Erstbetreuer – nur für Erstprüfer */}
+                    {!isSecondExaminer && (
                     <div className="flex flex-col items-center gap-0.5">
                       <span
                         className={`text-lg font-bold ${
@@ -464,6 +476,7 @@ export default function SupervisionCapacities() {
                         </span>
                       )}
                     </div>
+                    )}
 
                     {/* Erteilte Zusagen: Zweitbetreuer */}
                     <div className="flex flex-col items-center gap-0.5">
