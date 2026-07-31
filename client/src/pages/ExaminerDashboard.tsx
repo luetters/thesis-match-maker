@@ -391,10 +391,12 @@ function useNavItems() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isFirstExaminer = user?.role === "examiner" || user?.role === "admin" || user?.role === "superadmin";
+  const isSecondExaminerOnly = user?.role === "second_examiner";
   const items = [
     { href: "/examiner", label: "Übersicht", icon: Icons.home },
     { href: "/examiner/requests", label: t.examiner.requests, icon: Icons.inbox },
-    { href: "/examiner/topics", label: "Meine Themen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> },
+    // Themen-Tab nur für Erstprüfer:innen (nicht für second_examiner)
+    ...(!isSecondExaminerOnly ? [{ href: "/examiner/topics", label: "Meine Themen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> }] : []),
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
     { href: "/examiner/capacities", label: t.supervisionCapacitiesPage.navLabel, icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },

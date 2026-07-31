@@ -2087,6 +2087,33 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
+        {/* ── Schnellzugriff Kapazitätsverwaltung (nur für Zweitprüfer:innen) ── */}
+        {profile.role === 'second_examiner' && (
+          <div className="rounded-2xl p-5 flex items-start gap-4" style={{ backgroundColor: '#ecfeff', border: '1px solid #67e8f9' }}>
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#0891b2' }}>
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold mb-1" style={{ color: '#164e63' }}>
+                {lang === 'de' ? 'Betreuungskapazitäten eintragen' : 'Enter supervision capacities'}
+              </h3>
+              <p className="text-sm mb-3" style={{ color: '#0e7490' }}>
+                {lang === 'de'
+                  ? 'Tragen Sie Ihre verfügbaren Kapazitäten als Zweitgutachter:in ein, damit Studierende Sie bei der Auswahl finden können.'
+                  : 'Enter your available capacities as a second examiner so students can find you during selection.'}
+              </p>
+              <Link
+                href="/examiner/capacities"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#0891b2' }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                {lang === 'de' ? 'Zu den Kapazitäten' : 'Go to capacities'}
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* ── Konto-Informationen ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
