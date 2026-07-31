@@ -2091,13 +2091,16 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
               {(req as any).secondExaminerId && (req as any).secondExaminerName && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-green-700 bg-green-50 border-green-300">
+                    <Link
+                      href={`/profile/${(req as any).secondExaminerId}`}
+                      className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-green-700 bg-green-50 border-green-300 hover:bg-green-100 transition-colors"
+                    >
                       <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <span className="truncate">{(req as any).secondExaminerName}</span>
                       <span className="text-[10px] flex-shrink-0 text-green-500">(Zugesagt)</span>
-                    </span>
+                    </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="left">Zweitgutachter:in hat die Betreuung bestätigt.</TooltipContent>
+                  <TooltipContent side="left">Profil der Zweitgutachter:in ansehen</TooltipContent>
                 </Tooltip>
               )}
               {/* Zweitgutachter abgelehnt */}

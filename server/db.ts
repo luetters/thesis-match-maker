@@ -1113,9 +1113,13 @@ export async function getColloquiumsByExaminer(examinerId: number) {
   // Kolloquien über Thesis-Anfragen des Prüfers
   const theses = await getThesisRequestsByExaminer(examinerId);
   if (theses.length === 0) return [];
-  const thesisIds = (theses as any[]).map((t) => t.id as number);
+  // Map von thesisRequestId → secondExaminerId für Frontend-Filterung
+  const thesisMap = new Map<number, number | null>();
+  for (const t of theses as any[]) thesisMap.set(t.id as number, t.secondExaminerId ?? null);
   const all = await getAllColloquiums();
-  return all.filter((c) => thesisIds.includes(c.thesisRequestId));
+  return all
+    .filter((c) => thesisMap.has(c.thesisRequestId))
+    .map((c) => ({ ...c, thesisSecondExaminerId: thesisMap.get(c.thesisRequestId) ?? null }));
 }
 
 export async function getColloquiumsByStudent(studentId: number) {

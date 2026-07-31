@@ -3851,12 +3851,18 @@ function Overview() {
 // --- My Colloquiums (Examiner) ---
 function MyColloquiums() {
   const { t } = useLanguage();
-  const { data: colloquiums, isLoading } = trpc.colloquium.myExaminerColloquiums.useQuery();
+  const { user } = useAuth();
+  const isSecondExaminer = user?.role === 'second_examiner';
+  const { data: allColloquiums, isLoading } = trpc.colloquium.myExaminerColloquiums.useQuery();
+  // Für Zweitgutachter:innen nur Kolloquien anzeigen, bei denen sie als Zweitgutachter:in eingetragen sind
+  const colloquiums = isSecondExaminer
+    ? (allColloquiums ?? []).filter((col: any) => col.thesisSecondExaminerId === user?.id)
+    : allColloquiums;
   if (isLoading) return <div className="text-sm text-gray-500">Wird geladen...</div>;
   if (!colloquiums?.length) return (
     <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
       <p className="text-sm font-medium text-gray-700">Keine Kolloquien geplant</p>
-      <p className="text-xs text-gray-500 mt-1">Sobald ein Termin angelegt wird, erscheint er hier.</p>
+      <p className="text-xs text-gray-500 mt-1">{isSecondExaminer ? 'Sie sind bei keiner Abschlussarbeit als Zweitgutachter:in eingetragen.' : 'Sobald ein Termin angelegt wird, erscheint er hier.'}</p>
     </div>
   );
   return (
