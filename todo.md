@@ -1268,3 +1268,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: Link "E-Mail-Benachrichtigungen" im Benutzer-Dropdown (ThesisDashboardLayout)
 - [x] Opt-in-Badge für Benachrichtigungen die standardmäßig deaktiviert sind (new_examiner_colleague)
 - [x] Hinweis auf systemkritische E-Mails (Magic-Link, Passwort-Reset) die nicht deaktivierbar sind
+
+## ICS-Kalender-Export für Kolloquium-Ansicht
+
+- [x] Backend: Express-Route GET /api/ics/colloquium/:id (Einzel-Export)
+- [x] Backend: Express-Route GET /api/ics/colloquiums/all (Sammel-Export als .ics, gefiltert nach Rolle)
+- [x] Frontend: Einzel-Export-Button pro Kolloquium-Karte ("Termin exportieren (.ics)")
+- [x] Frontend: "Alle Termine exportieren"-Button oberhalb der Kolloquium-Liste
+- [x] Frontend: Sammel-ICS enthält alle Kolloquien des Prüfers (gefiltert für second_examiner)

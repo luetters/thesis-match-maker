@@ -2,10 +2,10 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles } from "./db";
+import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, getAllColloquiums, getColloquiumsByExaminer } from "./db";
 import { generateThesisPdf } from "./thesisPdf";
 import crypto from "crypto";
-import { generateDeadlineIcs } from "./icsHelper";
+import { generateDeadlineIcs, createIcsEvent } from "./icsHelper";
 import { storagePut } from "./storage";
 import { COOKIE_NAME, buildFullName } from "@shared/const";
 
@@ -414,6 +414,86 @@ export function registerUploadRoutes(app: Express) {
       res.setHeader("Content-Type", "text/calendar; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="thesis-deadline-${thesisId}.ics"`);
       res.send(icsContent);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // GET /api/ics/colloquium/:id – Einzel-Export eines Kolloquiums als .ics
+  app.get("/api/ics/colloquium/:id", async (req: Request, res: Response) => {
+    const colloquiumId = parseInt(req.params.id, 10);
+    if (isNaN(colloquiumId)) { res.status(400).json({ error: "Ungültige Kolloquium-ID" }); return; }
+    try {
+      const all = await getAllColloquiums();
+      const col = all.find((c) => c.id === colloquiumId);
+      if (!col) { res.status(404).json({ error: "Kolloquium nicht gefunden" }); return; }
+      const icsContent = createIcsEvent({
+        title: col.title,
+        start: new Date(col.scheduledAt as string),
+        durationMinutes: 60,
+        location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
+        description: col.notes || undefined,
+      });
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="kolloquium-${colloquiumId}.ics"`);
+      res.send(icsContent);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // GET /api/ics/colloquiums/all – Sammel-Export aller Kolloquien des eingeloggten Prüfers
+  app.get("/api/ics/colloquiums/all", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromRequest(req);
+      if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
+      // Kolloquien des Prüfers laden (gefiltert nach Examiner-ID)
+      const examinerCols = await getColloquiumsByExaminer(user.id);
+      // Für second_examiner: nur Kolloquien filtern, bei denen sie als Zweitgutachter:in eingetragen sind
+      const isSecondExaminer = user.role === "second_examiner";
+      const filteredCols = isSecondExaminer
+        ? (examinerCols as any[]).filter((c) => c.thesisSecondExaminerId === user.id)
+        : examinerCols;
+      if (filteredCols.length === 0) {
+        res.status(404).json({ error: "Keine Kolloquien gefunden" });
+        return;
+      }
+      // Mehrere ICS-Events zu einer Kalender-Datei zusammenführen
+      const { createEvents } = await import("ics");
+      const events = filteredCols.map((col: any) => {
+        const d = new Date(col.scheduledAt as string);
+        return {
+          uid: `kolloquium-${col.id}@htw-berlin.de`,
+          title: col.title,
+          description: [
+            col.notes ?? "",
+            "HTW Berlin – Thesis Match Maker",
+          ].filter(Boolean).join("\n"),
+          start: [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()] as [number, number, number, number, number],
+          duration: { hours: 1, minutes: 0 },
+          location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
+          alarms: [
+            { action: "display" as const, description: "Erinnerung: Kolloquium in 24 Stunden", trigger: { days: 1, before: true } },
+            { action: "display" as const, description: "Erinnerung: Kolloquium in 1 Stunde", trigger: { hours: 1, before: true } },
+          ],
+          organizer: { name: "HTW Berlin – Prüfungsamt", email: "pruefungsamt@htw-berlin.de" },
+          url: "https://thesis.htw-berlin.com",
+          categories: ["Kolloquium", "HTW Berlin"],
+          status: "CONFIRMED" as const,
+          busyStatus: "BUSY" as const,
+        };
+      });
+      const { error, value } = createEvents(events);
+      if (error || !value) {
+        res.status(500).json({ error: "ICS-Generierung fehlgeschlagen" });
+        return;
+      }
+      const safeFilename = `htw-kolloquien-${user.id}.ics`;
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+      res.send(value);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
       res.status(500).json({ error: message });
