@@ -1294,3 +1294,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: AuthVerify-Import aus App.tsx entfernt
 - [x] Frontend: loginMagicLink, sendLink, linkSent, sending aus LanguageContext (DE+EN) entfernt
 - [x] Registrierung: Passwort-Pflichtfeld (min. 8 Zeichen) bereits vorhanden und aktiv
+
+## Magic-Link-Migration & Login-UX
+
+- [x] Backend: tRPC-Prozedur admin.getMagicLinkUsersCount (Vorschau: Anzahl + Liste betroffener Nutzer:innen)
+- [x] Backend: tRPC-Prozedur admin.sendPasswordResetToMagicLinkUsers (Massen-Reset, max. 200 Nutzer:innen, 48h-Token, Audit-Log)
+- [x] Admin-UI: Schaltfläche "Migration: Passwort-Reset senden" in Nutzerverwaltung (amber-farbig, neben Suchleiste)
+- [x] Admin-UI: Bestätigungsdialog mit Vorschau (Anzahl + Namen/E-Mails) vor dem Versand
+- [x] Admin-UI: Erfolgs-Banner nach Versand mit Anzahl erfolgreich/fehlgeschlagen
+- [x] Login-Seite: "Passwort vergessen?"-Link prominent (grün, unterstrichen, Schriftgröße sm) direkt unter dem Passwortfeld

@@ -2135,6 +2135,85 @@ export const appRouter = router({
         });
         return { success: true, message: "Einladungs-E-Mail wurde versendet." };
       }),
+    // Anzahl der Magic-Link-Nutzer ohne Passwort abfragen (Vorschau vor Massen-Reset)
+    getMagicLinkUsersCount: adminProcedure
+      .input(z.object({ origin: z.string().url() }))
+      .query(async () => {
+        const db = await getDb();
+        if (!db) return { count: 0, users: [] };
+        const rows = await db.execute(
+          `SELECT id, name, email, role, loginMethod, passwordHash FROM users
+           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
+           AND email IS NOT NULL AND roleStatus = 'approved'
+           ORDER BY createdAt DESC LIMIT 200`
+        );
+        const list = (rows[0] as unknown as any[]) ?? [];
+        return {
+          count: list.length,
+          users: list.map((u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
+        };
+      }),
+
+    // Massen-Passwort-Reset: alle Magic-Link-Nutzer ohne Passwort per E-Mail benachrichtigen
+    sendPasswordResetToMagicLinkUsers: adminProcedure
+      .input(z.object({ origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbank nicht verfügbar." });
+        const rows = await db.execute(
+          `SELECT id, name, email FROM users
+           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
+           AND email IS NOT NULL AND roleStatus = 'approved'
+           LIMIT 200`
+        );
+        const list = (rows[0] as unknown as any[]) ?? [];
+        if (list.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+        const { randomBytes } = await import("crypto");
+        const { sendEmail: send } = await import("./emailHelper");
+        let sent = 0;
+        let failed = 0;
+        for (const user of list) {
+          try {
+            const token = randomBytes(32).toString("hex");
+            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 Stunden
+            await createPasswordResetToken(user.id, token, expiresAt);
+            const resetUrl = `${input.origin}/reset-password?token=${token}`;
+            await send({
+              to: user.email,
+              subject: "Bitte vergeben Sie ein Passwort – HTW Berlin Thesis Match Maker",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: #006937; padding: 24px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin &ndash; Thesis Match Maker</h1>
+                  </div>
+                  <div style="padding: 32px; background: #f9f9f9;">
+                    <h2 style="color: #1a1a1a; margin-top: 0;">Ihr Konto wurde auf Passwort-Anmeldung umgestellt</h2>
+                    <p style="color: #444;">Sehr geehrte:r ${user.name ?? "Nutzer:in"},</p>
+                    <p style="color: #444;">das Thesis-Management-System der HTW Berlin wurde aktualisiert. Die bisherige Anmeldung per E-Mail-Link ist nicht mehr verf&uuml;gbar. Bitte vergeben Sie jetzt ein pers&ouml;nliches Passwort f&uuml;r Ihr Konto:</p>
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort vergeben</a>
+                    </div>
+                    <p style="color: #888; font-size: 13px;">Dieser Link ist 48 Stunden g&uuml;ltig. Melden Sie sich danach unter <a href="${input.origin}/login">${input.origin}/login</a> mit Ihrer E-Mail-Adresse und dem gew&auml;hlten Passwort an.</p>
+                    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                    <p style="color: #aaa; font-size: 12px;">&copy; ${new Date().getFullYear()} HTW Berlin &ndash; Hochschule f&uuml;r Technik und Wirtschaft</p>
+                  </div>
+                </div>
+              `,
+            });
+            sent++;
+          } catch (err) {
+            console.error(`[BulkPasswordReset] Fehler bei ${user.email}:`, err);
+            failed++;
+          }
+        }
+        await createAuditLogEntry({
+          action: "BULK_PASSWORD_RESET_SENT",
+          actorId: ctx.user.id,
+          metadata: { sent, failed, total: list.length },
+        });
+        return { sent, failed, skipped: 0 };
+      }),
+
     stats: adminProcedure.query(async () => {
       return getThesisStats();
     }),
