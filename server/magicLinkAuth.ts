@@ -164,12 +164,15 @@ export async function verifyMagicLink(token: string): Promise<{
 
   if (!user) return null;
 
-  // JWT-Session-Token erstellen (kompatibel mit bestehendem Cookie-System)
+  // JWT-Session-Token erstellen (kompatibel mit sdk.verifySession)
+  // WICHTIG: appId und name sind Pflichtfelder in sdk.verifySession – ohne sie
+  // schlägt die Session-Validierung still fehl und der Nutzer bleibt ausgesperrt.
   const sessionToken = await new SignJWT({
     id: user.id,
     openId: user.openId,
+    appId: ENV.appId,
     email: user.email,
-    name: user.name,
+    name: user.name ?? user.email ?? "",
     role: user.role,
     loginMethod: "magic_link",
   })

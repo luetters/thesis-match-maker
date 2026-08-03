@@ -1269,6 +1269,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Opt-in-Badge für Benachrichtigungen die standardmäßig deaktiviert sind (new_examiner_colleague)
 - [x] Hinweis auf systemkritische E-Mails (Magic-Link, Passwort-Reset) die nicht deaktivierbar sind
 
+## Bug-Fix: Login-Fehler (Magic-Link JWT)
+
+- [x] Magic-Link JWT enthielt kein `appId`-Feld → sdk.verifySession lehnte Token ab → Nutzer blieb nach Klick auf Magic-Link ausgesperrt
+- [x] Fix: `appId: ENV.appId` und `name: user.name ?? user.email ?? ""` in JWT-Payload eingefügt (magicLinkAuth.ts)
+
 ## ICS-Kalender-Export für Kolloquium-Ansicht
 
 - [x] Backend: Express-Route GET /api/ics/colloquium/:id (Einzel-Export)
