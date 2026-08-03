@@ -2323,12 +2323,20 @@ export const appRouter = router({
         const all = await getAllColloquiums();
         const col = all.find(c => c.id === input.colloquiumId);
         if (!col) throw new TRPCError({ code: "NOT_FOUND", message: "Kolloquium nicht gefunden" });
+        // Thesis-Daten mit aufgelösten Namen laden
+        const thesis = await getThesisRequestByIdWithNames(col.thesisRequestId);
         const icsContent = createIcsEvent({
           title: col.title,
           start: new Date(col.scheduledAt as string),
           durationMinutes: 60,
           location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
-          description: col.notes || undefined,
+          notes: col.notes || undefined,
+          colloquiumId: col.id,
+          thesisTitle: thesis?.title,
+          studentName: thesis?.studentName ?? undefined,
+          firstExaminerName: thesis?.firstExaminerName ?? undefined,
+          secondExaminerName: thesis?.secondExaminerName ?? undefined,
+          programmeName: thesis?.programmeName ?? undefined,
         });
         return { icsContent, filename: `kolloquium-${col.id}.ics` };
       }),

@@ -1,6 +1,6 @@
 /**
  * ICS-Kalender-Export-Helfer
- * Erzeugt .ics-Dateien für Thesis-Deadlines
+ * Erzeugt .ics-Dateien für Thesis-Deadlines und Kolloquien
  */
 import { createEvent, type EventAttributes } from "ics";
 
@@ -38,7 +38,7 @@ export function generateDeadlineIcs(opts: DeadlineEventOptions): string {
       { action: "display", description: "Erinnerung: Thesis-Deadline morgen", trigger: { days: 1, before: true } },
     ],
     organizer: { name: "HTW Berlin – Prüfungsamt", email: "pruefungsamt@htw-berlin.de" },
-    url: "https://thesis-match.htw-berlin.de",
+    url: "https://thesis.htw-berlin.com",
     categories: ["Thesis", "HTW Berlin", "Deadline"],
     status: "CONFIRMED",
     busyStatus: "BUSY",
@@ -52,28 +52,50 @@ export function generateDeadlineIcs(opts: DeadlineEventOptions): string {
 }
 
 export interface ColloquiumEventOptions {
+  /** Titel des Kolloquiums (= Titel der Abschlussarbeit) */
   title: string;
   start: Date;
   durationMinutes?: number;
   location?: string;
-  description?: string;
+  /** Freitext-Notizen aus dem Kolloquium-Datensatz */
+  notes?: string;
+  /** Titel der Abschlussarbeit (falls abweichend vom Kolloquium-Titel) */
+  thesisTitle?: string;
+  /** Vollständiger Name der/des Studierenden */
+  studentName?: string;
+  /** Vollständiger Name der Erstprüfer:in */
+  firstExaminerName?: string;
+  /** Vollständiger Name der Zweitprüfer:in */
+  secondExaminerName?: string;
+  /** Studiengang */
+  programmeName?: string;
+  /** Interne Kolloquium-ID für stabile UID */
+  colloquiumId?: number;
 }
 
 /**
  * Erzeugt eine .ics-Datei als String für ein Kolloquium.
+ * Die Beschreibung enthält Studierenden-Name, Thesis-Titel und Prüfer:innen-Namen.
  */
 export function createIcsEvent(opts: ColloquiumEventOptions): string {
   const d = opts.start;
   const durationHours = Math.floor((opts.durationMinutes ?? 60) / 60);
   const durationMinutes = (opts.durationMinutes ?? 60) % 60;
 
+  const descriptionLines = [
+    opts.thesisTitle ? `Abschlussarbeit: ${opts.thesisTitle}` : "",
+    opts.studentName ? `Studierende:r: ${opts.studentName}` : "",
+    opts.firstExaminerName ? `Erstprüfer:in: ${opts.firstExaminerName}` : "",
+    opts.secondExaminerName ? `Zweitprüfer:in: ${opts.secondExaminerName}` : "",
+    opts.programmeName ? `Studiengang: ${opts.programmeName}` : "",
+    opts.notes ? `Hinweise: ${opts.notes}` : "",
+    "HTW Berlin – Thesis Match Maker",
+  ].filter(Boolean).join("\n");
+
   const event: EventAttributes = {
-    uid: `kolloquium-${Date.now()}@htw-berlin.de`,
+    uid: `kolloquium-${opts.colloquiumId ?? Date.now()}@htw-berlin.de`,
     title: opts.title,
-    description: [
-      opts.description ?? "",
-      "HTW Berlin – Thesis Match Maker",
-    ].filter(Boolean).join("\n"),
+    description: descriptionLines,
     start: [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()],
     duration: { hours: durationHours, minutes: durationMinutes },
     location: opts.location,
@@ -82,7 +104,7 @@ export function createIcsEvent(opts: ColloquiumEventOptions): string {
       { action: "display", description: "Erinnerung: Kolloquium in 1 Stunde", trigger: { hours: 1, before: true } },
     ],
     organizer: { name: "HTW Berlin – Prüfungsamt", email: "pruefungsamt@htw-berlin.de" },
-    url: "https://thesis-match.htw-berlin.de",
+    url: "https://thesis.htw-berlin.com",
     categories: ["Kolloquium", "HTW Berlin"],
     status: "CONFIRMED",
     busyStatus: "BUSY",

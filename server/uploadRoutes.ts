@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, getAllColloquiums, getColloquiumsByExaminer } from "./db";
+import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, getAllColloquiums, getColloquiumsByExaminer } from "./db";
 import { generateThesisPdf } from "./thesisPdf";
 import crypto from "crypto";
 import { generateDeadlineIcs, createIcsEvent } from "./icsHelper";
@@ -428,12 +428,20 @@ export function registerUploadRoutes(app: Express) {
       const all = await getAllColloquiums();
       const col = all.find((c) => c.id === colloquiumId);
       if (!col) { res.status(404).json({ error: "Kolloquium nicht gefunden" }); return; }
+      // Thesis-Daten mit aufgelösten Namen laden
+      const thesis = await getThesisRequestByIdWithNames(col.thesisRequestId);
       const icsContent = createIcsEvent({
         title: col.title,
         start: new Date(col.scheduledAt as string),
         durationMinutes: 60,
         location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
-        description: col.notes || undefined,
+        notes: col.notes || undefined,
+        colloquiumId: col.id,
+        thesisTitle: thesis?.title,
+        studentName: thesis?.studentName ?? undefined,
+        firstExaminerName: thesis?.firstExaminerName ?? undefined,
+        secondExaminerName: thesis?.secondExaminerName ?? undefined,
+        programmeName: thesis?.programmeName ?? undefined,
       });
       res.setHeader("Content-Type", "text/calendar; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="kolloquium-${colloquiumId}.ics"`);
@@ -460,17 +468,28 @@ export function registerUploadRoutes(app: Express) {
         res.status(404).json({ error: "Keine Kolloquien gefunden" });
         return;
       }
-      // Mehrere ICS-Events zu einer Kalender-Datei zusammenführen
+      // Thesis-Daten für alle Kolloquien laden (parallel)
       const { createEvents } = await import("ics");
-      const events = filteredCols.map((col: any) => {
+      const thesisDataList = await Promise.all(
+        filteredCols.map((col: any) => getThesisRequestByIdWithNames(col.thesisRequestId).catch(() => null))
+      );
+      // Mehrere ICS-Events zu einer Kalender-Datei zusammenführen
+      const events = filteredCols.map((col: any, idx: number) => {
         const d = new Date(col.scheduledAt as string);
+        const thesis = thesisDataList[idx];
+        const descriptionLines = [
+          thesis?.title ? `Abschlussarbeit: ${thesis.title}` : "",
+          thesis?.studentName ? `Studierende:r: ${thesis.studentName}` : "",
+          thesis?.firstExaminerName ? `Erstprüfer:in: ${thesis.firstExaminerName}` : "",
+          thesis?.secondExaminerName ? `Zweitprüfer:in: ${thesis.secondExaminerName}` : "",
+          thesis?.programmeName ? `Studiengang: ${thesis.programmeName}` : "",
+          col.notes ? `Hinweise: ${col.notes}` : "",
+          "HTW Berlin – Thesis Match Maker",
+        ].filter(Boolean).join("\n");
         return {
           uid: `kolloquium-${col.id}@htw-berlin.de`,
           title: col.title,
-          description: [
-            col.notes ?? "",
-            "HTW Berlin – Thesis Match Maker",
-          ].filter(Boolean).join("\n"),
+          description: descriptionLines,
           start: [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()] as [number, number, number, number, number],
           duration: { hours: 1, minutes: 0 },
           location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
