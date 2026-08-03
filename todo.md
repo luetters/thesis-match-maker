@@ -1281,3 +1281,16 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: Einzel-Export-Button pro Kolloquium-Karte ("Termin exportieren (.ics)")
 - [x] Frontend: "Alle Termine exportieren"-Button oberhalb der Kolloquium-Liste
 - [x] Frontend: Sammel-ICS enthält alle Kolloquien des Prüfers (gefiltert für second_examiner)
+
+## Magic-Link-Entfernung: Nur noch E-Mail/Passwort-Login
+
+- [x] Backend: registerMagicLinkRoutes aus server/_core/index.ts entfernt (nur Logout-Route bleibt)
+- [x] Backend: POST /api/auth/magic-link Route entfernt (magicLinkRoutes.ts)
+- [x] Backend: GET /api/auth/verify Route entfernt (magicLinkRoutes.ts)
+- [x] Backend: sendInvite-Prozedur auf Passwort-Reset-E-Mail umgestellt
+- [x] Backend: Import-Nutzer loginMethod von "magic_link" auf "password" geändert
+- [x] Frontend: Route /auth/verify aus App.tsx entfernt
+- [x] Frontend: /auth/verify aus PUBLIC_PATHS in main.tsx entfernt
+- [x] Frontend: AuthVerify-Import aus App.tsx entfernt
+- [x] Frontend: loginMagicLink, sendLink, linkSent, sending aus LanguageContext (DE+EN) entfernt
+- [x] Registrierung: Passwort-Pflichtfeld (min. 8 Zeichen) bereits vorhanden und aktiv
