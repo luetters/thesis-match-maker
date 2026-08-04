@@ -1353,3 +1353,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] AllRequests: highlightId-Prop, rowRefs und scroll/highlight-Logik (grüner Ring, 3s Hervorhebung)
 - [x] AdminDashboard: highlightRequestId-State und Übergabe an AllRequests
 - [x] AuditLogView: Studierenden-Name als klickbarer Button mit Link-Icon → wechselt zu Anfragen-Tab mit Scroll & Hervorhebung
+
+## Audit-Log: Anfrage-ID klickbar + Datumsfilter
+
+- [x] Anfrage-ID als klickbarer Button mit Link-Icon → navigiert zu Anfragen-Tab mit Scroll & Hervorhebung
+- [x] Frontend: Von/Bis-Datumsfilter (client-seitig) über der Audit-Log-Tabelle mit "Filter zurücksetzen"-Link
+- [x] Suchfeld-Placeholder aktualisiert: "Nach Nutzer:in, Aktion oder Anfrage-ID suchen..."
