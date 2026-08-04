@@ -1313,3 +1313,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: Erfolg grün / Fehler rot in Status-Spalte
 - [x] Frontend: Checkbox "Nur fehlgeschlagene" bereits vorhanden
 - [x] Frontend: failureLabels-Map um alle neuen deutschsprachigen Gründe erweitert
+
+## Login-UX: Hinweise für Studierende
+
+- [x] Schritt 1 (action): Info-Banner "Erstmalig hier?" mit klickbarem Registrierungs-Link und Passwort-Hinweis
+- [x] Login-Formular: Amber-Hinweis-Box unter Passwortfeld "Dieses Passwort ist nicht Ihr HTW-Passwort"
+- [x] Login-Formular: Kontextbezogene Fehlermeldung (blau) bei HTW-E-Mail ohne Konto, mit direktem "Jetzt registrieren"-Button
+- [x] Fehlerbehandlung: not_found-Status nur bei HTW-Domains ausgelöst (student/htw-berlin.de/.com)

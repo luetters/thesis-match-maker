@@ -101,7 +101,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(savedEmail !== "");
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | null>(null);
+  const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | "not_found" | null>(null);
 
   // Registrierungs-State
   const [regFirstName, setRegFirstName] = useState("");
@@ -177,6 +177,15 @@ export default function Login() {
         setLoginStatus("pending");
       } else if (msg.includes("abgelehnt") || msg.includes("rejected")) {
         setLoginStatus("rejected");
+      } else if (msg.includes("ungültig") || msg.includes("not found") || msg.includes("UNAUTHORIZED") || msg.toLowerCase().includes("invalid")) {
+        // Prüfen ob E-Mail mit @student.htw-berlin.de endet – dann Registrierungs-Hinweis
+        const emailLower = loginEmail.trim().toLowerCase();
+        if (emailLower.endsWith("@student.htw-berlin.de") || emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com")) {
+          setLoginStatus("not_found");
+        } else {
+          setLoginStatus(null);
+          toast.error(msg || L.loginFailed);
+        }
       } else {
         setLoginStatus(null);
         toast.error(msg || L.loginFailed);
@@ -344,6 +353,16 @@ export default function Login() {
               <h2 className="text-xl font-semibold text-white mb-1">{L.welcomeTitle}</h2>
               <p className="text-white/50 text-sm">{L.welcomeSubtitle}</p>
             </div>
+            {/* Info-Banner: Erstmalig hier? */}
+            <div
+              className="flex items-start gap-3 rounded-xl p-3 mb-4 text-sm"
+              style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)" }}
+            >
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#60a5fa" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div style={{ color: "rgba(147,197,253,0.9)" }}>
+                <span className="font-semibold">Erstmalig hier?</span> Ihre HTW-Berlin-E-Mail-Adresse allein reicht nicht aus – Sie müssen sich zunächst <button type="button" onClick={() => setStep("role")} className="underline font-semibold hover:text-white transition-colors">registrieren</button>. Das Passwort für dieses System ist <span className="font-semibold">nicht</span> Ihr HTW-Passwort.
+              </div>
+            </div>
             <div className="space-y-3">
               {/* Anmelden */}
               <button
@@ -483,6 +502,14 @@ export default function Login() {
                         {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {/* Passwort-Hinweis: nicht das HTW-Passwort */}
+                    <div
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs mt-1"
+                      style={{ background: "rgba(234,179,8,0.07)", border: "1px solid rgba(234,179,8,0.2)", color: "rgba(253,224,71,0.75)" }}
+                    >
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                      <span>Dieses Passwort ist <strong>nicht</strong> Ihr HTW-Passwort – es wurde bei der Registrierung in diesem System vergeben.</span>
+                    </div>
                     {/* Passwort vergessen – prominent direkt unter dem Eingabefeld */}
                     <div className="flex justify-end pt-0.5">
                       <button
@@ -518,6 +545,28 @@ export default function Login() {
                     >
                       <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>{L.rejectedTitle}</p>
                       <p style={{ color: "rgba(239,68,68,0.75)" }}>{L.rejectedText}</p>
+                    </div>
+                  )}
+
+                  {loginStatus === "not_found" && (
+                    <div
+                      className="p-3 rounded-xl text-sm"
+                      style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.3)" }}
+                    >
+                      <p className="font-semibold mb-1" style={{ color: "#60a5fa" }}>Kein Konto gefunden</p>
+                      <p style={{ color: "rgba(147,197,253,0.85)" }} className="mb-2">
+                        Für <strong>{loginEmail.trim()}</strong> existiert noch kein Konto in diesem System.
+                        Ihre HTW-Berlin-E-Mail-Adresse ist zwar korrekt, aber Sie müssen sich zunächst registrieren.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setLoginStatus(null); setStep("role"); }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                        style={{ background: "rgba(59,130,246,0.2)", color: "#93c5fd" }}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        Jetzt registrieren
+                      </button>
                     </div>
                   )}
 
