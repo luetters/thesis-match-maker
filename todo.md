@@ -1281,3 +1281,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: Einzel-Export-Button pro Kolloquium-Karte ("Termin exportieren (.ics)")
 - [x] Frontend: "Alle Termine exportieren"-Button oberhalb der Kolloquium-Liste
 - [x] Frontend: Sammel-ICS enthält alle Kolloquien des Prüfers (gefiltert für second_examiner)
+
+## Login-Protokoll: Fehlergrund-Erweiterung
+
+- [x] DB-Schema: Spalte `failure_reason` (varchar 128, nullable) bereits vorhanden und aktiv
+- [x] Backend: logLoginAttempt enthält bereits `failureReason`-Parameter
+- [x] Backend: Login-Prozedur alle 5 Fehlerpfade mit deutschem Klartext protokolliert (Konto nicht gefunden, Falsches Passwort, Kein Passwort gesetzt, Konto nicht freigeschaltet, Registrierungsantrag abgelehnt, Ungültige E-Mail-Domäne)
+- [x] Frontend: Fehlergrund-Spalte als farbiges Badge (rot/orange/amber/gelb/lila je nach Typ)
+- [x] Frontend: Erfolg grün / Fehler rot in Status-Spalte
+- [x] Frontend: Checkbox "Nur fehlgeschlagene" bereits vorhanden
+- [x] Frontend: failureLabels-Map um alle neuen deutschsprachigen Gründe erweitert

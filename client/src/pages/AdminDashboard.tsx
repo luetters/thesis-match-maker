@@ -1869,10 +1869,32 @@ function LoginAttemptsView() {
     !emailFilter.trim() || a.email.toLowerCase().includes(emailFilter.trim().toLowerCase())
   ) ?? [];
   const failureLabels: Record<string, string> = {
-    user_not_found: "Nutzer:in nicht gefunden",
+    user_not_found: "Konto nicht gefunden",
     wrong_password: "Falsches Passwort",
     account_not_approved: "Konto nicht freigeschaltet",
-    account_rejected: "Konto abgelehnt",
+    account_rejected: "Registrierungsantrag abgelehnt",
+    // neue, deutschsprachige Gründe (direkt aus Backend)
+    "Konto nicht gefunden": "Konto nicht gefunden",
+    "Falsches Passwort": "Falsches Passwort",
+    "Kein Passwort gesetzt (ehemaliges Magic-Link-Konto)": "Kein Passwort gesetzt",
+    "Konto noch nicht freigeschaltet": "Konto noch nicht freigeschaltet",
+    "Registrierungsantrag abgelehnt": "Registrierungsantrag abgelehnt",
+    "Ung\u00fcltige E-Mail-Dom\u00e4ne (keine HTW-Berlin-Adresse)": "Ung\u00fcltige E-Mail-Dom\u00e4ne",
+  };
+  // Farb-Mapping pro Fehlergrund
+  const failureColors: Record<string, string> = {
+    "Falsches Passwort": "bg-red-50 text-red-700",
+    wrong_password: "bg-red-50 text-red-700",
+    "Konto nicht gefunden": "bg-orange-50 text-orange-700",
+    user_not_found: "bg-orange-50 text-orange-700",
+    "Kein Passwort gesetzt (ehemaliges Magic-Link-Konto)": "bg-amber-50 text-amber-700",
+    "Kein Passwort gesetzt": "bg-amber-50 text-amber-700",
+    "Konto noch nicht freigeschaltet": "bg-yellow-50 text-yellow-700",
+    account_not_approved: "bg-yellow-50 text-yellow-700",
+    "Registrierungsantrag abgelehnt": "bg-red-50 text-red-700",
+    account_rejected: "bg-red-50 text-red-700",
+    "Ung\u00fcltige E-Mail-Dom\u00e4ne (keine HTW-Berlin-Adresse)": "bg-purple-50 text-purple-700",
+    "Ung\u00fcltige E-Mail-Dom\u00e4ne": "bg-purple-50 text-purple-700",
   };
   return (
     <div className="space-y-4">
@@ -1891,7 +1913,7 @@ function LoginAttemptsView() {
           <input type="checkbox" checked={onlyFailed} onChange={(e) => setOnlyFailed(e.target.checked)} className="rounded" />
           Nur fehlgeschlagene
         </label>
-        <span className="text-xs text-gray-400">{filtered.length} Eintraege</span>
+        <span className="text-xs text-gray-400">{filtered.length} Einträge</span>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -1922,7 +1944,15 @@ function LoginAttemptsView() {
                       : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Fehlgeschlagen</span>
                     }
                   </td>
-                  <td className="px-5 py-3 text-sm text-gray-500">{a.failureReason ? (failureLabels[a.failureReason] ?? a.failureReason) : "—"}</td>
+                  <td className="px-5 py-3">
+                    {a.failureReason ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${failureColors[a.failureReason] ?? "bg-gray-100 text-gray-600"}`}>
+                        {failureLabels[a.failureReason] ?? a.failureReason}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-sm text-gray-400 hidden md:table-cell font-mono">{a.ipAddress ?? "—"}</td>
                 </tr>
               ))}

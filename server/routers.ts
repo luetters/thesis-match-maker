@@ -717,24 +717,32 @@ export const appRouter = router({
       .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
-        if (!user || !user.passwordHash) {
-          await logLoginAttempt({ email: input.email, success: false, failureReason: "user_not_found", ipAddress: ctx.req.ip, userAgent: ctx.req.headers["user-agent"] });
+        const ipAddr = ctx.req.ip;
+        const ua = ctx.req.headers["user-agent"];
+        if (!user) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Konto nicht gefunden", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        if (!user.passwordHash) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Kein Passwort gesetzt (ehemaliges Magic-Link-Konto)", ipAddress: ipAddr, userAgent: ua });
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Für dieses Konto ist noch kein Passwort vergeben. Bitte nutzen Sie \"Passwort vergessen\".", });
         }
         const valid = await bcrypt.compare(input.password, user.passwordHash);
         if (!valid) {
-          await logLoginAttempt({ email: input.email, success: false, failureReason: "wrong_password", ipAddress: ctx.req.ip, userAgent: ctx.req.headers["user-agent"] });
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Falsches Passwort", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
         }
         // Freischaltungs-Prüfung
         const roleStatus = (user as any).roleStatus ?? "approved";
         if (roleStatus === "pending") {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Konto noch nicht freigeschaltet", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Bestätigung durch die Verwaltung der HTW Berlin.",
           });
         }
         if (roleStatus === "rejected") {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Registrierungsantrag abgelehnt", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Ihr Registrierungsantrag wurde abgelehnt. Bitte wenden Sie sich an die Verwaltung der HTW Berlin.",
@@ -746,6 +754,7 @@ export const appRouter = router({
         const emailLower = input.email.toLowerCase();
         const isHtwLoginEmail = emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com") || emailLower.endsWith("@student.htw-berlin.de");
         if (user.role !== "second_examiner" && user.role !== "admin" && user.role !== "superadmin" && !isHtwLoginEmail) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Ungültige E-Mail-Domäne (keine HTW-Berlin-Adresse)", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Bitte melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) an.",
