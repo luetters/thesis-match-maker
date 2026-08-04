@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,10 @@ import {
   LogIn,
   CheckCircle2,
   User,
+  HelpCircle,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -25,6 +29,96 @@ import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin" | "programme_director";
+
+// ─── FAQ-Modal ────────────────────────────────────────────────────────────────
+const faqItems = [
+  {
+    q: "Ich habe eine HTW Berlin E-Mail-Adresse. Kann ich mich damit direkt anmelden?",
+    a: "Nein. Ihre HTW Berlin E-Mail-Adresse ist Ihr Benutzername in diesem System, aber Sie m\u00fcssen sich zun\u00e4chst einmalig registrieren. Erst nach der Registrierung (und ggf. Freischaltung durch die Verwaltung) k\u00f6nnen Sie sich anmelden."
+  },
+  {
+    q: "Welches Passwort soll ich verwenden?",
+    a: "Bitte w\u00e4hlen Sie ein neues, eigenes Passwort ausschlie\u00dflich f\u00fcr dieses System. Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort (z.\u00a0B. f\u00fcr Moodle, LSF oder Webmail). Das Passwort muss mindestens 8 Zeichen lang sein."
+  },
+  {
+    q: "Ich habe mein Passwort vergessen. Was kann ich tun?",
+    a: "Klicken Sie auf der Anmeldeseite auf \"Passwort vergessen?\". Geben Sie Ihre E-Mail-Adresse ein und Sie erhalten einen Link zum Zur\u00fccksetzen des Passworts. Der Link ist 24 Stunden g\u00fcltig."
+  },
+  {
+    q: "Ich habe mich registriert, kann mich aber nicht anmelden.",
+    a: "Pr\u00fcfer:innen und Verwaltungsmitarbeitende m\u00fcssen nach der Registrierung erst durch die Verwaltung der HTW Berlin freigeschaltet werden. Studierende mit einer @student.htw-berlin.de-Adresse werden automatisch freigeschaltet. Bitte haben Sie etwas Geduld oder wenden Sie sich an die Verwaltung."
+  },
+  {
+    q: "Welche E-Mail-Adresse muss ich verwenden?",
+    a: "Studierende m\u00fcssen ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de) verwenden. Pr\u00fcfer:innen und Verwaltungsmitarbeitende verwenden ihre HTW Berlin-Dienstadresse (@htw-berlin.de oder @htw-berlin.com). Externe Zweitgutachter:innen k\u00f6nnen eine beliebige E-Mail-Adresse nutzen."
+  },
+  {
+    q: "Ich erhalte keine E-Mail mit dem Passwort-Reset-Link.",
+    a: "Bitte pr\u00fcfen Sie Ihren Spam-Ordner. Falls die E-Mail dort nicht zu finden ist, wenden Sie sich an die Verwaltung der HTW Berlin."
+  },
+];
+
+function FaqModal({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: string }) {
+  const [expanded, setExpanded] = React.useState<number | null>(null);
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "#1e1e1e", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "85vh", overflowY: "auto" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(118,185,0,0.15)" }}>
+              <HelpCircle className="w-4 h-4" style={{ color: "#76b900" }} />
+            </div>
+            <div>
+              <h2 className="font-bold text-white text-base">{lang === 'de' ? 'H\u00e4ufige Fragen' : 'Frequently Asked Questions'}</h2>
+              <p className="text-white/40 text-xs">{lang === 'de' ? 'Registrierung & Anmeldung' : 'Registration & Login'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/40 hover:text-white/80 transition-colors p-1 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {/* FAQ Items */}
+        <div className="divide-y" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+          {faqItems.map((item, i) => (
+            <div key={i}>
+              <button
+                type="button"
+                className="w-full text-left px-5 py-4 flex items-start justify-between gap-3 hover:bg-white/5 transition-colors"
+                onClick={() => setExpanded(expanded === i ? null : i)}
+              >
+                <span className="text-sm font-medium text-white/90 leading-snug">{item.q}</span>
+                {expanded === i
+                  ? <ChevronUp className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#76b900" }} />
+                  : <ChevronDown className="w-4 h-4 flex-shrink-0 mt-0.5 text-white/30" />}
+              </button>
+              {expanded === i && (
+                <div className="px-5 pb-4">
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{item.a}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {/* Footer */}
+        <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+            {lang === 'de' ? 'Bei weiteren Fragen wenden Sie sich an die Verwaltung der HTW Berlin.' : 'For further questions, please contact the HTW Berlin administration.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Login-Flow:
@@ -102,6 +196,7 @@ export default function Login() {
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | "not_found" | null>(null);
+  const [showFaq, setShowFaq] = useState(false);
 
   // Registrierungs-State
   const [regFirstName, setRegFirstName] = useState("");
@@ -323,9 +418,19 @@ export default function Login() {
         <ArrowLeft className="w-4 h-4" />
         {L.backToHome}
       </Link>
-      <div className="absolute top-6 right-6">
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setShowFaq(true)}
+          className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors text-sm"
+          title={lang === 'de' ? 'Häufige Fragen' : 'FAQ'}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">{lang === 'de' ? 'Hilfe' : 'Help'}</span>
+        </button>
         <LanguageSwitcher />
       </div>
+      <FaqModal open={showFaq} onClose={() => setShowFaq(false)} lang={lang} />
 
       <div className="w-full max-w-lg px-4 py-12">
         {/* Logo */}
@@ -917,12 +1022,23 @@ export default function Login() {
                           {showRegPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      {/* Deutliche Passwort-Warnung */}
                       <div
-                        className="flex items-start gap-2 px-3 py-2 rounded-lg text-xs"
-                        style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}
+                        className="rounded-xl p-3 text-sm"
+                        style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.45)" }}
                       >
-                        <span className="mt-0.5 flex-shrink-0">⚠️</span>
-                        <span><strong>{lang === 'de' ? 'Sicherheitshinweis' : 'Security notice'}:</strong> {L.securityHint.replace(/^[^:]+:\s*/, '')}</span>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <svg className="w-4 h-4 flex-shrink-0" style={{ color: "#f87171" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                          <span className="font-bold text-sm" style={{ color: "#f87171" }}>
+                            {lang === 'de' ? 'Wichtiger Sicherheitshinweis' : 'Important security notice'}
+                          </span>
+                        </div>
+                        <p className="text-xs leading-relaxed" style={{ color: "#fca5a5" }}>
+                          {lang === 'de'
+                            ? <><strong>Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort!</strong> Wählen Sie ein eigenes, neues Passwort ausschließlich für dieses System. Mindestlänge: 8 Zeichen.</>
+                            : <><strong>Do not use your HTW Berlin password!</strong> Choose a new, unique password exclusively for this system. Minimum length: 8 characters.</>
+                          }
+                        </p>
                       </div>
                     </div>
                     <div className="space-y-2">

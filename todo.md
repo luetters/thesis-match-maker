@@ -1320,3 +1320,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Login-Formular: Amber-Hinweis-Box unter Passwortfeld "Dieses Passwort ist nicht Ihr HTW-Passwort"
 - [x] Login-Formular: Kontextbezogene Fehlermeldung (blau) bei HTW-E-Mail ohne Konto, mit direktem "Jetzt registrieren"-Button
 - [x] Fehlerbehandlung: not_found-Status nur bei HTW-Domains ausgelöst (student/htw-berlin.de/.com)
+
+## Registrierung & Login: Passwort-Hinweis + FAQ-Modal
+
+- [x] Registrierungsformular: Deutliche Passwort-Warnung (roter Rahmen, Dreieck-Icon, fett) direkt unter Passwortfeld
+- [x] Login-Seite: Hilfe-Link mit HelpCircle-Icon oben rechts neben Sprachumschalter
+- [x] FAQ-Modal: 6 häufige Fragen (Registrierung, Passwort, Reset, Freischaltung, E-Mail-Domäne, Spam) mit Accordion-Aufklapper, zweisprachig DE/EN
