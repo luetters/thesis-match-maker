@@ -1359,3 +1359,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Anfrage-ID als klickbarer Button mit Link-Icon → navigiert zu Anfragen-Tab mit Scroll & Hervorhebung
 - [x] Frontend: Von/Bis-Datumsfilter (client-seitig) über der Audit-Log-Tabelle mit "Filter zurücksetzen"-Link
 - [x] Suchfeld-Placeholder aktualisiert: "Nach Nutzer:in, Aktion oder Anfrage-ID suchen..."
+
+## Audit-Log: Aktions-Filter-Dropdown
+
+- [x] Dropdown-Menü mit 14 Aktionstypen (Alle Aktionen + alle bekannten Typen auf Deutsch)
+- [x] Filter-Logik: selectedAction-State in filteredLogs eingebaut
+- [x] "Filter zurücksetzen" setzt auch selectedAction zurück

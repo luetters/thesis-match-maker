@@ -671,6 +671,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
   const [auditSearch, setAuditSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [selectedAction, setSelectedAction] = useState("");
 
   const actionLabels: Record<string, string> = {
     THESIS_CREATED: "Anfrage erstellt",
@@ -759,9 +760,11 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
       to.setHours(23, 59, 59, 999);
       if (new Date(log.createdAt) > to) return false;
     }
+    // Aktionsfilter
+    if (selectedAction && log.action !== selectedAction) return false;
     return true;
   });
-  const hasActiveFilter = auditSearch || dateFrom || dateTo;
+  const hasActiveFilter = auditSearch || dateFrom || dateTo || selectedAction;
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>;
@@ -818,11 +821,33 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
             className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 focus:border-[#76B900] transition-all"
           />
         </div>
+        {/* Aktions-Dropdown */}
+        <select
+          value={selectedAction}
+          onChange={(e) => setSelectedAction(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 focus:border-[#76B900] transition-all bg-white text-gray-700"
+        >
+          <option value="">Alle Aktionen</option>
+          <option value="THESIS_CREATED">Anfrage erstellt</option>
+          <option value="STATUS_CHANGED">Status geändert</option>
+          <option value="FIRST_EXAMINER_ASSIGNED">Erstprüfer:in zugewiesen</option>
+          <option value="SECOND_EXAMINER_ASSIGNED">Zweitprüfer:in zugewiesen</option>
+          <option value="EXAMINER_ACCEPTED">Prüfer:in angenommen</option>
+          <option value="EXAMINER_REJECTED">Prüfer:in abgelehnt</option>
+          <option value="THESIS_UPDATED_BY_STUDENT">Anfrage bearbeitet</option>
+          <option value="THESIS_WITHDRAWN">Anfrage zurückgezogen</option>
+          <option value="SECOND_EXAMINER_INVITED">Zweitgutachter:in eingeladen</option>
+          <option value="SECOND_EXAMINER_SUGGESTED">Zweitgutachter:in vorgeschlagen</option>
+          <option value="CONDITIONAL_ACCEPTANCE">Bedingte Annahme</option>
+          <option value="SECOND_EXAMINER_ACCEPTED">Zweitgutachter:in bestätigt</option>
+          <option value="SECOND_EXAMINER_REJECTED">Zweitgutachter:in abgelehnt</option>
+          <option value="THESIS_MATCHED">Thesis Match</option>
+        </select>
         {/* Filter zurücksetzen */}
         {hasActiveFilter && (
           <button
             type="button"
-            onClick={() => { setAuditSearch(""); setDateFrom(""); setDateTo(""); }}
+            onClick={() => { setAuditSearch(""); setDateFrom(""); setDateTo(""); setSelectedAction(""); }}
             className="text-xs text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
           >
             Filter zurücksetzen
