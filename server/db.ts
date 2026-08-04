@@ -599,6 +599,7 @@ export async function getAllAuditLogs() {
   const db = await getDb();
   if (!db) return [];
   const actorAlias = aliasedTable(users, "audit_actor_all");
+  const studentAlias = aliasedTable(users, "audit_student_all");
   return db
     .select({
       id: auditLog.id,
@@ -612,9 +613,14 @@ export async function getAllAuditLogs() {
       reason: auditLog.reason,
       metadata: auditLog.metadata,
       createdAt: auditLog.createdAt,
+      // Studierenden-Name über thesisRequests
+      studentName: studentAlias.name,
+      studentId: thesisRequests.studentId,
     })
     .from(auditLog)
     .leftJoin(actorAlias, eq(auditLog.actorId, actorAlias.id))
+    .leftJoin(thesisRequests, eq(auditLog.thesisRequestId, thesisRequests.id))
+    .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
     .orderBy(desc(auditLog.createdAt));
 }
 
@@ -6808,17 +6814,28 @@ export async function logLoginAttempt(data: {
   });
 }
 
-export async function getLoginAttempts(opts?: { email?: string; onlyFailed?: boolean; limit?: number }) {
+export async function getLoginAttempts(opts?: { email?: string; onlyFailed?: boolean; limit?: number; dateFrom?: Date; dateTo?: Date; search?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (opts?.email) conditions.push(eq(loginAttempts.email, opts.email));
   if (opts?.onlyFailed) conditions.push(eq(loginAttempts.success, 0));
+  if (opts?.dateFrom) conditions.push(gte(loginAttempts.createdAt, opts.dateFrom.toISOString().slice(0, 19).replace('T', ' ')));
+  if (opts?.dateTo) {
+    // Ende des Tages einschließen
+    const end = new Date(opts.dateTo);
+    end.setHours(23, 59, 59, 999);
+    conditions.push(lte(loginAttempts.createdAt, end.toISOString().slice(0, 19).replace('T', ' ')));
+  }
+  if (opts?.search) {
+    const s = `%${opts.search}%`;
+    conditions.push(sql`(${loginAttempts.email} LIKE ${s} OR COALESCE(${loginAttempts.failureReason}, '') LIKE ${s})`);
+  }
   const query = db
     .select()
     .from(loginAttempts)
     .orderBy(desc(loginAttempts.createdAt))
-    .limit(opts?.limit ?? 200);
+    .limit(opts?.limit ?? 500);
   if (conditions.length > 0) {
     return query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
   }

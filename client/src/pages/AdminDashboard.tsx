@@ -5,7 +5,7 @@ import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
@@ -712,7 +712,8 @@ function AuditLogView() {
     return (
       ((log as any).actorName ?? "").toLowerCase().includes(q) ||
       (log.action ?? "").toLowerCase().includes(q) ||
-      String(log.thesisRequestId ?? "").includes(q)
+      String(log.thesisRequestId ?? "").includes(q) ||
+      ((log as any).studentName ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -760,6 +761,7 @@ function AuditLogView() {
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Zeitpunkt</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Aktion</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden sm:table-cell">Nutzer:in</th>
+              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Studierende:r</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Anfrage-ID</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Von → Nach</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Notiz / Änderungen</th>
@@ -798,6 +800,12 @@ function AuditLogView() {
                     </td>
                     <td className="px-5 py-3 hidden sm:table-cell">
                       <span className="text-xs text-gray-700 font-medium">{(log as any).actorName ?? <span className="text-gray-400">System</span>}</span>
+                    </td>
+                    <td className="px-5 py-3 hidden md:table-cell">
+                      {(log as any).studentName
+                        ? <span className="text-xs font-medium text-[#76B900]">{(log as any).studentName}</span>
+                        : <span className="text-xs text-gray-400">—</span>
+                      }
                     </td>
                     <td className="px-5 py-3 hidden md:table-cell">
                       <span className="text-xs text-gray-600 font-mono">#{log.thesisRequestId}</span>
@@ -1940,16 +1948,45 @@ function StatisticsView() {
 }
 
 // ─── Login-Protokoll ─────────────────────────────────────────────────────────
+// Hilfsfunktion: User-Agent in lesbare Browser/OS-Kombination umwandeln
+function parseUserAgent(ua: string | null | undefined): string {
+  if (!ua) return "—";
+  let browser = "Unbekannt";
+  let os = "";
+  // Browser
+  if (/Edg\//.test(ua)) browser = "Edge";
+  else if (/OPR\/|Opera/.test(ua)) browser = "Opera";
+  else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = "Chrome";
+  else if (/Firefox\//.test(ua)) browser = "Firefox";
+  else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
+  else if (/MSIE|Trident/.test(ua)) browser = "Internet Explorer";
+  // OS
+  if (/Windows NT 10/.test(ua)) os = "Windows 10/11";
+  else if (/Windows NT 6/.test(ua)) os = "Windows";
+  else if (/Mac OS X/.test(ua)) os = "macOS";
+  else if (/Android/.test(ua)) os = "Android";
+  else if (/iPhone|iPad/.test(ua)) os = "iOS";
+  else if (/Linux/.test(ua)) os = "Linux";
+  return os ? `${browser} / ${os}` : browser;
+}
+
 function LoginAttemptsView() {
-  const [emailFilter, setEmailFilter] = useState("");
+  const [searchText, setSearchText] = useState("");
   const [onlyFailed, setOnlyFailed] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const queryInput = useMemo(() => ({
+    onlyFailed,
+    limit: 500,
+    search: searchText.trim() || undefined,
+    dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+    dateTo: dateTo ? new Date(dateTo) : undefined,
+  }), [onlyFailed, searchText, dateFrom, dateTo]);
   const { data: attempts, isLoading } = trpc.admin.getLoginAttempts.useQuery(
-    { onlyFailed, limit: 200 },
+    queryInput,
     { refetchInterval: 30000 }
   );
-  const filtered = attempts?.filter((a) =>
-    !emailFilter.trim() || a.email.toLowerCase().includes(emailFilter.trim().toLowerCase())
-  ) ?? [];
+  const filtered = attempts ?? [];
   const failureLabels: Record<string, string> = {
     user_not_found: "Konto nicht gefunden",
     wrong_password: "Falsches Passwort",
@@ -1980,17 +2017,42 @@ function LoginAttemptsView() {
   };
   return (
     <div className="space-y-4">
+      {/* Filterzeile */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           <input
             type="text"
-            value={emailFilter}
-            onChange={(e) => setEmailFilter(e.target.value)}
-            placeholder="Nach E-Mail filtern..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Nach E-Mail oder Fehlergrund suchen..."
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Von</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500 whitespace-nowrap">Bis</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+        {(dateFrom || dateTo || searchText) && (
+          <button
+            onClick={() => { setSearchText(""); setDateFrom(""); setDateTo(""); }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >Filter zurücksetzen</button>
+        )}
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={onlyFailed} onChange={(e) => setOnlyFailed(e.target.checked)} className="rounded" />
           Nur fehlgeschlagene
@@ -2022,15 +2084,16 @@ function LoginAttemptsView() {
                 <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">E-Mail</th>
                 <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Status</th>
                 <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Grund</th>
+                <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Browser / OS</th>
                 <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">IP-Adresse</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">Lade...</td></tr>
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">Lade...</td></tr>
               )}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">Keine Eintraege vorhanden.</td></tr>
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">Keine Einträge vorhanden.</td></tr>
               )}
               {filtered.map((a) => (
                 <tr key={a.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
@@ -2050,6 +2113,9 @@ function LoginAttemptsView() {
                     ) : (
                       <span className="text-sm text-gray-400">—</span>
                     )}
+                  </td>
+                  <td className="px-5 py-3 text-xs text-gray-500 hidden lg:table-cell">
+                    {parseUserAgent((a as any).userAgent)}
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-400 hidden md:table-cell font-mono">{a.ipAddress ?? "—"}</td>
                 </tr>

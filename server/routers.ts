@@ -2008,9 +2008,23 @@ export const appRouter = router({
       }),
     // Admin: Login-Fehler-Protokoll abrufen
     getLoginAttempts: adminProcedure
-      .input(z.object({ email: z.string().optional(), onlyFailed: z.boolean().optional(), limit: z.number().optional() }))
+      .input(z.object({
+        email: z.string().optional(),
+        onlyFailed: z.boolean().optional(),
+        limit: z.number().optional(),
+        dateFrom: z.date().optional(),
+        dateTo: z.date().optional(),
+        search: z.string().optional(),
+      }))
       .query(async ({ input }) => {
-        return getLoginAttempts({ email: input.email, onlyFailed: input.onlyFailed, limit: input.limit });
+        return getLoginAttempts({
+          email: input.email,
+          onlyFailed: input.onlyFailed,
+          limit: input.limit,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+          search: input.search,
+        });
       }),
     // Admin: Letzten Passwort-Reset-Zeitstempel abrufen
     getLastPasswordResetSent: adminProcedure

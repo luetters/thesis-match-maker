@@ -1337,3 +1337,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Bestätigungsseite Prüfer/Admin: Amber-Warnung "Freischaltung erforderlich" + 3 nummerierte Schritte
 - [x] Bestätigungsseite Studierende: Grüne Bestätigung "Konto sofort aktiv" + 3 nummerierte Schritte
 - [x] Bestätigungsseite: Passwort-Hinweis mit Link zu "Passwort vergessen"
+
+## Audit-Log: Studierenden-Name + Login-Protokoll: Browser/OS + Datumsfilter
+
+- [x] Audit-Log Backend: getAllAuditLogs per JOIN auf thesisRequests → users um studentName erweitert
+- [x] Audit-Log Frontend: Spalte "Studierende:r" (grün) zwischen Nutzer:in und Anfrage-ID
+- [x] Audit-Log Frontend: Suchfilter berücksichtigt jetzt auch studentName
+- [x] Login-Protokoll Frontend: parseUserAgent()-Funktion (Browser + OS) als eigene Spalte
+- [x] Login-Protokoll Frontend: Datumsfilter Von/Bis mit "Filter zurücksetzen"-Link
+- [x] Login-Protokoll Frontend: Suchfeld auf E-Mail + Fehlergrund erweitert (server-seitig gefiltert)
+- [x] Login-Protokoll Backend: getLoginAttempts um dateFrom, dateTo, search-Parameter erweitert
