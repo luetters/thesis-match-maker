@@ -186,8 +186,31 @@ function DeadlineModal({
 // ─── All Requests ─────────────────────────────────────────────────────────────
 type AdminSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
 
-function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId: number; userName: string } | null; onClearUserFilter?: () => void } = {}) {
+function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightClear }: { userFilter?: { userId: number; userName: string } | null; onClearUserFilter?: () => void; highlightId?: number | null; onHighlightClear?: () => void } = {}) {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
+  const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+
+  // Scroll to and highlight the target row when highlightId changes
+  useEffect(() => {
+    if (!highlightId || isLoading) return;
+    setHighlightedId(highlightId);
+    // Wait for render, then scroll
+    const timer = setTimeout(() => {
+      const el = rowRefs.current[highlightId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Remove highlight after 3 seconds
+      const clearTimer = setTimeout(() => {
+        setHighlightedId(null);
+        onHighlightClear?.();
+      }, 3000);
+      return () => clearTimeout(clearTimer);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [highlightId, isLoading]);
+
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
   const [secondExaminerFilter, setSecondExaminerFilter] = useState<"ALL" | "NONE" | "REQUESTED" | "ACCEPTED" | "REJECTED">("ALL");
   const [search, setSearch] = useState("");
@@ -433,7 +456,13 @@ function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId:
               </thead>
               <tbody>
                 {sorted.map((req) => (
-                  <tr key={req.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                  <tr
+                    key={req.id}
+                    ref={(el) => { rowRefs.current[req.id] = el; }}
+                    className={`border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors ${
+                      highlightedId === req.id ? 'ring-2 ring-inset ring-[#76B900] bg-[#76B900]/5' : ''
+                    }`}
+                  >
                     <td className="px-5 py-4">
                       <div className="font-medium text-gray-900 text-sm truncate max-w-xs">{req.title || "(kein Titel)"}</div>
                       {req.studentName && <div className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</div>}
@@ -637,7 +666,7 @@ function AllRequests({ userFilter, onClearUserFilter }: { userFilter?: { userId:
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────
-function AuditLogView() {
+function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestId: number) => void } = {}) {
   const { data: logs, isLoading } = trpc.auditLog.all.useQuery();
   const [auditSearch, setAuditSearch] = useState("");
 
@@ -802,9 +831,21 @@ function AuditLogView() {
                       <span className="text-xs text-gray-700 font-medium">{(log as any).actorName ?? <span className="text-gray-400">System</span>}</span>
                     </td>
                     <td className="px-5 py-3 hidden md:table-cell">
-                      {(log as any).studentName
-                        ? <span className="text-xs font-medium text-[#76B900]">{(log as any).studentName}</span>
-                        : <span className="text-xs text-gray-400">—</span>
+                      {(log as any).studentName && log.thesisRequestId
+                        ? (
+                          <button
+                            type="button"
+                            onClick={() => onNavigateToRequest?.(log.thesisRequestId!)}
+                            className="text-xs font-medium text-[#76B900] hover:underline hover:text-[#5a8f00] transition-colors text-left group flex items-center gap-1"
+                            title="Zur Anfrage springen"
+                          >
+                            {(log as any).studentName}
+                            <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          </button>
+                        )
+                        : (log as any).studentName
+                          ? <span className="text-xs font-medium text-[#76B900]">{(log as any).studentName}</span>
+                          : <span className="text-xs text-gray-400">—</span>
                       }
                     </td>
                     <td className="px-5 py-3 hidden md:table-cell">
@@ -2134,6 +2175,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates" | "login_attempts">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
+  const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
   // Zugriffskontrolle: Nur Admins und Superadmins – navigate in useEffect, nie in Render-Phase
   useEffect(() => {
@@ -2175,8 +2217,8 @@ export default function AdminDashboard() {
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
       {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={true} />}
       {activeTab === "overview" && <Overview />}
-      {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} />}
-      {activeTab === "audit" && <AuditLogView />}
+      {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} highlightId={highlightRequestId} onHighlightClear={() => setHighlightRequestId(null)} />}
+      {activeTab === "audit" && <AuditLogView onNavigateToRequest={(id) => { setHighlightRequestId(id); setActiveTab("requests"); }} />}
       {activeTab === "users" && <UserManagement onNavigateToRequests={(userId, userName) => { setSelectedUserFilter({ userId, userName }); setActiveTab("requests"); }} />}
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}

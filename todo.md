@@ -1347,3 +1347,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Login-Protokoll Frontend: Datumsfilter Von/Bis mit "Filter zurücksetzen"-Link
 - [x] Login-Protokoll Frontend: Suchfeld auf E-Mail + Fehlergrund erweitert (server-seitig gefiltert)
 - [x] Login-Protokoll Backend: getLoginAttempts um dateFrom, dateTo, search-Parameter erweitert
+
+## Audit-Log: Klickbarer Studierenden-Name
+
+- [x] AllRequests: highlightId-Prop, rowRefs und scroll/highlight-Logik (grüner Ring, 3s Hervorhebung)
+- [x] AdminDashboard: highlightRequestId-State und Übergabe an AllRequests
+- [x] AuditLogView: Studierenden-Name als klickbarer Button mit Link-Icon → wechselt zu Anfragen-Tab mit Scroll & Hervorhebung
