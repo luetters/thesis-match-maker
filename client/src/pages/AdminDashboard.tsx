@@ -1942,7 +1942,7 @@ function StatisticsView() {
 // ─── Login-Protokoll ─────────────────────────────────────────────────────────
 function LoginAttemptsView() {
   const [emailFilter, setEmailFilter] = useState("");
-  const [onlyFailed, setOnlyFailed] = useState(true);
+  const [onlyFailed, setOnlyFailed] = useState(false);
   const { data: attempts, isLoading } = trpc.admin.getLoginAttempts.useQuery(
     { onlyFailed, limit: 200 },
     { refetchInterval: 30000 }
@@ -1997,6 +1997,22 @@ function LoginAttemptsView() {
         </label>
         <span className="text-xs text-gray-400">{filtered.length} Einträge</span>
       </div>
+      {/* Statistik-Zeile */}
+      {attempts && attempts.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Gesamt", value: attempts.length, color: "text-gray-700", bg: "bg-gray-50" },
+            { label: "Erfolgreich", value: attempts.filter(a => a.success).length, color: "text-green-700", bg: "bg-green-50" },
+            { label: "Fehlgeschlagen", value: attempts.filter(a => !a.success).length, color: "text-red-700", bg: "bg-red-50" },
+            { label: "Heute", value: attempts.filter(a => new Date(a.createdAt).toDateString() === new Date().toDateString()).length, color: "text-blue-700", bg: "bg-blue-50" },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-xl px-4 py-3 flex flex-col`}>
+              <span className={`text-2xl font-bold ${s.color}`}>{s.value}</span>
+              <span className="text-xs text-gray-500 mt-0.5">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">

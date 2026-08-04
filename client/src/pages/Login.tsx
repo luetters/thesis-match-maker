@@ -207,6 +207,7 @@ export default function Login() {
   const [regMatrikelNr, setRegMatrikelNr] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [registeredRole, setRegisteredRole] = useState<string | null>(null);
   const [regEmailTouched, setRegEmailTouched] = useState(false);
   // Bei Rollenwechsel E-Mail-Touched zurücksetzen
   const prevSelectedRole = useRef(selectedRole);
@@ -309,6 +310,7 @@ export default function Login() {
           }
         );
       } else {
+        setRegisteredRole(selectedRole ?? "student");
         setRegistered(true);
       }
     },
@@ -820,21 +822,122 @@ export default function Login() {
                 className="border-0 shadow-2xl"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
               >
-                <CardContent className="pt-8 pb-8 text-center">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                    style={{ backgroundColor: "rgba(118,185,0,0.15)" }}
-                  >
-                    <CheckCircle2 className="w-8 h-8" style={{ color: "#76b900" }} />
+                <CardContent className="pt-8 pb-8">
+                  {/* Erfolgs-Icon */}
+                  <div className="text-center mb-6">
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                      style={{ backgroundColor: "rgba(118,185,0,0.15)" }}
+                    >
+                      <CheckCircle2 className="w-8 h-8" style={{ color: "#76b900" }} />
+                    </div>
+                    <h3 className="text-white font-semibold text-xl mb-1">
+                      {lang === 'de' ? 'Registrierung erfolgreich!' : 'Registration successful!'}
+                    </h3>
+                    <p className="text-white/50 text-sm">
+                      {lang === 'de' ? 'Ihr Konto wurde angelegt.' : 'Your account has been created.'}
+                    </p>
                   </div>
-                  <h3 className="text-white font-semibold text-lg mb-2">{L.registrationSubmitted}</h3>
-                  <p className="text-white/50 text-sm leading-relaxed mb-6">{L.registrationSubmittedDesc}</p>
+
+                  {/* Rollenspezifische nächste Schritte */}
+                  {(registeredRole === 'examiner' || registeredRole === 'second_examiner' || registeredRole === 'admin' || registeredRole === 'programme_director') ? (
+                    <div className="space-y-3 mb-6">
+                      {/* Freischaltungs-Hinweis */}
+                      <div className="rounded-xl p-4 border" style={{ background: "rgba(251,191,36,0.08)", borderColor: "rgba(251,191,36,0.25)" }}>
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#fbbf24" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: "#fbbf24" }}>
+                              {lang === 'de' ? 'Freischaltung erforderlich' : 'Approval required'}
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: "rgba(251,191,36,0.75)" }}>
+                              {lang === 'de'
+                                ? 'Ihr Konto muss zunächst von der Verwaltung freigeschaltet werden. Sie erhalten eine E-Mail, sobald Ihr Zugang aktiv ist.'
+                                : 'Your account must first be approved by the administration. You will receive an email once your access is active.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Schritte */}
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)" }}>
+                        <p className="text-white/60 text-xs font-semibold uppercase tracking-wide mb-3">
+                          {lang === 'de' ? 'Nächste Schritte' : 'Next steps'}
+                        </p>
+                        <ol className="space-y-2">
+                          {[
+                            lang === 'de' ? 'E-Mail-Postfach prüfen – Bestätigungs-E-Mail ist unterwegs' : 'Check your inbox – a confirmation email is on its way',
+                            lang === 'de' ? 'Auf Freischaltung durch die Verwaltung warten' : 'Wait for approval by the administration',
+                            lang === 'de' ? 'Nach Erhalt der Freischaltungs-E-Mail anmelden' : 'Sign in after receiving the approval email',
+                          ].map((step, i) => (
+                            <li key={i} className="flex items-start gap-2.5 text-xs text-white/60">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(118,185,0,0.2)", color: "#76b900" }}>{i + 1}</span>
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  ) : (
+                    // Studierende: sofort anmelden
+                    <div className="space-y-3 mb-6">
+                      <div className="rounded-xl p-4 border" style={{ background: "rgba(118,185,0,0.08)", borderColor: "rgba(118,185,0,0.25)" }}>
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#76b900" }} />
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: "#76b900" }}>
+                              {lang === 'de' ? 'Konto sofort aktiv' : 'Account immediately active'}
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: "rgba(118,185,0,0.75)" }}>
+                              {lang === 'de'
+                                ? 'Als Studierende:r der HTW Berlin können Sie sich sofort anmelden und Ihre Thesis-Anfrage stellen.'
+                                : 'As an HTW Berlin student, you can sign in immediately and submit your thesis request.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)" }}>
+                        <p className="text-white/60 text-xs font-semibold uppercase tracking-wide mb-3">
+                          {lang === 'de' ? 'Nächste Schritte' : 'Next steps'}
+                        </p>
+                        <ol className="space-y-2">
+                          {[
+                            lang === 'de' ? 'Mit E-Mail und Ihrem neuen Passwort anmelden' : 'Sign in with your email and new password',
+                            lang === 'de' ? 'Thesis-Anfrage im Studierenden-Dashboard stellen' : 'Submit your thesis request in the student dashboard',
+                            lang === 'de' ? 'Passende Prüfer:innen werden vorgeschlagen' : 'Matching examiners will be suggested',
+                          ].map((step, i) => (
+                            <li key={i} className="flex items-start gap-2.5 text-xs text-white/60">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(118,185,0,0.2)", color: "#76b900" }}>{i + 1}</span>
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Passwort-Hinweis */}
+                  <div className="rounded-xl p-3 mb-5" style={{ background: "rgba(255,255,255,0.04)" }}>
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      {lang === 'de'
+                        ? '\uD83D\uDD12 Merken Sie sich Ihr Passwort – es ist nicht Ihr HTW-Passwort. Bei Verlust: '
+                        : '\uD83D\uDD12 Remember your password – it is not your HTW password. If forgotten: '}
+                      <button
+                        type="button"
+                        onClick={() => { setRegistered(false); setStep("login"); }}
+                        className="underline hover:opacity-80"
+                        style={{ color: "#76b900" }}
+                      >
+                        {lang === 'de' ? '"Passwort vergessen"' : '"Forgot password"'}
+                      </button>
+                    </p>
+                  </div>
+
                   <Button
-                    variant="outline"
+                    style={{ background: "#76b900" }}
+                    className="w-full text-white font-semibold hover:opacity-90"
                     onClick={() => { setRegistered(false); setStep("login"); }}
-                    className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
                   >
-                    {L.toLogin}
+                    {lang === 'de' ? 'Zur Anmeldung' : 'Go to Sign In'}
                   </Button>
                 </CardContent>
               </Card>

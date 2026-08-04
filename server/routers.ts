@@ -779,6 +779,8 @@ export const appRouter = router({
           await addUserRole(user.id, user.role as AppRole);
           userRolesArr.push(user.role as AppRole);
         }
+        // Erfolgreiche Anmeldung protokollieren
+        await logLoginAttempt({ email: input.email, success: true, ipAddress: ipAddr, userAgent: ua });
         return { success: true, role: user.role, roles: userRolesArr };
       }),
   }),

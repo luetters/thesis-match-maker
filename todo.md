@@ -1326,3 +1326,14 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Registrierungsformular: Deutliche Passwort-Warnung (roter Rahmen, Dreieck-Icon, fett) direkt unter Passwortfeld
 - [x] Login-Seite: Hilfe-Link mit HelpCircle-Icon oben rechts neben Sprachumschalter
 - [x] FAQ-Modal: 6 häufige Fragen (Registrierung, Passwort, Reset, Freischaltung, E-Mail-Domäne, Spam) mit Accordion-Aufklapper, zweisprachig DE/EN
+
+## Login-Protokoll: Erfolgreiche Anmeldungen + Registrierungs-Bestätigungsseite
+
+- [x] Backend: logLoginAttempt auch bei erfolgreicher Anmeldung aufrufen (success=true, kein failureReason)
+- [x] Frontend: Login-Protokoll-Tabelle zeigt jetzt auch erfolgreiche Anmeldungen (grüne Zeilen)
+- [x] Frontend: Statistik-Zeile über Tabelle (Gesamt / Erfolgreich / Fehlgeschlagen / Heute) als 4 farbige Kacheln
+- [x] Frontend: Standard-Filter auf "Alle" umgestellt (nicht mehr nur fehlgeschlagene)
+- [x] Registrierung: Nach erfolgreicher Registrierung rollenspezifische Bestätigungsseite anzeigen
+- [x] Bestätigungsseite Prüfer/Admin: Amber-Warnung "Freischaltung erforderlich" + 3 nummerierte Schritte
+- [x] Bestätigungsseite Studierende: Grüne Bestätigung "Konto sofort aktiv" + 3 nummerierte Schritte
+- [x] Bestätigungsseite: Passwort-Hinweis mit Link zu "Passwort vergessen"
