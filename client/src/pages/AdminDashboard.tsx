@@ -1054,6 +1054,21 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
     onError: (err) => toast.error(err.message),
   });
 
+  const [showBulkResetDialog, setShowBulkResetDialog] = useState(false);
+  const [bulkResetDone, setBulkResetDone] = useState<{ sent: number; failed: number } | null>(null);
+  const magicLinkUsersQuery = trpc.admin.getMagicLinkUsersCount.useQuery(
+    { origin: window.location.origin },
+    { enabled: showBulkResetDialog }
+  );
+  const bulkReset = trpc.admin.sendPasswordResetToMagicLinkUsers.useMutation({
+    onSuccess: (data) => {
+      setBulkResetDone({ sent: data.sent, failed: data.failed });
+      setShowBulkResetDialog(false);
+      toast.success(`Passwort-Reset-E-Mails versendet: ${data.sent} erfolgreich, ${data.failed} fehlgeschlagen.`);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const addRole = trpc.admin.addUserRole.useMutation({
     onSuccess: () => {
       toast.success("Rolle hinzugefügt!");
@@ -1114,6 +1129,52 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
 
   return (
     <div className="space-y-4">
+      {/* Bulk-Passwort-Reset-Dialog */}
+      {showBulkResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Passwort-Reset an alle bisherigen Magic-Link-Nutzer:innen senden</h3>
+                <p className="text-sm text-gray-500 mt-1">Alle Konten, die bisher per E-Mail-Link angemeldet waren und noch kein Passwort vergeben haben, erhalten eine E-Mail mit einem 48-Stunden-Reset-Link.</p>
+              </div>
+            </div>
+            {magicLinkUsersQuery.isLoading ? (
+              <div className="bg-gray-50 rounded-xl p-4 mb-4 text-sm text-gray-500 animate-pulse">Betroffene Nutzer:innen werden ermittelt…</div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <p className="text-sm font-semibold text-amber-800 mb-2">
+                  {magicLinkUsersQuery.data?.count ?? 0} Nutzer:in{(magicLinkUsersQuery.data?.count ?? 0) !== 1 ? "nen" : ""} betroffen
+                </p>
+                {(magicLinkUsersQuery.data?.users ?? []).length > 0 && (
+                  <ul className="text-xs text-amber-700 space-y-0.5 max-h-32 overflow-y-auto">
+                    {magicLinkUsersQuery.data!.users.map((u) => (
+                      <li key={u.id} className="truncate">{u.name || "—"} &lt;{u.email}&gt;</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowBulkResetDialog(false)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >Abbrechen</button>
+              <button
+                onClick={() => bulkReset.mutate({ origin: window.location.origin })}
+                disabled={bulkReset.isPending || (magicLinkUsersQuery.data?.count ?? 0) === 0}
+                className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                style={{ backgroundColor: "#006937" }}
+              >
+                {bulkReset.isPending ? "Wird gesendet…" : `E-Mails jetzt senden`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showCreate && <CreateExaminerModal onClose={() => setShowCreate(false)} />}
       {pendingRoleChange && (
         <RoleChangeConfirmDialog
@@ -1127,8 +1188,19 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
           onCancel={() => setPendingRoleChange(null)}
         />
       )}
-      {/* Suchleiste */}
-      <div className="relative">
+      {/* Bulk-Reset-Ergebnis-Banner */}
+      {bulkResetDone && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
+          <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span><strong>{bulkResetDone.sent}</strong> Passwort-Reset-E-Mail{bulkResetDone.sent !== 1 ? "s" : ""} erfolgreich versendet{bulkResetDone.failed > 0 ? `, ${bulkResetDone.failed} fehlgeschlagen` : ""}.</span>
+          <button onClick={() => setBulkResetDone(null)} className="ml-auto text-green-600 hover:text-green-800">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+      {/* Suchleiste + Bulk-Reset-Button */}
+      <div className="flex items-center gap-2">
+      <div className="relative flex-1">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         <input
           type="text"
@@ -1147,6 +1219,16 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
+      </div>
+      {/* Bulk-Reset-Button */}
+      <button
+        onClick={() => setShowBulkResetDialog(true)}
+        title="Passwort-Reset-E-Mails an alle bisherigen Magic-Link-Nutzer:innen senden"
+        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+        Migration: Passwort-Reset senden
+      </button>
       </div>
       {/* Tab-Navigation */}
       <div className="flex items-center justify-between">

@@ -2101,15 +2101,128 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { sendMagicLink: sendLink } = await import("./magicLinkAuth");
-        const result = await sendLink(input.email, input.role, input.origin);
+        // Magic-Link wurde entfernt. Einladung = Passwort-Reset-E-Mail.
+        // Nutzer muss bereits registriert sein oder wird per Import angelegt.
+        const user = await getUserByEmail(input.email);
+        if (!user) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kein Konto mit dieser E-Mail-Adresse gefunden. Bitte zuerst registrieren.",
+          });
+        }
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 Stunden
+        await createPasswordResetToken(user.id, token, expiresAt);
+        const resetUrl = `${input.origin}/reset-password?token=${token}`;
+        const { sendEmail } = await import("./emailHelper");
+        await sendEmail({
+          to: input.email,
+          subject: "Einladung – HTW Berlin Thesis Match Maker",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #006937; padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin – Thesis Match Maker</h1>
+              </div>
+              <div style="padding: 32px; background: #f9f9f9;">
+                <h2 style="color: #1a1a1a; margin-top: 0;">Willkommen beim Thesis Match Maker</h2>
+                <p style="color: #444;">Sie wurden eingeladen, das Thesis-Management-System der HTW Berlin zu nutzen. Bitte vergeben Sie zunächst ein Passwort für Ihr Konto:</p>
+                <div style="text-align: center; margin: 32px 0;">
+                  <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort vergeben &amp; anmelden</a>
+                </div>
+                <p style="color: #888; font-size: 13px;">Dieser Link ist 24 Stunden gültig. Melden Sie sich danach unter <a href="${input.origin}/login">${input.origin}/login</a> mit Ihrer E-Mail-Adresse und dem gewählten Passwort an.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                <p style="color: #aaa; font-size: 12px;">&copy; ${new Date().getFullYear()} HTW Berlin – Hochschule f&uuml;r Technik und Wirtschaft</p>
+              </div>
+            </div>
+          `,
+        });
         await createAuditLogEntry({
           action: "INVITE_SENT",
           actorId: ctx.user.id,
           metadata: { email: input.email, role: input.role },
         });
-        return result;
+        return { success: true, message: "Einladungs-E-Mail wurde versendet." };
       }),
+    // Anzahl der Magic-Link-Nutzer ohne Passwort abfragen (Vorschau vor Massen-Reset)
+    getMagicLinkUsersCount: adminProcedure
+      .input(z.object({ origin: z.string().url() }))
+      .query(async () => {
+        const db = await getDb();
+        if (!db) return { count: 0, users: [] };
+        const rows = await db.execute(
+          `SELECT id, name, email, role, loginMethod, passwordHash FROM users
+           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
+           AND email IS NOT NULL AND roleStatus = 'approved'
+           ORDER BY createdAt DESC LIMIT 200`
+        );
+        const list = (rows[0] as unknown as any[]) ?? [];
+        return {
+          count: list.length,
+          users: list.map((u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
+        };
+      }),
+
+    // Massen-Passwort-Reset: alle Magic-Link-Nutzer ohne Passwort per E-Mail benachrichtigen
+    sendPasswordResetToMagicLinkUsers: adminProcedure
+      .input(z.object({ origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbank nicht verfügbar." });
+        const rows = await db.execute(
+          `SELECT id, name, email FROM users
+           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
+           AND email IS NOT NULL AND roleStatus = 'approved'
+           LIMIT 200`
+        );
+        const list = (rows[0] as unknown as any[]) ?? [];
+        if (list.length === 0) return { sent: 0, failed: 0, skipped: 0 };
+        const { randomBytes } = await import("crypto");
+        const { sendEmail: send } = await import("./emailHelper");
+        let sent = 0;
+        let failed = 0;
+        for (const user of list) {
+          try {
+            const token = randomBytes(32).toString("hex");
+            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 Stunden
+            await createPasswordResetToken(user.id, token, expiresAt);
+            const resetUrl = `${input.origin}/reset-password?token=${token}`;
+            await send({
+              to: user.email,
+              subject: "Bitte vergeben Sie ein Passwort – HTW Berlin Thesis Match Maker",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: #006937; padding: 24px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin &ndash; Thesis Match Maker</h1>
+                  </div>
+                  <div style="padding: 32px; background: #f9f9f9;">
+                    <h2 style="color: #1a1a1a; margin-top: 0;">Ihr Konto wurde auf Passwort-Anmeldung umgestellt</h2>
+                    <p style="color: #444;">Sehr geehrte:r ${user.name ?? "Nutzer:in"},</p>
+                    <p style="color: #444;">das Thesis-Management-System der HTW Berlin wurde aktualisiert. Die bisherige Anmeldung per E-Mail-Link ist nicht mehr verf&uuml;gbar. Bitte vergeben Sie jetzt ein pers&ouml;nliches Passwort f&uuml;r Ihr Konto:</p>
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort vergeben</a>
+                    </div>
+                    <p style="color: #888; font-size: 13px;">Dieser Link ist 48 Stunden g&uuml;ltig. Melden Sie sich danach unter <a href="${input.origin}/login">${input.origin}/login</a> mit Ihrer E-Mail-Adresse und dem gew&auml;hlten Passwort an.</p>
+                    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                    <p style="color: #aaa; font-size: 12px;">&copy; ${new Date().getFullYear()} HTW Berlin &ndash; Hochschule f&uuml;r Technik und Wirtschaft</p>
+                  </div>
+                </div>
+              `,
+            });
+            sent++;
+          } catch (err) {
+            console.error(`[BulkPasswordReset] Fehler bei ${user.email}:`, err);
+            failed++;
+          }
+        }
+        await createAuditLogEntry({
+          action: "BULK_PASSWORD_RESET_SENT",
+          actorId: ctx.user.id,
+          metadata: { sent, failed, total: list.length },
+        });
+        return { sent, failed, skipped: 0 };
+      }),
+
     stats: adminProcedure.query(async () => {
       return getThesisStats();
     }),
@@ -2531,14 +2644,14 @@ export const appRouter = router({
               }
               updated++;
             } else {
-              // Neuen Nutzer anlegen (openId = email, loginMethod = magic_link)
+              // Neuen Nutzer anlegen (openId = email, loginMethod = password)
               const openId = `import_${row.email.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}`;
               await upsertUser({
                 openId,
                 name: row.name,
                 email: row.email,
                 role: row.role,
-                loginMethod: "magic_link",
+                loginMethod: "password",
                 roleStatus: "approved",
               });
               const newUser = await getUserByEmail(row.email);

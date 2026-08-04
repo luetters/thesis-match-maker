@@ -12,7 +12,7 @@ import "./index.css";
 const queryClient = new QueryClient();
 
 // Öffentliche Routen, die ohne Login zugänglich sind
-const PUBLIC_PATHS = ["/", "/login", "/auth/verify", "/examiners", "/maintenance", "/select-role", "/role-pending"];
+const PUBLIC_PATHS = ["/", "/login", "/examiners", "/maintenance", "/select-role", "/role-pending"];
 const isPublicPath = (path: string) =>
   PUBLIC_PATHS.includes(path) ||
   path.startsWith("/examiner/profile/") ||

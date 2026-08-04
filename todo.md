@@ -1282,11 +1282,33 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Frontend: "Alle Termine exportieren"-Button oberhalb der Kolloquium-Liste
 - [x] Frontend: Sammel-ICS enthält alle Kolloquien des Prüfers (gefiltert für second_examiner)
 
+## Magic-Link-Entfernung: Nur noch E-Mail/Passwort-Login
+
+- [x] Backend: registerMagicLinkRoutes aus server/_core/index.ts entfernt (nur Logout-Route bleibt)
+- [x] Backend: POST /api/auth/magic-link Route entfernt (magicLinkRoutes.ts)
+- [x] Backend: GET /api/auth/verify Route entfernt (magicLinkRoutes.ts)
+- [x] Backend: sendInvite-Prozedur auf Passwort-Reset-E-Mail umgestellt
+- [x] Backend: Import-Nutzer loginMethod von "magic_link" auf "password" geändert
+- [x] Frontend: Route /auth/verify aus App.tsx entfernt
+- [x] Frontend: /auth/verify aus PUBLIC_PATHS in main.tsx entfernt
+- [x] Frontend: AuthVerify-Import aus App.tsx entfernt
+- [x] Frontend: loginMagicLink, sendLink, linkSent, sending aus LanguageContext (DE+EN) entfernt
+- [x] Registrierung: Passwort-Pflichtfeld (min. 8 Zeichen) bereits vorhanden und aktiv
+
+## Magic-Link-Migration & Login-UX
+
+- [x] Backend: tRPC-Prozedur admin.getMagicLinkUsersCount (Vorschau: Anzahl + Liste betroffener Nutzer:innen)
+- [x] Backend: tRPC-Prozedur admin.sendPasswordResetToMagicLinkUsers (Massen-Reset, max. 200 Nutzer:innen, 48h-Token, Audit-Log)
+- [x] Admin-UI: Schaltfläche "Migration: Passwort-Reset senden" in Nutzerverwaltung (amber-farbig, neben Suchleiste)
+- [x] Admin-UI: Bestätigungsdialog mit Vorschau (Anzahl + Namen/E-Mails) vor dem Versand
+- [x] Admin-UI: Erfolgs-Banner nach Versand mit Anzahl erfolgreich/fehlgeschlagen
+- [x] Login-Seite: "Passwort vergessen?"-Link prominent (grün, unterstrichen, Schriftgröße sm) direkt unter dem Passwortfeld
+
 ## Login-Protokoll: Fehlergrund-Erweiterung
 
 - [x] DB-Schema: Spalte `failure_reason` (varchar 128, nullable) bereits vorhanden und aktiv
 - [x] Backend: logLoginAttempt enthält bereits `failureReason`-Parameter
-- [x] Backend: Login-Prozedur alle 5 Fehlerpfade mit deutschem Klartext protokolliert (Konto nicht gefunden, Falsches Passwort, Kein Passwort gesetzt, Konto nicht freigeschaltet, Registrierungsantrag abgelehnt, Ungültige E-Mail-Domäne)
+- [x] Backend: Login-Prozedur alle 6 Fehlerpfade mit deutschem Klartext protokolliert (Konto nicht gefunden, Falsches Passwort, Kein Passwort gesetzt, Konto nicht freigeschaltet, Registrierungsantrag abgelehnt, Ungültige E-Mail-Domäne)
 - [x] Frontend: Fehlergrund-Spalte als farbiges Badge (rot/orange/amber/gelb/lila je nach Typ)
 - [x] Frontend: Erfolg grün / Fehler rot in Status-Spalte
 - [x] Frontend: Checkbox "Nur fehlgeschlagene" bereits vorhanden

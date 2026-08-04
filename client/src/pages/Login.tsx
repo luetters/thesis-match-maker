@@ -462,22 +462,7 @@ export default function Login() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!loginEmail.trim()) {
-                            toast.error(L.enterEmailFirst ?? "Bitte geben Sie zuerst Ihre E-Mail-Adresse ein.");
-                            return;
-                          }
-                          requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
-                        }}
-                        className="text-xs text-white/40 hover:text-white/70 transition-colors"
-                      >
-                        {L.forgotPassword}
-                      </button>
-                    </div>
+                    <Label className="text-white/70 text-sm">{L.passwordLabel}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                       <Input
@@ -496,6 +481,22 @@ export default function Login() {
                         tabIndex={-1}
                       >
                         {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {/* Passwort vergessen – prominent direkt unter dem Eingabefeld */}
+                    <div className="flex justify-end pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!loginEmail.trim()) {
+                            toast.error(L.enterEmailFirst ?? "Bitte geben Sie zuerst Ihre E-Mail-Adresse ein.");
+                            return;
+                          }
+                          requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
+                        }}
+                        className="text-sm font-medium text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 transition-colors"
+                      >
+                        {L.forgotPassword}
                       </button>
                     </div>
                   </div>

@@ -44,7 +44,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerUploadRoutes(app);
   registerExportRoutes(app);
-  registerMagicLinkRoutes(app);
+  registerMagicLinkRoutes(app); // Nur noch Logout-Route
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)
   app.use(maintenanceMiddleware());
   // tRPC API – kein Caching (verhindert veraltete Profil-/Auth-Daten nach Updates)
