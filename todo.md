@@ -1365,3 +1365,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Dropdown-Menü mit 14 Aktionstypen (Alle Aktionen + alle bekannten Typen auf Deutsch)
 - [x] Filter-Logik: selectedAction-State in filteredLogs eingebaut
 - [x] "Filter zurücksetzen" setzt auch selectedAction zurück
+
+## Bug-Fix: Redirect-Loop nach Login (Cookie SameSite/Secure)
+
+- [x] Ursache: `isSecureRequest()` erkannte Cloud-Run-HTTPS-Proxy nicht → `secure: false` → `SameSite=None`-Cookie wurde vom Browser verworfen → Missing session cookie → Endlos-Redirect
+- [x] Fix: `cookies.ts` um Fallback-Logik erweitert: Nicht-lokale Hosts werden immer als HTTPS behandelt; `SameSite=Lax` als Fallback für lokales HTTP; Cloudflare-Header-Erkennung ergänzt
