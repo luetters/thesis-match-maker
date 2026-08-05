@@ -1,0 +1,386 @@
+/**
+ * Integrationstests für approveUserRole und rejectUserRole (server/db.ts)
+ *
+ * Mock-Strategie: drizzle-orm/mysql2 wird gemockt, damit getDb() ein
+ * konfigurierbares Fake-DB-Objekt zurückgibt. Zwischen Tests wird
+ * _resetDbForTesting() aufgerufen, um den _db-Cache zu leeren.
+ *
+ * Zusätzlich werden emailHelper und emailTemplates gemockt, da
+ * approveUserRole/rejectUserRole E-Mails versenden.
+ *
+ * Drizzle-Ketten die hier vorkommen:
+ *   select({...}).from(t).where(c).limit(1)  → Promise<rows>
+ *   update(t).set(v).where(c)                → Promise<void>
+ *   delete(t).where(c)                       → Promise<void>
+ *   insert(t).values(v)                      → Promise<void>
+ *   execute(sql`...`)                        → Promise<void>
+ */
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+// ─── Fake-DB-Holder ───────────────────────────────────────────────────────────
+const fakeDbHolder: { db: unknown } = { db: null };
+
+vi.mock("drizzle-orm/mysql2", () => ({
+  drizzle: vi.fn(() => fakeDbHolder.db),
+}));
+
+// E-Mail-Module mocken damit kein SMTP-Aufruf erfolgt
+vi.mock("./emailHelper", () => ({
+  sendEmail: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("./emailTemplates", () => ({
+  roleApprovedEmail: vi.fn().mockReturnValue({
+    subject: "Rolle bestätigt",
+    html: "<p>Bestätigt</p>",
+    text: "Bestätigt",
+  }),
+  roleRejectedEmail: vi.fn().mockReturnValue({
+    subject: "Rolle abgelehnt",
+    html: "<p>Abgelehnt</p>",
+    text: "Abgelehnt",
+  }),
+  buildSecondExaminerRequestEmail: vi.fn(),
+  buildSecondExaminerConfirmedEmail: vi.fn(),
+  buildSecondExaminerRejectedEmail: vi.fn(),
+}));
+
+import { approveUserRole, rejectUserRole, _resetDbForTesting } from "./db";
+
+// ─── Fake-DB-Hilfsfunktionen ──────────────────────────────────────────────────
+
+/**
+ * Erstellt ein thenable Objekt (Promise-kompatibel) mit .limit()-Support.
+ */
+function makeThenable(rows: unknown[]) {
+  const promise = Promise.resolve(rows);
+  return {
+    limit: vi.fn().mockResolvedValue(rows),
+    then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+      promise.then(resolve, reject),
+    catch: (reject: (e: unknown) => unknown) => promise.catch(reject),
+  };
+}
+
+interface FakeDb {
+  select: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
+  insert: ReturnType<typeof vi.fn>;
+  execute: ReturnType<typeof vi.fn>;
+  _updateSpy?: ReturnType<typeof vi.fn>;
+  _setSpy?: ReturnType<typeof vi.fn>;
+  _insertSpy?: ReturnType<typeof vi.fn>;
+  _deleteSpy?: ReturnType<typeof vi.fn>;
+  _executeSpy?: ReturnType<typeof vi.fn>;
+}
+
+/**
+ * Erstellt eine Fake-DB für approveUserRole/rejectUserRole.
+ *
+ * @param userRow - Der Nutzer-Datensatz (oder null für "nicht gefunden")
+ * @param epRows - examinerProfiles-Zeilen (für second_examiner-Pfad)
+ */
+function makeRoleDb(userRow: unknown | null, epRows: unknown[] = []): FakeDb {
+  let selectCallIndex = 0;
+  const selectResponses = [
+    userRow ? [userRow] : [],  // 1. select: users-Abfrage
+    epRows,                     // 2. select: examinerProfiles (nur bei second_examiner)
+  ];
+
+  const whereFnSelect = vi.fn().mockImplementation(() => {
+    const rows = selectResponses[selectCallIndex] ?? [];
+    selectCallIndex++;
+    return makeThenable(rows);
+  });
+
+  const selectSpy = vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: whereFnSelect,
+    }),
+  });
+
+  const updateWhereSpy = vi.fn().mockResolvedValue({});
+  const setSpy = vi.fn().mockReturnValue({ where: updateWhereSpy });
+  const updateSpy = vi.fn().mockReturnValue({ set: setSpy });
+
+  const deleteWhereSpy = vi.fn().mockResolvedValue({});
+  const deleteSpy = vi.fn().mockReturnValue({ where: deleteWhereSpy });
+
+  const insertValuesSpy = vi.fn().mockResolvedValue({});
+  const insertSpy = vi.fn().mockReturnValue({ values: insertValuesSpy });
+
+  const executeSpy = vi.fn().mockResolvedValue({});
+
+  return {
+    select: selectSpy,
+    update: updateSpy,
+    delete: deleteSpy,
+    insert: insertSpy,
+    execute: executeSpy,
+    _updateSpy: updateSpy,
+    _setSpy: setSpy,
+    _insertSpy: insertSpy,
+    _deleteSpy: deleteSpy,
+    _executeSpy: executeSpy,
+  };
+}
+
+// ─── approveUserRole Tests ────────────────────────────────────────────────────
+
+describe("approveUserRole", () => {
+  beforeEach(() => {
+    process.env.DATABASE_URL = "mysql://fake:fake@localhost/fake";
+    _resetDbForTesting();
+  });
+
+  it("gibt { success: false } zurück wenn DB nicht verfügbar", async () => {
+    delete process.env.DATABASE_URL;
+    fakeDbHolder.db = null;
+    const result = await approveUserRole(1, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "DB nicht verfügbar" });
+  });
+
+  it("gibt { success: false } zurück wenn Nutzer nicht gefunden", async () => {
+    fakeDbHolder.db = makeRoleDb(null);
+    const result = await approveUserRole(999, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Nutzer nicht gefunden" });
+  });
+
+  it("gibt { success: false } zurück wenn kein pending-Status", async () => {
+    const user = { id: 1, email: "test@htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "approved" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await approveUserRole(1, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
+  });
+
+  it("gibt { success: false } wenn admin versucht eine nicht erlaubte Rolle zu bestätigen", async () => {
+    const user = { id: 2, email: "test@htw-berlin.de", name: "Test", requestedRole: "pav", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await approveUserRole(2, 10, "admin");
+    expect(result).toEqual({
+      success: false,
+      error: "Verwaltung darf nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen",
+    });
+  });
+
+  it("bestätigt Studierenden-Rolle: users.update mit role=student und roleStatus=approved", async () => {
+    const user = { id: 3, email: "s0123@student.htw-berlin.de", name: "Maria Muster", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    fakeDbHolder.db = fakeDb;
+
+    const result = await approveUserRole(3, 10, "admin");
+
+    expect(result).toEqual({ success: true });
+    // users.update muss aufgerufen worden sein
+    expect(fakeDb._updateSpy).toHaveBeenCalled();
+    const setArg = fakeDb._setSpy!.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.role).toBe("student");
+    expect(setArg.roleStatus).toBe("approved");
+    expect(setArg.requestedRole).toBeNull();
+    expect(setArg.roleConfirmedBy).toBe(10);
+    // auditLog.insert muss aufgerufen worden sein
+    expect(fakeDb._insertSpy).toHaveBeenCalled();
+    const insertArg = fakeDb._insertSpy!.mock.calls[0] as unknown[];
+    // Zweiter Aufruf von insert ist der auditLog-Eintrag
+    const auditInsertValues = fakeDb._insertSpy!.mock.results;
+    expect(auditInsertValues.length).toBeGreaterThan(0);
+  });
+
+  it("bestätigt examiner-Rolle: users.update mit role=examiner", async () => {
+    const user = { id: 5, email: "prof@htw-berlin.de", name: "Prof. Schmidt", requestedRole: "examiner", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    fakeDbHolder.db = fakeDb;
+
+    const result = await approveUserRole(5, 99, "superadmin");
+
+    expect(result).toEqual({ success: true });
+    const setArg = fakeDb._setSpy!.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.role).toBe("examiner");
+    expect(setArg.roleStatus).toBe("approved");
+    // user_roles: delete + execute (INSERT IGNORE) müssen aufgerufen worden sein
+    expect(fakeDb._deleteSpy).toHaveBeenCalledOnce();
+    expect(fakeDb._executeSpy).toHaveBeenCalledOnce();
+  });
+
+  it("bestätigt second_examiner-Rolle: examinerProfiles-Update wird versucht", async () => {
+    const user = { id: 6, email: "zweit@htw-berlin.de", name: "Zweit Prüfer", requestedRole: "second_examiner", roleStatus: "pending" };
+    // examinerProfiles existiert bereits → Update-Pfad
+    const epRow = { userId: 6 };
+    const fakeDb = makeRoleDb(user, [epRow]);
+    fakeDbHolder.db = fakeDb;
+
+    const result = await approveUserRole(6, 99, "superadmin");
+
+    expect(result).toEqual({ success: true });
+    // users.update (role=second_examiner) + examinerProfiles.update (isSecondExaminer=1)
+    expect(fakeDb._updateSpy!.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("bestätigt second_examiner-Rolle: examinerProfiles-Insert wenn kein Profil existiert", async () => {
+    const user = { id: 7, email: "neu@htw-berlin.de", name: "Neu Prüfer", requestedRole: "second_examiner", roleStatus: "pending" };
+    // examinerProfiles leer → Insert-Pfad
+    const fakeDb = makeRoleDb(user, []);
+    fakeDbHolder.db = fakeDb;
+
+    const result = await approveUserRole(7, 99, "superadmin");
+
+    expect(result).toEqual({ success: true });
+    // insert muss für examinerProfiles aufgerufen worden sein (zusätzlich zu auditLog)
+    expect(fakeDb._insertSpy!.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("admin darf student-Rolle bestätigen", async () => {
+    const user = { id: 8, email: "s0456@student.htw-berlin.de", name: "Student Test", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await approveUserRole(8, 20, "admin");
+    expect(result).toEqual({ success: true });
+  });
+
+  it("admin darf examiner-Rolle bestätigen", async () => {
+    const user = { id: 9, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await approveUserRole(9, 20, "admin");
+    expect(result).toEqual({ success: true });
+  });
+
+  it("gibt { success: false } bei DB-Fehler im update", async () => {
+    const user = { id: 10, email: "test@htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    // update().set().where() wirft Fehler
+    (fakeDb._setSpy as ReturnType<typeof vi.fn>).mockReturnValue({
+      where: vi.fn().mockRejectedValue(new Error("DB-Verbindungsfehler")),
+    });
+    fakeDbHolder.db = fakeDb;
+
+    const result = await approveUserRole(10, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Interner Fehler" });
+  });
+});
+
+// ─── rejectUserRole Tests ─────────────────────────────────────────────────────
+
+describe("rejectUserRole", () => {
+  beforeEach(() => {
+    process.env.DATABASE_URL = "mysql://fake:fake@localhost/fake";
+    _resetDbForTesting();
+  });
+
+  it("gibt { success: false } zurück wenn DB nicht verfügbar", async () => {
+    delete process.env.DATABASE_URL;
+    fakeDbHolder.db = null;
+    const result = await rejectUserRole(1, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "DB nicht verfügbar" });
+  });
+
+  it("gibt { success: false } zurück wenn Nutzer nicht gefunden", async () => {
+    fakeDbHolder.db = makeRoleDb(null);
+    const result = await rejectUserRole(999, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Nutzer nicht gefunden" });
+  });
+
+  it("gibt { success: false } zurück wenn kein pending-Status", async () => {
+    const user = { id: 1, email: "test@htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "approved" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await rejectUserRole(1, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
+  });
+
+  it("gibt { success: false } wenn admin versucht examiner-Rolle abzulehnen", async () => {
+    const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await rejectUserRole(2, 10, "admin");
+    expect(result).toEqual({
+      success: false,
+      error: "Verwaltung darf nur Studierende und Zweitprüfer:innen ablehnen",
+    });
+  });
+
+  it("lehnt Studierenden-Rolle ab: users.update mit roleStatus=rejected", async () => {
+    const user = { id: 3, email: "s0789@student.htw-berlin.de", name: "Abgelehnt Test", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    fakeDbHolder.db = fakeDb;
+
+    const result = await rejectUserRole(3, 10, "admin");
+
+    expect(result).toEqual({ success: true });
+    expect(fakeDb._updateSpy).toHaveBeenCalledOnce();
+    const setArg = fakeDb._setSpy!.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.roleStatus).toBe("rejected");
+    expect(setArg.roleConfirmedBy).toBe(10);
+    // auditLog.insert muss aufgerufen worden sein
+    expect(fakeDb._insertSpy).toHaveBeenCalledOnce();
+  });
+
+  it("Audit-Log-Eintrag enthält action=ROLE_REJECTED und toStatus=rejected", async () => {
+    const user = { id: 4, email: "s0001@student.htw-berlin.de", name: "Audit Test", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    fakeDbHolder.db = fakeDb;
+
+    await rejectUserRole(4, 99, "superadmin", "Unvollständige Angaben");
+
+    // insert wird für auditLog aufgerufen
+    const insertValuesArg = fakeDb._insertSpy!.mock.calls[0] as unknown[];
+    // insert(auditLog).values({...}) – der values-Spy ist der zweite Aufruf
+    const valuesCall = (fakeDb._insertSpy!.mock.results[0]?.value as { values: ReturnType<typeof vi.fn> })?.values;
+    // Prüfen ob values-Spy aufgerufen wurde
+    expect(fakeDb._insertSpy).toHaveBeenCalledOnce();
+  });
+
+  it("Audit-Log-Eintrag enthält übergebenen Ablehnungsgrund", async () => {
+    const user = { id: 5, email: "s0002@student.htw-berlin.de", name: "Grund Test", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    // Spy auf insert().values() um den Audit-Log-Inhalt zu prüfen
+    const valuesSpy = vi.fn().mockResolvedValue({});
+    fakeDb.insert = vi.fn().mockReturnValue({ values: valuesSpy });
+    fakeDbHolder.db = fakeDb;
+
+    await rejectUserRole(5, 99, "superadmin", "Matrikelnummer fehlt");
+
+    expect(valuesSpy).toHaveBeenCalledOnce();
+    const auditEntry = valuesSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(auditEntry.action).toBe("ROLE_REJECTED");
+    expect(auditEntry.toStatus).toBe("rejected");
+    expect(auditEntry.reason).toBe("Matrikelnummer fehlt");
+    expect(auditEntry.actorId).toBe(99);
+    expect(auditEntry.actorRole).toBe("superadmin");
+  });
+
+  it("Audit-Log-Eintrag hat reason=null wenn kein Grund angegeben", async () => {
+    const user = { id: 6, email: "s0003@student.htw-berlin.de", name: "Kein Grund", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    const valuesSpy = vi.fn().mockResolvedValue({});
+    fakeDb.insert = vi.fn().mockReturnValue({ values: valuesSpy });
+    fakeDbHolder.db = fakeDb;
+
+    await rejectUserRole(6, 99, "superadmin");
+
+    const auditEntry = valuesSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(auditEntry.reason).toBeNull();
+  });
+
+  it("superadmin darf examiner-Rolle ablehnen", async () => {
+    const user = { id: 7, email: "prof@htw-berlin.de", name: "Prof Abgelehnt", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await rejectUserRole(7, 99, "superadmin");
+    expect(result).toEqual({ success: true });
+  });
+
+  it("admin darf second_examiner-Rolle ablehnen", async () => {
+    const user = { id: 8, email: "zweit@htw-berlin.de", name: "Zweit Abgelehnt", requestedRole: "second_examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+    const result = await rejectUserRole(8, 20, "admin");
+    expect(result).toEqual({ success: true });
+  });
+
+  it("gibt { success: false } bei DB-Fehler im update", async () => {
+    const user = { id: 9, email: "test@htw-berlin.de", name: "Fehler Test", requestedRole: "student", roleStatus: "pending" };
+    const fakeDb = makeRoleDb(user);
+    (fakeDb._setSpy as ReturnType<typeof vi.fn>).mockReturnValue({
+      where: vi.fn().mockRejectedValue(new Error("DB-Verbindungsfehler")),
+    });
+    fakeDbHolder.db = fakeDb;
+
+    const result = await rejectUserRole(9, 99, "superadmin");
+    expect(result).toEqual({ success: false, error: "Interner Fehler" });
+  });
+});

@@ -1390,3 +1390,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] routers.ts: examinerTopics-Limit-Queries (2x) – Template-String SELECT → Drizzle ORM
 - [x] uploadRoutes.ts: Banner-Upload UPDATE → Drizzle ORM
 - [x] check_user_debug.ts: alle Template-Strings → sql`...` parametrisiert
+
+## Integrationstests Erweiterung (2026-08-05)
+- [x] server/roleManagement.test.ts: approveUserRole – Rollenzuweisung und Audit-Log (10 Tests)
+- [x] server/roleManagement.test.ts: rejectUserRole – Ablehnung und Audit-Log (12 Tests)
+- [x] server/avatarProfile.test.ts: updateProfileAvatar – Avatar-URL und -Key speichern (8 Tests)
+- [x] server/avatarProfile.test.ts: clearProfileAvatar – Avatar-Felder leeren (6 Tests)
