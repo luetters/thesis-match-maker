@@ -460,13 +460,34 @@ export function roleApprovedEmail(opts: {
   userName: string;
   roleLabel: string;
   dashboardPath: string; // z.B. "/examiner"
+  includeSecondExaminerNote?: boolean; // true für examiner-Rolle
 }): { subject: string; html: string; text: string } {
   const dashboardUrl = `${SITE_URL}${opts.dashboardPath}`;
   const subject = `Ihre Rolle wurde freigeschaltet – HTW Berlin Thesis Match Maker / Your role has been activated`;
+  // Optionaler Hinweis auf automatische Zweitprüfer:innen-Berechtigung (nur für examiner)
+  const secondExaminerNoteDE = opts.includeSecondExaminerNote
+    ? `<div style="margin:16px 0;padding:12px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 6px 6px 0">
+        <strong style="color:#1d4ed8;font-size:13px">ℹ️ Automatische Zweitprüfer:innen-Berechtigung</strong><br>
+        <span style="color:#1e40af;font-size:13px">Als Prüfer:in sind Sie automatisch auch als Zweitprüfer:in berechtigt. Sie können Abschlussarbeiten sowohl als Erst- als auch als Zweitgutachter:in betreuen – ohne separate Registrierung.</span>
+      </div>`
+    : "";
+  const secondExaminerNoteEN = opts.includeSecondExaminerNote
+    ? `<div style="margin:16px 0;padding:12px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 6px 6px 0">
+        <strong style="color:#1d4ed8;font-size:13px">ℹ️ Automatic Second Examiner Authorization</strong><br>
+        <span style="color:#1e40af;font-size:13px">As an examiner, you are automatically authorized as a second examiner as well. You can supervise theses as both first and second examiner – without separate registration.</span>
+      </div>`
+    : "";
+  const secondExaminerTextDE = opts.includeSecondExaminerNote
+    ? "\nHinweis: Als Pr\u00fcfer:in sind Sie automatisch auch als Zweitpr\u00fcfer:in berechtigt."
+    : "";
+  const secondExaminerTextEN = opts.includeSecondExaminerNote
+    ? "\nNote: As an examiner, you are automatically authorized as a second examiner as well."
+    : "";
   const body = `
     <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Freischaltung bestätigt / Role Activated</h2>
     ${p(`Sehr geehrte:r ${opts.userName},`)}
     ${p(`Ihre Rolle als <strong style="color:#006937">${opts.roleLabel}</strong> wurde soeben durch die Verwaltung freigeschaltet. Sie können sich nun vollständig im System anmelden und alle Funktionen nutzen.`)}
+    ${secondExaminerNoteDE}
     <p style="margin:20px 0 24px 0">
       <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a>
     </p>
@@ -474,6 +495,7 @@ export function roleApprovedEmail(opts: {
     ${divider()}
     ${p(`Dear ${opts.userName},`)}
     ${p(`Your role as <strong style="color:#006937">${opts.roleLabel}</strong> has been activated by the administration. You can now log in and use all features.`)}
+    ${secondExaminerNoteEN}
     <p style="margin:20px 0 24px 0">
       <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a>
     </p>
@@ -482,7 +504,7 @@ export function roleApprovedEmail(opts: {
   return {
     subject,
     html: htmlWrapper(body),
-    text: `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.\nZum Dashboard: ${dashboardUrl}\n\nYour role as ${opts.roleLabel} has been activated.\nGo to dashboard: ${dashboardUrl}`,
+    text: `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.${secondExaminerTextDE}\nZum Dashboard: ${dashboardUrl}\n\nYour role as ${opts.roleLabel} has been activated.${secondExaminerTextEN}\nGo to dashboard: ${dashboardUrl}`,
   };
 }
 

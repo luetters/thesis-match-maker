@@ -4210,6 +4210,8 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
           userName: user.name ?? "Nutzende:r",
           roleLabel,
           dashboardPath: dashboardLink,
+          // Erstprüfer:innen erhalten automatisch Zweitprüfer:innen-Rechte – explizit in der E-Mail erwähnen
+          includeSecondExaminerNote: requestedRole === "examiner",
         });
         await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {

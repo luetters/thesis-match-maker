@@ -1748,6 +1748,15 @@ function Overview() {
   // Multi-Rollen: Nutzer zählen anhand user.role (Legacy-Feld, wird synchron gehalten)
   const studentCount = users?.filter(u => u.user.role === "student").length ?? 0;
   const examinerCount = users?.filter(u => u.user.role === "examiner").length ?? 0;
+  // Intern/Extern-Aufschlüsselung
+  const internCount = users?.filter(u => {
+    const allRoles = (u.user as any).roles?.length ? (u.user as any).roles : [u.user.role];
+    return allRoles.includes("examiner");
+  }).length ?? 0;
+  const externCount = users?.filter(u => {
+    const allRoles = (u.user as any).roles?.length ? (u.user as any).roles : [u.user.role];
+    return !allRoles.includes("examiner") && allRoles.includes("second_examiner");
+  }).length ?? 0;
 
   // Statusverteilung für Balkendiagramm
   const statusData = [
@@ -1767,7 +1776,7 @@ function Overview() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Anfragen gesamt", value: total, sub: `${pending} ausstehend`, color: "#76B900", bg: "bg-[#76B900]/5" },
-          { label: "Aktive Nutzer:innen", value: totalUsers, sub: `${studentCount} Stud. · ${examinerCount} Prüf.`, color: "#3b82f6", bg: "bg-blue-50" },
+          { label: "Aktive Nutzer:innen", value: totalUsers, sub: `${studentCount} Stud. · ${internCount} intern / ${externCount} extern`, color: "#3b82f6", bg: "bg-blue-50" },
           { label: "Rollenanfragen offen", value: pendingRoleCount, sub: "Warten auf Bestätigung", color: pendingRoleCount > 0 ? "#f59e0b" : "#6b7280", bg: pendingRoleCount > 0 ? "bg-amber-50" : "bg-gray-50" },
           { label: "Abgeschlossen", value: completed, sub: `${approved} genehmigt`, color: "#8b5cf6", bg: "bg-purple-50" },
         ].map((stat) => (
@@ -1778,6 +1787,60 @@ function Overview() {
           </div>
         ))}
       </div>
+
+      {/* Prüfer:innen-Aufschlüsselung: Intern vs. Extern */}
+      {(internCount > 0 || externCount > 0) && (
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <h2 className="font-semibold text-gray-900 mb-3 text-sm">Prüfer:innen-Übersicht</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-blue-700">{internCount}</div>
+                <div className="text-xs text-gray-500">Intern (Erst- &amp; Zweit)</div>
+              </div>
+            </div>
+            <div className="w-px h-10 bg-gray-200" />
+            <div className="flex items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-700">{externCount}</div>
+                <div className="text-xs text-gray-500">Extern (nur Zweit)</div>
+              </div>
+            </div>
+            <div className="w-px h-10 bg-gray-200" />
+            <div className="flex-1">
+              {/* Balken: Anteil intern vs. extern */}
+              {(internCount + externCount) > 0 && (
+                <div>
+                  <div className="flex h-3 rounded-full overflow-hidden">
+                    <div
+                      className="bg-blue-500 transition-all"
+                      style={{ width: `${Math.round((internCount / (internCount + externCount)) * 100)}%` }}
+                    />
+                    <div
+                      className="bg-purple-400 transition-all"
+                      style={{ width: `${Math.round((externCount / (internCount + externCount)) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-blue-600">{Math.round((internCount / (internCount + externCount)) * 100)} % intern</span>
+                    <span className="text-[10px] text-purple-600">{Math.round((externCount / (internCount + externCount)) * 100)} % extern</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fortschrittsbalken: Bearbeitungsstand */}
       {total > 0 && (

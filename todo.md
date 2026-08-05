@@ -1421,3 +1421,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] ExaminerDirectory.tsx: Rollenfilter-Buttons mit Icons und Farben (blau=intern, lila=extern)
 - [x] Login.tsx: Hinweistext für second_examiner-Karte (lila Warnung, zweisprachig DE/EN)
 - [x] AdminDashboard.tsx: Intern/Extern-Filter (🏢 Intern / 👤 Extern) in Prüfer:innen-Tab
+
+## Profilseite, E-Mail und Admin-Statistik (2026-08-05)
+- [x] PublicProfile.tsx: intern/extern-Badge (blau+Gebäude / lila+Person) zweisprachig DE/EN
+- [x] emailTemplates.ts: roleApprovedEmail mit optionalem Zweitprüfer-Hinweis (includeSecondExaminerNote)
+- [x] db.ts: roleApprovedEmail-Aufruf mit includeSecondExaminerNote: true für examiner-Rolle
+- [x] AdminDashboard.tsx: Prüfer:innen-Übersicht-Box mit internCount/externCount + Anteilsbalken
+- [x] AdminDashboard.tsx: Hauptkennzahl "Aktive Nutzer:innen" zeigt intern/extern-Aufschlüsselung

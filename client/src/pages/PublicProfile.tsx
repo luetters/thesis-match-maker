@@ -178,6 +178,29 @@ export default function PublicProfile() {
               >
                 {roleLabel}
               </span>
+              {/* Intern/Extern-Badge für Prüfer:innen */}
+              {profile.role === "examiner" && (
+                <span
+                  title={isDE ? "Interne HTW-Prüfer:in – berechtigt als Erst- und Zweitgutachter:in" : "Internal HTW examiner – authorized as first and second examiner"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  {isDE ? "Intern (Erst- & Zweitgutachter:in)" : "Internal (First & Second Examiner)"}
+                </span>
+              )}
+              {profile.role === "second_examiner" && (
+                <span
+                  title={isDE ? "Externe Zweitprüfer:in – nur als Zweitgutachter:in berechtigt" : "External second examiner – authorized as second examiner only"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-purple-50 text-purple-700 border border-purple-200"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {isDE ? "Extern (nur Zweitgutachter:in)" : "External (Second Examiner only)"}
+                </span>
+              )}
               {departmentLabel && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
                   {departmentLabel}
