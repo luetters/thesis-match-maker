@@ -1370,3 +1370,23 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 - [x] Ursache: `isSecureRequest()` erkannte Cloud-Run-HTTPS-Proxy nicht → `secure: false` → `SameSite=None`-Cookie wurde vom Browser verworfen → Missing session cookie → Endlos-Redirect
 - [x] Fix: `cookies.ts` um Fallback-Logik erweitert: Nicht-lokale Hosts werden immer als HTTPS behandelt; `SameSite=Lax` als Fallback für lokales HTTP; Cloudflare-Header-Erkennung ergänzt
+
+## Raw-SQL-Audit (2026-08-05)
+- [x] routers.ts Zeile 936: snake_case in UPDATE thesis_requests → Drizzle ORM
+- [x] routers.ts Zeile 411/418/425: banner_color, banner_image_url Template-Strings → Drizzle ORM
+- [x] routers.ts Zeile 4282/4288/4291: roleStatus, requestedRole Template-Strings → Drizzle ORM
+- [x] db.ts: selectUserRole – Template-String UPDATE → Drizzle ORM
+- [x] db.ts: getPendingRoleUsers – Template-String SELECT → Drizzle ORM
+- [x] db.ts: approveUserRole – Template-String UPDATE/INSERT/DELETE → Drizzle ORM
+- [x] db.ts: getUserRoleStatus – Template-String SELECT → Drizzle ORM
+- [x] db.ts: getProfile – Template-String SELECT → Drizzle ORM
+- [x] db.ts: updateProfile – Template-String UPDATE (snake_case Felder) → Drizzle ORM
+- [x] db.ts: updateProfileAvatar – Template-String UPDATE → Drizzle ORM
+- [x] db.ts: clearProfileAvatar – Template-String UPDATE → Drizzle ORM
+- [x] db.ts: addPavProgramme – Template-String INSERT IGNORE → sql`...` parametrisiert
+- [x] db.ts: getAllSuperadminEmails – Template-String SELECT → Drizzle ORM
+- [x] routers.ts: getMagicLinkUsersWithoutPassword – Template-String SELECT → Drizzle ORM
+- [x] routers.ts: sendPasswordResetToMagicLinkUsers – Template-String SELECT → Drizzle ORM
+- [x] routers.ts: examinerTopics-Limit-Queries (2x) – Template-String SELECT → Drizzle ORM
+- [x] uploadRoutes.ts: Banner-Upload UPDATE → Drizzle ORM
+- [x] check_user_debug.ts: alle Template-Strings → sql`...` parametrisiert

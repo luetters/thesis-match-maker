@@ -1,8 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { sql, eq, and, notInArray, aliasedTable } from "drizzle-orm";
-import { examinerTopics, users, thesisRequests } from "../drizzle/schema";
+import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
+import { examinerTopics, users, thesisRequests, auditLog, userRoles } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
   assignExaminerToThesis,
@@ -408,25 +408,32 @@ const profileRouterDef = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.execute(`UPDATE users SET banner_color = '${input.color}', banner_image_url = NULL, banner_image_key = NULL WHERE id = ${ctx.user.id}`);
+      await db.update(users)
+        .set({ bannerColor: input.color, bannerImageUrl: null, bannerImageKey: null })
+        .where(eq(users.id, ctx.user.id));
       return { bannerColor: input.color };
     }),
 
   removeBanner: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    await db.execute(`UPDATE users SET banner_color = NULL, banner_image_url = NULL, banner_image_key = NULL WHERE id = ${ctx.user.id}`);
+    await db.update(users)
+      .set({ bannerColor: null, bannerImageUrl: null, bannerImageKey: null })
+      .where(eq(users.id, ctx.user.id));
     return { success: true };
   }),
 
   getBannerData: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return { bannerColor: null, bannerImageUrl: null };
-    const [rows] = await db.execute(`SELECT banner_color, banner_image_url FROM users WHERE id = ${ctx.user.id}`) as any;
-    const row = Array.isArray(rows) ? rows[0] : null;
+    const rows = await db.select({ bannerColor: users.bannerColor, bannerImageUrl: users.bannerImageUrl })
+      .from(users)
+      .where(eq(users.id, ctx.user.id))
+      .limit(1);
+    const row = rows[0] ?? null;
     return {
-      bannerColor: (row?.banner_color as string | null) ?? null,
-      bannerImageUrl: (row?.banner_image_url as string | null) ?? null,
+      bannerColor: row?.bannerColor ?? null,
+      bannerImageUrl: row?.bannerImageUrl ?? null,
     };
   }),
 });
@@ -812,12 +819,22 @@ export const appRouter = router({
           const db = await getDb();
           if (db) {
             const tid = input.examinerTopicId;
-            const rows = await db.execute(
-              sql`SELECT max_assignments, (SELECT COUNT(*) FROM thesis_requests WHERE examiner_topic_id = ${tid} AND status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER')) AS assignment_count FROM examiner_topics WHERE id = ${tid}`
-            ) as any;
-            const topic = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0][0] : rows[0]) : null;
-            if (topic && topic.max_assignments !== null && Number(topic.assignment_count) >= Number(topic.max_assignments)) {
-              throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema hat die maximale Anzahl an Vergaben erreicht und kann nicht mehr gewählt werden.' });
+            const topicRows = await db.select({ maxAssignments: examinerTopics.maxAssignments })
+              .from(examinerTopics)
+              .where(eq(examinerTopics.id, tid))
+              .limit(1);
+            const topicData = topicRows[0];
+            if (topicData?.maxAssignments !== null && topicData?.maxAssignments !== undefined) {
+              const countRows = await db.select({ count: sql<number>`COUNT(*)` })
+                .from(thesisRequests)
+                .where(and(
+                  eq(thesisRequests.examinerTopicId, tid),
+                  notInArray(thesisRequests.status, ['WITHDRAWN', 'REJECTED', 'CANCELLED'] as const)
+                ));
+              const assignmentCount = Number(countRows[0]?.count ?? 0);
+              if (assignmentCount >= topicData.maxAssignments) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema hat die maximale Anzahl an Vergaben erreicht und kann nicht mehr gewählt werden.' });
+              }
             }
           }
         }
@@ -932,8 +949,17 @@ export const appRouter = router({
             } catch (_) { /* E-Mail-Fehler nicht fatal */ }
           } else {
             // Ablehnung: Status zurück auf FIRST_EXAMINER_ACCEPTED, wantedSecondExaminerId löschen, Zeitstempel setzen
-            const rejReasonSql = input.rejectionReason ? sql`, rejection_reason = ${input.rejectionReason}` : sql``;
-            await db.execute(sql`UPDATE thesis_requests SET status = 'FIRST_EXAMINER_ACCEPTED', wanted_second_examiner_id = NULL, second_examiner_requested_at = NULL, second_examiner_rejected_at = NOW()${rejReasonSql} WHERE id = ${input.id}`);
+            const nowTs2 = new Date().toISOString().slice(0, 19).replace("T", " ");
+            await db.update(thesisRequests)
+              .set({
+                status: "FIRST_EXAMINER_ACCEPTED",
+                wantedSecondExaminerId: null,
+                secondExaminerRequestedAt: null,
+                secondExaminerRejectedAt: nowTs2,
+                rejectionReason: input.rejectionReason ?? null,
+                updatedAt: nowTs2,
+              })
+              .where(eq(thesisRequests.id, input.id));
             newStatus = "FIRST_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_REJECTED";
             // E-Mail an Studierenden
@@ -2174,16 +2200,19 @@ export const appRouter = router({
       .query(async () => {
         const db = await getDb();
         if (!db) return { count: 0, users: [] };
-        const rows = await db.execute(
-          `SELECT id, name, email, role, loginMethod, passwordHash FROM users
-           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
-           AND email IS NOT NULL AND roleStatus = 'approved'
-           ORDER BY createdAt DESC LIMIT 200`
-        );
-        const list = (rows[0] as unknown as any[]) ?? [];
+        const list = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role })
+          .from(users)
+          .where(and(
+            eq(users.loginMethod, 'magic_link'),
+            sql`(${users.passwordHash} IS NULL OR ${users.passwordHash} = '')`,
+            sql`${users.email} IS NOT NULL`,
+            eq(users.roleStatus, 'approved')
+          ))
+          .orderBy(desc(users.createdAt))
+          .limit(200);
         return {
           count: list.length,
-          users: list.map((u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
+          users: list.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role as string })),
         };
       }),
 
@@ -2193,13 +2222,15 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbank nicht verfügbar." });
-        const rows = await db.execute(
-          `SELECT id, name, email FROM users
-           WHERE loginMethod = 'magic_link' AND (passwordHash IS NULL OR passwordHash = '')
-           AND email IS NOT NULL AND roleStatus = 'approved'
-           LIMIT 200`
-        );
-        const list = (rows[0] as unknown as any[]) ?? [];
+        const list = await db.select({ id: users.id, name: users.name, email: users.email })
+          .from(users)
+          .where(and(
+            eq(users.loginMethod, 'magic_link'),
+            sql`(${users.passwordHash} IS NULL OR ${users.passwordHash} = '')`,
+            sql`${users.email} IS NOT NULL`,
+            eq(users.roleStatus, 'approved')
+          ))
+          .limit(200);
         if (list.length === 0) return { sent: 0, failed: 0, skipped: 0 };
         const { randomBytes } = await import("crypto");
         const { sendEmail: send } = await import("./emailHelper");
@@ -2212,7 +2243,7 @@ export const appRouter = router({
             await createPasswordResetToken(user.id, token, expiresAt);
             const resetUrl = `${input.origin}/reset-password?token=${token}`;
             await send({
-              to: user.email,
+              to: user.email as string,
               subject: "Bitte vergeben Sie ein Passwort – HTW Berlin Thesis Match Maker",
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -3344,17 +3375,25 @@ export const appRouter = router({
           const db = await getDb();
           if (db) {
             const tid = input.examinerTopicId;
-            const rows = await db.execute(
-              sql`SELECT allow_multiple, max_assignments, (SELECT COUNT(*) FROM thesis_requests WHERE examiner_topic_id = ${tid} AND status NOT IN ('WITHDRAWN','REJECTED','REJECTED_BY_FIRST_EXAMINER')) AS assignment_count FROM examiner_topics WHERE id = ${tid}`
-            ) as any;
-            const topic = Array.isArray(rows) ? (Array.isArray(rows[0]) ? rows[0][0] : rows[0]) : null;
-            if (topic) {
+            const topicRows2 = await db.select({ maxAssignments: examinerTopics.maxAssignments, allowMultiple: examinerTopics.allowMultiple })
+              .from(examinerTopics)
+              .where(eq(examinerTopics.id, tid))
+              .limit(1);
+            const topicData2 = topicRows2[0];
+            if (topicData2) {
+              const countRows2 = await db.select({ count: sql<number>`COUNT(*)` })
+                .from(thesisRequests)
+                .where(and(
+                  eq(thesisRequests.examinerTopicId, tid),
+                  notInArray(thesisRequests.status, ['WITHDRAWN', 'REJECTED', 'CANCELLED'] as const)
+                ));
+              const assignmentCount2 = Number(countRows2[0]?.count ?? 0);
               // allowMultiple=0 bedeutet: Thema darf nur 1x vergeben werden
-              if (Number(topic.allow_multiple) === 0 && Number(topic.assignment_count) >= 1) {
+              if (Number(topicData2.allowMultiple) === 0 && assignmentCount2 >= 1) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema kann nur einmal vergeben werden und ist bereits belegt.' });
               }
               // maxAssignments-Limit prüfen
-              if (topic.max_assignments !== null && Number(topic.assignment_count) >= Number(topic.max_assignments)) {
+              if (topicData2.maxAssignments !== null && topicData2.maxAssignments !== undefined && assignmentCount2 >= topicData2.maxAssignments) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Dieses Thema hat die maximale Anzahl an Vergaben erreicht und kann nicht mehr gewählt werden.' });
               }
             }
@@ -4279,18 +4318,27 @@ export const appRouter = router({
         const db = await getDbInner();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbankfehler." });
         // Prüfen ob Nutzer tatsächlich pending ist
-        const rows = await db.execute(`SELECT id, roleStatus FROM users WHERE id = ${input.userId}`);
-        const user = (rows[0] as unknown as any[])[0];
-        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Nutzer nicht gefunden." });
-        if (user.roleStatus !== "pending") {
+        const userRows = await db.select({ id: users.id, roleStatus: users.roleStatus })
+          .from(users)
+          .where(eq(users.id, input.userId))
+          .limit(1);
+        const pendingUser = userRows[0];
+        if (!pendingUser) throw new TRPCError({ code: "NOT_FOUND", message: "Nutzer nicht gefunden." });
+        if (pendingUser.roleStatus !== "pending") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Nur ausstehende Anfragen können geändert werden." });
         }
-        await db.execute(`UPDATE users SET requestedRole = '${input.newRole}' WHERE id = ${input.userId}`);
+        await db.update(users)
+          .set({ requestedRole: input.newRole })
+          .where(eq(users.id, input.userId));
         // Audit-Log
-        const metaJson = JSON.stringify({ userId: input.userId, newRole: input.newRole }).replace(/'/g, "\\'");
-        await db.execute(
-          `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${ctx.user.id}, '${ctx.user.role}', 'REQUESTED_ROLE_CHANGED', '${input.newRole}', '${metaJson}', NOW())`
-        );
+        await db.insert(auditLog).values({
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "REQUESTED_ROLE_CHANGED",
+          toStatus: input.newRole,
+          metadata: { userId: input.userId, newRole: input.newRole },
+          createdAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+        });
         return { success: true };
       }),
   }),

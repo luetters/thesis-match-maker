@@ -1641,7 +1641,7 @@ export async function addPavProgramme(pavUserId: number, programmeId: number) {
   if (!db) return;
   // Duplikat ignorieren
   await db.execute(
-    `INSERT IGNORE INTO pav_programmes (pav_user_id, programme_id) VALUES (${pavUserId}, ${programmeId})`
+    sql`INSERT IGNORE INTO pav_programmes (pav_user_id, programme_id) VALUES (${pavUserId}, ${programmeId})`
   );
 }
 
@@ -3692,8 +3692,10 @@ export async function getSuperadminEmails(): Promise<string[]> {
   const db = await getDb();
   if (!db) return staticEmails;
   try {
-    const rows = await db.execute(`SELECT email FROM users WHERE role = 'superadmin' AND email IS NOT NULL`);
-    const dbEmails = (rows[0] as unknown as any[]).map((r: any) => r.email as string).filter(Boolean);
+    const rows = await db.select({ email: users.email })
+      .from(users)
+      .where(and(eq(users.role, "superadmin"), sql`${users.email} IS NOT NULL`));
+    const dbEmails = rows.map((r) => r.email as string).filter(Boolean);
     const all = Array.from(new Set([...staticEmails, ...dbEmails]));
     return all;
   } catch {
@@ -4071,9 +4073,9 @@ export async function selectUserRole(userId: number, requestedRole: string) {
   const db = await getDb();
   if (!db) return false;
   try {
-    await db.execute(
-      `UPDATE users SET requestedRole = '${requestedRole}', roleStatus = 'pending', role = 'user' WHERE id = ${userId}`
-    );
+    await db.update(users)
+      .set({ requestedRole: requestedRole as any, roleStatus: "pending", role: "user" })
+      .where(eq(users.id, userId));
     return true;
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Setzen der gewünschten Rolle:", error);
@@ -4086,30 +4088,46 @@ export async function getPendingRoleUsers() {
   const db = await getDb();
   if (!db) return [];
   try {
-    const rows = await db.execute(
-      `SELECT id, name, email, role, requestedRole, roleStatus, createdAt, loginMethod,
-              first_name, last_name, academic_title, department, matrikel_nr, thesis_type,
-              target_semester, staff_id, phone
-       FROM users WHERE roleStatus = 'pending' ORDER BY createdAt DESC`
-    );
-    return (rows[0] as unknown as any[]).map((r: any) => ({
-      id: r.id as number,
-      name: r.name as string | null,
-      email: r.email as string | null,
+    const rows = await db.select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      requestedRole: users.requestedRole,
+      roleStatus: users.roleStatus,
+      createdAt: users.createdAt,
+      loginMethod: users.loginMethod,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      academicTitle: users.academicTitle,
+      department: users.department,
+      matrikelNr: users.matrikelNr,
+      thesisType: users.thesisType,
+      targetSemester: users.targetSemester,
+      staffId: users.staffId,
+      phone: users.phone,
+    })
+    .from(users)
+    .where(eq(users.roleStatus, "pending"))
+    .orderBy(desc(users.createdAt));
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
       role: r.role as string,
       requestedRole: r.requestedRole as string | null,
       roleStatus: r.roleStatus as string,
-      createdAt: r.createdAt as Date,
-      loginMethod: r.loginMethod as string | null,
-      firstName: r.first_name as string | null,
-      lastName: r.last_name as string | null,
-      academicTitle: r.academic_title as string | null,
-      department: r.department as string | null,
-      matrikelNr: r.matrikel_nr as string | null,
-      thesisType: r.thesis_type as string | null,
-      targetSemester: r.target_semester as string | null,
-      staffId: r.staff_id as string | null,
-      phone: r.phone as string | null,
+      createdAt: r.createdAt as unknown as Date,
+      loginMethod: r.loginMethod,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      academicTitle: r.academicTitle,
+      department: r.department,
+      matrikelNr: r.matrikelNr,
+      thesisType: r.thesisType as string | null,
+      targetSemester: r.targetSemester,
+      staffId: r.staffId,
+      phone: r.phone,
     }));
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Abrufen ausstehender Nutzer:", error);
@@ -4122,8 +4140,9 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rows = await db.execute(`SELECT id, email, name, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
-    const user = (rows[0] as unknown as any[])[0];
+    const userRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    const user = userRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
@@ -4132,21 +4151,32 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
       return { success: false, error: "Verwaltung darf nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen" };
     }
-    await db.execute(
-      `UPDATE users SET role = '${requestedRole}', roleStatus = 'approved', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW(), requestedRole = NULL WHERE id = ${userId}`
-    );
+    const nowTs = new Date().toISOString().slice(0, 19).replace("T", " ");
+    await db.update(users)
+      .set({ role: requestedRole as any, roleStatus: "approved", roleConfirmedBy: confirmedBy, roleConfirmedAt: nowTs, requestedRole: null })
+      .where(eq(users.id, userId));
     // user_roles-Tabelle synchronisieren: alten examiner/second_examiner-Eintrag ersetzen
     try {
       // Alle Prüfer-Rollen des Nutzers entfernen und die neue setzen
-      await db.execute(`DELETE FROM user_roles WHERE user_id = ${userId} AND role IN ('examiner', 'second_examiner', 'student', 'admin', 'pav', 'dean', 'vice_dean', 'programme_director')`);
-      await db.execute(`INSERT IGNORE INTO user_roles (user_id, role, assigned_by, assigned_at) VALUES (${userId}, '${requestedRole}', ${confirmedBy}, NOW())`);
+      await db.delete(userRoles)
+        .where(and(
+          eq(userRoles.userId, userId),
+          inArray(userRoles.role, ['examiner', 'second_examiner', 'student', 'admin', 'pav', 'dean', 'vice_dean', 'programme_director'])
+        ));
+      await db.execute(
+        sql`INSERT IGNORE INTO user_roles (user_id, role, assigned_by, assigned_at) VALUES (${userId}, ${requestedRole}, ${confirmedBy}, NOW())`
+      );
     } catch (err) {
       console.warn("[RoleApproval] user_roles-Sync fehlgeschlagen:", err);
     }
-    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\\'");
-    await db.execute(
-      `INSERT INTO audit_log (actorId, actorRole, action, toStatus, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_APPROVED', '${requestedRole}', '${metaJson}', NOW())`
-    );
+    await db.insert(auditLog).values({
+      actorId: confirmedBy,
+      actorRole: confirmedByRole,
+      action: "ROLE_APPROVED",
+      toStatus: requestedRole,
+      metadata: { userId, requestedRole },
+      createdAt: nowTs,
+    });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
       const roleLabels: Record<string, string> = {
@@ -4188,12 +4218,14 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     // Bei Genehmigung einer Zweitprüferin: examiner_profiles-Eintrag mit isSecondExaminer=1 anlegen/aktualisieren
     if (requestedRole === "second_examiner") {
       try {
-        const epRows = await db.execute(`SELECT id FROM examiner_profiles WHERE user_id = ${userId}`);
-        const epExists = (epRows[0] as unknown as any[]).length > 0;
-        if (epExists) {
-          await db.execute(`UPDATE examiner_profiles SET is_second_examiner = 1 WHERE user_id = ${userId}`);
+        const epRows = await db.select({ userId: examinerProfiles.userId })
+          .from(examinerProfiles).where(eq(examinerProfiles.userId, userId)).limit(1);
+        if (epRows.length > 0) {
+          await db.update(examinerProfiles)
+            .set({ isSecondExaminer: 1 })
+            .where(eq(examinerProfiles.userId, userId));
         } else {
-          await db.execute(`INSERT INTO examiner_profiles (user_id, is_second_examiner, onboarding_completed) VALUES (${userId}, 1, 0)`);
+          await db.insert(examinerProfiles).values({ userId, isSecondExaminer: 1, onboardingCompleted: 0 });
         }
       } catch (err) {
         console.warn("[RoleApproval] examiner_profiles-Update für second_examiner fehlgeschlagen:", err);
@@ -4212,23 +4244,28 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rows = await db.execute(`SELECT id, email, name, requestedRole, roleStatus FROM users WHERE id = ${userId}`);
-    const user = (rows[0] as unknown as any[])[0];
+    const rejectUserRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    const user = rejectUserRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
     if (confirmedByRole === "admin" && requestedRole !== "student" && requestedRole !== "second_examiner") {
       return { success: false, error: "Verwaltung darf nur Studierende und Zweitprüfer:innen ablehnen" };
     }
-    await db.execute(
-      `UPDATE users SET roleStatus = 'rejected', roleConfirmedBy = ${confirmedBy}, roleConfirmedAt = NOW() WHERE id = ${userId}`
-    );
-    const safeReason = reason ? reason.replace(/'/g, "\\'") : "NULL";
-    const metaJson = JSON.stringify({ userId, requestedRole }).replace(/'/g, "\\'");
-    const reasonSql = reason ? `'${safeReason}'` : "NULL";
-    await db.execute(
-      `INSERT INTO audit_log (actorId, actorRole, action, toStatus, reason, metadata, createdAt) VALUES (${confirmedBy}, '${confirmedByRole}', 'ROLE_REJECTED', 'rejected', ${reasonSql}, '${metaJson}', NOW())`
-    );
+    const nowTsReject = new Date().toISOString().slice(0, 19).replace("T", " ");
+    await db.update(users)
+      .set({ roleStatus: "rejected", roleConfirmedBy: confirmedBy, roleConfirmedAt: nowTsReject })
+      .where(eq(users.id, userId));
+    await db.insert(auditLog).values({
+      actorId: confirmedBy,
+      actorRole: confirmedByRole,
+      action: "ROLE_REJECTED",
+      toStatus: "rejected",
+      reason: reason ?? null,
+      metadata: { userId, requestedRole },
+      createdAt: nowTsReject,
+    });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
       const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", programme_director: "Studiengangsleitung" };
@@ -4261,11 +4298,12 @@ export async function getUserRoleStatus(userId: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const rows = await db.execute(`SELECT id, role, roleStatus, requestedRole FROM users WHERE id = ${userId}`);
-    const user = (rows[0] as unknown as any[])[0];
+    const userRows = await db.select({ id: users.id, role: users.role, roleStatus: users.roleStatus, requestedRole: users.requestedRole })
+      .from(users).where(eq(users.id, userId)).limit(1);
+    const user = userRows[0];
     if (!user) return null;
     return {
-      id: user.id as number,
+      id: user.id,
       role: user.role as string,
       roleStatus: user.roleStatus as "approved" | "pending" | "rejected",
       requestedRole: user.requestedRole as string | null,
@@ -4283,10 +4321,22 @@ export async function getProfile(userId: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const rows = await db.execute(
-      `SELECT id, name, first_name AS firstName, last_name AS lastName, email, role, roleStatus, avatarUrl, avatarKey, bio, phone, department, programme_id AS programmeId, matrikel_nr AS matrikelNr, thesis_type AS thesisType, enrollment_semester AS enrollmentSemester, target_semester AS targetSemester, academic_title AS academicTitle, office_room AS officeRoom, office_hours AS officeHours, research_tags AS researchTags, staff_id AS staffId, responsibility_area AS responsibilityArea, office_location AS officeLocation, second_email AS secondEmail, website, linked_in AS linkedIn, research_gate AS researchGate, htw_profile_url AS htwProfileUrl, misc_link AS miscLink, booking_url AS bookingUrl, preferredLanguage, createdAt, lastSignedIn FROM users WHERE id = ${userId} LIMIT 1`
-    );
-    const user = (rows[0] as unknown as any[])[0];
+    const userRows = await db.select({
+      id: users.id, name: users.name, firstName: users.firstName, lastName: users.lastName,
+      email: users.email, role: users.role, roleStatus: users.roleStatus,
+      avatarUrl: users.avatarUrl, avatarKey: users.avatarKey, bio: users.bio, phone: users.phone,
+      department: users.department, programmeId: users.programmeId, matrikelNr: users.matrikelNr,
+      thesisType: users.thesisType, enrollmentSemester: users.enrollmentSemester,
+      targetSemester: users.targetSemester, academicTitle: users.academicTitle,
+      officeRoom: users.officeRoom, officeHours: users.officeHours, researchTags: users.researchTags,
+      staffId: users.staffId, responsibilityArea: users.responsibilityArea, officeLocation: users.officeLocation,
+      secondEmail: users.secondEmail, website: users.website, linkedIn: users.linkedIn,
+      researchGate: users.researchGate, htwProfileUrl: users.htwProfileUrl, miscLink: users.miscLink,
+      bookingUrl: users.bookingUrl, preferredLanguage: users.preferredLanguage,
+      bannerColor: users.bannerColor, bannerImageUrl: users.bannerImageUrl,
+      createdAt: users.createdAt, lastSignedIn: users.lastSignedIn,
+    }).from(users).where(eq(users.id, userId)).limit(1);
+    const user = userRows[0];
     if (!user) return null;
     // Prüfer:innen-Profil-Felder (languages, tags) und Studiengänge laden
     let examinerLanguages: string[] = [];
@@ -4301,22 +4351,25 @@ export async function getProfile(userId: number) {
     let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner' || isAdminRole;
     if (isExaminerRole) {
       try {
-        const epRows = await db.execute(`SELECT languages, tags, bio, researchFocus FROM examiner_profiles WHERE userId = ${userId} LIMIT 1`);
-        const ep = (epRows[0] as unknown as any[])[0];
+        const { examinerProgrammes, examinerDepartments } = await import("../drizzle/schema");
+        const epRows = await db.select({ languages: examinerProfiles.languages, tags: examinerProfiles.tags, bio: examinerProfiles.bio, researchFocus: examinerProfiles.researchFocus })
+          .from(examinerProfiles).where(eq(examinerProfiles.userId, userId)).limit(1);
+        const ep = epRows[0];
         if (ep) {
-          try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages) : []; } catch { examinerLanguages = []; }
-          try { examinerKeywords = ep.tags ? (typeof ep.tags === 'string' ? JSON.parse(ep.tags) : ep.tags) : []; } catch { examinerKeywords = []; }
+          try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages as string[]) : []; } catch { examinerLanguages = []; }
+          try { examinerKeywords = ep.tags ? (typeof ep.tags === 'string' ? JSON.parse(ep.tags) : ep.tags as string[]) : []; } catch { examinerKeywords = []; }
           examinerBio = ep.bio ?? null;
           examinerResearchFocus = ep.researchFocus ?? null;
         }
-        const progRows = await db.execute(`SELECT programme_id AS programmeId FROM examiner_programmes WHERE examiner_id = ${userId}`);
-        examinerProgrammeIds = (progRows[0] as unknown as any[]).map((r: any) => r.programmeId as number);
+        const progRows = await db.select({ programmeId: examinerProgrammes.programmeId })
+          .from(examinerProgrammes).where(eq(examinerProgrammes.examinerId, userId));
+        examinerProgrammeIds = progRows.map((r) => r.programmeId);
         // Fachbereiche laden
-        const deptRows = await db.execute(`SELECT department, is_primary AS isPrimary FROM examiner_departments WHERE user_id = ${userId}`);
-        const depts = (deptRows[0] as unknown as any[]);
-        allowedDepartments = depts.map((d: any) => d.department as string);
-        const primaryRow = depts.find((d: any) => d.isPrimary === 1);
-        primaryDepartment = primaryRow ? primaryRow.department as string : (allowedDepartments[0] ?? user.department ?? null);
+        const deptRows = await db.select({ department: examinerDepartments.department, isPrimary: examinerDepartments.isPrimary })
+          .from(examinerDepartments).where(eq(examinerDepartments.userId, userId));
+        allowedDepartments = deptRows.map((d) => d.department);
+        const primaryRow = deptRows.find((d) => d.isPrimary === 1);
+        primaryDepartment = primaryRow ? primaryRow.department : (allowedDepartments[0] ?? user.department ?? null);
       } catch { /* ignore */ }
     }
     return {
@@ -4354,8 +4407,8 @@ export async function getProfile(userId: number) {
       preferredLanguage: (user.preferredLanguage as 'de' | 'en') ?? 'de',
       bannerColor: (user.bannerColor as string | null) ?? null,
       bannerImageUrl: (user.bannerImageUrl as string | null) ?? null,
-      createdAt: user.createdAt as Date,
-      lastSignedIn: user.lastSignedIn as Date,
+      createdAt: user.createdAt as unknown as Date,
+      lastSignedIn: user.lastSignedIn as unknown as Date,
       // Prüfer:innen-spezifische Felder
       isExaminer: isExaminerRole,
       examinerLanguages: isExaminerRole ? examinerLanguages : null,
@@ -4387,48 +4440,49 @@ export async function updateProfile(
   const db = await getDb();
   if (!db) return false;
   try {
-    const sets: string[] = [];
-    if (data.firstName !== undefined) sets.push(`first_name = '${data.firstName.replace(/'/g, "''")}'`);
-    if (data.lastName !== undefined) sets.push(`last_name = '${data.lastName.replace(/'/g, "''")}'`);
+    const setValues: Record<string, unknown> = {};
+    if (data.firstName !== undefined) setValues.firstName = data.firstName;
+    if (data.lastName !== undefined) setValues.lastName = data.lastName;
     // name automatisch aus Titel + Vor- + Nachname zusammensetzen wenn Namensfelder geändert werden
     if (data.firstName !== undefined || data.lastName !== undefined || data.academicTitle !== undefined) {
       try {
-        const [curRows] = await db.execute(`SELECT first_name, last_name, academic_title FROM users WHERE id = ${userId}`) as any;
-        const cur = Array.isArray(curRows) ? curRows[0] : null;
+        const curRows = await db.select({ firstName: users.firstName, lastName: users.lastName, academicTitle: users.academicTitle })
+          .from(users).where(eq(users.id, userId)).limit(1);
+        const cur = curRows[0];
         if (cur) {
-          const title = (data.academicTitle ?? cur.academic_title ?? '').trim();
-          const first = (data.firstName ?? cur.first_name ?? '').trim();
-          const last = (data.lastName ?? cur.last_name ?? '').trim();
+          const title = (data.academicTitle ?? cur.academicTitle ?? '').trim();
+          const first = (data.firstName ?? cur.firstName ?? '').trim();
+          const last = (data.lastName ?? cur.lastName ?? '').trim();
           const fullName = [title, first, last].filter(Boolean).join(' ');
-          if (fullName) sets.push(`name = '${fullName.replace(/'/g, "''")}'`);
+          if (fullName) setValues.name = fullName;
         }
       } catch (_) { /* Fallback: name bleibt unverändert */ }
     } else if (data.name !== undefined) {
-      sets.push(`name = '${data.name.replace(/'/g, "''")}'`);
+      setValues.name = data.name;
     }
-    if (data.bio !== undefined) sets.push(`bio = '${data.bio.replace(/'/g, "''")}'`);
-    if (data.phone !== undefined) sets.push(`phone = '${data.phone.replace(/'/g, "''")}'`);
-    if (data.department !== undefined) sets.push(`department = '${data.department.replace(/'/g, "''")}'`);
-    if (data.matrikelNr !== undefined) sets.push(`matrikel_nr = '${data.matrikelNr.replace(/'/g, "''")}'`);
-    if (data.thesisType !== undefined) sets.push(`thesis_type = '${data.thesisType}'`);
-    if (data.enrollmentSemester !== undefined) sets.push(`enrollment_semester = '${data.enrollmentSemester.replace(/'/g, "''")}'`);
-    if (data.academicTitle !== undefined) sets.push(`academic_title = '${data.academicTitle.replace(/'/g, "''")}'`);
-    if (data.officeRoom !== undefined) sets.push(`office_room = '${data.officeRoom.replace(/'/g, "''")}'`);
-    if (data.staffId !== undefined) sets.push(`staff_id = '${data.staffId.replace(/'/g, "''")}'`);
-    if (data.responsibilityArea !== undefined) sets.push(`responsibility_area = '${data.responsibilityArea.replace(/'/g, "''")}'`);
-    if (data.targetSemester !== undefined) sets.push(`target_semester = '${data.targetSemester.replace(/'/g, "''")}'`);
-    if (data.officeHours !== undefined) sets.push(`office_hours = '${data.officeHours.replace(/'/g, "''")}'`);
-    if (data.researchTags !== undefined) sets.push(`research_tags = '${data.researchTags.replace(/'/g, "''")}'`);
-    if (data.officeLocation !== undefined) sets.push(`office_location = '${data.officeLocation.replace(/'/g, "''")}'`);
-    if (data.secondEmail !== undefined) sets.push(`second_email = '${data.secondEmail.replace(/'/g, "''")}'`);
-    if (data.website !== undefined) sets.push(`website = '${data.website.replace(/'/g, "''")}'`);
-    if (data.linkedIn !== undefined) sets.push(`linked_in = '${data.linkedIn.replace(/'/g, "''")}'`);
-    if (data.researchGate !== undefined) sets.push(`research_gate = '${data.researchGate.replace(/'/g, "''")}'`);
-    if (data.htwProfileUrl !== undefined) sets.push(`htw_profile_url = '${data.htwProfileUrl.replace(/'/g, "''")}'`);
-    if (data.miscLink !== undefined) sets.push(`misc_link = '${data.miscLink.replace(/'/g, "''")}'`);
-    if (data.bookingUrl !== undefined) sets.push(`booking_url = '${data.bookingUrl.replace(/'/g, "''")}'`);
-    if (sets.length === 0) return true;
-    await db.execute(`UPDATE users SET ${sets.join(", ")} WHERE id = ${userId}`);
+    if (data.bio !== undefined) setValues.bio = data.bio;
+    if (data.phone !== undefined) setValues.phone = data.phone;
+    if (data.department !== undefined) setValues.department = data.department;
+    if (data.matrikelNr !== undefined) setValues.matrikelNr = data.matrikelNr;
+    if (data.thesisType !== undefined) setValues.thesisType = data.thesisType;
+    if (data.enrollmentSemester !== undefined) setValues.enrollmentSemester = data.enrollmentSemester;
+    if (data.academicTitle !== undefined) setValues.academicTitle = data.academicTitle;
+    if (data.officeRoom !== undefined) setValues.officeRoom = data.officeRoom;
+    if (data.staffId !== undefined) setValues.staffId = data.staffId;
+    if (data.responsibilityArea !== undefined) setValues.responsibilityArea = data.responsibilityArea;
+    if (data.targetSemester !== undefined) setValues.targetSemester = data.targetSemester;
+    if (data.officeHours !== undefined) setValues.officeHours = data.officeHours;
+    if (data.researchTags !== undefined) setValues.researchTags = data.researchTags;
+    if (data.officeLocation !== undefined) setValues.officeLocation = data.officeLocation;
+    if (data.secondEmail !== undefined) setValues.secondEmail = data.secondEmail;
+    if (data.website !== undefined) setValues.website = data.website;
+    if (data.linkedIn !== undefined) setValues.linkedIn = data.linkedIn;
+    if (data.researchGate !== undefined) setValues.researchGate = data.researchGate;
+    if (data.htwProfileUrl !== undefined) setValues.htwProfileUrl = data.htwProfileUrl;
+    if (data.miscLink !== undefined) setValues.miscLink = data.miscLink;
+    if (data.bookingUrl !== undefined) setValues.bookingUrl = data.bookingUrl;
+    if (Object.keys(setValues).length === 0) return true;
+    await db.update(users).set(setValues as any).where(eq(users.id, userId));
     return true;
   } catch (error) {
     console.error("[Profile] Fehler beim Aktualisieren:", error);
@@ -4442,13 +4496,15 @@ export async function updateProfileAvatar(userId: number, avatarUrl: string, ava
   if (!db) return false;
   try {
     // Erst den eigenen Account aktualisieren
-    await db.execute(
-      `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE id = ${userId}`
-    );
+    await db.update(users).set({ avatarUrl, avatarKey }).where(eq(users.id, userId));
     // Dann alle anderen Accounts mit gleicher E-Mail synchronisieren (mehrere Login-Methoden)
-    await db.execute(
-      `UPDATE users SET avatarUrl = '${avatarUrl.replace(/'/g, "''")}', avatarKey = '${avatarKey.replace(/'/g, "''")}' WHERE email = (SELECT email FROM (SELECT email FROM users WHERE id = ${userId}) AS sub) AND id != ${userId}`
-    );
+    const emailRows = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+    const userEmail = emailRows[0]?.email;
+    if (userEmail) {
+      await db.update(users)
+        .set({ avatarUrl, avatarKey })
+        .where(and(eq(users.email, userEmail), ne(users.id, userId)));
+    }
     // examiner_profiles.photoUrl synchronisieren (für öffentliche Profilseite)
     const existing = await db
       .select({ id: examinerProfiles.userId })
@@ -4473,11 +4529,15 @@ export async function clearProfileAvatar(userId: number) {
   if (!db) return false;
   try {
     // Eigenen Account leeren
-    await db.execute(`UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE id = ${userId}`);
+    await db.update(users).set({ avatarUrl: null, avatarKey: null }).where(eq(users.id, userId));
     // Alle anderen Accounts mit gleicher E-Mail ebenfalls leeren
-    await db.execute(
-      `UPDATE users SET avatarUrl = NULL, avatarKey = NULL WHERE email = (SELECT email FROM (SELECT email FROM users WHERE id = ${userId}) AS sub) AND id != ${userId}`
-    );
+    const emailRowsClear = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+    const userEmailClear = emailRowsClear[0]?.email;
+    if (userEmailClear) {
+      await db.update(users)
+        .set({ avatarUrl: null, avatarKey: null })
+        .where(and(eq(users.email, userEmailClear), ne(users.id, userId)));
+    }
     return true;
   } catch (error) {
     console.error("[Profile] Fehler beim Avatar-Löschen:", error);

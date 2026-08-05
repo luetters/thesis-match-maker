@@ -622,7 +622,11 @@ export function registerUploadRoutes(app: Express) {
         // Banner-Felder in DB speichern
         const db = await (await import('./db.js')).getDb();
         if (!db) { res.status(500).json({ error: "Datenbankfehler." }); return; }
-        await db.execute(`UPDATE users SET banner_image_url = '${url.replace(/'/g,"''")}', banner_image_key = '${savedKey.replace(/'/g,"''")}', banner_color = NULL WHERE id = ${user.id}`);
+        const { users: usersTable } = await import('../drizzle/schema');
+        const { eq: eqFn } = await import('drizzle-orm');
+        await db.update(usersTable)
+          .set({ bannerImageUrl: url, bannerImageKey: savedKey, bannerColor: null })
+          .where(eqFn(usersTable.id, user.id));
         res.json({ success: true, bannerImageUrl: url, key: savedKey });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Banner-Upload fehlgeschlagen.";
