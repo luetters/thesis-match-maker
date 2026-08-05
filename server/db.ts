@@ -35,7 +35,8 @@ import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
 
 let _db: ReturnType<typeof drizzle> | null = null;
-
+/** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
+export function _resetDbForTesting() { _db = null; }
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
