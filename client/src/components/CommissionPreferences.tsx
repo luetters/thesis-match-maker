@@ -97,28 +97,41 @@ function CandidateTooltip({ candidate }: { candidate: any }) {
 }
 
 // ─── RoleBadge ───────────────────────────────────────────────────────────────
+/**
+ * RoleBadge: Zeigt die Rolle als farbiges Badge an.
+ * - examiner (intern, HTW): blau mit Gebäude-Icon – umfasst automatisch Zweitprüfer-Rechte
+ * - second_examiner (extern): lila mit Personen-Icon – nur Zweitprüfer:in ohne Erstprüfer-Berechtigung
+ */
 function RoleBadge({ candidate }: { candidate: any }) {
-  const isSecond = candidate.role === "second_examiner" ||
-    (candidate.role === "examiner" && candidate.isSecondExaminer === 1);
-  const isPrimarilyFirst = candidate.role === "examiner" && !isSecond;
-  if (isPrimarilyFirst) {
+  if (candidate.role === "examiner") {
     return (
-      <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
-        Erstgutachter:in
+      <span
+        title="Interne HTW-Prüfer:in – berechtigt als Erst- und Zweitgutachter:in"
+        className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200"
+      >
+        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        Intern (Erst &amp; Zweit)
       </span>
     );
   }
   if (candidate.role === "second_examiner") {
     return (
-      <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-600 border border-purple-100">
-        Zweitgutachter:in
+      <span
+        title="Externe Zweitprüfer:in – nur als Zweitgutachter:in berechtigt, keine Erstprüfer-Berechtigung"
+        className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200"
+      >
+        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Extern (nur Zweit)
       </span>
     );
   }
-  // examiner mit isSecondExaminer-Flag: beide Rollen
   return (
-    <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-100">
-      Erst- &amp; Zweit
+    <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">
+      Prüfer:in
     </span>
   );
 }

@@ -1531,20 +1531,36 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
                           Onboarding ↺
                         </button>
                       )}
-                      {((user as any).roles?.length ? (user as any).roles : [user.role]).includes("examiner") && (
-                        <button
-                          type="button"
-                          title={(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "Zweitprüfer:in (klicken zum Deaktivieren)" : "Erstprüfer:in (klicken für Zweitprüfer:in)"}
-                          onClick={() => setSecondFlag.mutate({ isSecondExaminer: !((profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1), userId: user.id })}
-                          className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                            (profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1
-                              ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                              : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
-                          }`}
-                        >
-                          {(profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1 ? "2º Prüfer:in" : "1º Prüfer:in"}
-                        </button>
-                      )}
+                      {(() => {
+                        const userRoles = (user as any).roles?.length ? (user as any).roles : [user.role];
+                        if (userRoles.includes("examiner")) {
+                          // Erstprüfer:innen haben automatisch Zweitprüfer:innen-Rechte – schreibgeschützt anzeigen
+                          return (
+                            <span
+                              title="Erstprüfer:innen haben automatisch Zweitprüfer:innen-Rechte. Dieses Recht kann nicht deaktiviert werden."
+                              className="px-2 py-1 rounded-lg text-xs font-semibold border cursor-default select-none bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1"
+                            >
+                              <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                              Erst- &amp; Zweit
+                            </span>
+                          );
+                        }
+                        if (userRoles.includes("second_examiner")) {
+                          // Reine Zweitprüfer:innen: Toggle bleibt editierbar
+                          const isActive = (profile as { isSecondExaminer?: number } | undefined)?.isSecondExaminer === 1;
+                          return (
+                            <button
+                              type="button"
+                              title={isActive ? "Zweitprüfer:in (klicken zum Deaktivieren)" : "Nur Zweitprüfer:in (klicken zum Aktivieren)"}
+                              onClick={() => setSecondFlag.mutate({ isSecondExaminer: !isActive, userId: user.id })}
+                              className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-colors ${isActive ? "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"}`}
+                            >
+                              {isActive ? "Zweitprüfer:in" : "Inaktiv"}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <button

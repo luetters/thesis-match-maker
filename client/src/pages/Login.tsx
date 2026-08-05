@@ -804,7 +804,7 @@ export default function Login() {
 
             {/* Gewählte Rolle anzeigen */}
             <div
-              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-5"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 mb-4"
               style={{
                 background: selectedRoleOption.bgColor,
                 border: `1px solid ${selectedRoleOption.accentColor}40`,
@@ -816,6 +816,25 @@ export default function Login() {
                 <div className="text-white/50 text-xs">{L.selectedRole}</div>
               </div>
             </div>
+
+            {/* Hinweis: examiner umfasst automatisch Zweitprüfer-Rechte */}
+            {selectedRole === "examiner" && (
+              <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-5" style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}>
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <div className="text-blue-300 text-xs font-semibold mb-0.5">
+                    {lang === "de" ? "Automatische Zweitprüfer:innen-Berechtigung" : "Automatic Second Examiner Authorization"}
+                  </div>
+                  <div className="text-blue-200/70 text-xs leading-relaxed">
+                    {lang === "de"
+                      ? "Die Rolle „Prüfer:in“ umfasst automatisch alle Rechte einer Zweitprüfer:in. Sie können Abschlussarbeiten sowohl als Erst- als auch als Zweitgutachter:in betreuen – ohne separate Registrierung."
+                      : "The \"Examiner\" role automatically includes all rights of a second examiner. You can supervise theses as both first and second examiner – without separate registration."}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {registered ? (
               <Card

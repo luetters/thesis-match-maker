@@ -1407,3 +1407,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] db.ts: approveUserRole – examiner erhält automatisch isSecondExaminer=1 (wie second_examiner)
 - [x] routers.ts: Domain-Check – examiner darf externe E-Mails verwenden (wie second_examiner)
 - [x] DB-Migration: alle bestehenden examiner-Profile auf isSecondExaminer=1 gesetzt (12 Profile)
+
+## UI-Anpassungen examiner = Zweitprüfer (2026-08-05)
+- [x] AdminDashboard.tsx: isSecondExaminer-Feld für examiner schreibgeschützt (Schloss-Icon, kein Toggle)
+- [x] AdminDashboard.tsx: second_examiner-Toggle bleibt editierbar (lila Badge)
+- [x] Login.tsx: Hinweistext bei examiner-Registrierung (blauer Info-Block, zweisprachig DE/EN)
+- [x] CommissionPreferences.tsx: RoleBadge – intern (blau, Gebäude-Icon) vs. extern (lila, Personen-Icon)
