@@ -1396,3 +1396,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] server/roleManagement.test.ts: rejectUserRole – Ablehnung und Audit-Log (12 Tests)
 - [x] server/avatarProfile.test.ts: updateProfileAvatar – Avatar-URL und -Key speichern (8 Tests)
 - [x] server/avatarProfile.test.ts: clearProfileAvatar – Avatar-Felder leeren (6 Tests)
+
+## Integrationstests Erweiterung II (2026-08-05)
+- [x] server/roleStatus.test.ts: getUserRoleStatus – alle Rückgabepfade (8 Tests)
+- [x] server/roleStatus.test.ts: selectUserRole – Update-Felder und Fehlerbehandlung (8 Tests)
+- [x] server/roleManagement.test.ts: approveUserRole E-Mail-Parameter (11 Tests)
+- [x] server/roleManagement.test.ts: rejectUserRole E-Mail-Parameter (10 Tests)

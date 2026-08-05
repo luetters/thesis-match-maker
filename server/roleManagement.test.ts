@@ -45,6 +45,8 @@ vi.mock("./emailTemplates", () => ({
 }));
 
 import { approveUserRole, rejectUserRole, _resetDbForTesting } from "./db";
+import * as emailHelperModule from "./emailHelper";
+import * as emailTemplatesModule from "./emailTemplates";
 
 // ─── Fake-DB-Hilfsfunktionen ──────────────────────────────────────────────────
 
@@ -382,5 +384,255 @@ describe("rejectUserRole", () => {
 
     const result = await rejectUserRole(9, 99, "superadmin");
     expect(result).toEqual({ success: false, error: "Interner Fehler" });
+  });
+});
+
+// ─── E-Mail-Parameter-Tests: approveUserRole ──────────────────────────────────
+
+describe("approveUserRole – E-Mail-Benachrichtigung", () => {
+  beforeEach(() => {
+    process.env.DATABASE_URL = "mysql://fake:fake@localhost/fake";
+    _resetDbForTesting();
+    vi.clearAllMocks();
+    // Mock-Implementierungen nach clearAllMocks wiederherstellen
+    (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mockReturnValue({
+      subject: "Rolle bestätigt",
+      html: "<p>Bestätigt</p>",
+      text: "Bestätigt",
+    });
+    (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+  });
+
+  it("sendet E-Mail an die korrekte Empfänger-Adresse", async () => {
+    const user = { id: 1, email: "s0001@student.htw-berlin.de", name: "Maria Muster", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(1, 99, "superadmin");
+
+    expect(emailHelperModule.sendEmail).toHaveBeenCalledOnce();
+    const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sendArg.to).toBe("s0001@student.htw-berlin.de");
+  });
+
+  it("übergibt korrekten userName an roleApprovedEmail", async () => {
+    const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof. Schmidt", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(2, 99, "superadmin");
+
+    expect(emailTemplatesModule.roleApprovedEmail).toHaveBeenCalledOnce();
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.userName).toBe("Prof. Schmidt");
+  });
+
+  it("übergibt korrektes roleLabel für student-Rolle", async () => {
+    const user = { id: 3, email: "s0002@student.htw-berlin.de", name: "Test Nutzer", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(3, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.roleLabel).toBe("Studierende:r");
+  });
+
+  it("übergibt korrektes roleLabel für examiner-Rolle", async () => {
+    const user = { id: 4, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(4, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.roleLabel).toBe("Prüfer:in (Erstprüfer:in)");
+  });
+
+  it("übergibt korrektes roleLabel für second_examiner-Rolle", async () => {
+    const user = { id: 5, email: "zweit@htw-berlin.de", name: "Zweit Test", requestedRole: "second_examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user, [{ userId: 5 }]);
+
+    await approveUserRole(5, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.roleLabel).toBe("Zweitprüfer:in");
+  });
+
+  it("übergibt korrekten dashboardPath für student (/student)", async () => {
+    const user = { id: 6, email: "s0003@student.htw-berlin.de", name: "Student", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(6, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.dashboardPath).toBe("/student");
+  });
+
+  it("übergibt korrekten dashboardPath für examiner (/examiner)", async () => {
+    const user = { id: 7, email: "prof@htw-berlin.de", name: "Examiner", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(7, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.dashboardPath).toBe("/examiner");
+  });
+
+  it("übergibt korrekten dashboardPath für admin (/admin)", async () => {
+    const user = { id: 8, email: "admin@htw-berlin.de", name: "Admin", requestedRole: "admin", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(8, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.dashboardPath).toBe("/admin");
+  });
+
+  it("übergibt E-Mail-Inhalt (subject, html, text) korrekt an sendEmail", async () => {
+    const user = { id: 9, email: "test@htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(9, 99, "superadmin");
+
+    const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sendArg.subject).toBe("Rolle bestätigt");
+    expect(sendArg.html).toBe("<p>Bestätigt</p>");
+    expect(sendArg.text).toBe("Bestätigt");
+  });
+
+  it("sendet keine E-Mail wenn Nutzer keine E-Mail-Adresse hat", async () => {
+    const user = { id: 10, email: null, name: "Kein Email", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(10, 99, "superadmin");
+
+    expect(emailHelperModule.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("verwendet 'Nutzende:r' als Fallback-Name wenn name null ist", async () => {
+    const user = { id: 11, email: "anon@htw-berlin.de", name: null, requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await approveUserRole(11, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.userName).toBe("Nutzende:r");
+  });
+});
+
+// ─── E-Mail-Parameter-Tests: rejectUserRole ───────────────────────────────────
+
+describe("rejectUserRole – E-Mail-Benachrichtigung", () => {
+  beforeEach(() => {
+    process.env.DATABASE_URL = "mysql://fake:fake@localhost/fake";
+    _resetDbForTesting();
+    vi.clearAllMocks();
+    // Mock-Implementierungen nach clearAllMocks wiederherstellen
+    (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mockReturnValue({
+      subject: "Rolle abgelehnt",
+      html: "<p>Abgelehnt</p>",
+      text: "Abgelehnt",
+    });
+    (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+  });
+
+  it("sendet E-Mail an die korrekte Empfänger-Adresse", async () => {
+    const user = { id: 1, email: "s0010@student.htw-berlin.de", name: "Abgelehnt Muster", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(1, 99, "superadmin");
+
+    expect(emailHelperModule.sendEmail).toHaveBeenCalledOnce();
+    const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sendArg.to).toBe("s0010@student.htw-berlin.de");
+  });
+
+  it("übergibt korrekten userName an roleRejectedEmail", async () => {
+    const user = { id: 2, email: "test@htw-berlin.de", name: "Max Mustermann", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(2, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.userName).toBe("Max Mustermann");
+  });
+
+  it("übergibt korrektes roleLabel für student-Rolle", async () => {
+    const user = { id: 3, email: "s0011@student.htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(3, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.roleLabel).toBe("Studierende:r");
+  });
+
+  it("übergibt korrektes roleLabel für examiner-Rolle", async () => {
+    const user = { id: 4, email: "prof@htw-berlin.de", name: "Prof", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(4, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.roleLabel).toBe("Prüfer:in (Erstprüfer:in)");
+  });
+
+  it("übergibt Ablehnungsgrund an roleRejectedEmail wenn angegeben", async () => {
+    const user = { id: 5, email: "s0012@student.htw-berlin.de", name: "Grund Test", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(5, 99, "superadmin", "Matrikelnummer fehlt");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.reason).toBe("Matrikelnummer fehlt");
+  });
+
+  it("übergibt undefined als reason wenn kein Grund angegeben", async () => {
+    const user = { id: 6, email: "s0013@student.htw-berlin.de", name: "Kein Grund", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(6, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.reason).toBeUndefined();
+  });
+
+  it("übergibt E-Mail-Inhalt (subject, html, text) korrekt an sendEmail", async () => {
+    const user = { id: 7, email: "test@htw-berlin.de", name: "Test", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(7, 99, "superadmin");
+
+    const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sendArg.subject).toBe("Rolle abgelehnt");
+    expect(sendArg.html).toBe("<p>Abgelehnt</p>");
+    expect(sendArg.text).toBe("Abgelehnt");
+  });
+
+  it("sendet keine E-Mail wenn Nutzer keine E-Mail-Adresse hat", async () => {
+    const user = { id: 8, email: null, name: "Kein Email", requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(8, 99, "superadmin");
+
+    expect(emailHelperModule.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("verwendet 'Nutzende:r' als Fallback-Name wenn name null ist", async () => {
+    const user = { id: 9, email: "anon@htw-berlin.de", name: null, requestedRole: "student", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(9, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleRejectedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.userName).toBe("Nutzende:r");
+  });
+
+  it("sendet E-Mail auch bei second_examiner-Ablehnungen", async () => {
+    const user = { id: 10, email: "zweit@htw-berlin.de", name: "Zweit Test", requestedRole: "second_examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user);
+
+    await rejectUserRole(10, 20, "admin");
+
+    expect(emailHelperModule.sendEmail).toHaveBeenCalledOnce();
+    const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sendArg.to).toBe("zweit@htw-berlin.de");
   });
 });
