@@ -4216,8 +4216,9 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
         console.warn("[RoleApproval] E-Mail-Versand fehlgeschlagen:", err);
       }
     }
-    // Bei Genehmigung einer Zweitprüferin: examiner_profiles-Eintrag mit isSecondExaminer=1 anlegen/aktualisieren
-    if (requestedRole === "second_examiner") {
+    // Bei Genehmigung einer Prüfer:in (examiner ODER second_examiner): examiner_profiles-Eintrag mit isSecondExaminer=1 anlegen/aktualisieren
+    // Jede:r Erstprüfer:in hat automatisch auch Zweitprüfer:innen-Rechte.
+    if (requestedRole === "examiner" || requestedRole === "second_examiner") {
       try {
         const epRows = await db.select({ userId: examinerProfiles.userId })
           .from(examinerProfiles).where(eq(examinerProfiles.userId, userId)).limit(1);

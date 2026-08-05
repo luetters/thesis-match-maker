@@ -760,7 +760,8 @@ export const appRouter = router({
         // Zweitprüfer:innen und externe Gutachter:innen dürfen beliebige E-Mail-Adressen verwenden.
         const emailLower = input.email.toLowerCase();
         const isHtwLoginEmail = emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com") || emailLower.endsWith("@student.htw-berlin.de");
-        if (user.role !== "second_examiner" && user.role !== "admin" && user.role !== "superadmin" && !isHtwLoginEmail) {
+        // Erstprüfer:innen haben automatisch auch Zweitprüfer:innen-Rechte und dürfen externe E-Mails verwenden.
+        if (user.role !== "examiner" && user.role !== "second_examiner" && user.role !== "admin" && user.role !== "superadmin" && !isHtwLoginEmail) {
           await logLoginAttempt({ email: input.email, success: false, failureReason: "Ungültige E-Mail-Domäne (keine HTW-Berlin-Adresse)", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({
             code: "FORBIDDEN",

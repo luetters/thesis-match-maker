@@ -1402,3 +1402,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] server/roleStatus.test.ts: selectUserRole – Update-Felder und Fehlerbehandlung (8 Tests)
 - [x] server/roleManagement.test.ts: approveUserRole E-Mail-Parameter (11 Tests)
 - [x] server/roleManagement.test.ts: rejectUserRole E-Mail-Parameter (10 Tests)
+
+## examiner = automatisch Zweitprüfer:in (2026-08-05)
+- [x] db.ts: approveUserRole – examiner erhält automatisch isSecondExaminer=1 (wie second_examiner)
+- [x] routers.ts: Domain-Check – examiner darf externe E-Mails verwenden (wie second_examiner)
+- [x] DB-Migration: alle bestehenden examiner-Profile auf isSecondExaminer=1 gesetzt (12 Profile)
