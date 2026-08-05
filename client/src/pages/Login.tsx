@@ -817,6 +817,25 @@ export default function Login() {
               </div>
             </div>
 
+            {/* Hinweis: second_examiner ist ausschließlich für externe Personen */}
+            {selectedRole === "second_examiner" && (
+              <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-5" style={{ background: "rgba(168,85,247,0.10)", border: "1px solid rgba(168,85,247,0.3)" }}>
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#a855f7" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <div>
+                  <div className="text-xs font-semibold mb-0.5" style={{ color: "#c084fc" }}>
+                    {lang === "de" ? "Nur für externe Personen ohne Erstprüfer:innen-Berechtigung" : "For external persons without first examiner authorization only"}
+                  </div>
+                  <div className="text-xs leading-relaxed" style={{ color: "rgba(216,180,254,0.8)" }}>
+                    {lang === "de"
+                      ? "Wählen Sie diese Rolle ausschließlich, wenn Sie keine HTW-Berlin-Zugehörigkeit haben und nur als Zweitgutachter:in tätig sein möchten. HTW-Angehörige wählen bitte \u201ePrüfer:in\u201c – diese Rolle umfasst automatisch auch Zweitprüfer:innen-Rechte."
+                      : "Choose this role only if you have no HTW Berlin affiliation and wish to act exclusively as a second examiner. HTW members should select \"Examiner\" instead – that role automatically includes second examiner rights."}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Hinweis: examiner umfasst automatisch Zweitprüfer-Rechte */}
             {selectedRole === "examiner" && (
               <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-5" style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}>

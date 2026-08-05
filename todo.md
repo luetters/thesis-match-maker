@@ -1413,3 +1413,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] AdminDashboard.tsx: second_examiner-Toggle bleibt editierbar (lila Badge)
 - [x] Login.tsx: Hinweistext bei examiner-Registrierung (blauer Info-Block, zweisprachig DE/EN)
 - [x] CommissionPreferences.tsx: RoleBadge – intern (blau, Gebäude-Icon) vs. extern (lila, Personen-Icon)
+
+## UI-Konsistenz intern/extern (2026-08-05)
+- [x] ExaminerDashboard.tsx: Toggle für examiner schreibgeschützt (blauer Info-Block mit Schloss-Icon)
+- [x] ExaminerDashboard.tsx: second_examiner-Toggle bleibt editierbar mit aktualisiertem Text
+- [x] ExaminerDirectory.tsx: Badges konsistent (blau+Gebäude = intern, lila+Person = extern)
+- [x] ExaminerDirectory.tsx: Rollenfilter-Buttons mit Icons und Farben (blau=intern, lila=extern)
+- [x] Login.tsx: Hinweistext für second_examiner-Karte (lila Warnung, zweisprachig DE/EN)
+- [x] AdminDashboard.tsx: Intern/Extern-Filter (🏢 Intern / 👤 Extern) in Prüfer:innen-Tab

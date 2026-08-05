@@ -103,13 +103,28 @@ function ExaminerCard({ examiner, highlightTags, isFavorite, onToggleFavorite }:
                   max={profile?.maxSupervisions}
                   showCount
                 />
-                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  isSecondExaminer
-                    ? "bg-blue-50 text-blue-600 border border-blue-100"
-                    : "bg-gray-50 text-gray-500 border border-gray-100"
-                }`}>
-                  {isSecondExaminer ? D.roleSecond : D.roleFirst}
-                </span>
+                {/* Rollentyp-Badge: intern (examiner) vs. extern (second_examiner) */}
+                {examiner.user?.role === "examiner" ? (
+                  <span
+                    title="Interne HTW-Prüfer:in – berechtigt als Erst- und Zweitgutachter:in"
+                    className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                  >
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    {D.roleFirst}
+                  </span>
+                ) : (
+                  <span
+                    title="Externe Zweitprüfer:in – nur als Zweitgutachter:in berechtigt"
+                    className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200"
+                  >
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {D.roleSecond}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -628,19 +643,42 @@ export default function ExaminerDirectory() {
 
           {/* Zeile 2: Rolle + Kapazität + Ergebniszahl */}
           <div className="flex flex-wrap gap-3 items-center">
-            {/* Rollenfilter */}
+            {/* Rollenfilter: Alle / Intern (Erstprüfer:in) / Extern (nur Zweit) */}
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
               {(["all", "first", "second"] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => setFilterRole(r)}
+                  title={
+                    r === "first" ? "Interne HTW-Prüfer:innen (Erst- und Zweitgutachter:in)" :
+                    r === "second" ? "Externe Zweitprüfer:innen (nur Zweitgutachter:in)" : undefined
+                  }
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     filterRole === r
-                      ? r === "second" ? "bg-blue-600 text-white shadow" : "bg-primary text-white shadow"
+                      ? r === "second"
+                        ? "bg-purple-600 text-white shadow"
+                        : r === "first"
+                        ? "bg-blue-600 text-white shadow"
+                        : "bg-primary text-white shadow"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  {r === "all" ? D.roleAll : r === "first" ? D.roleFirst : D.roleSecond}
+                  {r === "all"
+                    ? D.roleAll
+                    : r === "first"
+                    ? <span className="flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        {D.roleFirst}
+                      </span>
+                    : <span className="flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {D.roleSecond}
+                      </span>
+                  }
                 </button>
               ))}
             </div>

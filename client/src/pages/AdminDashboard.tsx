@@ -1153,6 +1153,7 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
   const PAGE_SIZE = 15;
   const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: number; userName: string; fromRole: string; toRole: string } | null>(null);
   const [capacityFilter, setCapacityFilter] = useState<"all" | "hasCapacity" | "noCapacity">("all");
+  const [examinerTypeFilter, setExaminerTypeFilter] = useState<"all" | "intern" | "extern">("all");
 
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => {
@@ -1253,6 +1254,11 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
       const maxSup = (profile as any)?.maxSupervisions ?? 0;
       if (capacityFilter === "hasCapacity" && maxSup <= 0) return false;
       if (capacityFilter === "noCapacity" && maxSup > 0) return false;
+    }
+    // Intern/Extern-Filter (examiner = intern, second_examiner = extern)
+    if (userTab === "examiners" && examinerTypeFilter !== "all") {
+      if (examinerTypeFilter === "intern" && !allRoles.includes("examiner")) return false;
+      if (examinerTypeFilter === "extern" && allRoles.includes("examiner")) return false;
     }
     if (!query) return true;
     return (
@@ -1399,21 +1405,44 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
           </button>
         </div>
         {userTab === "examiners" && (
-          <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
-            {(["all", "hasCapacity", "noCapacity"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => { setCapacityFilter(f); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  capacityFilter === f
-                    ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {f === "all" ? "Alle" : f === "hasCapacity" ? "Freie Kapazität" : "Keine Kapazität"}
-              </button>
-            ))}
-          </div>
+          <>
+            {/* Intern/Extern-Filter */}
+            <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+              {(["all", "intern", "extern"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => { setExaminerTypeFilter(f); setCurrentPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    examinerTypeFilter === f
+                      ? f === "intern"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : f === "extern"
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "bg-white text-gray-900 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {f === "all" ? "Alle Typen" : f === "intern" ? "🏢 Intern" : "👤 Extern"}
+                </button>
+              ))}
+            </div>
+            {/* Kapazitäts-Filter */}
+            <div className="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+              {(["all", "hasCapacity", "noCapacity"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => { setCapacityFilter(f); setCurrentPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    capacityFilter === f
+                      ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {f === "all" ? "Alle" : f === "hasCapacity" ? "Freie Kapazität" : "Keine Kapazität"}
+                </button>
+              ))}
+            </div>
+          </>
         )}
         </div>
         {userTab === "examiners" && (

@@ -2343,7 +2343,8 @@ type SemesterCapacity = { semester: string; maxFirst: number; maxSecond: number 
 
 function ProfileEdit() {
   const { t } = useLanguage();
-    const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
+  const { user } = useAuth();
+  const { data: profile, isLoading } = trpc.examiner.myProfile.useQuery();
   const { data: savedCapacities = [], isLoading: capsLoading } = trpc.examiner.getSemesterCapacities.useQuery();
   const { data: usageData = [] } = trpc.examiner.getCapacityUsage.useQuery();
   const utils = trpc.useUtils();
@@ -2620,25 +2621,41 @@ function ProfileEdit() {
 
           {/* Prüfer:innen-Rolle: Erst- oder Zweitprüfer:in */}
           <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-start gap-3">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isSecondExaminer}
-                onClick={() => setIsSecondExaminer((v) => !v)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSecondExaminer ? "bg-primary" : "bg-gray-200"}`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSecondExaminer ? "translate-x-5" : "translate-x-0"}`}
-                />
-              </button>
-              <div>
-                <p className="text-sm font-medium text-gray-700">Ich bin Zweitprüfer:in</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Aktivieren Sie diese Option, wenn Sie als Zweitprüfer:in agieren und keine HTW-Berlin-E-Mail-Adresse verwenden. Erstprüfer:innen müssen sich mit einer <strong>@htw-berlin.de</strong>- oder <strong>@htw-berlin.com</strong>-Adresse anmelden.
-                </p>
+            {user?.role === "examiner" ? (
+              // Erstprüfer:innen: schreibgeschützter Hinweis
+              <div className="flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.2)" }}>
+                <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800">Zweitprüfer:innen-Berechtigung automatisch aktiv</p>
+                  <p className="text-xs text-blue-600/80 mt-0.5 leading-relaxed">
+                    Als Erstprüfer:in sind Sie automatisch auch als Zweitprüfer:in berechtigt. Diese Einstellung kann nicht manuell geändert werden.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              // Reine Zweitprüfer:innen: Toggle bleibt editierbar
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isSecondExaminer}
+                  onClick={() => setIsSecondExaminer((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${isSecondExaminer ? "bg-primary" : "bg-gray-200"}`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSecondExaminer ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </button>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Ich bin Zweitprüfer:in</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Aktivieren Sie diese Option, wenn Sie ausschließlich als externe Zweitprüfer:in agieren (ohne Erstprüfer:innen-Berechtigung).
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Alternative E-Mail für Zweitprüfer:innen */}
