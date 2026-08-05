@@ -904,7 +904,15 @@ export const appRouter = router({
           const db = await getDb();
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB nicht verfügbar" });
           if (input.action === "accept") {
-            await db.execute(sql`UPDATE thesis_requests SET second_examiner_id = ${ctx.user.id}, status = 'SECOND_EXAMINER_ACCEPTED', second_examiner_accepted_at = NOW() WHERE id = ${input.id}`);
+            const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+            await db.update(thesisRequests)
+              .set({
+                secondExaminerId: ctx.user.id,
+                status: "SECOND_EXAMINER_ACCEPTED",
+                secondExaminerAcceptedAt: now,
+                updatedAt: now,
+              })
+              .where(eq(thesisRequests.id, input.id));
             newStatus = "SECOND_EXAMINER_ACCEPTED";
             auditAction = "SECOND_EXAMINER_ACCEPTED";
             // E-Mail an Studierenden
