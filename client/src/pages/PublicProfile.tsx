@@ -134,6 +134,15 @@ export default function PublicProfile() {
   const departmentLabel = profile.department ? (DEPARTMENTS[profile.department] ?? profile.department) : null;
   const researchTagList = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
+  // Kapazitäts-Badge: Berechnung auf Basis von maxSupervisions und activeFirstCount
+  const maxSup: number = (profile as any).maxSupervisions ?? 0;
+  const activeSup: number = (profile as any).activeFirstCount ?? 0;
+  const freePlaces = Math.max(0, maxSup - activeSup);
+  // Badge nur anzeigen wenn maxSupervisions gesetzt (> 0)
+  const showCapacityBadge = isExaminer && maxSup > 0;
+  const capacityFull = freePlaces === 0;
+  const capacityLow = freePlaces > 0 && freePlaces <= 2;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ── */}
@@ -204,6 +213,41 @@ export default function PublicProfile() {
               {departmentLabel && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
                   {departmentLabel}
+                </span>
+              )}
+              {/* Kapazitäts-Badge */}
+              {showCapacityBadge && (
+                <span
+                  title={
+                    capacityFull
+                      ? (isDE ? `Keine freien Betreuungsplätze (${activeSup}/${maxSup} belegt)` : `No supervision slots available (${activeSup}/${maxSup} taken)`)
+                      : capacityLow
+                      ? (isDE ? `Noch ${freePlaces} freie Betreuungsplätze (${activeSup}/${maxSup} belegt)` : `${freePlaces} supervision slot${freePlaces > 1 ? "s" : ""} available (${activeSup}/${maxSup} taken)`)
+                      : (isDE ? `${freePlaces} freie Betreuungsplätze (${activeSup}/${maxSup} belegt)` : `${freePlaces} supervision slots available (${activeSup}/${maxSup} taken)`)
+                  }
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border ${
+                    capacityFull
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : capacityLow
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-green-50 text-green-700 border-green-200"
+                  }`}
+                >
+                  {capacityFull ? (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {capacityFull
+                    ? (isDE ? "Keine freien Plätze" : "No slots available")
+                    : capacityLow
+                    ? (isDE ? `Noch ${freePlaces} Plätze frei` : `${freePlaces} slot${freePlaces > 1 ? "s" : ""} left`)
+                    : (isDE ? `${freePlaces} Plätze frei` : `${freePlaces} slots available`)
+                  }
                 </span>
               )}
             </div>

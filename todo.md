@@ -1428,3 +1428,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] db.ts: roleApprovedEmail-Aufruf mit includeSecondExaminerNote: true für examiner-Rolle
 - [x] AdminDashboard.tsx: Prüfer:innen-Übersicht-Box mit internCount/externCount + Anteilsbalken
 - [x] AdminDashboard.tsx: Hauptkennzahl "Aktive Nutzer:innen" zeigt intern/extern-Aufschlüsselung
+
+## Kapazitäts-Badge auf Profilseite (2026-08-06)
+- [x] routers.ts: maxSupervisions in getPublicProfile-Rückgabe ergänzt
+- [x] PublicProfile.tsx: Kapazitäts-Badge (grün/amber/rot) mit freePlaces-Berechnung und Tooltip

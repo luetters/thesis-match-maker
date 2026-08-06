@@ -1447,6 +1447,7 @@ export const appRouter = router({
           semesterCapacities,
           activeFirstCount,
           activeSecondCount,
+          maxSupervisions: examinerProfile?.maxSupervisions ?? null,
         };
       }),
     // Prüfer: Erweiterte Profil-Felder aktualisieren
