@@ -7037,6 +7037,13 @@ export const NOTIFICATION_TYPES = [
     defaultEnabled: true,
   },
   {
+    key: "colloquium_scheduling",
+    labelDe: "Kolloquiums-Terminabstimmung",
+    descDe: "Einladungen, automatische Fristerinnerungen und verbindliche Bestätigungen zu Kolloquiumsterminen.",
+    roles: ["student", "examiner", "second_examiner"],
+    defaultEnabled: true,
+  },
+  {
     key: "deadline_reminder",
     labelDe: "Fristenerinnerungen",
     descDe: "Erinnerungs-E-Mails für bevorstehende Abgabe- und Bearbeitungsfristen.",

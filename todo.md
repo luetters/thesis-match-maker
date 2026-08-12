@@ -1439,3 +1439,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Abstimmungsworkflow für Studierende, Erstprüfer:in und Zweitprüfer:in spezifiziert
 - [x] Rollenrechte, Fristen, Konfliktregeln und E-Mail-Benachrichtigungen definiert
 - [x] Technischen Umsetzungsplan für Datenmodell, tRPC-Prozeduren und Ansichten erstellt
+
+## Implementierung: Kolloquiums-Terminabstimmung
+- [x] Datenbankschema für Abstimmungen, Optionen, Beteiligte und Antworten migriert
+- [x] Serverlogik für Erstprüfer-Start, Verfügbarkeiten, Dreifachbestätigung und Finalisierung implementiert
+- [x] Automatische E-Mail-Erinnerungen vor Ablauf der Abstimmungsfrist eingerichtet
+- [x] Raum oder Online-Link in Abstimmung, finalem Kolloquium und ICS-Kalendereintrag abgebildet
+- [x] Rollenbasierte Terminabstimmungsoberflächen für Studierende und Prüfer:innen integriert
+- [x] Vitest-Integrationstests und TypeScript-Check abgeschlossen (154 Tests)

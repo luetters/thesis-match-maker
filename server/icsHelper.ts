@@ -59,6 +59,8 @@ export interface ColloquiumEventOptions {
   location?: string;
   /** Freitext-Notizen aus dem Kolloquium-Datensatz */
   notes?: string;
+  /** Direkter Link für ein Online-Kolloquium */
+  onlineLink?: string;
   /** Titel der Abschlussarbeit (falls abweichend vom Kolloquium-Titel) */
   thesisTitle?: string;
   /** Vollständiger Name der/des Studierenden */
@@ -88,6 +90,7 @@ export function createIcsEvent(opts: ColloquiumEventOptions): string {
     opts.firstExaminerName ? `Erstprüfer:in: ${opts.firstExaminerName}` : "",
     opts.secondExaminerName ? `Zweitprüfer:in: ${opts.secondExaminerName}` : "",
     opts.programmeName ? `Studiengang: ${opts.programmeName}` : "",
+    opts.onlineLink ? `Online-Teilnahme: ${opts.onlineLink}` : "",
     opts.notes ? `Hinweise: ${opts.notes}` : "",
     "HTW Berlin – Thesis Match Maker",
   ].filter(Boolean).join("\n");
@@ -104,7 +107,8 @@ export function createIcsEvent(opts: ColloquiumEventOptions): string {
       { action: "display", description: "Erinnerung: Kolloquium in 1 Stunde", trigger: { hours: 1, before: true } },
     ],
     organizer: { name: "HTW Berlin – Prüfungsamt", email: "pruefungsamt@htw-berlin.de" },
-    url: "https://thesis.htw-berlin.com",
+    // Für Online-Kolloquien öffnet der Kalendereintrag direkt den Meeting-Link.
+    url: opts.onlineLink ?? "https://thesis.htw-berlin.com",
     categories: ["Kolloquium", "HTW Berlin"],
     status: "CONFIRMED",
     busyStatus: "BUSY",

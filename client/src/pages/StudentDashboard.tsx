@@ -13,6 +13,7 @@ import { buildFullName, getStatusBadge } from "@shared/const";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { SummaryPdfPreviewModal } from "@/components/SummaryPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
+import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertDialog,
@@ -49,6 +50,7 @@ function useNavItems() {
     { href: "/student/new", label: t.student.newRequest, icon: Icons.plus },
     { href: "/student/examiners", label: t.nav.examiners, icon: Icons.search },
     { href: "/student/colloquiums", label: t.student.colloquiums, icon: Icons2.calendar },
+    { href: "/student/scheduling", label: "Terminabstimmung", icon: Icons2.calendar },
     { href: "/student/history", label: t.student.history, icon: Icons2.history },
     { href: "/student/favorites", label: "Merkliste", icon: Icons2.heart },
     { href: "/student/profile", label: t.student.tabProfile, icon: Icons2.profile },
@@ -3604,10 +3606,11 @@ export default function StudentDashboard() {
     try { return new URLSearchParams(window.location.search).get("welcome") === "1"; } catch { return false; }
   })();
   const [showWelcome, setShowWelcome] = useState(isNewUser);
-  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "history" | "favorites" | "profile">(
+  const [activeTab, setActiveTab] = useState<"requests" | "new" | "examiners" | "colloquiums" | "scheduling" | "history" | "favorites" | "profile">(
     location.startsWith("/student/new") || preselectExaminerId > 0 ? "new" :
     location === "/student/examiners" ? "examiners" :
     location === "/student/colloquiums" ? "colloquiums" :
+    location === "/student/scheduling" ? "scheduling" :
     location === "/student/history" ? "history" :
     location === "/student/favorites" ? "favorites" :
     location === "/student/profile" ? "profile" : "requests"
@@ -3631,6 +3634,7 @@ export default function StudentDashboard() {
       else if (item.href === "/student/new") setActiveTab("new");
       else if (item.href === "/student/examiners") setActiveTab("examiners");
       else if (item.href === "/student/colloquiums") setActiveTab("colloquiums");
+      else if (item.href === "/student/scheduling") setActiveTab("scheduling");
       else if (item.href === "/student/history") setActiveTab("history");
       else if (item.href === "/student/favorites") setActiveTab("favorites");
       else if (item.href === "/student/profile") setActiveTab("profile");
@@ -3643,6 +3647,7 @@ export default function StudentDashboard() {
     new: t.student.tabNew,
     examiners: t.student.tabExaminers,
     colloquiums: t.student.tabColloquiums,
+    scheduling: "Kolloquiums-Terminabstimmung",
     history: t.student.tabHistory,
     favorites: "Merkliste",
     profile: t.student.tabProfile,
@@ -3715,6 +3720,7 @@ export default function StudentDashboard() {
         </div>
       )}
       {activeTab === "colloquiums" && <MyColloquiums />}
+      {activeTab === "scheduling" && <ColloquiumSchedulingPanel mode="student" />}
       {activeTab === "history" && <StatusHistory />}
       {activeTab === "favorites" && <FavoritesList />}
       {activeTab === "profile" && <Profile embedded={true} />}

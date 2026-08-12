@@ -1,0 +1,2 @@
+ALTER TABLE `colloquium_scheduling_participants` ADD `reminder_three_days_sent_at` datetime;--> statement-breakpoint
+ALTER TABLE `colloquium_scheduling_participants` ADD `reminder_one_day_sent_at` datetime;

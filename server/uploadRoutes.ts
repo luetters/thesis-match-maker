@@ -435,6 +435,7 @@ export function registerUploadRoutes(app: Express) {
         start: new Date(col.scheduledAt as string),
         durationMinutes: 60,
         location: [col.location, col.room].filter(Boolean).join(" – ") || undefined,
+        onlineLink: col.onlineLink || undefined,
         notes: col.notes || undefined,
         colloquiumId: col.id,
         thesisTitle: thesis?.title,

@@ -9,7 +9,9 @@ import { registerUploadRoutes } from "../uploadRoutes";
 import { registerExportRoutes } from "../exportRoutes";
 import { registerMagicLinkRoutes } from "../magicLinkRoutes";
 import { appRouter } from "../routers";
+import { processColloquiumSchedulingReminders } from "../colloquiumScheduling";
 import { createContext } from "./context";
+import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import { maintenanceMiddleware } from "../maintenanceMiddleware";
 
@@ -45,6 +47,27 @@ async function startServer() {
   registerUploadRoutes(app);
   registerExportRoutes(app);
   registerMagicLinkRoutes(app); // Nur noch Logout-Route
+  // Heartbeat: automatische E-Mail-Erinnerungen drei und einen Tag vor Ablauf
+  // einer offenen Kolloquiums-Terminabstimmung. taskUid ist serverseitig durch
+  // den Heartbeat authentifiziert und wird nie aus dem Request-Body gelesen.
+  app.post("/api/scheduled/colloquium-scheduling-reminders", async (req, res) => {
+    try {
+      const cronUser = await sdk.authenticateRequest(req);
+      if (!cronUser.isCron || !cronUser.taskUid) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+      const result = await processColloquiumSchedulingReminders(cronUser.taskUid);
+      return res.json(result);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      console.error("[ColloquiumSchedulingHeartbeat]", error);
+      return res.status(500).json({
+        error: detail,
+        context: { url: req.originalUrl },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)
   app.use(maintenanceMiddleware());
   // tRPC API – kein Caching (verhindert veraltete Profil-/Auth-Daten nach Updates)

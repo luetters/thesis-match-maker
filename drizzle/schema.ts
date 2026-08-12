@@ -21,6 +21,7 @@ export const colloquiums = mysqlTable("colloquiums", {
 	scheduledAt: datetime("scheduled_at", { mode: 'string'}).notNull(),
 	location: varchar({ length: 512 }),
 	room: varchar({ length: 256 }),
+	onlineLink: varchar("online_link", { length: 1024 }),
 	notes: text(),
 	status: mysqlEnum(['SCHEDULED','CANCELLED','COMPLETED']).default('SCHEDULED').notNull(),
 	// Wiederholungs-Kolloquium (z. B. nach nicht bestandenem ersten Kolloquium)
@@ -30,6 +31,74 @@ export const colloquiums = mysqlTable("colloquiums", {
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
+
+// ─── Gemeinsame Terminabstimmung für Kolloquien ─────────────────────────────
+export const colloquiumSchedulingPolls = mysqlTable("colloquium_scheduling_polls", {
+	id: int().autoincrement().notNull().primaryKey(),
+	thesisRequestId: int("thesis_request_id").notNull(),
+	createdById: int("created_by_id").notNull(),
+	status: mysqlEnum(["DRAFT", "OPEN", "MATCH_FOUND", "AWAITING_CONFIRMATION", "CONFIRMED", "EXPIRED", "CANCELLED"]).default("DRAFT").notNull(),
+	durationMinutes: int("duration_minutes").default(60).notNull(),
+	responseDeadline: datetime("response_deadline", { mode: "string" }).notNull(),
+	selectedSlotId: int("selected_slot_id"),
+	location: varchar({ length: 512 }),
+	room: varchar({ length: 256 }),
+	onlineLink: varchar("online_link", { length: 1024 }),
+	cancellationReason: text("cancellation_reason"),
+	/** Heartbeat task UID; Callbacks look up a poll exclusively by this value. */
+	scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+	finalizedAt: datetime("finalized_at", { mode: "string" }),
+}, (table) => [
+	foreignKey({ columns: [table.thesisRequestId], foreignColumns: [thesisRequests.id], name: "csp_thesis_fk" }).onDelete("cascade"),
+	index("csp_thesis_status_idx").on(table.thesisRequestId, table.status),
+	index("csp_schedule_task_uid_idx").on(table.scheduleCronTaskUid),
+]);
+
+export const colloquiumSchedulingParticipants = mysqlTable("colloquium_scheduling_participants", {
+	id: int().autoincrement().notNull().primaryKey(),
+	pollId: int("poll_id").notNull(),
+	userId: int("user_id").notNull(),
+	participantRole: mysqlEnum(["student", "first_examiner", "second_examiner"]).notNull(),
+	invitedAt: timestamp("invited_at", { mode: "string" }).defaultNow().notNull(),
+	lastRespondedAt: datetime("last_responded_at", { mode: "string" }),
+	reminderThreeDaysSentAt: datetime("reminder_three_days_sent_at", { mode: "string" }),
+	reminderOneDaySentAt: datetime("reminder_one_day_sent_at", { mode: "string" }),
+	confirmedAt: datetime("confirmed_at", { mode: "string" }),
+	declinedAt: datetime("declined_at", { mode: "string" }),
+	declineReason: text("decline_reason"),
+}, (table) => [
+	foreignKey({ columns: [table.pollId], foreignColumns: [colloquiumSchedulingPolls.id], name: "csp_part_poll_fk" }).onDelete("cascade"),
+	uniqueIndex("csp_participant_unique").on(table.pollId, table.userId),
+	index("csp_participant_user_idx").on(table.userId),
+]);
+
+export const colloquiumSchedulingSlots = mysqlTable("colloquium_scheduling_slots", {
+	id: int().autoincrement().notNull().primaryKey(),
+	pollId: int("poll_id").notNull(),
+	startsAt: datetime("starts_at", { mode: "string" }).notNull(),
+	endsAt: datetime("ends_at", { mode: "string" }).notNull(),
+	isSelected: tinyint("is_selected").default(0).notNull(),
+	createdById: int("created_by_id").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({ columns: [table.pollId], foreignColumns: [colloquiumSchedulingPolls.id], name: "css_poll_fk" }).onDelete("cascade"),
+	index("css_poll_idx").on(table.pollId),
+]);
+
+export const colloquiumSchedulingResponses = mysqlTable("colloquium_scheduling_responses", {
+	id: int().autoincrement().notNull().primaryKey(),
+	slotId: int("slot_id").notNull(),
+	participantId: int("participant_id").notNull(),
+	availability: mysqlEnum(["YES", "MAYBE", "NO"]).notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	foreignKey({ columns: [table.slotId], foreignColumns: [colloquiumSchedulingSlots.id], name: "csr_slot_fk" }).onDelete("cascade"),
+	foreignKey({ columns: [table.participantId], foreignColumns: [colloquiumSchedulingParticipants.id], name: "csr_participant_fk" }).onDelete("cascade"),
+	uniqueIndex("csr_slot_participant_unique").on(table.slotId, table.participantId),
+	index("csr_participant_idx").on(table.participantId),
+]);
 
 export const emailTemplates = mysqlTable("email_templates", {
 	id: int().autoincrement().notNull(),
@@ -457,6 +526,10 @@ export type InsertPavExaminerProposal = InferInsertModel<typeof pavExaminerPropo
 export type InsertThesisRequest = InferInsertModel<typeof thesisRequests>;
 
 export type InsertColloquium = InferInsertModel<typeof colloquiums>;
+export type InsertColloquiumSchedulingPoll = InferInsertModel<typeof colloquiumSchedulingPolls>;
+export type InsertColloquiumSchedulingParticipant = InferInsertModel<typeof colloquiumSchedulingParticipants>;
+export type InsertColloquiumSchedulingSlot = InferInsertModel<typeof colloquiumSchedulingSlots>;
+export type InsertColloquiumSchedulingResponse = InferInsertModel<typeof colloquiumSchedulingResponses>;
 export type InsertPasswordResetToken = InferInsertModel<typeof passwordResetTokens>;
 export type InsertSystemSetting = InferInsertModel<typeof systemSettings>;
 

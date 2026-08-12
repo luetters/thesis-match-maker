@@ -15,6 +15,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { buildFullName } from "@shared/const";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
+import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -399,6 +400,7 @@ function useNavItems() {
     ...(!isSecondExaminerOnly ? [{ href: "/examiner/topics", label: "Meine Themen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> }] : []),
     { href: "/examiner/history", label: t.examiner.history, icon: Icons2.history },
     { href: "/examiner/colloquiums", label: t.examiner.colloquiums, icon: Icons2.calendar },
+    { href: "/examiner/scheduling", label: "Terminabstimmung", icon: Icons2.calendar },
     { href: "/examiner/capacities", label: t.supervisionCapacitiesPage.navLabel, icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
     { href: "/examiner/profile", label: t.examiner.profile, icon: Icons.profile },
     { href: "/examiner/new-examiners", label: "Neue Prüfer:innen", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg> },
@@ -4886,10 +4888,11 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
 export default function ExaminerDashboard() {
   const [location, navigate] = useLocation();
   // URL-basierte Tab-Initialisierung: /examiner/profile öffnet direkt den Profil-Tab
-  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "history" | "profile" | "capacities" | "topics" | "newExaminers" => {
+  const getInitialTab = (): "overview" | "requests" | "colloquiums" | "scheduling" | "history" | "profile" | "capacities" | "topics" | "newExaminers" => {
     if (location === "/examiner/profile") return "profile";
     if (location === "/examiner/requests") return "requests";
     if (location === "/examiner/colloquiums") return "colloquiums";
+    if (location === "/examiner/scheduling") return "scheduling";
     if (location === "/examiner/history") return "history";
     if (location === "/examiner/capacities") return "capacities";
     if (location === "/examiner/topics") return "topics";
@@ -4938,6 +4941,7 @@ export default function ExaminerDashboard() {
       if (item.href === "/examiner") setActiveTab("overview");
       else if (item.href === "/examiner/requests") setActiveTab("requests");
       else if (item.href === "/examiner/colloquiums") setActiveTab("colloquiums");
+      else if (item.href === "/examiner/scheduling") setActiveTab("scheduling");
       else if (item.href === "/examiner/history") setActiveTab("history");
       else if (item.href === "/examiner/profile") setActiveTab("profile");
       else if (item.href === "/examiner/capacities") setActiveTab("capacities");
@@ -4953,6 +4957,7 @@ export default function ExaminerDashboard() {
     overview: t.examiner.title,
     requests: t.examiner.requests,
     colloquiums: t.examiner.colloquiums,
+    scheduling: "Kolloquiums-Terminabstimmung",
     history: t.examiner.history,
     profile: t.examiner.profile,
     capacities: t.supervisionCapacitiesPage.title,
@@ -4965,6 +4970,7 @@ export default function ExaminerDashboard() {
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <RequestsView />}
       {activeTab === "colloquiums" && <MyColloquiums />}
+      {activeTab === "scheduling" && <ColloquiumSchedulingPanel mode="examiner" />}
       {activeTab === "history" && <ExaminerStatusHistory />}
       {activeTab === "profile" && <Profile embedded={true} />}
       {activeTab === "capacities" && <SupervisionCapacities />}

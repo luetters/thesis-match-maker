@@ -24,6 +24,32 @@ export type SessionPayload = {
   name: string;
 };
 
+const CRON_OPEN_ID_PREFIX = "cron_";
+
+export type AuthenticatedUser = User & {
+  taskUid?: string;
+  isCron?: boolean;
+  roles?: string[];
+};
+
+function buildCronUser(userInfo: GetUserInfoWithJwtResponse): AuthenticatedUser {
+  const now = new Date();
+  return {
+    id: -1,
+    openId: userInfo.openId,
+    name: userInfo.name || "Geplanter Systemlauf",
+    email: null,
+    loginMethod: null,
+    role: "user",
+    createdAt: now as any,
+    updatedAt: now as any,
+    lastSignedIn: now as any,
+    taskUid: userInfo.taskUid ?? undefined,
+    isCron: true,
+    roles: [],
+  } as unknown as AuthenticatedUser;
+}
+
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
 const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
@@ -256,7 +282,7 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
-  async authenticateRequest(req: Request): Promise<User> {
+  async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
@@ -264,6 +290,17 @@ class SDKServer {
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");
+    }
+
+    // Heartbeat-Aufrufe erhalten eine Cron-Identität und werden nie gegen
+    // reguläre Nutzerkonten aufgelöst. Die taskUid ist die alleinige,
+    // serverseitig vertrauenswürdige Referenz für den geplanten Job.
+    if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {
+      const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+      if (!userInfo.taskUid) {
+        throw ForbiddenError("Cron session missing task_uid");
+      }
+      return buildCronUser(userInfo);
     }
 
     const sessionUserId = session.openId;
