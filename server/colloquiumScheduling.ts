@@ -15,6 +15,7 @@ const PORTAL_URL = process.env.SITE_URL ?? "https://thesis.htw-berlin.com";
 const ACTIVE_POLL_STATUSES = ["DRAFT", "OPEN", "MATCH_FOUND", "AWAITING_CONFIRMATION"] as const;
 type ParticipantRole = "student" | "first_examiner" | "second_examiner";
 type Availability = "YES" | "MAYBE" | "NO";
+const EXISTING_COLLOQUIUM_DURATION_MS = 60 * 60 * 1000;
 
 function toDbDate(value: Date | number): string {
   const date = typeof value === "number" ? new Date(value) : value;
@@ -166,6 +167,67 @@ export function hasThreeWayConfirmation(participants: Array<{ confirmedAt: strin
   return participants.length === 3 && participants.every((participant) => Boolean(participant.confirmedAt));
 }
 
+/** Vergleichbar machen, ohne die Bezeichnung des belegten Kolloquiums offenzulegen. */
+export function normalizeRoomValue(value: string | null | undefined): string {
+  return (value ?? "").trim().replace(/\s+/g, " ").toLocaleLowerCase("de-DE");
+}
+
+export function timeRangesOverlap(startsAt: number, endsAt: number, otherStartsAt: number, otherEndsAt: number): boolean {
+  return startsAt < otherEndsAt && endsAt > otherStartsAt;
+}
+
+export function roomLabelsConflict(candidate: { room?: string | null; location?: string | null }, existing: { room?: string | null; location?: string | null }): boolean {
+  if (!normalizeRoomValue(candidate.room) || normalizeRoomValue(candidate.room) !== normalizeRoomValue(existing.room)) return false;
+  // Wenn eine der beiden Ortsangaben fehlt, behandeln wir den identischen Raum
+  // vorsorglich als Konflikt. Andernfalls muss auch der Campus/Ort übereinstimmen.
+  const candidateLocation = normalizeRoomValue(candidate.location);
+  const existingLocation = normalizeRoomValue(existing.location);
+  return !candidateLocation || !existingLocation || candidateLocation === existingLocation;
+}
+
+export type RoomConflict = { scheduledAt: string; endsAt: string; room: string; location: string | null };
+
+export async function findColloquiumRoomConflicts(input: {
+  room?: string | null;
+  location?: string | null;
+  slots: Array<{ startsAt: number | string; endsAt: number | string }>;
+  db?: any;
+}): Promise<RoomConflict[]> {
+  if (!normalizeRoomValue(input.room)) return [];
+  const db = input.db ?? await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const scheduled = await db.select({
+    scheduledAt: colloquiums.scheduledAt,
+    room: colloquiums.room,
+    location: colloquiums.location,
+  }).from(colloquiums).where(eq(colloquiums.status, "SCHEDULED"));
+  const conflicts = new Map<string, RoomConflict>();
+  for (const existing of scheduled) {
+    if (!roomLabelsConflict(input, existing)) continue;
+    const existingStartsAt = fromDbDate(existing.scheduledAt).getTime();
+    const existingEndsAt = existingStartsAt + EXISTING_COLLOQUIUM_DURATION_MS;
+    for (const candidate of input.slots) {
+      const candidateStartsAt = typeof candidate.startsAt === "number" ? candidate.startsAt : fromDbDate(candidate.startsAt).getTime();
+      const candidateEndsAt = typeof candidate.endsAt === "number" ? candidate.endsAt : fromDbDate(candidate.endsAt).getTime();
+      if (!timeRangesOverlap(candidateStartsAt, candidateEndsAt, existingStartsAt, existingEndsAt)) continue;
+      const key = `${existing.scheduledAt}:${existing.room ?? ""}:${existing.location ?? ""}`;
+      conflicts.set(key, {
+        scheduledAt: existing.scheduledAt,
+        endsAt: toDbDate(existingEndsAt),
+        room: existing.room ?? input.room ?? "",
+        location: existing.location ?? null,
+      });
+    }
+  }
+  return Array.from(conflicts.values()).sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+}
+
+function describeRoomConflict(conflicts: RoomConflict[]): string {
+  const first = conflicts[0];
+  const date = fromDbDate(first.scheduledAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  return `Der Raum „${first.room}“${first.location ? ` am Ort „${first.location}“` : ""} ist am ${date} bereits belegt. Bitte wählen Sie einen anderen Raum oder ein anderes Zeitfenster.`;
+}
+
 export async function createColloquiumSchedulingPoll(input: {
   thesisRequestId: number;
   createdById: number;
@@ -187,6 +249,8 @@ export async function createColloquiumSchedulingPoll(input: {
   if (input.durationMinutes < 30 || input.durationMinutes > 180) throw new Error("Die Termindauer muss zwischen 30 und 180 Minuten liegen");
   if (input.responseDeadline <= Date.now()) throw new Error("Die Abstimmungsfrist muss in der Zukunft liegen");
   if (!input.room && !input.onlineLink) throw new Error("Bitte geben Sie mindestens einen Raum oder einen Online-Link an");
+  const roomConflicts = await findColloquiumRoomConflicts({ room: input.room, location: input.location, slots: input.slots, db });
+  if (roomConflicts.length) throw new Error(describeRoomConflict(roomConflicts));
   const existing = await db.select().from(colloquiumSchedulingPolls)
     .where(and(eq(colloquiumSchedulingPolls.thesisRequestId, input.thesisRequestId), inArray(colloquiumSchedulingPolls.status, [...ACTIVE_POLL_STATUSES] as any)));
   if (existing.length) throw new Error("Für diese Abschlussarbeit läuft bereits eine Terminabstimmung");
@@ -346,12 +410,33 @@ export async function confirmColloquiumSchedulingSlot(input: { pollId: number; u
     await db.update(colloquiumSchedulingPolls).set({ status: "OPEN", selectedSlotId: null }).where(eq(colloquiumSchedulingPolls.id, poll.id));
     return { finalized: false, status: "OPEN" as const };
   }
+  const isLastRequiredConfirmation = participants
+    .filter((item) => item.id !== participant.id)
+    .every((item) => Boolean(item.confirmedAt));
+  if (isLastRequiredConfirmation) {
+    const selectedSlotBeforeConfirmation = slots.find((slot) => slot.id === poll.selectedSlotId);
+    if (!selectedSlotBeforeConfirmation) throw new Error("Ausgewählte Terminoption nicht gefunden");
+    const roomConflicts = await findColloquiumRoomConflicts({
+      room: poll.room,
+      location: poll.location,
+      slots: [{ startsAt: selectedSlotBeforeConfirmation.startsAt, endsAt: selectedSlotBeforeConfirmation.endsAt }],
+      db,
+    });
+    if (roomConflicts.length) throw new Error(describeRoomConflict(roomConflicts));
+  }
   await db.update(colloquiumSchedulingParticipants).set({ confirmedAt: now, declinedAt: null, declineReason: null }).where(eq(colloquiumSchedulingParticipants.id, participant.id));
   const updatedParticipants = await db.select().from(colloquiumSchedulingParticipants).where(eq(colloquiumSchedulingParticipants.pollId, poll.id));
   if (!hasThreeWayConfirmation(updatedParticipants)) return { finalized: false, status: "AWAITING_CONFIRMATION" as const };
   const selectedSlot = slots.find((slot) => slot.id === poll.selectedSlotId);
   if (!selectedSlot) throw new Error("Ausgewählte Terminoption nicht gefunden");
   const [created] = await db.transaction(async (tx) => {
+    const roomConflicts = await findColloquiumRoomConflicts({
+      room: poll.room,
+      location: poll.location,
+      slots: [{ startsAt: selectedSlot.startsAt, endsAt: selectedSlot.endsAt }],
+      db: tx,
+    });
+    if (roomConflicts.length) throw new Error(describeRoomConflict(roomConflicts));
     const result = await tx.insert(colloquiums).values({
       thesisRequestId: thesis.id,
       title: `Kolloquium: ${thesis.title}`,

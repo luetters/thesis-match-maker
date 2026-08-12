@@ -56,6 +56,17 @@ function SchedulingCreateDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const [room, setRoom] = useState("");
   const [onlineLink, setOnlineLink] = useState("");
   const [slotStarts, setSlotStarts] = useState([defaultSlot(14), defaultSlot(16), defaultSlot(18)]);
+  const durationMinutes = Number(duration);
+  const conflictSlots = useMemo(() => slotStarts.filter(Boolean).map((startsAt) => {
+    const startsAtMs = new Date(startsAt).getTime();
+    return { startsAt: startsAtMs, endsAt: startsAtMs + durationMinutes * 60 * 1000 };
+  }).filter((slot) => Number.isFinite(slot.startsAt) && Number.isFinite(slot.endsAt)), [durationMinutes, slotStarts]);
+  const roomConflicts = trpc.colloquium.scheduling.roomConflicts.useQuery({
+    room: room.trim() || undefined,
+    location: location.trim() || undefined,
+    slots: conflictSlots,
+  }, { enabled: open && Boolean(room.trim()) && conflictSlots.length >= 3 });
+  const hasRoomConflicts = Boolean(roomConflicts.data?.length);
   const create = trpc.colloquium.scheduling.create.useMutation({
     onSuccess: () => {
       toast.success("Terminabstimmung gestartet. Die Beteiligten wurden eingeladen.");
@@ -73,12 +84,9 @@ function SchedulingCreateDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const submit = () => {
     if (!thesisId) return toast.error("Bitte wählen Sie eine zugelassene Abschlussarbeit aus.");
     if (!room.trim() && !onlineLink.trim()) return toast.error("Bitte geben Sie einen Raum oder einen Online-Link an.");
-    const durationMinutes = Number(duration);
-    const slots = slotStarts.filter(Boolean).map((startsAt) => {
-      const start = new Date(startsAt).getTime();
-      return { startsAt: start, endsAt: start + durationMinutes * 60 * 1000 };
-    });
+    const slots = conflictSlots;
     if (slots.length < 3) return toast.error("Bitte geben Sie mindestens drei Terminoptionen an.");
+    if (hasRoomConflicts) return toast.error("Mindestens eine Terminoption kollidiert mit einer bestehenden Raumbelegung.");
     create.mutate({
       thesisRequestId: Number(thesisId),
       responseDeadline: new Date(deadline).getTime(),
@@ -102,12 +110,14 @@ function SchedulingCreateDialog({ open, onOpenChange }: { open: boolean; onOpenC
         </div>
         <div className="grid sm:grid-cols-2 gap-4"><div className="space-y-1.5"><Label>Abstimmungsfrist</Label><Input type="datetime-local" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></div><div className="space-y-1.5"><Label>Termindauer (Minuten)</Label><Input type="number" min="30" max="180" step="15" value={duration} onChange={(event) => setDuration(event.target.value)} /></div></div>
         <div className="grid sm:grid-cols-2 gap-4"><div className="space-y-1.5"><Label>Gebäude / Ort</Label><Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="z. B. Campus Treskowallee" /></div><div className="space-y-1.5"><Label>Raum</Label><Input value={room} onChange={(event) => setRoom(event.target.value)} placeholder="z. B. C 201" /></div></div>
+        {room.trim() && conflictSlots.length >= 3 && <div className={hasRoomConflicts ? "rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" : "rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800"}>
+          {roomConflicts.isFetching ? "Prüfe Raumbelegung…" : hasRoomConflicts ? <><strong>Raumkonflikt erkannt.</strong> Der Raum ist für mindestens eine der vorgeschlagenen Zeiten bereits belegt. Bitte ändern Sie Raum oder Zeitfenster. {roomConflicts.data?.map((conflict: any) => <span key={`${conflict.scheduledAt}-${conflict.room}`} className="mt-1 block">Belegt: {formatDate(conflict.scheduledAt)} · {conflict.room}{conflict.location ? ` (${conflict.location})` : ""}</span>)}</> : <><strong>Raum verfügbar.</strong> Für die vorgeschlagenen Zeitfenster liegt keine überlappende Kolloquiumsbelegung vor.</>}</div>}
         <div className="space-y-1.5"><Label>Online-Link</Label><Input type="url" value={onlineLink} onChange={(event) => setOnlineLink(event.target.value)} placeholder="https://… (optional bei Raumtermin)" /><p className="text-xs text-gray-500">Der Raum oder der Online-Link wird in der verbindlichen Terminbestätigung und im ICS-Kalendereintrag hinterlegt.</p></div>
         <div className="space-y-2"><Label>Terminoptionen</Label>{slotStarts.map((slot, index) => <div className="flex gap-2" key={index}><Input type="datetime-local" value={slot} onChange={(event) => setSlotStarts((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} />{slotStarts.length > 3 && <Button type="button" variant="outline" onClick={() => setSlotStarts((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Entfernen</Button>}</div>)}
           {slotStarts.length < 10 && <Button type="button" variant="outline" size="sm" onClick={() => setSlotStarts((current) => [...current, defaultSlot(20 + current.length * 2)])}><Plus className="w-4 h-4 mr-1" />Option hinzufügen</Button>}
         </div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button><Button className="bg-[#76B900] hover:bg-[#5a8c00]" onClick={submit} disabled={create.isPending}>{create.isPending ? "Wird gestartet…" : "Abstimmung starten"}</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button><Button className="bg-[#76B900] hover:bg-[#5a8c00]" onClick={submit} disabled={create.isPending || roomConflicts.isFetching || hasRoomConflicts}>{create.isPending ? "Wird gestartet…" : hasRoomConflicts ? "Raumkonflikt lösen" : "Abstimmung starten"}</Button></DialogFooter>
     </DialogContent>
   </Dialog>;
 }

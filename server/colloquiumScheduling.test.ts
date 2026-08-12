@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { derivePollStatus, hasThreeWayConfirmation } from "./colloquiumScheduling";
+import { derivePollStatus, hasThreeWayConfirmation, normalizeRoomValue, roomLabelsConflict, timeRangesOverlap } from "./colloquiumScheduling";
 
 describe("Kolloquiums-Terminabstimmung – Kernregeln", () => {
   it("findet einen passenden Termin nur bei drei positiven Verfügbarkeiten", () => {
@@ -47,5 +47,26 @@ describe("Kolloquiums-Terminabstimmung – Kernregeln", () => {
       { confirmedAt: "2026-08-12 09:00:00" },
       { confirmedAt: "2026-08-12 09:01:00" },
     ])).toBe(false);
+  });
+});
+
+describe("Raum-Konfliktcheck", () => {
+  it("erkennt zeitlich überlappende Termine, nicht aber direkt anschließende Termine", () => {
+    const start = Date.UTC(2026, 9, 14, 10, 0);
+    expect(timeRangesOverlap(start, start + 60 * 60 * 1000, start + 30 * 60 * 1000, start + 90 * 60 * 1000)).toBe(true);
+    expect(timeRangesOverlap(start, start + 60 * 60 * 1000, start + 60 * 60 * 1000, start + 120 * 60 * 1000)).toBe(false);
+  });
+
+  it("vergleicht Raum- und Ortsangaben robust gegen Groß-/Kleinschreibung und Leerzeichen", () => {
+    expect(normalizeRoomValue("  C   201 ")).toBe("c 201");
+    expect(roomLabelsConflict({ room: "C 201", location: "Campus Treskowallee" }, { room: "c 201", location: "campus treskowallee" })).toBe(true);
+  });
+
+  it("vermeidet Fehlalarme bei gleichen Raumnummern an unterschiedlichen Orten", () => {
+    expect(roomLabelsConflict({ room: "C 201", location: "Campus Treskowallee" }, { room: "C 201", location: "Campus Wilhelminenhof" })).toBe(false);
+  });
+
+  it("behandelt identische Räume vorsorglich als Konflikt, wenn ein Ort fehlt", () => {
+    expect(roomLabelsConflict({ room: "C 201", location: null }, { room: "C 201", location: "Campus Treskowallee" })).toBe(true);
   });
 });

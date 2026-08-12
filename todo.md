@@ -1447,3 +1447,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Raum oder Online-Link in Abstimmung, finalem Kolloquium und ICS-Kalendereintrag abgebildet
 - [x] Rollenbasierte Terminabstimmungsoberflächen für Studierende und Prüfer:innen integriert
 - [x] Vitest-Integrationstests und TypeScript-Check abgeschlossen (154 Tests)
+
+## Raum-Konfliktcheck für Kolloquien
+- [x] Überlappende Kolloquiumsbelegungen desselben Raums serverseitig erkennen
+- [x] Konfliktprüfung beim Erstellen einer Abstimmung und vor der finalen Terminbestätigung erzwingen
+- [x] Raumkonflikte in der Terminabstimmung verständlich anzeigen und blockieren
+- [x] Konfliktlogik mit Vitest absichern (4 zusätzliche Tests)

@@ -223,6 +223,7 @@ import {
   cancelColloquiumSchedulingPoll,
   confirmColloquiumSchedulingSlot,
   createColloquiumSchedulingPoll,
+  findColloquiumRoomConflicts,
   getColloquiumSchedulingPollForUser,
   getMyColloquiumSchedulingPolls,
   selectColloquiumSchedulingSlot,
@@ -2553,6 +2554,16 @@ export const appRouter = router({
           } catch (error) {
             throw new TRPCError({ code: "FORBIDDEN", message: error instanceof Error ? error.message : "Zugriff nicht erlaubt" });
           }
+        }),
+      /** Konflikte werden vor dem Start sichtbar; die finale Prüfung bleibt serverseitig verpflichtend. */
+      roomConflicts: anyExaminerProcedure
+        .input(z.object({
+          room: z.string().trim().max(256).optional(),
+          location: z.string().trim().max(512).optional(),
+          slots: z.array(z.object({ startsAt: z.number().int().positive(), endsAt: z.number().int().positive() })).max(10),
+        }))
+        .query(async ({ input }) => {
+          return findColloquiumRoomConflicts(input);
         }),
       /** Nur die zugeordnete Erstprüferin bzw. der Erstprüfer kann eine Runde starten. */
       create: anyExaminerProcedure
