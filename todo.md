@@ -1435,7 +1435,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
-- [ ] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysieren
-- [ ] Abstimmungsworkflow für Studierende, Erstprüfer:in und Zweitprüfer:in spezifizieren
-- [ ] Rollenrechte, Fristen, Konfliktregeln und E-Mail-Benachrichtigungen definieren
-- [ ] Technischen Umsetzungsplan für Datenmodell, tRPC-Prozeduren und Ansichten erstellen
+- [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
+- [x] Abstimmungsworkflow für Studierende, Erstprüfer:in und Zweitprüfer:in spezifiziert
+- [x] Rollenrechte, Fristen, Konfliktregeln und E-Mail-Benachrichtigungen definiert
+- [x] Technischen Umsetzungsplan für Datenmodell, tRPC-Prozeduren und Ansichten erstellt
