@@ -1432,3 +1432,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## Kapazitäts-Badge auf Profilseite (2026-08-06)
 - [x] routers.ts: maxSupervisions in getPublicProfile-Rückgabe ergänzt
 - [x] PublicProfile.tsx: Kapazitäts-Badge (grün/amber/rot) mit freePlaces-Berechnung und Tooltip
+
+## Terminabstimmung für Kolloquien
+- [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
+- [ ] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysieren
+- [ ] Abstimmungsworkflow für Studierende, Erstprüfer:in und Zweitprüfer:in spezifizieren
+- [ ] Rollenrechte, Fristen, Konfliktregeln und E-Mail-Benachrichtigungen definieren
+- [ ] Technischen Umsetzungsplan für Datenmodell, tRPC-Prozeduren und Ansichten erstellen
