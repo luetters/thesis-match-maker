@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { derivePollStatus, hasThreeWayConfirmation, normalizeRoomValue, roomLabelsConflict, timeRangesOverlap } from "./colloquiumScheduling";
+import { derivePollStatus, findColloquiumRoomConflicts, hasThreeWayConfirmation, normalizeRoomValue, roomLabelsConflict, timeRangesOverlap } from "./colloquiumScheduling";
 
 describe("Kolloquiums-Terminabstimmung – Kernregeln", () => {
   it("findet einen passenden Termin nur bei drei positiven Verfügbarkeiten", () => {
@@ -68,5 +68,44 @@ describe("Raum-Konfliktcheck", () => {
 
   it("behandelt identische Räume vorsorglich als Konflikt, wenn ein Ort fehlt", () => {
     expect(roomLabelsConflict({ room: "C 201", location: null }, { room: "C 201", location: "Campus Treskowallee" })).toBe(true);
+  });
+
+  it("meldet eine administrative Sperrzeit als blockierenden Raumkonflikt", async () => {
+    let selectCall = 0;
+    const fakeDb = {
+      select: () => {
+        selectCall += 1;
+        return selectCall === 1
+          ? { from: () => ({ where: async () => [] }) }
+          : { from: async () => [{ startsAt: "2026-10-14 10:00:00", endsAt: "2026-10-14 12:00:00", room: "C 201", location: "Campus Treskowallee", reason: "Lehrveranstaltung" }] };
+      },
+    };
+    const conflicts = await findColloquiumRoomConflicts({
+      room: "c 201",
+      location: "Campus Treskowallee",
+      slots: [{ startsAt: Date.UTC(2026, 9, 14, 10, 30), endsAt: Date.UTC(2026, 9, 14, 11, 30) }],
+      db: fakeDb,
+    });
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]).toMatchObject({ source: "BLOCK", room: "C 201", reason: "Lehrveranstaltung" });
+  });
+
+  it("ignoriert eine nicht überlappende Sperrzeit", async () => {
+    let selectCall = 0;
+    const fakeDb = {
+      select: () => {
+        selectCall += 1;
+        return selectCall === 1
+          ? { from: () => ({ where: async () => [] }) }
+          : { from: async () => [{ startsAt: "2026-10-14 10:00:00", endsAt: "2026-10-14 11:00:00", room: "C 201", location: "Campus Treskowallee", reason: null }] };
+      },
+    };
+    const conflicts = await findColloquiumRoomConflicts({
+      room: "C 201",
+      location: "Campus Treskowallee",
+      slots: [{ startsAt: Date.UTC(2026, 9, 14, 11, 0), endsAt: Date.UTC(2026, 9, 14, 12, 0) }],
+      db: fakeDb,
+    });
+    expect(conflicts).toHaveLength(0);
   });
 });

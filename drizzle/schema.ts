@@ -32,6 +32,26 @@ export const colloquiums = mysqlTable("colloquiums", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
+// ─── Administrative Sperrzeiten für Räume ───────────────────────────────────
+// Manuell gepflegte Zeiträume, in denen ein Raum nicht für Kolloquien verfügbar
+// ist (z. B. Lehrveranstaltung, Wartung oder externe Raumbelegung).
+export const colloquiumRoomBlocks = mysqlTable("colloquium_room_blocks", {
+	id: int().autoincrement().notNull().primaryKey(),
+	location: varchar({ length: 512 }),
+	room: varchar({ length: 256 }).notNull(),
+	startsAt: datetime("starts_at", { mode: "string" }).notNull(),
+	endsAt: datetime("ends_at", { mode: "string" }).notNull(),
+	reason: varchar({ length: 512 }),
+	source: varchar({ length: 64 }).default("manual").notNull(),
+	externalReference: varchar("external_reference", { length: 512 }),
+	createdById: int("created_by_id").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("crb_room_start_idx").on(table.room, table.startsAt),
+	index("crb_location_start_idx").on(table.location, table.startsAt),
+]);
+
 // ─── Gemeinsame Terminabstimmung für Kolloquien ─────────────────────────────
 export const colloquiumSchedulingPolls = mysqlTable("colloquium_scheduling_polls", {
 	id: int().autoincrement().notNull().primaryKey(),

@@ -230,6 +230,12 @@ import {
   setPollReminderTaskUid,
   submitColloquiumSchedulingAvailability,
 } from "./colloquiumScheduling";
+import {
+  createColloquiumRoomBlock,
+  deleteColloquiumRoomBlock,
+  getColloquiumRoomBlocks,
+  updateColloquiumRoomBlock,
+} from "./colloquiumRoomBlocks";
 import { storagePut } from "./storage";
 import { sendExaminerCTAEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, defenseEligibilityEmail, directAssignmentEmail, defaultExaminerTemplate, buildExaminerReminderEmail, type Lang } from "./emailTemplates";
@@ -1933,6 +1939,43 @@ export const appRouter = router({
 
   // -  // --- Admin: User-Management & Prüfer-CRUD -------------------------------------------
   admin: router({
+    roomBlocks: router({
+      list: adminProcedure.query(async () => getColloquiumRoomBlocks()),
+      create: adminProcedure
+        .input(z.object({
+          location: z.string().trim().max(512).optional(),
+          room: z.string().trim().min(1, "Bitte geben Sie einen Raum an.").max(256),
+          startsAt: z.number().int().positive(),
+          endsAt: z.number().int().positive(),
+          reason: z.string().trim().max(512).optional(),
+        }).refine((input) => input.endsAt > input.startsAt, { message: "Das Ende der Sperrzeit muss nach dem Beginn liegen." }))
+        .mutation(async ({ ctx, input }) => {
+          const id = await createColloquiumRoomBlock({ ...input, createdById: ctx.user.id });
+          await createAuditLogEntry({ actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_ROOM_BLOCK_CREATED", metadata: { roomBlockId: id, room: input.room, location: input.location ?? null, startsAt: input.startsAt, endsAt: input.endsAt } });
+          return { id };
+        }),
+      update: adminProcedure
+        .input(z.object({
+          id: z.number().int().positive(),
+          location: z.string().trim().max(512).optional(),
+          room: z.string().trim().min(1, "Bitte geben Sie einen Raum an.").max(256),
+          startsAt: z.number().int().positive(),
+          endsAt: z.number().int().positive(),
+          reason: z.string().trim().max(512).optional(),
+        }).refine((input) => input.endsAt > input.startsAt, { message: "Das Ende der Sperrzeit muss nach dem Beginn liegen." }))
+        .mutation(async ({ ctx, input }) => {
+          await updateColloquiumRoomBlock(input);
+          await createAuditLogEntry({ actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_ROOM_BLOCK_UPDATED", metadata: { roomBlockId: input.id, room: input.room, location: input.location ?? null, startsAt: input.startsAt, endsAt: input.endsAt } });
+          return { success: true };
+        }),
+      delete: adminProcedure
+        .input(z.object({ id: z.number().int().positive() }))
+        .mutation(async ({ ctx, input }) => {
+          await deleteColloquiumRoomBlock(input.id);
+          await createAuditLogEntry({ actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_ROOM_BLOCK_DELETED", metadata: { roomBlockId: input.id } });
+          return { success: true };
+        }),
+    }),
     users: adminProcedure.query(async () => {
       return getAllUsersWithProfiles();
     }),
