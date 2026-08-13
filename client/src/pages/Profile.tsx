@@ -12,6 +12,7 @@ import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { CommissionPreferences } from "@/components/CommissionPreferences";
 import { hasExaminerProfileCapabilities } from "@shared/profileCapabilities";
+import { getAdminScopeBadgeLabel, shouldShowAdminScope } from "@shared/adminProfilePresentation";
 import { buildFullName } from "@shared/const";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
@@ -739,6 +740,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const isStudent  = profile.role === "student";
   const isExaminer = hasExaminerProfileCapabilities(profile.role, !!(profile as any)?.isExaminer);
   const isAdmin    = ["admin","pav","dean","vice_dean"].includes(profile.role);
+  const adminDepartment = (profile as any).adminDepartment as string | null | undefined;
+  const adminProgrammes = ((profile as any).adminProgrammes ?? []) as Array<{ id: number; name: string; abbreviation?: string | null; level?: string | null }>;
+  const isDepartmentAdmin = shouldShowAdminScope(profile.role);
   const displayTags = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
   // Öffentlicher Profil-Link
@@ -1031,7 +1035,12 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border" style={{ color: roleConf.color, background: roleConf.bg, borderColor: roleConf.border }}>{roleConf.label}</span>
-              {profile.department && (
+              {isDepartmentAdmin && adminDepartment ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border border-violet-200 bg-violet-50 text-violet-800">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9h.01M9 13h.01M9 17h.01" /></svg>
+                  {getAdminScopeBadgeLabel(adminDepartment)} · {getDepartmentLabel(adminDepartment) ?? adminDepartment}
+                </span>
+              ) : profile.department && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
                   {getDepartmentLabel(profile.department) ?? profile.department}
                 </span>
@@ -2079,6 +2088,59 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Verwaltung: zugewiesener Fachbereich und Studiengänge (nur lesbar) ── */}
+        {isDepartmentAdmin && (
+          <section className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+            <div className="border-b border-violet-100 bg-violet-50 px-6 py-5">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-xl bg-violet-100 p-2 text-violet-700">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9h.01M9 13h.01M9 17h.01" /></svg>
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-violet-950">Ihre Verwaltungszuständigkeit</h2>
+                  <p className="mt-1 text-sm text-violet-800">Sie bearbeiten ausschließlich Vorgänge des Ihnen durch Superadmins zugeordneten Fachbereichs.</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-6 px-6 py-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zugeordneter Fachbereich</p>
+                {adminDepartment ? (
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-800">
+                    <span className="h-2 w-2 rounded-full bg-violet-500" />{getDepartmentLabel(adminDepartment) ?? adminDepartment}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-amber-700">Noch kein Fachbereich zugewiesen. Bitte wenden Sie sich an einen Superadmin.</p>
+                )}
+                <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700">
+                  <p className="font-semibold text-gray-900">Ihre Rechte</p>
+                  <ul className="mt-2 space-y-1.5 text-xs leading-5 text-gray-600">
+                    <li>• Freigabe und Ablehnung von Studierenden sowie Erst- und Zweitprüfer:innen im Fachbereich</li>
+                    <li>• Einsicht in Anfragen und Daten des zugeordneten Fachbereichs</li>
+                    <li>• Keine Prüfungsrechte und keine Kommissionspräferenzen</li>
+                  </ul>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zugeordnete Studiengänge</p>
+                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">{adminProgrammes.length}</span>
+                </div>
+                {adminProgrammes.length > 0 ? (
+                  <ul className="mt-2 max-h-56 divide-y divide-gray-100 overflow-y-auto rounded-xl border border-gray-100 bg-white">
+                    {adminProgrammes.map((programme) => (
+                      <li key={programme.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm">
+                        <span className="min-w-0 truncate font-medium text-gray-800">{programme.name}</span>
+                        <span className="shrink-0 rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">{programme.abbreviation ?? programme.level ?? '—'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-sm text-gray-500">Für den Fachbereich sind derzeit keine Studiengänge hinterlegt.</p>}
+              </div>
+            </div>
+          </section>
         )}
 
         {/* ── Verwaltung ── */}

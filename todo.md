@@ -1501,6 +1501,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Schreiben von Prüfer:innen-Studiengängen und Kommissionspräferenzen für Verwaltungsmitarbeiter:innen serverseitig gesperrt
 - [x] Rollenbasierte Berechtigungsregeln automatisiert getestet
 
+## Verwaltungsprofil: Zuständigkeiten
+- [x] Rollen- und Fachbereichsbadge im Kopf des Verwaltungsprofils angezeigt
+- [x] Verwaltungsrechte kurz erklärt und zugeordnete Studiengänge schreibgeschützt aufgelistet
+- [x] Profilzuständigkeiten und Darstellung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

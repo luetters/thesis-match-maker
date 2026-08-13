@@ -4408,9 +4408,9 @@ export async function getProfile(userId: number) {
     let examinerResearchFocus: string | null = null;
     let allowedDepartments: string[] = [];
     let primaryDepartment: string | null = null;
-    // Admin/Superadmin haben immer Zugriff auf Prüfer-Profil-Felder
-    const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-    let isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner' || isAdminRole;
+    const isExaminerRole = user.role === 'examiner' || user.role === 'second_examiner';
+    let adminDepartment: string | null = null;
+    let adminProgrammes: Array<{ id: number; name: string; abbreviation: string | null; level: string | null }> = [];
     if (isExaminerRole) {
       try {
         const { examinerProgrammes, examinerDepartments } = await import("../drizzle/schema");
@@ -4433,6 +4433,15 @@ export async function getProfile(userId: number) {
         const primaryRow = deptRows.find((d) => d.isPrimary === 1);
         primaryDepartment = primaryRow ? primaryRow.department : (allowedDepartments[0] ?? user.department ?? null);
       } catch { /* ignore */ }
+    }
+    if (user.role === 'admin') {
+      const departmentRows = await db.select({ department: adminDepartments.department })
+        .from(adminDepartments).where(eq(adminDepartments.adminUserId, userId)).limit(1);
+      adminDepartment = departmentRows[0]?.department ?? user.department ?? null;
+      if (adminDepartment) {
+        adminProgrammes = await db.select({ id: programmes.id, name: programmes.name, abbreviation: programmes.abbreviation, level: programmes.level })
+          .from(programmes).where(eq(programmes.fachbereich, adminDepartment)).orderBy(programmes.name);
+      }
     }
     return {
       id: user.id as number,
@@ -4480,6 +4489,9 @@ export async function getProfile(userId: number) {
       examinerResearchFocus: isExaminerRole ? examinerResearchFocus : null,
       allowedDepartments: isExaminerRole ? allowedDepartments : null,
       primaryDepartment: isExaminerRole ? primaryDepartment : null,
+      // Verwaltungszuständigkeiten: schreibgeschützt aus der Superadmin-Zuweisung.
+      adminDepartment,
+      adminProgrammes,
     };
   } catch (error) {
     console.error("[Profile] Fehler beim Abrufen:", error);
