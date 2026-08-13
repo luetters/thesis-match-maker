@@ -187,6 +187,20 @@ describe("approveUserRole", () => {
     expect(auditInsertValues.length).toBeGreaterThan(0);
   });
 
+  it("speichert den Fachbereich der freigegebenen Person im Audit-Log", async () => {
+    const user = { id: 4, email: "s0457@student.htw-berlin.de", name: "Audit Fachbereich", requestedRole: "student", roleStatus: "pending", department: "FB2" };
+    const fakeDb = makeRoleDb(user);
+    const valuesSpy = vi.fn().mockResolvedValue({});
+    fakeDb.insert = vi.fn().mockReturnValue({ values: valuesSpy });
+    fakeDbHolder.db = fakeDb;
+
+    await approveUserRole(4, 99, "superadmin");
+
+    const auditEntry = valuesSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(auditEntry.action).toBe("ROLE_APPROVED");
+    expect(auditEntry.metadata).toMatchObject({ userId: 4, requestedRole: "student", department: "FB2" });
+  });
+
   it("bestätigt examiner-Rolle: users.update mit role=examiner", async () => {
     const user = { id: 5, email: "prof@htw-berlin.de", name: "Prof. Schmidt", requestedRole: "examiner", roleStatus: "pending" };
     const fakeDb = makeRoleDb(user);

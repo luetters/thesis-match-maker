@@ -606,7 +606,7 @@ export async function getAllAuditLogs() {
   if (!db) return [];
   const actorAlias = aliasedTable(users, "audit_actor_all");
   const studentAlias = aliasedTable(users, "audit_student_all");
-  return db
+  const logs = await db
     .select({
       id: auditLog.id,
       thesisRequestId: auditLog.thesisRequestId,
@@ -628,6 +628,40 @@ export async function getAllAuditLogs() {
     .leftJoin(thesisRequests, eq(auditLog.thesisRequestId, thesisRequests.id))
     .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))
     .orderBy(desc(auditLog.createdAt));
+
+  const targetUserIds = Array.from(new Set(logs
+    .map((log) => {
+      const metadata = log.metadata as { userId?: unknown } | null;
+      return typeof metadata?.userId === "number" ? metadata.userId : null;
+    })
+    .filter((userId): userId is number => userId !== null)));
+
+  if (targetUserIds.length === 0) {
+    return logs.map((log) => ({ ...log, targetDepartment: null, targetProgrammeName: null, targetProgrammeAbbreviation: null }));
+  }
+
+  const targetUsers = await db.select({
+    userId: users.id,
+    department: users.department,
+    programmeName: programmes.name,
+    programmeAbbreviation: programmes.abbreviation,
+  })
+    .from(users)
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
+    .where(inArray(users.id, targetUserIds));
+  const targetById = new Map(targetUsers.map((user) => [user.userId, user]));
+
+  return logs.map((log) => {
+    const metadata = log.metadata as { userId?: unknown; department?: unknown } | null;
+    const targetId = typeof metadata?.userId === "number" ? metadata.userId : null;
+    const target = targetId === null ? null : targetById.get(targetId);
+    return {
+      ...log,
+      targetDepartment: typeof metadata?.department === "string" ? metadata.department : target?.department ?? null,
+      targetProgrammeName: target?.programmeName ?? null,
+      targetProgrammeAbbreviation: target?.programmeAbbreviation ?? null,
+    };
+  });
 }
 
 /**
@@ -4200,8 +4234,11 @@ export async function getPendingRoleUsers() {
       staffId: users.staffId,
       phone: users.phone,
       programmeId: users.programmeId,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
     })
     .from(users)
+    .leftJoin(programmes, eq(users.programmeId, programmes.id))
     .where(eq(users.roleStatus, "pending"))
     .orderBy(desc(users.createdAt));
     return rows.map((r) => ({
@@ -4223,6 +4260,8 @@ export async function getPendingRoleUsers() {
       staffId: r.staffId,
       phone: r.phone,
       programmeId: r.programmeId,
+      programmeName: r.programmeName,
+      programmeAbbreviation: r.programmeAbbreviation,
     }));
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Abrufen ausstehender Nutzer:", error);
@@ -4321,7 +4360,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
       actorRole: confirmedByRole,
       action: "ROLE_APPROVED",
       toStatus: requestedRole,
-      metadata: { userId, requestedRole },
+      metadata: { userId, requestedRole, department: user.department },
       createdAt: nowTs,
     });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
@@ -4425,7 +4464,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
       action: "ROLE_REJECTED",
       toStatus: "rejected",
       reason: reason ?? null,
-      metadata: { userId, requestedRole },
+      metadata: { userId, requestedRole, department: user.department },
       createdAt: nowTsReject,
     });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)

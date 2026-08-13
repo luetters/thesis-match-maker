@@ -1532,6 +1532,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Freigabe und Ablehnung von Studierenden serverseitig auf den eigenen Fachbereich beschränkt
 - [x] Fachbereichsgrenze für Studierendenfreigaben automatisiert getestet
 
+## Transparente Freigabeverwaltung
+- [x] Fachbereich und Studiengang in der Freigabeliste visuell hervorgehoben
+- [x] Fachbereich der freigegebenen Person im Audit-Log angezeigt
+- [x] Superadmin-Übersicht für fachbereichsübergreifende Freigabeanfragen mit schnellen Bearbeitungsaktionen bereitgestellt
+- [x] Erweiterte Freigabeansichten und Audit-Kontext automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

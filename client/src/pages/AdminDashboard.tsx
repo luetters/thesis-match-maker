@@ -28,10 +28,11 @@ const IconSettings = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" st
 const IconStats = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
 const IconCalendar = <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 
-function useNavItems(pendingCount = 0) {
+function useNavItems(pendingCount = 0, isSuperadmin = false) {
   const { t } = useLanguage();
   return [
     { href: "/admin/role-approvals", label: `Freischaltungen${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: Icons.users },
+    ...(isSuperadmin ? [{ href: "/admin/cross-department-approvals", label: "Übergreifende Freigaben", icon: IconStats }] : []),
     { href: "/admin", label: t.admin.overview, icon: Icons.home },
     { href: "/admin/requests", label: t.admin.requests, icon: Icons.list },
     { href: "/admin/audit", label: t.admin.audit, icon: Icons.log },
@@ -733,6 +734,9 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
     SECOND_EXAMINER_ACCEPTED: "Zweitgutachter:in bestätigt",
     SECOND_EXAMINER_REJECTED: "Zweitgutachter:in abgelehnt",
     THESIS_MATCHED: "Thesis Match",
+    ROLE_APPROVED: "Rolle freigegeben",
+    ROLE_REJECTED: "Rolle abgelehnt",
+    ROLE_CHANGED: "Rolle geändert",
   };
 
   const actionColors: Record<string, string> = {
@@ -750,6 +754,9 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
     SECOND_EXAMINER_ACCEPTED: "bg-primary/10 text-primary",
     SECOND_EXAMINER_REJECTED: "bg-red-100 text-red-700",
     THESIS_MATCHED: "bg-purple-100 text-purple-700",
+    ROLE_APPROVED: "bg-green-100 text-green-700",
+    ROLE_REJECTED: "bg-red-100 text-red-700",
+    ROLE_CHANGED: "bg-blue-100 text-blue-700",
   };
 
   // Diff-Anzeige für THESIS_UPDATED_BY_STUDENT
@@ -791,7 +798,10 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
         ((log as any).actorName ?? "").toLowerCase().includes(q) ||
         (log.action ?? "").toLowerCase().includes(q) ||
         String(log.thesisRequestId ?? "").includes(q) ||
-        ((log as any).studentName ?? "").toLowerCase().includes(q);
+        ((log as any).studentName ?? "").toLowerCase().includes(q) ||
+        ((log as any).targetDepartment ?? "").toLowerCase().includes(q) ||
+        ((log as any).targetProgrammeName ?? "").toLowerCase().includes(q) ||
+        ((log as any).targetProgrammeAbbreviation ?? "").toLowerCase().includes(q);
       if (!matchesSearch) return false;
     }
     // Datumsfilter
@@ -840,7 +850,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
           </svg>
           <input
             type="text"
-            placeholder="Nach Nutzer:in, Aktion oder Anfrage-ID suchen..."
+            placeholder="Nach Nutzer:in, Fachbereich, Aktion oder Anfrage-ID suchen..."
             value={auditSearch}
             onChange={(e) => setAuditSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#76B900]/30 focus:border-[#76B900] transition-all"
@@ -887,6 +897,9 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
           <option value="SECOND_EXAMINER_ACCEPTED">Zweitgutachter:in bestätigt</option>
           <option value="SECOND_EXAMINER_REJECTED">Zweitgutachter:in abgelehnt</option>
           <option value="THESIS_MATCHED">Thesis Match</option>
+          <option value="ROLE_APPROVED">Rolle freigegeben</option>
+          <option value="ROLE_REJECTED">Rolle abgelehnt</option>
+          <option value="ROLE_CHANGED">Rolle geändert</option>
         </select>
         {/* Filter zurücksetzen */}
         {hasActiveFilter && (
@@ -911,6 +924,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">Aktion</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden sm:table-cell">Nutzer:in</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Studierende:r</th>
+              <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Fachbereich / Studiengang</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden md:table-cell">Anfrage-ID</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Von → Nach</th>
               <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3 hidden lg:table-cell">Notiz / Änderungen</th>
@@ -968,6 +982,18 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
                           : <span className="text-xs text-gray-400">—</span>
                       }
                     </td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      {(log as any).targetDepartment ? (
+                        <div className="space-y-1">
+                          <span className="inline-flex rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">{(log as any).targetDepartment}</span>
+                          {((log as any).targetProgrammeAbbreviation || (log as any).targetProgrammeName) && (
+                            <p className="max-w-[180px] truncate text-xs text-violet-700" title={(log as any).targetProgrammeName ?? undefined}>
+                              {(log as any).targetProgrammeAbbreviation ?? (log as any).targetProgrammeName}
+                            </p>
+                          )}
+                        </div>
+                      ) : <span className="text-xs text-gray-400">—</span>}
+                    </td>
                     <td className="px-5 py-3 hidden md:table-cell">
                       {log.thesisRequestId
                         ? (
@@ -1004,7 +1030,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
                   </tr>
                   {hasDiff && isExpanded && (
                     <tr key={`diff-${log.id}`} className="bg-indigo-50/60 border-b border-indigo-100">
-                      <td colSpan={6} className="px-8 py-4">
+                      <td colSpan={7} className="px-8 py-4">
                         <div className="text-xs font-semibold text-indigo-700 mb-2">Geänderte Felder im Vergleich zur vorherigen Version:</div>
                         <DiffView metadata={log.metadata} />
                       </td>
@@ -2627,7 +2653,7 @@ function LoginAttemptsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "email_templates" | "login_attempts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "cross_department_approvals" | "email_templates" | "login_attempts">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
   const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
@@ -2641,11 +2667,12 @@ export default function AdminDashboard() {
   if (user && !hasRole("admin") && !hasRole("superadmin")) return null;
   const { data: pendingForNav } = trpc.roleApproval.getPending.useQuery(undefined, { refetchInterval: 60000 });
   const pendingNavCount = (pendingForNav ?? []).length;
-  const navItems = useNavItems(pendingNavCount);
+  const navItems = useNavItems(pendingNavCount, hasRole("superadmin"));
   const currentNavItems = navItems.map((item) => ({
     ...item,
     onClick: () => {
       if (item.href === "/admin/role-approvals") setActiveTab("role_approvals");
+      else if (item.href === "/admin/cross-department-approvals") setActiveTab("cross_department_approvals");
       else if (item.href === "/admin") setActiveTab("overview");
       else if (item.href === "/admin/requests") setActiveTab("requests");
       else if (item.href === "/admin/audit") setActiveTab("audit");
@@ -2658,6 +2685,7 @@ export default function AdminDashboard() {
   }));
   const titles: Record<string, string> = {
     role_approvals: "Freischaltungen",
+    cross_department_approvals: "Übergreifende Freigaben",
     overview: "Verwaltungs-Dashboard",
     requests: "Alle Anfragen",
     audit: "Audit-Log",
@@ -2669,7 +2697,8 @@ export default function AdminDashboard() {
   };
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
-      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={true} />}
+      {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={hasRole("superadmin")} />}
+      {activeTab === "cross_department_approvals" && hasRole("superadmin") && <RoleApprovalTab canApproveAll view="cross_department" />}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} highlightId={highlightRequestId} onHighlightClear={() => setHighlightRequestId(null)} />}
       {activeTab === "audit" && <AuditLogView onNavigateToRequest={(id) => { setHighlightRequestId(id); setActiveTab("requests"); }} />}

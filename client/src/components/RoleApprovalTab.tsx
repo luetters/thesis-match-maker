@@ -50,6 +50,8 @@ type PendingUser = {
   department?: string | null;
   matrikelNr?: string | null;
   thesisType?: string | null;
+  programmeName?: string | null;
+  programmeAbbreviation?: string | null;
 };
 
 type RejectDialogState = { open: boolean; user: PendingUser | null; reason: string };
@@ -86,6 +88,7 @@ function UserCard({
   const requestedLabel = ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–";
   const requestedBadge = getRoleBadge(user.requestedRole ?? "");
   const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
+  const canActOnUser = canApproveAdministrative || user.requestedRole === "student";
 
   return (
     <Card className="border border-gray-200 shadow-none">
@@ -100,21 +103,39 @@ function UserCard({
               </span>
               <button
                 onClick={() => onEditRole(user)}
+                disabled={!canActOnUser}
                 className="text-gray-400 hover:text-blue-600 transition-colors"
-                title="Gewünschte Rolle anpassen"
+                title={canActOnUser ? "Gewünschte Rolle anpassen" : "Diese Rolle kann nur durch Superadmins bearbeitet werden"}
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {user.department ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                  <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                  Fachbereich {user.department}
+                </span>
+              ) : user.requestedRole === "student" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Fachbereich nicht angegeben
+                </span>
+              ) : null}
+              {(user.programmeAbbreviation || user.programmeName) && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-800">
+                  <BookOpen className="h-3.5 w-3.5 text-violet-600" />
+                  <span>Studiengang: {user.programmeAbbreviation ?? user.programmeName}</span>
+                  {user.programmeAbbreviation && user.programmeName && <span className="font-normal text-violet-700">· {user.programmeName}</span>}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Registriert: {registeredAt}
               </span>
-              {user.department && (
-                <span className="truncate">{user.department}</span>
-              )}
               {user.matrikelNr && (
                 <span>Matr.-Nr.: {user.matrikelNr}</span>
               )}
@@ -142,7 +163,8 @@ function UserCard({
               variant="outline"
               className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
               onClick={() => onReject(user)}
-              disabled={rejectPending}
+              disabled={rejectPending || !canActOnUser}
+              title={!canActOnUser ? "Diese Rolle kann nur durch Superadmins bearbeitet werden" : undefined}
             >
               <XCircle className="w-4 h-4" />
               Ablehnen
@@ -151,8 +173,8 @@ function UserCard({
               size="sm"
               className="gap-1.5 bg-[#76B900] hover:bg-[#5a8c00] text-white"
               onClick={() => onApprove(user, user.requestedRole === "admin" ? adminDepartment : undefined)}
-              disabled={approvePending || (user.requestedRole === "admin" && !canApproveAdministrative)}
-              title={user.requestedRole === "admin" && !canApproveAdministrative ? "Die Freischaltung der Verwaltung erfolgt ausschließlich durch Superadmins." : undefined}
+              disabled={approvePending || !canActOnUser || (user.requestedRole === "admin" && !canApproveAdministrative)}
+              title={!canActOnUser ? "Diese Rolle kann nur durch Superadmins bearbeitet werden" : user.requestedRole === "admin" && !canApproveAdministrative ? "Die Freischaltung der Verwaltung erfolgt ausschließlich durch Superadmins." : undefined}
             >
               <CheckCircle className="w-4 h-4" />
               Freischalten
@@ -201,7 +223,7 @@ function GroupSection({
         <span className="text-xs font-medium text-white bg-amber-500 rounded-full px-2 py-0.5 leading-none">
           {users.length}
         </span>
-        {users.length > 1 && !users.some((user) => user.requestedRole === "admin") && (
+        {users.length > 1 && !users.some((user) => user.requestedRole === "admin") && (canApproveAdministrative || users.every((user) => user.requestedRole === "student")) && (
           <Button
             size="sm"
             variant="outline"
@@ -233,7 +255,13 @@ function GroupSection({
 }
 
 // ── Haupt-Komponente ──────────────────────────────────────────────────────────
-export default function RoleApprovalTab({ canApproveAll = false }: { canApproveAll?: boolean }) {
+export default function RoleApprovalTab({
+  canApproveAll = false,
+  view = "standard",
+}: {
+  canApproveAll?: boolean;
+  view?: "standard" | "cross_department";
+}) {
   const utils = trpc.useUtils();
 
   const [rejectDialog, setRejectDialog] = useState<RejectDialogState>({
@@ -318,6 +346,14 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
   const groupSonstige = pending.filter(
     (u) => ![...VERWALTUNG_ROLES, ...PRUEFER_ROLES, ...STUDENT_ROLES].includes(u.requestedRole ?? u.role ?? "")
   );
+  const studentsByDepartment = ADMIN_DEPARTMENTS.map((department) => ({
+    department,
+    users: groupStudierende.filter((user) => user.department === department),
+  }));
+  const centralApprovals = pending.filter((user) => {
+    const role = user.requestedRole ?? user.role ?? "";
+    return role !== "student" || !user.department;
+  });
 
   const handleApprove = (user: PendingUser, adminDepartment?: string) => {
     approveMutation.mutate({
@@ -369,9 +405,9 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Freischaltungen</h2>
+          <h2 className="text-xl font-bold text-gray-900">{view === "cross_department" ? "Fachbereichsübergreifende Freigaben" : "Freischaltungen"}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Neue Registrierungen, die auf Freischaltung warten
+            {view === "cross_department" ? "Alle fachbereichsbezogenen Anfragen und zentral zu bearbeitenden Rollen auf einen Blick." : "Neue Registrierungen, die auf Freischaltung warten"}
           </p>
         </div>
         <Button
@@ -406,46 +442,82 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
       {/* Anfragen-Liste – nach Gruppen unterteilt */}
       {pending.length > 0 && (
         <div className="space-y-8">
-          <GroupSection
-            title="Verwaltung"
-            icon={<Building2 className="w-4 h-4 text-purple-600" />}
-            accentColor="bg-purple-100"
-            users={groupVerwaltung}
-            onApprove={handleApprove}
-            onReject={handleRejectOpen}
-            onEditRole={handleEditRoleOpen}
-            onApproveAll={(u) => handleApproveAllOpen(u, "Verwaltung")}
-            approvePending={anyPending}
-            rejectPending={rejectMutation.isPending}
-            canApproveAdministrative={canApproveAll}
-          />
-          <GroupSection
-            title="Studierende"
-            icon={<GraduationCap className="w-4 h-4 text-blue-600" />}
-            accentColor="bg-blue-100"
-            users={groupStudierende}
-            onApprove={handleApprove}
-            onReject={handleRejectOpen}
-            onEditRole={handleEditRoleOpen}
-            onApproveAll={(u) => handleApproveAllOpen(u, "Studierende")}
-            approvePending={anyPending}
-            rejectPending={rejectMutation.isPending}
-            canApproveAdministrative={canApproveAll}
-          />
-          <GroupSection
-            title="Prüfer:innen"
-            icon={<BookOpen className="w-4 h-4 text-green-600" />}
-            accentColor="bg-green-100"
-            users={groupPruefer}
-            onApprove={handleApprove}
-            onReject={handleRejectOpen}
-            onEditRole={handleEditRoleOpen}
-            onApproveAll={(u) => handleApproveAllOpen(u, "Prüfer:innen")}
-            approvePending={anyPending}
-            rejectPending={rejectMutation.isPending}
-            canApproveAdministrative={canApproveAll}
-          />
-          {groupSonstige.length > 0 && (
+          {view === "cross_department" ? (
+            <>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <strong>{groupStudierende.length}</strong> studentische Anfragen verteilen sich auf die fünf Fachbereiche. Die Aktionen in jeder Gruppe werden direkt auf die ausgewählten Personen angewendet.
+              </div>
+              {studentsByDepartment.map(({ department, users }) => (
+                <GroupSection
+                  key={department}
+                  title={`${department} · Studierende`}
+                  icon={<Building2 className="w-4 h-4 text-blue-600" />}
+                  accentColor="bg-blue-100"
+                  users={users}
+                  onApprove={handleApprove}
+                  onReject={handleRejectOpen}
+                  onEditRole={handleEditRoleOpen}
+                  onApproveAll={(u) => handleApproveAllOpen(u, `${department} · Studierende`)}
+                  approvePending={anyPending}
+                  rejectPending={rejectMutation.isPending}
+                  canApproveAdministrative={canApproveAll}
+                />
+              ))}
+              <GroupSection
+                title="Zentrale Rollenfreigaben"
+                icon={<AlertCircle className="w-4 h-4 text-amber-600" />}
+                accentColor="bg-amber-100"
+                users={centralApprovals}
+                onApprove={handleApprove}
+                onReject={handleRejectOpen}
+                onEditRole={handleEditRoleOpen}
+                onApproveAll={(u) => handleApproveAllOpen(u, "Zentrale Rollenfreigaben")}
+                approvePending={anyPending}
+                rejectPending={rejectMutation.isPending}
+                canApproveAdministrative={canApproveAll}
+              />
+            </>
+          ) : <>
+            <GroupSection
+              title="Verwaltung"
+              icon={<Building2 className="w-4 h-4 text-purple-600" />}
+              accentColor="bg-purple-100"
+              users={groupVerwaltung}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+              onEditRole={handleEditRoleOpen}
+              onApproveAll={(u) => handleApproveAllOpen(u, "Verwaltung")}
+              approvePending={anyPending}
+              rejectPending={rejectMutation.isPending}
+              canApproveAdministrative={canApproveAll}
+            />
+            <GroupSection
+              title="Studierende"
+              icon={<GraduationCap className="w-4 h-4 text-blue-600" />}
+              accentColor="bg-blue-100"
+              users={groupStudierende}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+              onEditRole={handleEditRoleOpen}
+              onApproveAll={(u) => handleApproveAllOpen(u, "Studierende")}
+              approvePending={anyPending}
+              rejectPending={rejectMutation.isPending}
+              canApproveAdministrative={canApproveAll}
+            />
+            <GroupSection
+              title="Prüfer:innen"
+              icon={<BookOpen className="w-4 h-4 text-green-600" />}
+              accentColor="bg-green-100"
+              users={groupPruefer}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+              onEditRole={handleEditRoleOpen}
+              onApproveAll={(u) => handleApproveAllOpen(u, "Prüfer:innen")}
+              approvePending={anyPending}
+              rejectPending={rejectMutation.isPending}
+              canApproveAdministrative={canApproveAll}
+            />
+            {groupSonstige.length > 0 && (
             <GroupSection
               title="Sonstige"
               icon={<User className="w-4 h-4 text-gray-600" />}
@@ -459,7 +531,8 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
               rejectPending={rejectMutation.isPending}
               canApproveAdministrative={canApproveAll}
             />
-          )}
+            )}
+          </>}
         </div>
       )}
 
@@ -468,7 +541,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
         <p>
           Bei jeder neuen Registrierung erhalten Sie automatisch eine E-Mail-Benachrichtigung.
-          Die Verwaltung kann <strong>Studierende</strong>, <strong>Erstprüfer:innen</strong> und <strong>Zweitprüfer:innen</strong> freischalten.
+          {canApproveAll ? <> Als Superadmin können Sie alle Anfragen bearbeiten und Fachbereichsrechte zuweisen.</> : <> Sie können ausschließlich <strong>Studierende Ihres zugeordneten Fachbereichs</strong> freischalten oder ablehnen.</>}
           Die gewünschte Rolle kann vor der Freischaltung über das Stift-Symbol angepasst werden.
           Nach der Freischaltung wird die Person per E-Mail informiert.
         </p>
