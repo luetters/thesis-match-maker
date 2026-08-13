@@ -90,6 +90,7 @@ import {
   getThesisStatsByPeriod,
   getThesisStatsByFaculty,
   getCrossDepartmentSupervisionOverview,
+  getCrossDepartmentSupervisionTimeSeries,
   getThesisStatsByStatus,
   getAverageProcessingTime,
   getDropoutRate,
@@ -4136,6 +4137,13 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const scopeDepartment = userHasRole(ctx.user, "superadmin") ? null : await getAdminDepartment(ctx.user.id);
         return getCrossDepartmentSupervisionOverview(scopeDepartment, input?.semester ?? null);
+      }),
+
+    // Vergleich der Volumen aller vorhandenen Semester mit derselben Fachbereichs-Sicht wie die Kreuztabelle.
+    getCrossDepartmentTimeSeries: adminProcedure
+      .query(async ({ ctx }) => {
+        const scopeDepartment = userHasRole(ctx.user, "superadmin") ? null : await getAdminDepartment(ctx.user.id);
+        return getCrossDepartmentSupervisionTimeSeries(scopeDepartment);
       }),
 
     // Statistiken pro Status

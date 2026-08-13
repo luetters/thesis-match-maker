@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCrossDepartmentSupervisionOverview } from "../shared/crossDepartmentSupervision";
+import { buildCrossDepartmentSupervisionOverview, buildCrossDepartmentSupervisionTimeSeries } from "../shared/crossDepartmentSupervision";
 
 describe("fachbereichsübergreifende Betreuungen", () => {
   const records = [
@@ -30,5 +30,15 @@ describe("fachbereichsübergreifende Betreuungen", () => {
     expect(overview.total).toBe(2);
     expect(overview.workloadByExaminerDepartment.find((item) => item.department === "FB3")).toMatchObject({ total: 1, internal: 1, incoming: 0 });
     expect(overview.workloadByExaminerDepartment.find((item) => item.department === "FB2")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
+  });
+
+  it("bereitet die Volumen je Fachbereich chronologisch für die Zeitreihe auf", () => {
+    const series = buildCrossDepartmentSupervisionTimeSeries(records);
+
+    expect(series.semesters).toEqual(["WS2026", "SS2027"]);
+    expect(series.points.map((point) => point.semester)).toEqual(["WS2026", "SS2027"]);
+    expect(series.points[0]?.workloadByExaminerDepartment.find((item) => item.department === "FB3")).toMatchObject({ total: 1, internal: 1, incoming: 0 });
+    expect(series.points[0]?.workloadByExaminerDepartment.find((item) => item.department === "FB2")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
+    expect(series.points[1]?.workloadByExaminerDepartment.find((item) => item.department === "FB4")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
   });
 });

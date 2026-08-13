@@ -2199,9 +2199,27 @@ const STATUS_COLORS: Record<string, string> = new Proxy({}, {
 function StatisticsView() {
   const { data: stats, isLoading } = trpc.admin.stats.useQuery();
   const [crossDepartmentSemester, setCrossDepartmentSemester] = useState("ALL");
+  const [timeSeriesMetric, setTimeSeriesMetric] = useState<"total" | "internal" | "incoming">("total");
   const { data: crossDepartment, isLoading: crossDepartmentLoading } = trpc.reporting.getCrossDepartmentSupervisions.useQuery(
     crossDepartmentSemester === "ALL" ? undefined : { semester: crossDepartmentSemester },
   );
+  const { data: crossDepartmentTimeSeries, isLoading: crossDepartmentTimeSeriesLoading } = trpc.reporting.getCrossDepartmentTimeSeries.useQuery();
+  const timeSeriesChartData = useMemo(() => crossDepartmentTimeSeries?.points.map((point) => ({
+    semester: point.semester,
+    ...Object.fromEntries(point.workloadByExaminerDepartment.map((volume) => [volume.department, volume[timeSeriesMetric]])),
+  })) ?? [], [crossDepartmentTimeSeries, timeSeriesMetric]);
+  const departmentSeriesColors: Record<string, string> = {
+    FB1: "#2563eb",
+    FB2: "#0f766e",
+    FB3: "#76B900",
+    FB4: "#7c3aed",
+    FB5: "#ea580c",
+  };
+  const timeSeriesMetricLabels = {
+    total: "Gesamtvolumen",
+    internal: "Interne Betreuungen",
+    incoming: "Fachbereichsübergreifende Betreuungen",
+  } as const;
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
   if (!stats) return <p className="text-sm text-gray-400 text-center py-8">Keine Statistikdaten verfügbar.</p>;
   return (
@@ -2323,6 +2341,56 @@ function StatisticsView() {
               </div>
             )}
           </>
+        )}
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Entwicklung der Betreuungsvolumina</h3>
+            <p className="mt-1 text-xs text-gray-500">Vergleich der Betreuungsvolumina je Fachbereich über alle vorhandenen Semester.</p>
+          </div>
+          <div className="inline-flex rounded-xl bg-gray-100 p-1" role="group" aria-label="Volumenart auswählen">
+            {(Object.entries(timeSeriesMetricLabels) as Array<[typeof timeSeriesMetric, string]>).map(([metric, label]) => (
+              <button
+                key={metric}
+                type="button"
+                onClick={() => setTimeSeriesMetric(metric)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${timeSeriesMetric === metric ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                aria-pressed={timeSeriesMetric === metric}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {crossDepartmentTimeSeriesLoading ? (
+          <div className="py-12 text-center text-sm text-gray-400">Zeitreihe wird geladen …</div>
+        ) : timeSeriesChartData.length === 0 ? (
+          <div className="mt-4 rounded-xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">Noch keine Betreuungen mit Semesterangabe für die Zeitreihenansicht vorhanden.</div>
+        ) : (
+          <div className="mt-5 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 20, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="semester" tick={{ fontSize: 11, fill: "#6b7280" }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
+                <RechartsTooltip />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                {crossDepartmentTimeSeries?.departments.map((department) => (
+                  <Line
+                    key={department}
+                    type="monotone"
+                    dataKey={department}
+                    name={department}
+                    stroke={departmentSeriesColors[department] ?? "#6b7280"}
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

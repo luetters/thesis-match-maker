@@ -1517,6 +1517,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Warnhinweis bei manueller fachbereichsübergreifender Zuweisung angezeigt
 - [x] Semesterfilter, Volumenkennzahlen und Warnlogik automatisiert getestet
 
+## Zeitreihe der Betreuungsvolumina
+- [x] Zeitreihendaten je Semester und Fachbereich für interne sowie übergreifende Betreuungen bereitgestellt
+- [x] Vergleichbare Zeitreihenansicht in den Verwaltungsstatistiken integriert
+- [x] Zeitreihendaten und Darstellungslogik automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

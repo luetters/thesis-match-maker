@@ -31,12 +31,13 @@ import {
   passwordResetTokens,
   InsertPasswordResetToken,
   notificationPreferences,
+  examinerDepartments,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
 import { formatConsentForExport } from "./studentConsent";
 import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
-import { buildCrossDepartmentSupervisionOverview } from "../shared/crossDepartmentSupervision";
+import { buildCrossDepartmentSupervisionOverview, buildCrossDepartmentSupervisionTimeSeries } from "../shared/crossDepartmentSupervision";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -2762,17 +2763,12 @@ export async function getThesisStatsByFaculty(
   }));
 }
 
-/**
- * Kreuztabelle der angenommenen Betreuungen nach Herkunftsfachbereich der
- * Studierenden und primärem Fachbereich der erstbetreuenden Prüfer:innen.
- */
-export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: string | null, semester?: string | null) {
+async function getCrossDepartmentSupervisionRecords() {
   const db = await getDb();
-  if (!db) return buildCrossDepartmentSupervisionOverview([], sourceDepartment, semester);
+  if (!db) return [];
 
   const examinerUser = aliasedTable(users, "cross_department_examiner");
   const studentProgramme = aliasedTable(programmes, "cross_department_student_programme");
-  const { examinerDepartments } = await import("../drizzle/schema");
   const matchedStatuses = [
     "ACCEPTED", "MATCHED", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
     "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "COMPLETED",
@@ -2796,7 +2792,7 @@ export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: s
     .leftJoin(examinerDepartments, and(eq(examinerDepartments.userId, examinerUser.id), eq(examinerDepartments.isPrimary, 1)))
     .where(and(isNotNull(thesisRequests.examinerId), inArray(thesisRequests.status, matchedStatuses as any)));
 
-  return buildCrossDepartmentSupervisionOverview(rows.map((row) => ({
+  return rows.map((row) => ({
     requestId: row.requestId,
     studentDepartment: row.studentDepartment,
     examinerDepartment: row.examinerDepartment ?? row.examinerDepartmentFallback,
@@ -2805,7 +2801,20 @@ export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: s
     title: row.title,
     status: row.status,
     targetSemester: row.targetSemester,
-  })), sourceDepartment, semester);
+  }));
+}
+
+/**
+ * Kreuztabelle der angenommenen Betreuungen nach Herkunftsfachbereich der
+ * Studierenden und primärem Fachbereich der erstbetreuenden Prüfer:innen.
+ */
+export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: string | null, semester?: string | null) {
+  return buildCrossDepartmentSupervisionOverview(await getCrossDepartmentSupervisionRecords(), sourceDepartment, semester);
+}
+
+/** Zeitreihe der Volumen interner und fachbereichsübergreifender Betreuungen. */
+export async function getCrossDepartmentSupervisionTimeSeries(sourceDepartment?: string | null) {
+  return buildCrossDepartmentSupervisionTimeSeries(await getCrossDepartmentSupervisionRecords(), sourceDepartment);
 }
 
 /**
@@ -5465,8 +5474,6 @@ async function syncPrimaryRole(userId: number): Promise<void> {
 
 
 // ─── Prüfer:innen-Fachbereich-Verwaltung ─────────────────────────────────────
-
-import { examinerDepartments } from "../drizzle/schema";
 
 /**
  * Alle Fachbereiche eines Prüfers laden.
