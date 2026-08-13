@@ -399,6 +399,9 @@ export const users = mysqlTable("users", {
 	matrikelNr: varchar("matrikel_nr", { length: 32 }),
 	thesisType: mysqlEnum("thesis_type", ['bachelor','master']),
 	enrollmentSemester: varchar("enrollment_semester", { length: 32 }),
+	// Optionale Einwilligungen der Studierenden bei der Erstregistrierung
+	plagiarismConsent: tinyint("plagiarism_consent").notNull().default(0),
+	aiReviewConsent: tinyint("ai_review_consent").notNull().default(0),
 	// Name-Felder (getrennt)
 	firstName: varchar("first_name", { length: 128 }),
 	lastName: varchar("last_name", { length: 128 }),
@@ -572,8 +575,10 @@ export const thesisDocTokens = mysqlTable("thesis_doc_tokens", {
   firstExaminerName: varchar("first_examiner_name", { length: 255 }),
   secondExaminerName: varchar("second_examiner_name", { length: 255 }),
   targetSemester: varchar("target_semester", { length: 32 }),
-  degreeType: varchar("degree_type", { length: 16 }),
-  createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+	degreeType: varchar("degree_type", { length: 16 }),
+	plagiarismConsent: tinyint("plagiarism_consent").notNull().default(0),
+	aiReviewConsent: tinyint("ai_review_consent").notNull().default(0),
+	createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
   revoked: int().default(0).notNull(),
 });
 export type InsertThesisDocToken = InferInsertModel<typeof thesisDocTokens>;

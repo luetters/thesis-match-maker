@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
+import { getStudentConsentFlags } from "./studentConsent";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 import { examinerTopics, users, thesisRequests, auditLog, userRoles } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -556,9 +557,11 @@ export const appRouter = router({
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
           programmeId: z.number().int().positive().optional(),
-          department: z.string().optional(),
-          thesisType: z.enum(["bachelor", "master"]).optional(),
-          origin: z.string().url().optional(),
+	          department: z.string().optional(),
+	          thesisType: z.enum(["bachelor", "master"]).optional(),
+	          plagiarismConsent: z.boolean().optional().default(false),
+	          aiReviewConsent: z.boolean().optional().default(false),
+	          origin: z.string().url().optional(),
           inviteToken: z.string().optional(),
         })
       )
@@ -603,6 +606,7 @@ export const appRouter = router({
         // Studierende mit @student.htw-berlin.de werden automatisch freigeschaltet
         const isStudentAutoApprove = input.role === "student" && emailLowerReg.endsWith("@student.htw-berlin.de");
         const initialRoleStatus = isStudentAutoApprove ? "approved" : "pending";
+        const consentFlags = getStudentConsentFlags(input.role, input.plagiarismConsent, input.aiReviewConsent);
         await drizzleDb.insert(users).values({
           openId,
           email: input.email.toLowerCase(),
@@ -617,9 +621,10 @@ export const appRouter = router({
           lastSignedIn: new Date().toISOString().slice(0, 19).replace('T', ' '),
           ...(input.matrikelNr ? { matrikelNr: input.matrikelNr.trim() } : {}),
           ...(input.department ? { department: input.department } : {}),
-          ...(input.thesisType ? { thesisType: input.thesisType } : {}),
-          ...(input.programmeId ? { programmeId: input.programmeId } : {}),
-        } as any).onDuplicateKeyUpdate({
+	          ...(input.thesisType ? { thesisType: input.thesisType } : {}),
+	          ...(input.programmeId ? { programmeId: input.programmeId } : {}),
+          ...consentFlags,
+	        } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
         // Eintrag in user_roles anlegen (Multi-Rollen-Modell)

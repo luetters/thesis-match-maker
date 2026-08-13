@@ -197,6 +197,8 @@ export default function Login() {
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
   const [regMatrikelNr, setRegMatrikelNr] = useState("");
+  const [regPlagiarismConsent, setRegPlagiarismConsent] = useState(false);
+  const [regAiReviewConsent, setRegAiReviewConsent] = useState(false);
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registeredRole, setRegisteredRole] = useState<string | null>(null);
@@ -376,6 +378,8 @@ export default function Login() {
       programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
       department: (selectedRole === "student") ? regFachbereich : undefined,
       thesisType: (selectedRole === "student") ? regDegreeType : undefined,
+      plagiarismConsent: selectedRole === "student" ? regPlagiarismConsent : false,
+      aiReviewConsent: selectedRole === "student" ? regAiReviewConsent : false,
       origin: window.location.origin,
       ...(inviteToken ? { inviteToken } : {}),
     };
@@ -393,6 +397,8 @@ export default function Login() {
     setRegLastName("");
     setRegEmail("");
     setRegPassword("");
+    setRegPlagiarismConsent(false);
+    setRegAiReviewConsent(false);
     setRegPasswordConfirm("");
     setResetSent(false);
     setRegistered(false);
@@ -1067,6 +1073,31 @@ export default function Login() {
                               ))}
                             </select>
                           )}
+                        </div>
+
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+                          <div>
+                            <p className="text-sm font-medium text-white/85">Optionale Einwilligungen</p>
+                            <p className="mt-0.5 text-xs text-white/45">Beide Angaben sind freiwillig und können unausgewählt bleiben.</p>
+                          </div>
+                          <label htmlFor="plagiarism-consent" className="flex cursor-pointer items-start gap-3 text-sm text-white/75">
+                            <Checkbox
+                              id="plagiarism-consent"
+                              checked={regPlagiarismConsent}
+                              onCheckedChange={(checked) => setRegPlagiarismConsent(checked === true)}
+                              className="mt-0.5 border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
+                            />
+                            <span>Ich bin mit einer Plagiatsprüfung meiner Abschlussarbeit einverstanden.</span>
+                          </label>
+                          <label htmlFor="ai-review-consent" className="flex cursor-pointer items-start gap-3 text-sm text-white/75">
+                            <Checkbox
+                              id="ai-review-consent"
+                              checked={regAiReviewConsent}
+                              onCheckedChange={(checked) => setRegAiReviewConsent(checked === true)}
+                              className="mt-0.5 border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
+                            />
+                            <span>Ich bin mit einer Prüfung meiner Abschlussarbeit auf den Einsatz von KI einverstanden.</span>
+                          </label>
                         </div>
                       </>
                     )}

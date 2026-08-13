@@ -6086,6 +6086,8 @@ export async function createThesisDocToken(data: Omit<InsertThesisDocToken, "id"
   if (targetSemester) row.targetSemester = targetSemester;
   const degreeType = n(data.degreeType);
   if (degreeType) row.degreeType = degreeType;
+  row.plagiarismConsent = data.plagiarismConsent ? 1 : 0;
+  row.aiReviewConsent = data.aiReviewConsent ? 1 : 0;
   await db.insert(thesisDocTokens).values(row as any);
 }
 

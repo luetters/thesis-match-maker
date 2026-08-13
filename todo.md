@@ -1464,6 +1464,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Administrative Zusatzrollenzuweisung auf bereits freigeschaltete Prüfer:innen beschränkt
 - [x] Rollenregeln automatisiert getestet
 
+## Einwilligungen für Studierende
+- [x] Optionale Einwilligungen zur Plagiatsprüfung und KI-Prüfung im Datenmodell gespeichert
+- [x] Zwei nicht verpflichtende Checkboxen in der studentischen Erstregistrierung integriert
+- [x] Einwilligungsstatus im Anmeldedokument ausgegeben und automatisiert getestet (6 Tests)
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

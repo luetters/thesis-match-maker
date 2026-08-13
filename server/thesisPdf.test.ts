@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getVerificationTextLayout, hasEmbeddedHtwPdfLogo } from "./thesisPdf";
+import { consentLabel, getVerificationTextLayout, hasEmbeddedHtwPdfLogo } from "./thesisPdf";
 
 describe("Thesis-PDF-Vorlage", () => {
   it("findet das eingebettete HTW-Berlin-Logo", () => {
@@ -11,5 +11,12 @@ describe("Thesis-PDF-Vorlage", () => {
     expect(layout.englishY).toBeGreaterThanOrEqual(layout.germanY + 18 + 4);
     expect(layout.urlY).toBeGreaterThanOrEqual(layout.englishY + 18 + 6);
     expect(layout.tokenY).toBeGreaterThanOrEqual(layout.urlY + 24 + 6);
+  });
+
+  it("gibt auch nicht erteilte optionale Einwilligungen eindeutig aus", () => {
+    expect(consentLabel(1)).toBe("Einverstanden / Consented");
+    expect(consentLabel(true)).toBe("Einverstanden / Consented");
+    expect(consentLabel(0)).toBe("Nicht erteilt / Not granted");
+    expect(consentLabel(false)).toBe("Nicht erteilt / Not granted");
   });
 });

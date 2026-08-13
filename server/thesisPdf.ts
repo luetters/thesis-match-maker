@@ -62,6 +62,8 @@ export interface ThesisPdfData {
   targetSemester?: string | null;
   language?: string | null;
   submissionDeadline?: string | null;
+  plagiarismConsent?: number | boolean | null;
+  aiReviewConsent?: number | boolean | null;
   verifyUrl: string;
   verifyToken: string;
   createdAt: Date;
@@ -85,6 +87,10 @@ function formatDate(d: Date): string {
 function degreeLabel(type?: string | null): string {
   if (!type) return "-";
   return type === "master" ? "Master" : "Bachelor";
+}
+
+export function consentLabel(value?: number | boolean | null): string {
+  return value ? "Einverstanden / Consented" : "Nicht erteilt / Not granted";
 }
 
 /** Entfernt alle Seiten außer der ersten aus einem PDF-Buffer */
@@ -351,6 +357,19 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         labelDe: "Datum der Erstellung",
         labelEn: "Date of Document Production",
         value: formatDate(data.createdAt),
+      }
+    );
+
+    // Optionale Einwilligungen der Studierenden aus der Erstregistrierung
+    y = drawRow(
+      "Plagiatsprüfung",
+      "Plagiarism Check",
+      consentLabel(data.plagiarismConsent),
+      y,
+      {
+        labelDe: "KI-Prüfung",
+        labelEn: "AI Review",
+        value: consentLabel(data.aiReviewConsent),
       }
     );
 
