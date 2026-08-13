@@ -4,7 +4,6 @@ import {
   colloquiumSchedulingPolls,
   colloquiumSchedulingResponses,
   colloquiumSchedulingSlots,
-  colloquiumRoomBlocks,
   colloquiums,
   thesisRequests,
   users,
@@ -186,14 +185,7 @@ export function roomLabelsConflict(candidate: { room?: string | null; location?:
   return !candidateLocation || !existingLocation || candidateLocation === existingLocation;
 }
 
-export type RoomConflict = {
-  scheduledAt: string;
-  endsAt: string;
-  room: string;
-  location: string | null;
-  source: "COLLOQUIUM" | "BLOCK";
-  reason: string | null;
-};
+export type RoomConflict = { scheduledAt: string; endsAt: string; room: string; location: string | null };
 
 export async function findColloquiumRoomConflicts(input: {
   room?: string | null;
@@ -209,13 +201,6 @@ export async function findColloquiumRoomConflicts(input: {
     room: colloquiums.room,
     location: colloquiums.location,
   }).from(colloquiums).where(eq(colloquiums.status, "SCHEDULED"));
-  const roomBlocks = await db.select({
-    startsAt: colloquiumRoomBlocks.startsAt,
-    endsAt: colloquiumRoomBlocks.endsAt,
-    room: colloquiumRoomBlocks.room,
-    location: colloquiumRoomBlocks.location,
-    reason: colloquiumRoomBlocks.reason,
-  }).from(colloquiumRoomBlocks);
   const conflicts = new Map<string, RoomConflict>();
   for (const existing of scheduled) {
     if (!roomLabelsConflict(input, existing)) continue;
@@ -231,27 +216,6 @@ export async function findColloquiumRoomConflicts(input: {
         endsAt: toDbDate(existingEndsAt),
         room: existing.room ?? input.room ?? "",
         location: existing.location ?? null,
-        source: "COLLOQUIUM",
-        reason: null,
-      });
-    }
-  }
-  for (const block of roomBlocks) {
-    if (!roomLabelsConflict(input, block)) continue;
-    const blockStartsAt = fromDbDate(block.startsAt).getTime();
-    const blockEndsAt = fromDbDate(block.endsAt).getTime();
-    for (const candidate of input.slots) {
-      const candidateStartsAt = typeof candidate.startsAt === "number" ? candidate.startsAt : fromDbDate(candidate.startsAt).getTime();
-      const candidateEndsAt = typeof candidate.endsAt === "number" ? candidate.endsAt : fromDbDate(candidate.endsAt).getTime();
-      if (!timeRangesOverlap(candidateStartsAt, candidateEndsAt, blockStartsAt, blockEndsAt)) continue;
-      const key = `block:${block.startsAt}:${block.endsAt}:${block.room}:${block.location ?? ""}`;
-      conflicts.set(key, {
-        scheduledAt: block.startsAt,
-        endsAt: block.endsAt,
-        room: block.room,
-        location: block.location ?? null,
-        source: "BLOCK",
-        reason: block.reason ?? null,
       });
     }
   }
@@ -261,8 +225,7 @@ export async function findColloquiumRoomConflicts(input: {
 function describeRoomConflict(conflicts: RoomConflict[]): string {
   const first = conflicts[0];
   const date = fromDbDate(first.scheduledAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
-  const type = first.source === "BLOCK" ? "gesperrt" : "bereits belegt";
-  return `Der Raum „${first.room}“${first.location ? ` am Ort „${first.location}“` : ""} ist am ${date} ${type}. Bitte wählen Sie einen anderen Raum oder ein anderes Zeitfenster.`;
+  return `Der Raum „${first.room}“${first.location ? ` am Ort „${first.location}“` : ""} ist am ${date} bereits belegt. Bitte wählen Sie einen anderen Raum oder ein anderes Zeitfenster.`;
 }
 
 export async function createColloquiumSchedulingPoll(input: {

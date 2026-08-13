@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar, CalendarOff, MapPin, Clock, Plus, Trash2, Download, CheckCircle, XCircle, Pencil } from "lucide-react";
+import { Calendar, MapPin, Clock, Plus, Trash2, Download, CheckCircle, XCircle } from "lucide-react";
 import { ThesisDashboardLayout } from "@/components/ThesisDashboardLayout";
 
 const statusColors: Record<string, string> = {
@@ -24,47 +24,6 @@ const statusLabels: Record<string, string> = {
   CANCELLED: "Abgesagt",
   COMPLETED: "Abgeschlossen",
 };
-
-function toDateTimeInput(value: string) {
-  return new Date(value.replace(" ", "T") + (value.endsWith("Z") ? "" : "Z")).toISOString().slice(0, 16);
-}
-
-function RoomBlocksSection() {
-  const utils = trpc.useUtils();
-  const { data: blocks, isLoading } = trpc.admin.roomBlocks.list.useQuery();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [location, setLocation] = useState("");
-  const [room, setRoom] = useState("");
-  const [startsAt, setStartsAt] = useState("");
-  const [endsAt, setEndsAt] = useState("");
-  const [reason, setReason] = useState("");
-  const resetForm = () => { setEditing(null); setLocation(""); setRoom(""); setStartsAt(""); setEndsAt(""); setReason(""); };
-  const create = trpc.admin.roomBlocks.create.useMutation({
-    onSuccess: () => { toast.success("Sperrzeit angelegt."); utils.admin.roomBlocks.list.invalidate(); setDialogOpen(false); resetForm(); },
-    onError: (error) => toast.error(error.message),
-  });
-  const update = trpc.admin.roomBlocks.update.useMutation({
-    onSuccess: () => { toast.success("Sperrzeit aktualisiert."); utils.admin.roomBlocks.list.invalidate(); setDialogOpen(false); resetForm(); },
-    onError: (error) => toast.error(error.message),
-  });
-  const remove = trpc.admin.roomBlocks.delete.useMutation({
-    onSuccess: () => { toast.success("Sperrzeit gelöscht."); utils.admin.roomBlocks.list.invalidate(); },
-    onError: (error) => toast.error(error.message),
-  });
-  const openCreate = () => { resetForm(); setDialogOpen(true); };
-  const openEdit = (block: any) => { setEditing(block); setLocation(block.location ?? ""); setRoom(block.room); setStartsAt(toDateTimeInput(block.startsAt)); setEndsAt(toDateTimeInput(block.endsAt)); setReason(block.reason ?? ""); setDialogOpen(true); };
-  const save = () => {
-    if (!room.trim() || !startsAt || !endsAt) return toast.error("Bitte Raum sowie Beginn und Ende der Sperrzeit angeben.");
-    const input = { location: location.trim() || undefined, room: room.trim(), startsAt: new Date(startsAt).getTime(), endsAt: new Date(endsAt).getTime(), reason: reason.trim() || undefined };
-    if (input.endsAt <= input.startsAt) return toast.error("Das Ende der Sperrzeit muss nach dem Beginn liegen.");
-    if (editing) update.mutate({ id: editing.id, ...input }); else create.mutate(input);
-  };
-  return <Card className="border border-amber-200"><CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0"><div><CardTitle className="flex items-center gap-2 text-base"><CalendarOff className="h-5 w-5 text-amber-600" />Raum-Sperrzeiten</CardTitle><p className="mt-1 text-sm font-normal text-gray-500">Blockieren Sie Räume für Wartung, Lehrveranstaltungen oder externe Belegungen. Sperrzeiten werden bei Terminabstimmungen automatisch berücksichtigt.</p></div><Button size="sm" onClick={openCreate} className="shrink-0 bg-amber-600 hover:bg-amber-700"><Plus className="mr-1 h-4 w-4" />Sperrzeit</Button></CardHeader><CardContent>
-    {isLoading ? <p className="text-sm text-gray-500">Sperrzeiten werden geladen…</p> : !blocks?.length ? <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">Es sind keine Raum-Sperrzeiten hinterlegt.</p> : <div className="divide-y divide-gray-100 rounded-lg border border-gray-100">{blocks.map((block: any) => <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3" key={block.id}><div className="min-w-0"><p className="font-medium text-gray-900">{[block.location, block.room].filter(Boolean).join(" – ")}</p><p className="mt-0.5 text-sm text-gray-600">{new Date(block.startsAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })} – {new Date(block.endsAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>{block.reason && <p className="mt-0.5 text-xs text-gray-500">Grund: {block.reason}</p>}</div><div className="flex items-center gap-1"><Button size="icon" variant="ghost" aria-label="Sperrzeit bearbeiten" onClick={() => openEdit(block)}><Pencil className="h-4 w-4" /></Button><Button size="icon" variant="ghost" aria-label="Sperrzeit löschen" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => { if (window.confirm("Diese Sperrzeit wirklich löschen?")) remove.mutate({ id: block.id }); }}><Trash2 className="h-4 w-4" /></Button></div></div>)}</div>}
-    <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? "Raum-Sperrzeit bearbeiten" : "Raum-Sperrzeit anlegen"}</DialogTitle></DialogHeader><div className="space-y-4 py-2"><div className="grid grid-cols-2 gap-3"><div><Label htmlFor="block-location">Gebäude / Ort</Label><Input id="block-location" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="z. B. Campus Treskowallee" /></div><div><Label htmlFor="block-room">Raum *</Label><Input id="block-room" value={room} onChange={(event) => setRoom(event.target.value)} placeholder="z. B. C 201" /></div></div><div className="grid grid-cols-2 gap-3"><div><Label htmlFor="block-start">Beginn *</Label><Input id="block-start" type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></div><div><Label htmlFor="block-end">Ende *</Label><Input id="block-end" type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></div></div><div><Label htmlFor="block-reason">Grund</Label><Textarea id="block-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="z. B. Lehrveranstaltung oder Wartung" /></div></div><DialogFooter><Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Abbrechen</Button><Button className="bg-amber-600 hover:bg-amber-700" onClick={save} disabled={create.isPending || update.isPending}>{editing ? "Speichern" : "Sperrzeit anlegen"}</Button></DialogFooter></DialogContent></Dialog>
-  </CardContent></Card>;
-}
 
 function CreateColloquiumModal({
   open,
@@ -208,8 +167,6 @@ export default function ColloquiumManagement() {
             Neues Kolloquium
           </Button>
         </div>
-
-        <RoomBlocksSection />
 
         {/* Kolloquiums-Liste */}
         {!colloquiums || colloquiums.length === 0 ? (
