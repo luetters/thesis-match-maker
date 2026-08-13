@@ -1433,6 +1433,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] routers.ts: maxSupervisions in getPublicProfile-Rückgabe ergänzt
 - [x] PublicProfile.tsx: Kapazitäts-Badge (grün/amber/rot) mit freePlaces-Berechnung und Tooltip
 
+## Studiengangsimport FB 1, FB 2, FB 4 und FB 5
+- [x] Offizielle HTW-Berlin-Kürzel und Studiengangsbezeichnungen aus dem LSF konsolidiert
+- [x] Verifizierte Importdaten auf Dubletten und Datenmodell-Kompatibilität geprüft
+- [x] 62 Studiengänge sicher in die produktive Datenbank importiert
+- [x] Datenbestand und Darstellung in den Fachbereichsfiltern geprüft
+- [x] Fachbereichsbezeichnungen in Onboarding, Profilen und Prüfer:innen-Dashboard auf die offiziellen Namen korrigiert
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

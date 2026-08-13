@@ -85,8 +85,8 @@ function getNextSemesters(): { label: string; value: string }[] {
 }
 
 const DEPT_OPTIONS = [
-  { value: "FB1", label: "FB 1 – Ingenieurwissenschaften I" },
-  { value: "FB2", label: "FB 2 – Ingenieurwissenschaften II" },
+  { value: "FB1", label: "FB 1 – Ingenieurwissenschaften – Energie und Information" },
+  { value: "FB2", label: "FB 2 – Ingenieurwissenschaften – Technik und Leben" },
   { value: "FB3", label: "FB 3 – Wirtschafts- und Rechtswissenschaften" },
   { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
   { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
@@ -2509,9 +2509,9 @@ function ProfileEdit() {
                 <option value="">Bitte wählen…</option>
                 <option value="FB1">FB 1 – Wirtschafts- und Rechtswissenschaften</option>
                 <option value="FB2">FB 2 – Informatik und Medien</option>
-                <option value="FB3">FB 3 – Ingenieurwissenschaften</option>
-                <option value="FB4">FB 4 – Gestaltung und Kultur</option>
-                <option value="FB5">FB 5 – Natur- und Technikwissenschaften</option>
+                <option value="FB3">FB 3 – Wirtschafts- und Rechtswissenschaften</option>
+                <option value="FB4">FB 4 – Informatik, Kommunikation und Wirtschaft</option>
+                <option value="FB5">FB 5 – Gestaltung und Kultur</option>
               </select>
             </div>
             <div className="sm:col-span-2">
@@ -2524,9 +2524,9 @@ function ProfileEdit() {
                 {([
                   { value: "FB1", label: "FB 1 – Wirtschafts- und Rechtswissenschaften" },
                   { value: "FB2", label: "FB 2 – Informatik und Medien" },
-                  { value: "FB3", label: "FB 3 – Ingenieurwissenschaften" },
-                  { value: "FB4", label: "FB 4 – Gestaltung und Kultur" },
-                  { value: "FB5", label: "FB 5 – Natur- und Technikwissenschaften" },
+                  { value: "FB3", label: "FB 3 – Wirtschafts- und Rechtswissenschaften" },
+                  { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
+                  { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
                 ] as const).map((fb) => {
                   const isPrimary = fb.value === form.department;
                   const isChecked = allowedDepartments.includes(fb.value);

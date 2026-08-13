@@ -505,6 +505,20 @@
       "when": 1786525438609,
       "tag": "0071_curious_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "5",
+      "when": 1786528577597,
+      "tag": "0072_strong_spyke",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1786617381340,
+      "tag": "0073_curious_tempest",
+      "breakpoints": true
     }
   ]
 }
