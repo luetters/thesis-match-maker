@@ -2,6 +2,7 @@ import { aliasedTable, and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
+  adminDepartments,
   examinerProfiles,
   examinerCommissionPreferences,
   InsertAuditLogEntry,
@@ -34,6 +35,7 @@ import {
 import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
 import { formatConsentForExport } from "./studentConsent";
+import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -4112,6 +4114,7 @@ export async function getPendingRoleUsers() {
       targetSemester: users.targetSemester,
       staffId: users.staffId,
       phone: users.phone,
+      programmeId: users.programmeId,
     })
     .from(users)
     .where(eq(users.roleStatus, "pending"))
@@ -4134,11 +4137,54 @@ export async function getPendingRoleUsers() {
       targetSemester: r.targetSemester,
       staffId: r.staffId,
       phone: r.phone,
+      programmeId: r.programmeId,
     }));
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Abrufen ausstehender Nutzer:", error);
     return [];
   }
+}
+
+/** Gibt das einzelne Fachbereichsrecht einer Verwaltungsmitarbeiter:in zurück. */
+export async function getAdminDepartment(adminUserId: number): Promise<AdminDepartment | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select({ department: adminDepartments.department })
+    .from(adminDepartments)
+    .where(eq(adminDepartments.adminUserId, adminUserId))
+    .limit(1);
+  const department = rows[0]?.department;
+  return department && isAdminDepartment(department) ? department : null;
+}
+
+/** Weist einer bereits freigeschalteten Verwaltungsmitarbeiter:in eines der fünf Fachbereichsrechte zu. */
+export async function assignAdminDepartment(adminUserId: number, department: AdminDepartment, assignedBy: number): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+  const adminRows = await db.select({ role: users.role })
+    .from(users).where(eq(users.id, adminUserId)).limit(1);
+  if (adminRows[0]?.role !== "admin") return { success: false, error: "Die Fachbereichsberechtigung kann nur Verwaltungsmitarbeiter:innen zugewiesen werden." };
+  await db.delete(adminDepartments).where(eq(adminDepartments.adminUserId, adminUserId));
+  await db.insert(adminDepartments).values({ adminUserId, department, assignedBy });
+  await db.update(users).set({ department }).where(eq(users.id, adminUserId));
+  return { success: true };
+}
+
+/** Prüft, ob eine Verwaltungsmitarbeiter:in eine Person des eigenen Fachbereichs bearbeiten darf. */
+export async function canAdminManageUser(adminUserId: number, targetUserId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [adminDepartment, targetRows] = await Promise.all([
+    getAdminDepartment(adminUserId),
+    db.select({ department: users.department }).from(users).where(eq(users.id, targetUserId)).limit(1),
+  ]);
+  return canManageDepartment(adminDepartment, targetRows[0]?.department);
+}
+
+/** Filtert ausstehende Registrierungen auf den Fachbereich der Verwaltungsmitarbeiter:in. */
+export async function getPendingRoleUsersForAdmin(adminUserId: number) {
+  const [department, pending] = await Promise.all([getAdminDepartment(adminUserId), getPendingRoleUsers()]);
+  return pending.filter((user) => canManageDepartment(department, user.department));
 }
 
 /** Bestätigt die Rolle eines Nutzers */

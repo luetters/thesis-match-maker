@@ -259,6 +259,20 @@ export const pavProgrammes = mysqlTable("pav_programmes", {
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
 
+// Verwaltungsmitarbeiter:innen haben genau ein Fachbereichsrecht (FB1 bis FB5).
+// Die berechtigten Studiengänge werden daraus dynamisch über programmes.fachbereich abgeleitet.
+export const adminDepartments = mysqlTable("admin_departments", {
+	id: int().autoincrement().notNull(),
+	adminUserId: int("admin_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	department: mysqlEnum("department", ["FB1", "FB2", "FB3", "FB4", "FB5"]).notNull(),
+	assignedBy: int("assigned_by"),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+},
+(table) => [
+	index("uq_admin_department").on(table.adminUserId),
+	index("idx_admin_department_department").on(table.department),
+]);
+
 export const programmes = mysqlTable("programmes", {
 	id: int().autoincrement().notNull(),
 	name: varchar({ length: 255 }).notNull(),

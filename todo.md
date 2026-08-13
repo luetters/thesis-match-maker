@@ -1474,6 +1474,18 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Einwilligungsstatus im Studierendenprofil übersichtlich angezeigt
 - [x] Exportformat und Profildarstellung automatisiert getestet
 
+## Verwaltungszuständigkeiten nach Fachbereich und Studiengang
+- [x] Bestehende Rollen-, Fachbereichs- und Studiengangszuordnungen für die Superadmin-Freigabe analysiert
+- [x] Fachbereichszuständigkeiten gespeichert; Studiengänge werden daraus automatisch abgeleitet
+- [x] Zuständigkeiten während der Superadmin-Freigabe erfasst und Verwaltungsrechte darauf begrenzt
+- [x] Superadmin-Oberfläche und Berechtigungsregeln automatisiert getestet
+
+## Fünf Verwaltungsrechte nach Fachbereich
+- [x] Getrennte Verwaltungsrechte für FB 1, FB 2, FB 3, FB 4 und FB 5 eingeführt
+- [x] Fachbereichsrecht während der Superadmin-Freigabe zuweisen und Studiengangsrechte daraus ableiten
+- [x] Gabi Scheibel als Verwaltung FB 3 zugeordnet
+- [x] Fachbereichsgrenzen der Verwaltungsrechte automatisiert geprüft
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

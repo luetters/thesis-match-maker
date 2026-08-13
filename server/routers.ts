@@ -132,6 +132,9 @@ import {
   updateUserStatus,
   selectUserRole,
   getPendingRoleUsers,
+  getPendingRoleUsersForAdmin,
+  canAdminManageUser,
+  assignAdminDepartment,
   approveUserRole,
   rejectUserRole,
   getUserRoleStatus,
@@ -4418,20 +4421,38 @@ export const appRouter = router({
       if (!roles.includes("admin") && !roles.includes("superadmin")) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
       }
-      return getPendingRoleUsers();
+      return roles.includes("superadmin")
+        ? getPendingRoleUsers()
+        : getPendingRoleUsersForAdmin(ctx.user.id);
     }),
 
     // Rollenanfrage bestätigen
     approve: protectedProcedure
-      .input(z.object({ userId: z.number().int().positive() }))
+      .input(z.object({
+        userId: z.number().int().positive(),
+        adminDepartment: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
+      }))
       .mutation(async ({ ctx, input }) => {
         const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
-        const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
+        const isSuperadmin = roles.includes("superadmin");
+        const targetStatus = await getUserRoleStatus(input.userId);
+        if (!isSuperadmin && !(await canAdminManageUser(ctx.user.id, input.userId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen nur Registrierungen Ihres zugewiesenen Fachbereichs bearbeiten." });
+        }
+        if (targetStatus?.requestedRole === "admin") {
+          if (!isSuperadmin) throw new TRPCError({ code: "FORBIDDEN", message: "Verwaltungsmitarbeiter:innen können nur durch Superadmins freigeschaltet werden." });
+          if (!input.adminDepartment) throw new TRPCError({ code: "BAD_REQUEST", message: "Bitte weisen Sie der Verwaltungsmitarbeiterin bzw. dem Verwaltungsmitarbeiter einen Fachbereich zu." });
+        }
+        const confirmerRole = isSuperadmin ? "superadmin" : "admin";
         const result = await approveUserRole(input.userId, ctx.user.id, confirmerRole);
         if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Bestätigen." });
+        if (targetStatus?.requestedRole === "admin" && input.adminDepartment) {
+          const scopeResult = await assignAdminDepartment(input.userId, input.adminDepartment, ctx.user.id);
+          if (!scopeResult.success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: scopeResult.error ?? "Fachbereichsberechtigung konnte nicht gespeichert werden." });
+        }
         return { success: true };
       }),
 
@@ -4445,6 +4466,9 @@ export const appRouter = router({
         const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        if (!roles.includes("superadmin") && !(await canAdminManageUser(ctx.user.id, input.userId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen nur Registrierungen Ihres zugewiesenen Fachbereichs bearbeiten." });
         }
         const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
         const result = await rejectUserRole(input.userId, ctx.user.id, confirmerRole, input.reason);
@@ -4460,6 +4484,14 @@ export const appRouter = router({
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
+        if (!roles.includes("superadmin")) {
+          const allowed = await Promise.all(input.userIds.map((userId) => canAdminManageUser(ctx.user.id, userId)));
+          if (allowed.some((value) => !value)) throw new TRPCError({ code: "FORBIDDEN", message: "Die Gruppenauswahl enthält Registrierungen außerhalb Ihres Fachbereichs." });
+        }
+        const requestedRoles = await Promise.all(input.userIds.map((userId) => getUserRoleStatus(userId)));
+        if (requestedRoles.some((status) => status?.requestedRole === "admin")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Verwaltungsmitarbeiter:innen müssen einzeln durch einen Superadmin mit Fachbereichsrecht freigeschaltet werden." });
+        }
         const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
         const results = await Promise.allSettled(
           input.userIds.map((uid) => approveUserRole(uid, ctx.user.id, confirmerRole))
@@ -4469,6 +4501,19 @@ export const appRouter = router({
         ).length;
         const failed = results.length - succeeded;
         return { succeeded, failed };
+      }),
+
+    assignAdminDepartment: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("superadmin")) throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins dürfen Fachbereichsrechte der Verwaltung ändern." });
+        const result = await assignAdminDepartment(input.userId, input.department, ctx.user.id);
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fachbereichsrecht konnte nicht gespeichert werden." });
+        return { success: true };
       }),
 
     // Gewünschte Rolle eines wartenden Nutzers vor Freischaltung anpassen
@@ -4481,6 +4526,9 @@ export const appRouter = router({
         const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        if (!roles.includes("superadmin") && !(await canAdminManageUser(ctx.user.id, input.userId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen nur Registrierungen Ihres zugewiesenen Fachbereichs bearbeiten." });
         }
         const { getDb: getDbInner } = await import("./db");
         const db = await getDbInner();

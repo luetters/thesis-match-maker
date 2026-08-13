@@ -55,6 +55,7 @@ type PendingUser = {
 type RejectDialogState = { open: boolean; user: PendingUser | null; reason: string };
 type EditRoleDialogState = { open: boolean; user: PendingUser | null; selectedRole: string };
 type ApproveAllDialogState = { open: boolean; users: PendingUser[]; groupTitle: string };
+const ADMIN_DEPARTMENTS = ["FB1", "FB2", "FB3", "FB4", "FB5"] as const;
 
 // ── Einzelne Nutzer-Karte ─────────────────────────────────────────────────────
 function UserCard({
@@ -64,14 +65,17 @@ function UserCard({
   onEditRole,
   approvePending,
   rejectPending,
+  canApproveAdministrative,
 }: {
   user: PendingUser;
-  onApprove: (id: number) => void;
+  onApprove: (user: PendingUser, adminDepartment?: string) => void;
   onReject: (u: PendingUser) => void;
   onEditRole: (u: PendingUser) => void;
   approvePending: boolean;
   rejectPending: boolean;
+  canApproveAdministrative: boolean;
 }) {
+  const [adminDepartment, setAdminDepartment] = useState<(typeof ADMIN_DEPARTMENTS)[number]>("FB3");
   const displayName = buildFullName({
     firstName: user.firstName,
     lastName: user.lastName,
@@ -119,6 +123,20 @@ function UserCard({
 
           {/* Aktions-Buttons */}
           <div className="flex items-center gap-2 shrink-0">
+            {user.requestedRole === "admin" && (
+              <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs">
+                <span className="font-medium text-purple-900">Verwaltungsrecht:</span>
+                <select
+                  value={adminDepartment}
+                  onChange={(event) => setAdminDepartment(event.target.value as (typeof ADMIN_DEPARTMENTS)[number])}
+                  disabled={!canApproveAdministrative || approvePending}
+                  className="h-7 rounded border border-purple-200 bg-white px-1.5 text-xs text-gray-800 disabled:cursor-not-allowed"
+                  aria-label="Fachbereichsrecht der Verwaltung"
+                >
+                  {ADMIN_DEPARTMENTS.map((department) => <option key={department} value={department}>Verwaltung {department}</option>)}
+                </select>
+              </div>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -132,8 +150,9 @@ function UserCard({
             <Button
               size="sm"
               className="gap-1.5 bg-[#76B900] hover:bg-[#5a8c00] text-white"
-              onClick={() => onApprove(user.id)}
-              disabled={approvePending}
+              onClick={() => onApprove(user, user.requestedRole === "admin" ? adminDepartment : undefined)}
+              disabled={approvePending || (user.requestedRole === "admin" && !canApproveAdministrative)}
+              title={user.requestedRole === "admin" && !canApproveAdministrative ? "Die Freischaltung der Verwaltung erfolgt ausschließlich durch Superadmins." : undefined}
             >
               <CheckCircle className="w-4 h-4" />
               Freischalten
@@ -157,17 +176,19 @@ function GroupSection({
   approvePending,
   rejectPending,
   accentColor,
+  canApproveAdministrative,
 }: {
   title: string;
   icon: React.ReactNode;
   users: PendingUser[];
-  onApprove: (id: number) => void;
+  onApprove: (user: PendingUser, adminDepartment?: string) => void;
   onReject: (u: PendingUser) => void;
   onEditRole: (u: PendingUser) => void;
   onApproveAll: (users: PendingUser[]) => void;
   approvePending: boolean;
   rejectPending: boolean;
   accentColor: string;
+  canApproveAdministrative: boolean;
 }) {
   if (users.length === 0) return null;
   return (
@@ -180,7 +201,7 @@ function GroupSection({
         <span className="text-xs font-medium text-white bg-amber-500 rounded-full px-2 py-0.5 leading-none">
           {users.length}
         </span>
-        {users.length > 1 && (
+        {users.length > 1 && !users.some((user) => user.requestedRole === "admin") && (
           <Button
             size="sm"
             variant="outline"
@@ -203,6 +224,7 @@ function GroupSection({
             onEditRole={onEditRole}
             approvePending={approvePending}
             rejectPending={rejectPending}
+            canApproveAdministrative={canApproveAdministrative}
           />
         ))}
       </div>
@@ -297,8 +319,11 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
     (u) => ![...VERWALTUNG_ROLES, ...PRUEFER_ROLES, ...STUDENT_ROLES].includes(u.requestedRole ?? u.role ?? "")
   );
 
-  const handleApprove = (userId: number) => {
-    approveMutation.mutate({ userId });
+  const handleApprove = (user: PendingUser, adminDepartment?: string) => {
+    approveMutation.mutate({
+      userId: user.id,
+      adminDepartment: adminDepartment as "FB1" | "FB2" | "FB3" | "FB4" | "FB5" | undefined,
+    });
   };
 
   const handleApproveAllOpen = (users: PendingUser[], groupTitle: string) => {
@@ -392,6 +417,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApproveAll={(u) => handleApproveAllOpen(u, "Verwaltung")}
             approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
+            canApproveAdministrative={canApproveAll}
           />
           <GroupSection
             title="Studierende"
@@ -404,6 +430,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApproveAll={(u) => handleApproveAllOpen(u, "Studierende")}
             approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
+            canApproveAdministrative={canApproveAll}
           />
           <GroupSection
             title="Prüfer:innen"
@@ -416,6 +443,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
             onApproveAll={(u) => handleApproveAllOpen(u, "Prüfer:innen")}
             approvePending={anyPending}
             rejectPending={rejectMutation.isPending}
+            canApproveAdministrative={canApproveAll}
           />
           {groupSonstige.length > 0 && (
             <GroupSection
@@ -429,6 +457,7 @@ export default function RoleApprovalTab({ canApproveAll = false }: { canApproveA
               onApproveAll={(u) => handleApproveAllOpen(u, "Sonstige")}
               approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
+              canApproveAdministrative={canApproveAll}
             />
           )}
         </div>

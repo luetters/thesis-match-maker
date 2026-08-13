@@ -526,6 +526,20 @@
       "when": 1786621323509,
       "tag": "0074_real_lucky_pierre",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "5",
+      "when": 1786622789888,
+      "tag": "0075_tired_night_nurse",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "5",
+      "when": 1786622977098,
+      "tag": "0076_uneven_mandrill",
+      "breakpoints": true
     }
   ]
 }
