@@ -1486,6 +1486,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Gabi Scheibel als Verwaltung FB 3 zugeordnet
 - [x] Fachbereichsgrenzen der Verwaltungsrechte automatisiert geprüft
 
+## Alle Anfragen: kombinierbare Filter
+- [x] Kombinierbare Filterdaten für Fachbereich, Studiengang, Semester, Status und Zweitgutachter-Status implementiert
+- [x] Filteroberfläche mit klaren Bereichen, aktiven Filterchips und Zurücksetzen gestaltet
+- [x] Filterkombinationen und Sortierung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

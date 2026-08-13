@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { buildFullName, getStatusBadge, getRoleBadge } from "@shared/const";
+import { getProgrammeFilterValue, matchesAdminRequestFilters, type SecondExaminerFilter } from "@shared/adminRequestFilters";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -186,6 +187,33 @@ function DeadlineModal({
 // ─── All Requests ─────────────────────────────────────────────────────────────
 type AdminSortKey = "name" | "programme" | "semester" | "title" | "date" | "status";
 
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <button onClick={onRemove} className="inline-flex items-center gap-1 rounded-full bg-[#76B900]/10 px-2.5 py-1 font-medium text-[#4c7600] hover:bg-[#76B900]/20">
+      {label}<span aria-hidden="true" className="text-base leading-none">×</span>
+    </button>
+  );
+}
+
+function FilterToggleGroup<T extends string>({
+  label, options, selected, onToggle,
+}: { label: string; options: Array<{ value: T; label: string }>; selected: T[]; onToggle: (value: T) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="w-32 text-xs font-semibold text-gray-600">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((option) => {
+          const active = selected.includes(option.value);
+          return <button key={option.value} type="button" onClick={() => onToggle(option.value)} aria-pressed={active}
+            className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${active ? "border-[#76B900] bg-[#76B900] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}>
+            {option.label}
+          </button>;
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightClear }: { userFilter?: { userId: number; userName: string } | null; onClearUserFilter?: () => void; highlightId?: number | null; onHighlightClear?: () => void } = {}) {
   const { data: requests, isLoading } = trpc.thesis.all.useQuery();
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
@@ -211,8 +239,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
     return () => clearTimeout(timer);
   }, [highlightId, isLoading]);
 
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">("ALL");
-  const [secondExaminerFilter, setSecondExaminerFilter] = useState<"ALL" | "NONE" | "REQUESTED" | "ACCEPTED" | "REJECTED">("ALL");
+  const [statusFilters, setStatusFilters] = useState<Array<"PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">>([]);
+  const [secondExaminerFilters, setSecondExaminerFilters] = useState<SecondExaminerFilter[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
+  const [programmeFilter, setProgrammeFilter] = useState("ALL");
+  const [semesterFilter, setSemesterFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<AdminSortKey>("date");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
@@ -227,6 +258,38 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
   // Log: requestId -> { sentTo, sentAt }
   const [reminderLog, setReminderLog] = useState<Record<number, { sentTo: string[]; sentAt: Date }>>({});
   const utils = trpc.useUtils();
+
+  const filterOptions = useMemo(() => {
+    const allRequests = requests ?? [];
+    const departments = Array.from(new Set(allRequests.map((request) => request.department).filter(Boolean) as string[])).sort();
+    const programmes = Array.from(new Map(allRequests
+      .filter((request) => request.programmeAbbreviation || request.programmeName)
+      .map((request) => [getProgrammeFilterValue(request as any), {
+        value: getProgrammeFilterValue(request as any),
+        label: request.programmeAbbreviation ?? request.programmeName ?? "Studiengang",
+        department: request.department ?? "",
+      }])).values())
+      .filter((programme) => departmentFilter === "ALL" || programme.department === departmentFilter)
+      .sort((a, b) => a.label.localeCompare(b.label, "de"));
+    const semesters = Array.from(new Set(allRequests.map((request) => request.targetSemester).filter(Boolean) as string[]))
+      .sort((a, b) => b.localeCompare(a, "de"));
+    return { departments, programmes, semesters };
+  }, [requests, departmentFilter]);
+
+  const toggleStatusFilter = (status: "PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED") => {
+    setStatusFilters((previous) => previous.includes(status) ? previous.filter((item) => item !== status) : [...previous, status]);
+  };
+  const toggleSecondExaminerFilter = (status: SecondExaminerFilter) => {
+    setSecondExaminerFilters((previous) => previous.includes(status) ? previous.filter((item) => item !== status) : [...previous, status]);
+  };
+  const clearAllFilters = () => {
+    setStatusFilters([]); setSecondExaminerFilters([]); setDepartmentFilter("ALL"); setProgrammeFilter("ALL"); setSemesterFilter("ALL"); setSearch("");
+  };
+  const activeFilterCount = statusFilters.length + secondExaminerFilters.length
+    + (departmentFilter !== "ALL" ? 1 : 0)
+    + (programmeFilter !== "ALL" ? 1 : 0)
+    + (semesterFilter !== "ALL" ? 1 : 0)
+    + (search.trim() ? 1 : 0);
 
   const sendReminderMutation = (trpc as any).admin.sendExaminerReminder.useMutation({
     onSuccess: (data: { sentTo: string[] }, variables: { thesisRequestId: number }) => {
@@ -251,27 +314,14 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
   });
 
   const filtered = requests?.filter((r) => {
-    const matchFilter = filter === "ALL" || r.status === filter;
-    const progLabel = r.programmeAbbreviation ?? r.programmeName ?? r.department ?? "";
-    const q = search.toLowerCase();
-    const matchSearch = !search ||
-      r.title.toLowerCase().includes(q) ||
-      progLabel.toLowerCase().includes(q) ||
-      (r.studentName ?? "").toLowerCase().includes(q) ||
-      (r.firstExaminerName ?? "").toLowerCase().includes(q) ||
-      (r.secondExaminerName ?? "").toLowerCase().includes(q) ||
-      ((r as any).wantedExaminerName ?? "").toLowerCase().includes(q);
-    // Zweitgutachter-Filter
-    let matchSecondExaminer = true;
-    if (secondExaminerFilter === "NONE") {
-      matchSecondExaminer = !r.secondExaminerId && !(r as any).wantedSecondExaminerId;
-    } else if (secondExaminerFilter === "REQUESTED") {
-      matchSecondExaminer = !!(r as any).wantedSecondExaminerId && !r.secondExaminerId && !(r as any).secondExaminerRejectedAt;
-    } else if (secondExaminerFilter === "ACCEPTED") {
-      matchSecondExaminer = !!r.secondExaminerId;
-    } else if (secondExaminerFilter === "REJECTED") {
-      matchSecondExaminer = !!(r as any).secondExaminerRejectedAt && !r.secondExaminerId;
-    }
+    const matchFilters = matchesAdminRequestFilters(r as any, {
+      statusFilters,
+      secondExaminerFilters,
+      department: departmentFilter,
+      programme: programmeFilter,
+      semester: semesterFilter,
+      search,
+    });
     // Nutzer-Filter (aus Nutzerverwaltung)
     let matchUser = true;
     if (userFilter?.userId) {
@@ -284,7 +334,7 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
         (r as any).wantedSecondExaminerId === uid
       );
     }
-    return matchFilter && matchSearch && matchSecondExaminer && matchUser;
+    return matchFilters && matchUser;
   });
 
   const sorted = filtered ? [...filtered].sort((a, b) => {
@@ -319,68 +369,62 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
           </button>
         </div>
       )}
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <div className="relative flex-1 min-w-48">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Suche nach Titel, Prüfer:in, Fachbereich..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {(["ALL", "PENDING", "ACCEPTED", "REJECTED", "MATCHED"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                filter === s ? "text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
-              style={filter === s ? { backgroundColor: "#76B900" } : undefined}
-            >
-              {s === "ALL" ? "Alle" : s === "PENDING" ? "Ausstehend" : s === "ACCEPTED" ? "Angenommen" : s === "REJECTED" ? "Abgelehnt" : "Matched"}
-            </button>
-          ))}
-        </div>
-        {/* Zweitgutachter-Filter */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Zweitgutachter:in:</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {([
-              { value: "ALL" as const, label: "Alle" },
-              { value: "NONE" as const, label: "Kein" },
-              { value: "REQUESTED" as const, label: "Angefragt" },
-              { value: "ACCEPTED" as const, label: "Zugesagt" },
-              { value: "REJECTED" as const, label: "Abgelehnt" },
-            ]).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setSecondExaminerFilter(opt.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  secondExaminerFilter === opt.value
-                    ? opt.value === "REJECTED" ? "bg-red-500 text-white border-red-500" : opt.value === "ACCEPTED" ? "bg-green-600 text-white border-green-600" : opt.value === "REQUESTED" ? "bg-amber-500 text-white border-amber-500" : opt.value === "NONE" ? "bg-gray-600 text-white border-gray-600" : "text-white border-transparent"
-                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
-                style={secondExaminerFilter === opt.value && opt.value === "ALL" ? { backgroundColor: "#76B900" } : undefined}
-              >
-                {opt.label}
-              </button>
-            ))}
+      {/* Kombinierbare Filter */}
+      <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Anfragen filtern</h2>
+            <p className="mt-0.5 text-xs text-gray-500">Alle Filter können gleichzeitig kombiniert werden.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-gray-500">{sorted.length} von {requests?.length ?? 0} Anfragen</span>
+            {activeFilterCount > 0 && <button onClick={clearAllFilters} className="text-xs font-semibold text-[#5a8c00] hover:underline">Alle Filter zurücksetzen</button>}
           </div>
         </div>
-      </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="relative xl:col-span-1">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" placeholder="Titel, Person, Fachbereich …" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2" />
+          </div>
+          <select value={departmentFilter} onChange={(e) => { setDepartmentFilter(e.target.value); setProgrammeFilter("ALL"); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
+            <option value="ALL">Alle Fachbereiche</option>
+            {filterOptions.departments.map((department) => <option key={department} value={department}>{department}</option>)}
+          </select>
+          <select value={programmeFilter} onChange={(e) => setProgrammeFilter(e.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
+            <option value="ALL">Alle Studiengänge</option>
+            {filterOptions.programmes.map((programme) => <option key={programme.value} value={programme.value}>{programme.label} · {programme.department}</option>)}
+          </select>
+          <select value={semesterFilter} onChange={(e) => setSemesterFilter(e.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
+            <option value="ALL">Alle Semester</option>
+            {filterOptions.semesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}
+          </select>
+        </div>
+        <div className="mt-4 grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
+          <FilterToggleGroup label="Status" options={[
+            { value: "PENDING", label: "Ausstehend" }, { value: "ACCEPTED", label: "Angenommen" },
+            { value: "MATCHED", label: "Matched" }, { value: "REJECTED", label: "Abgelehnt" },
+          ]} selected={statusFilters} onToggle={toggleStatusFilter} />
+          <FilterToggleGroup label="Zweitgutachter:in" options={[
+            { value: "NONE", label: "Keine:r" }, { value: "REQUESTED", label: "Angefragt" },
+            { value: "ACCEPTED", label: "Zugesagt" }, { value: "REJECTED", label: "Abgelehnt" },
+          ]} selected={secondExaminerFilters} onToggle={toggleSecondExaminerFilter} />
+        </div>
+        {activeFilterCount > 0 && <div className="mt-4 flex flex-wrap gap-1.5 border-t border-gray-100 pt-3 text-xs">
+          <span className="mr-1 self-center font-medium text-gray-500">Aktiv:</span>
+          {departmentFilter !== "ALL" && <FilterChip label={departmentFilter} onRemove={() => setDepartmentFilter("ALL")} />}
+          {programmeFilter !== "ALL" && <FilterChip label={filterOptions.programmes.find((programme) => programme.value === programmeFilter)?.label ?? "Studiengang"} onRemove={() => setProgrammeFilter("ALL")} />}
+          {semesterFilter !== "ALL" && <FilterChip label={semesterFilter} onRemove={() => setSemesterFilter("ALL")} />}
+          {statusFilters.map((status) => <FilterChip key={status} label={{ PENDING: "Ausstehend", ACCEPTED: "Angenommen", MATCHED: "Matched", REJECTED: "Abgelehnt" }[status]} onRemove={() => toggleStatusFilter(status)} />)}
+          {secondExaminerFilters.map((status) => <FilterChip key={status} label={{ NONE: "Keine:r Zweitgutachter:in", REQUESTED: "Zweitgutachter:in angefragt", ACCEPTED: "Zweitgutachter:in zugesagt", REJECTED: "Zweitgutachter:in abgelehnt" }[status]} onRemove={() => toggleSecondExaminerFilter(status)} />)}
+        </div>}
+      </section>
 
       {/* Export-Button */}
       <div className="flex justify-end mb-2">
         <button
           onClick={async () => {
             try {
-              const url = `/api/export/theses.pdf${filter !== 'ALL' ? `?status=${filter}` : ''}`;
+              const url = `/api/export/theses.pdf${statusFilters.length === 1 ? `?status=${statusFilters[0]}` : ''}`;
               const res = await fetch(url, { credentials: 'include' });
               if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }));
@@ -402,7 +446,7 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
           }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
           style={{ backgroundColor: '#76B900' }}
-          title="Aktuelle Ansicht als PDF herunterladen"
+          title="Anfragen als PDF herunterladen"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
           Als PDF exportieren
