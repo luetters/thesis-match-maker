@@ -11,6 +11,7 @@ import { Link, useLocation } from "wouter";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { CommissionPreferences } from "@/components/CommissionPreferences";
+import { hasExaminerProfileCapabilities } from "@shared/profileCapabilities";
 import { buildFullName } from "@shared/const";
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
@@ -601,8 +602,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const handleEditStart = () => {
     if (!profile) return;
     setResearchTagList(profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : []);
-    // Prüfer:innen-spezifische Felder initialisieren (auch für admin/superadmin)
-    const isExaminerLike = profile.role === 'examiner' || profile.role === 'second_examiner' || profile.role === 'admin' || profile.role === 'superadmin';
+    // Prüfer:innen-spezifische Felder nur für Personen mit Prüfungsrechten initialisieren.
+    const isExaminerLike = hasExaminerProfileCapabilities(profile.role, !!(profile as any)?.isExaminer);
     if (isExaminerLike) {
       setExaminerLanguages(Array.isArray(profile.examinerLanguages) ? profile.examinerLanguages : []);
       setExaminerKeywords(Array.isArray(profile.examinerKeywords) ? profile.examinerKeywords : []);
@@ -634,7 +635,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
     setEditMode(true);
   };
 
-  const isExaminerRole = !!(profile as any)?.isExaminer || profile?.role === 'examiner' || profile?.role === 'second_examiner' || profile?.role === 'admin' || profile?.role === 'superadmin';
+  const isExaminerRole = hasExaminerProfileCapabilities(profile?.role, !!(profile as any)?.isExaminer);
   const handleSave = () => {
     if (hasUrlErrors) {
       toast.error(p.urlSaveBlocked);
@@ -736,7 +737,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const initials = getInitials(fullName || profile.name, profile.email);
   const backLink = profile.role === "student" ? "/student" : profile.role === "examiner" ? "/examiner" : (profile.role === "admin" || profile.role === "superadmin") ? "/admin" : "/";
   const isStudent  = profile.role === "student";
-  const isExaminer = !!(profile as any)?.isExaminer || profile.role === "examiner" || profile.role === "second_examiner" || profile.role === "admin" || profile.role === "superadmin";
+  const isExaminer = hasExaminerProfileCapabilities(profile.role, !!(profile as any)?.isExaminer);
   const isAdmin    = ["admin","pav","dean","vice_dean"].includes(profile.role);
   const displayTags = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 

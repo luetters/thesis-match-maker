@@ -360,13 +360,8 @@ const profileRouterDef = router({
         const { setPreferredLanguage } = await import('./db');
         await setPreferredLanguage(ctx.user.id, input.preferredLanguage);
       }
-      // Prüfer:innen-spezifische Felder in examiner_profiles speichern
-      const isAdminUser = userHasRole(ctx.user, 'admin') || userHasRole(ctx.user, 'superadmin');
-      let isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
-      // Admin/Superadmin dürfen immer Prüfer-Felder speichern (examiner_profiles-Eintrag wird bei Bedarf angelegt)
-      if (!isExaminer && isAdminUser) {
-        isExaminer = true;
-      }
+      // Prüfer:innen-spezifische Felder sind ausschließlich Prüfer:innen vorbehalten.
+      const isExaminer = userHasRole(ctx.user, 'examiner') || userHasRole(ctx.user, 'second_examiner');
       if (isExaminer && (input.examinerLanguages !== undefined || input.examinerKeywords !== undefined || input.examinerBio !== undefined || input.examinerResearchFocus !== undefined)) {
         await upsertExaminerProfile({
           userId: ctx.user.id,
@@ -3043,8 +3038,8 @@ export const appRouter = router({
     setExaminerProgrammes: protectedProcedure
       .input(z.object({ programmeIds: z.array(z.number().int().positive()) }))
       .mutation(async ({ input, ctx }) => {
-        if (!['examiner', 'second_examiner', 'admin', 'superadmin'].includes(ctx.user.role))
-          throw new TRPCError({ code: 'FORBIDDEN' });
+        if (!userHasRole(ctx.user, 'examiner') && !userHasRole(ctx.user, 'second_examiner'))
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Nur Prüfer:innen können Studiengangsbeteiligungen verwalten.' });
         await setExaminerProgrammes(ctx.user.id, input.programmeIds);
         return { success: true };
       }),

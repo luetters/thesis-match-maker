@@ -1496,6 +1496,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] „Alle Semester“ als erste manuell wählbare Filteroption geführt
 - [x] Semesterfilterverhalten automatisiert getestet
 
+## Verwaltungsprofil ohne Prüfungsrechte
+- [x] Prüfer:innen-Studiengänge und Kommissionspräferenzen für Verwaltungsmitarbeiter:innen aus dem Profil ausgeblendet
+- [x] Schreiben von Prüfer:innen-Studiengängen und Kommissionspräferenzen für Verwaltungsmitarbeiter:innen serverseitig gesperrt
+- [x] Rollenbasierte Berechtigungsregeln automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
