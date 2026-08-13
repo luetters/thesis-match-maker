@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStudentConsentFlags } from "./studentConsent";
+import { formatConsentForExport, getStudentConsentFlags } from "./studentConsent";
 
 describe("getStudentConsentFlags", () => {
   it("speichert beide optionalen Zustimmungen für Studierende", () => {
@@ -12,5 +12,12 @@ describe("getStudentConsentFlags", () => {
 
   it("speichert Einwilligungswerte nicht für andere Registrierungsrollen", () => {
     expect(getStudentConsentFlags("examiner", true, true)).toEqual({ plagiarismConsent: 0, aiReviewConsent: 0 });
+  });
+
+  it("formatiert Einwilligungen für den Verwaltungsdatenexport eindeutig", () => {
+    expect(formatConsentForExport(1)).toBe("Ja");
+    expect(formatConsentForExport(true)).toBe("Ja");
+    expect(formatConsentForExport(0)).toBe("Nein");
+    expect(formatConsentForExport(null)).toBe("Nein");
   });
 });

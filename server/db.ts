@@ -33,6 +33,7 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
+import { formatConsentForExport } from "./studentConsent";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -2927,6 +2928,8 @@ export async function generateCSVReport(
         studentName: users.name,
         department: thesisRequests.department,
         status: thesisRequests.status,
+        plagiarismConsent: users.plagiarismConsent,
+        aiReviewConsent: users.aiReviewConsent,
         createdAt: thesisRequests.createdAt,
         updatedAt: thesisRequests.updatedAt,
       })
@@ -2939,7 +2942,7 @@ export async function generateCSVReport(
         )
       );
 
-    const header = ["ID", "Titel", "Student:in", "Fachbereich", "Status", "Erstellt", "Aktualisiert"].join(";");
+    const header = ["ID", "Titel", "Student:in", "Fachbereich", "Status", "Einwilligung Plagiatsprüfung", "Einwilligung KI-Prüfung", "Erstellt", "Aktualisiert"].join(";");
     const rows = requests.map((r) =>
       [
         r.id,
@@ -2947,6 +2950,8 @@ export async function generateCSVReport(
         r.studentName,
         r.department,
         r.status,
+        formatConsentForExport(r.plagiarismConsent),
+        formatConsentForExport(r.aiReviewConsent),
         new Date(r.createdAt).toLocaleDateString("de-DE"),
         new Date(r.updatedAt).toLocaleDateString("de-DE"),
       ].join(";")

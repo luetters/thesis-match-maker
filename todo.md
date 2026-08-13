@@ -1469,6 +1469,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zwei nicht verpflichtende Checkboxen in der studentischen Erstregistrierung integriert
 - [x] Einwilligungsstatus im Anmeldedokument ausgegeben und automatisiert getestet (6 Tests)
 
+## Einwilligungsstatus: Export und Profil
+- [x] Einwilligungen zur Plagiats- und KI-Prüfung als Spalten im Verwaltungsdatenexport ergänzt
+- [x] Einwilligungsstatus im Studierendenprofil übersichtlich angezeigt
+- [x] Exportformat und Profildarstellung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
