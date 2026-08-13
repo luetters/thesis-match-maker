@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { buildFullName } from "@shared/const";
+import { getCurrentSemesterValue } from "@shared/currentSemester";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
 import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
@@ -3954,7 +3955,7 @@ function ExaminerStatusHistory() {
   const { t } = useLanguage();
   const { data: assignments, isLoading } = trpc.thesis.examinerRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [semesterFilter, setSemesterFilter] = useState<string>("all");
+  const [semesterFilter, setSemesterFilter] = useState<string>(() => getCurrentSemesterValue());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
     { thesisRequestId: selectedId! },
@@ -3974,7 +3975,7 @@ function ExaminerStatusHistory() {
           .map((r) => r.targetSemester)
           .filter((s): s is string => !!s)
       )
-    )
+    ).concat(getCurrentSemesterValue())
   );
   // Gefilterte Zuweisungen (Semester + Suche)
   const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null; programmeAbbreviation?: string | null }>)

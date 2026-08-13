@@ -1491,6 +1491,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Filteroberfläche mit klaren Bereichen, aktiven Filterchips und Zurücksetzen gestaltet
 - [x] Filterkombinationen und Sortierung automatisiert getestet
 
+## Thesis Status: Semesterfilter
+- [x] Aktuelles Semester beim Öffnen der Statusübersicht vorausgewählt
+- [x] „Alle Semester“ als erste manuell wählbare Filteroption geführt
+- [x] Semesterfilterverhalten automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
