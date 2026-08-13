@@ -1506,6 +1506,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Verwaltungsrechte kurz erklärt und zugeordnete Studiengänge schreibgeschützt aufgelistet
 - [x] Profilzuständigkeiten und Darstellung automatisiert getestet
 
+## Fachbereichsübergreifende Betreuungen
+- [x] Hausinterne Betreuung bei der Vermittlung vor fachbereichsübergreifenden Matches priorisiert
+- [x] Fachbereichsübergreifende Matches mit Herkunfts- und Betreuungsfachbereich ausgewertet
+- [x] Kreuztabelle und Detailübersicht für die Verwaltung bereitgestellt
+- [x] Priorisierung und Auswertung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

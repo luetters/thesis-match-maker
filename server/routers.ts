@@ -89,6 +89,7 @@ import {
   upsertUser,
   getThesisStatsByPeriod,
   getThesisStatsByFaculty,
+  getCrossDepartmentSupervisionOverview,
   getThesisStatsByStatus,
   getAverageProcessingTime,
   getDropoutRate,
@@ -134,6 +135,7 @@ import {
   getPendingRoleUsers,
   getPendingRoleUsersForAdmin,
   canAdminManageUser,
+  getAdminDepartment,
   assignAdminDepartment,
   approveUserRole,
   rejectUserRole,
@@ -4126,6 +4128,13 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         return getThesisStatsByFaculty(input.startDate, input.endDate);
+      }),
+
+    // Superadmins sehen alle Fachbereiche; Verwaltungsmitarbeiter:innen nur Fälle ihrer Studierenden.
+    getCrossDepartmentSupervisions: adminProcedure
+      .query(async ({ ctx }) => {
+        const scopeDepartment = userHasRole(ctx.user, "superadmin") ? null : await getAdminDepartment(ctx.user.id);
+        return getCrossDepartmentSupervisionOverview(scopeDepartment);
       }),
 
     // Statistiken pro Status

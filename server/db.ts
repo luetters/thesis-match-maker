@@ -1,4 +1,4 @@
-import { aliasedTable, and, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -36,6 +36,7 @@ import { ENV } from "./_core/env";
 import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, buildSecondExaminerRequestEmail } from "./emailTemplates";
 import { formatConsentForExport } from "./studentConsent";
 import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
+import { buildCrossDepartmentSupervisionOverview } from "../shared/crossDepartmentSupervision";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -2759,6 +2760,52 @@ export async function getThesisStatsByFaculty(
     department,
     ...data,
   }));
+}
+
+/**
+ * Kreuztabelle der angenommenen Betreuungen nach Herkunftsfachbereich der
+ * Studierenden und primärem Fachbereich der erstbetreuenden Prüfer:innen.
+ */
+export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: string | null) {
+  const db = await getDb();
+  if (!db) return buildCrossDepartmentSupervisionOverview([], sourceDepartment);
+
+  const examinerUser = aliasedTable(users, "cross_department_examiner");
+  const studentProgramme = aliasedTable(programmes, "cross_department_student_programme");
+  const { examinerDepartments } = await import("../drizzle/schema");
+  const matchedStatuses = [
+    "ACCEPTED", "MATCHED", "FIRST_EXAMINER_ACCEPTED", "FIRST_EXAMINER_ASSIGNED",
+    "SECOND_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "SECOND_EXAMINER_SET", "COMPLETED",
+  ] as const;
+
+  const rows = await db.select({
+    requestId: thesisRequests.id,
+    studentDepartment: studentProgramme.fachbereich,
+    examinerDepartment: examinerDepartments.department,
+    examinerDepartmentFallback: examinerUser.department,
+    studentName: users.name,
+    examinerName: examinerUser.name,
+    title: thesisRequests.title,
+    status: thesisRequests.status,
+    targetSemester: thesisRequests.targetSemester,
+  })
+    .from(thesisRequests)
+    .innerJoin(users, eq(thesisRequests.studentId, users.id))
+    .innerJoin(examinerUser, eq(thesisRequests.examinerId, examinerUser.id))
+    .leftJoin(studentProgramme, eq(users.programmeId, studentProgramme.id))
+    .leftJoin(examinerDepartments, and(eq(examinerDepartments.userId, examinerUser.id), eq(examinerDepartments.isPrimary, 1)))
+    .where(and(isNotNull(thesisRequests.examinerId), inArray(thesisRequests.status, matchedStatuses as any)));
+
+  return buildCrossDepartmentSupervisionOverview(rows.map((row) => ({
+    requestId: row.requestId,
+    studentDepartment: row.studentDepartment,
+    examinerDepartment: row.examinerDepartment ?? row.examinerDepartmentFallback,
+    studentName: row.studentName,
+    examinerName: row.examinerName,
+    title: row.title,
+    status: row.status,
+    targetSemester: row.targetSemester,
+  })), sourceDepartment);
 }
 
 /**

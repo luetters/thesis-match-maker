@@ -2197,6 +2197,7 @@ const STATUS_COLORS: Record<string, string> = new Proxy({}, {
 }) as Record<string, string>;
 function StatisticsView() {
   const { data: stats, isLoading } = trpc.admin.stats.useQuery();
+  const { data: crossDepartment, isLoading: crossDepartmentLoading } = trpc.reporting.getCrossDepartmentSupervisions.useQuery();
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
   if (!stats) return <p className="text-sm text-gray-400 text-center py-8">Keine Statistikdaten verfügbar.</p>;
   return (
@@ -2251,6 +2252,56 @@ function StatisticsView() {
           </ResponsiveContainer>
         </div>
       )}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Fachbereichsübergreifende Betreuungen</h3>
+            <p className="mt-1 text-xs text-gray-500">Zeilen: Herkunftsfachbereich der Studierenden · Spalten: Fachbereich der Erstprüfer:innen</p>
+          </div>
+          {crossDepartment && (
+            <div className="flex gap-2 text-xs font-semibold">
+              <span className="rounded-full bg-[#76B900]/10 px-3 py-1.5 text-[#557f00]">{crossDepartment.internalCount} intern</span>
+              <span className="rounded-full bg-violet-50 px-3 py-1.5 text-violet-700">{crossDepartment.crossDepartmentCount} übergreifend</span>
+            </div>
+          )}
+        </div>
+        {crossDepartmentLoading ? (
+          <div className="py-8 text-center text-sm text-gray-400">Auswertung wird geladen …</div>
+        ) : !crossDepartment || crossDepartment.total === 0 ? (
+          <div className="rounded-xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">Noch keine gematchten Betreuungen für die Auswertung vorhanden.</div>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-xl border border-gray-100">
+              <table className="min-w-[740px] w-full text-sm">
+                <thead className="bg-gray-50 text-xs font-semibold text-gray-500">
+                  <tr><th className="px-4 py-3 text-left">Studierende ↓ / Prüfer:innen →</th>{crossDepartment.departments.map((department) => <th key={department} className="px-3 py-3 text-center">{department}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {crossDepartment.matrix.map((row) => (
+                    <tr key={row.studentDepartment} className="border-t border-gray-100">
+                      <th className="bg-gray-50/70 px-4 py-3 text-left text-xs font-semibold text-gray-700">{row.studentDepartment}</th>
+                      {row.values.map((cell) => <td key={cell.examinerDepartment} className={`px-3 py-3 text-center font-semibold ${cell.count > 0 && row.studentDepartment !== cell.examinerDepartment ? "bg-violet-50 text-violet-700" : cell.count > 0 ? "bg-[#76B900]/10 text-[#557f00]" : "text-gray-300"}`}>{cell.count || "—"}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {crossDepartment.cases.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Aktuelle fachbereichsübergreifende Fälle</p>
+                <div className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+                  {crossDepartment.cases.slice(0, 8).map((item) => (
+                    <div key={item.requestId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                      <div className="min-w-0"><p className="truncate font-medium text-gray-800">{item.title}</p><p className="mt-0.5 text-xs text-gray-500">{item.studentName ?? "Studierende:r"} · {item.examinerName ?? "Prüfer:in"}</p></div>
+                      <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">{item.studentDepartment} → {item.examinerDepartment}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

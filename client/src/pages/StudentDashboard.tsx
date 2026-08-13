@@ -10,6 +10,7 @@ import { useLocation, Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getStatusBadge } from "@shared/const";
+import { isInternalExaminer, sortExaminersForStudentDepartment } from "@shared/examinerDepartmentPriority";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { SummaryPdfPreviewModal } from "@/components/SummaryPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
@@ -2749,6 +2750,8 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
 function ExaminerList() {
   const { t } = useLanguage();
   const { data: examiners, isLoading } = trpc.examiner.list.useQuery();
+  const { data: myProgramme } = trpc.programmes.getMyProgramme.useQuery();
+  const studentDepartment = (myProgramme as any)?.fachbereich ?? null;
   const [search, setSearch] = useState("");
 
   const filtered = examiners?.filter((e) => {
@@ -2757,6 +2760,7 @@ function ExaminerList() {
     const q = search.toLowerCase();
     return name.includes(q) || dept.includes(q);
   });
+  const prioritised = filtered ? sortExaminersForStudentDepartment(filtered, studentDepartment) : [];
 
   if (isLoading) {
     return (
@@ -2783,13 +2787,18 @@ function ExaminerList() {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
           />
         </div>
+        {studentDepartment && (
+          <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800">
+            Prüfer:innen aus Ihrem Fachbereich ({studentDepartment}) werden zuerst angezeigt. Fachbereichsübergreifende Betreuung bleibt weiterhin möglich.
+          </p>
+        )}
       </div>
 
-      {!filtered?.length ? (
+      {!prioritised.length ? (
         <div className="text-center py-12 text-gray-500 text-sm">Keine Prüfer:innen gefunden.</div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
-          {filtered.map(({ user, profile }) => (
+          {prioritised.map(({ user, profile, ...examiner }) => (
             <div key={user.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-3">
                 <UserAvatar name={buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name })} email={user.email} avatarUrl={user.avatarUrl} size="lg" />
@@ -2800,6 +2809,9 @@ function ExaminerList() {
                   {profile?.department && (
                     <div className="text-xs text-gray-500 truncate">{profile.department}</div>
                   )}
+                  <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${isInternalExaminer({ user, profile, ...examiner }, studentDepartment) ? "bg-[#76B900]/10 text-[#557f00]" : "bg-violet-50 text-violet-700"}`}>
+                    {isInternalExaminer({ user, profile, ...examiner }, studentDepartment) ? "Eigener Fachbereich" : "Fachbereichsübergreifend"}
+                  </span>
                 </div>
               </div>
               {profile?.bio && (
