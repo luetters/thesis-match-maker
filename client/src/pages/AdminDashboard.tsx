@@ -250,7 +250,7 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
   const [deadlineModal, setDeadlineModal] = useState<{ id: number; title: string; deadline?: Date | string | null } | null>(null);
   const [adminAssignModal, setAdminAssignModal] = useState<{
     id: number; title?: string | null; studentName?: string | null;
-    targetSemester?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
+    targetSemester?: string | null; department?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
   } | null>(null);
   const [remindingId, setRemindingId] = useState<number | null>(null);
   // Cooldown: requestId -> timestamp of last sent reminder (10 min)
@@ -589,6 +589,7 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                             title: req.title,
                             studentName: req.studentName,
                             targetSemester: req.targetSemester,
+                            department: req.department,
                             examinerId: (req as any).examinerId ?? null,
                             secondExaminerId: (req as any).secondExaminerId ?? null,
                           })}
@@ -2197,7 +2198,10 @@ const STATUS_COLORS: Record<string, string> = new Proxy({}, {
 }) as Record<string, string>;
 function StatisticsView() {
   const { data: stats, isLoading } = trpc.admin.stats.useQuery();
-  const { data: crossDepartment, isLoading: crossDepartmentLoading } = trpc.reporting.getCrossDepartmentSupervisions.useQuery();
+  const [crossDepartmentSemester, setCrossDepartmentSemester] = useState("ALL");
+  const { data: crossDepartment, isLoading: crossDepartmentLoading } = trpc.reporting.getCrossDepartmentSupervisions.useQuery(
+    crossDepartmentSemester === "ALL" ? undefined : { semester: crossDepartmentSemester },
+  );
   if (isLoading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" /></div>;
   if (!stats) return <p className="text-sm text-gray-400 text-center py-8">Keine Statistikdaten verfügbar.</p>;
   return (
@@ -2265,6 +2269,14 @@ function StatisticsView() {
             </div>
           )}
         </div>
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
+          <label htmlFor="cross-department-semester" className="text-xs font-semibold text-gray-600">Semester</label>
+          <select id="cross-department-semester" value={crossDepartmentSemester} onChange={(event) => setCrossDepartmentSemester(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#76B900]/40">
+            <option value="ALL">Alle Semester</option>
+            {crossDepartment?.availableSemesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}
+          </select>
+          <span className="text-xs text-gray-500">Die Tabelle und Volumenkennzahlen werden gemeinsam zeitlich eingegrenzt.</span>
+        </div>
         {crossDepartmentLoading ? (
           <div className="py-8 text-center text-sm text-gray-400">Auswertung wird geladen …</div>
         ) : !crossDepartment || crossDepartment.total === 0 ? (
@@ -2285,6 +2297,17 @@ function StatisticsView() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Betreuungsvolumen je Fachbereich der Erstprüfer:innen</p>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                {crossDepartment.workloadByExaminerDepartment.map((volume) => (
+                  <div key={volume.department} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+                    <div className="flex items-baseline justify-between"><span className="text-xs font-semibold text-gray-600">{volume.department}</span><span className="text-lg font-bold text-gray-900">{volume.total}</span></div>
+                    <p className="mt-1 text-[11px] text-gray-500"><span className="text-[#557f00]">{volume.internal} intern</span> · <span className="text-violet-700">{volume.incoming} eingehend</span></p>
+                  </div>
+                ))}
+              </div>
             </div>
             {crossDepartment.cases.length > 0 && (
               <div className="mt-4">

@@ -4132,9 +4132,10 @@ export const appRouter = router({
 
     // Superadmins sehen alle Fachbereiche; Verwaltungsmitarbeiter:innen nur Fälle ihrer Studierenden.
     getCrossDepartmentSupervisions: adminProcedure
-      .query(async ({ ctx }) => {
+      .input(z.object({ semester: z.string().min(1).optional() }).optional())
+      .query(async ({ ctx, input }) => {
         const scopeDepartment = userHasRole(ctx.user, "superadmin") ? null : await getAdminDepartment(ctx.user.id);
-        return getCrossDepartmentSupervisionOverview(scopeDepartment);
+        return getCrossDepartmentSupervisionOverview(scopeDepartment, input?.semester ?? null);
       }),
 
     // Statistiken pro Status

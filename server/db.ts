@@ -2766,9 +2766,9 @@ export async function getThesisStatsByFaculty(
  * Kreuztabelle der angenommenen Betreuungen nach Herkunftsfachbereich der
  * Studierenden und primärem Fachbereich der erstbetreuenden Prüfer:innen.
  */
-export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: string | null) {
+export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: string | null, semester?: string | null) {
   const db = await getDb();
-  if (!db) return buildCrossDepartmentSupervisionOverview([], sourceDepartment);
+  if (!db) return buildCrossDepartmentSupervisionOverview([], sourceDepartment, semester);
 
   const examinerUser = aliasedTable(users, "cross_department_examiner");
   const studentProgramme = aliasedTable(programmes, "cross_department_student_programme");
@@ -2805,7 +2805,7 @@ export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: s
     title: row.title,
     status: row.status,
     targetSemester: row.targetSemester,
-  })), sourceDepartment);
+  })), sourceDepartment, semester);
 }
 
 /**

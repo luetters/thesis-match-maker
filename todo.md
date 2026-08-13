@@ -1512,6 +1512,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Kreuztabelle und Detailübersicht für die Verwaltung bereitgestellt
 - [x] Priorisierung und Auswertung automatisiert getestet
 
+## Steuerung übergreifender Betreuungen
+- [x] Semesterfilter und Betreuungsvolumen je Fachbereich in der Kreuztabelle ergänzt
+- [x] Warnhinweis bei manueller fachbereichsübergreifender Zuweisung angezeigt
+- [x] Semesterfilter, Volumenkennzahlen und Warnlogik automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

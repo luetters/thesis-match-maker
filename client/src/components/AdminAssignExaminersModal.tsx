@@ -12,6 +12,7 @@ interface ThesisRequest {
   title?: string | null;
   studentName?: string | null;
   targetSemester?: string | null;
+  department?: string | null;
   examinerId?: number | null;
   secondExaminerId?: number | null;
   status?: string;
@@ -198,12 +199,25 @@ export function AdminAssignExaminersModal({
     return sortList(filtered, "second");
   }, [secondExaminers, secondSearch, sortMode]);
 
+  const crossDepartmentSelections = useMemo(() => {
+    if (!thesis.department) return [] as ExaminerEntry[];
+    return [selectedFirstId, selectedSecondId]
+      .filter((id): id is number => id !== null)
+      .map((id) => (examiners as ExaminerEntry[]).find((examiner) => examiner.id === id))
+      .filter((examiner): examiner is ExaminerEntry => Boolean(examiner?.department && examiner.department !== thesis.department));
+  }, [examiners, selectedFirstId, selectedSecondId, thesis.department]);
+
   const handleAssign = () => {
     if (!selectedFirstId && !selectedSecondId) {
       toast.error(
         "Keine Auswahl – Bitte wählen Sie mindestens eine Gutachter:in aus."
       );
       return;
+    }
+    if (crossDepartmentSelections.length > 0) {
+      const names = crossDepartmentSelections.map(displayName).join(", ");
+      const proceed = window.confirm(`Fachbereichsübergreifende Betreuung: ${names} gehört/en nicht zu ${thesis.department}. Die Zuweisung bleibt möglich. Möchten Sie fortfahren?`);
+      if (!proceed) return;
     }
     assignMutation.mutate({
       thesisRequestId: thesis.id,
@@ -316,6 +330,16 @@ export function AdminAssignExaminersModal({
             )}
           </div>
         </DialogHeader>
+
+        {crossDepartmentSelections.length > 0 && (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-semibold">Fachbereichsübergreifende Zuweisung</p>
+              <p className="mt-0.5 text-xs leading-5">Die Anfrage stammt aus {thesis.department}; ausgewählte Prüfer:innen gehören zu einem anderen Fachbereich. Die Betreuung ist zulässig, wird aber in der Verwaltungsstatistik als fachbereichsübergreifend ausgewiesen.</p>
+            </div>
+          </div>
+        )}
 
         {/* Auslastungs-Zusammenfassung + Sortier-Toggle */}
         {!isLoading && (examiners as ExaminerEntry[]).length > 0 && (

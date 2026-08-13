@@ -22,4 +22,13 @@ describe("fachbereichsübergreifende Betreuungen", () => {
     expect(overview.crossDepartmentCount).toBe(1);
     expect(overview.cases[0]?.requestId).toBe(2);
   });
+
+  it("grenzt Kreuztabelle und Volumen nach Semester ein", () => {
+    const overview = buildCrossDepartmentSupervisionOverview(records, null, "WS2026");
+    expect(overview.availableSemesters).toEqual(["WS2026", "SS2027"]);
+    expect(overview.selectedSemester).toBe("WS2026");
+    expect(overview.total).toBe(2);
+    expect(overview.workloadByExaminerDepartment.find((item) => item.department === "FB3")).toMatchObject({ total: 1, internal: 1, incoming: 0 });
+    expect(overview.workloadByExaminerDepartment.find((item) => item.department === "FB2")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
+  });
 });
