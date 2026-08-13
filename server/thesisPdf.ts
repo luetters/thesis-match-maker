@@ -16,14 +16,36 @@ const __dirname = dirname(__filename);
 
 // Logo als Buffer einlesen (einmalig beim Modulstart)
 let logoBuffer: Buffer | null = null;
-const logoCandidates = ["HTW_Berlin_Logo.png", "HTW_Berlin_Logo.jpg", "ThesisMatchMaker.jpg"];
-for (const candidate of logoCandidates) {
+const logoCandidates = [
+  join(__dirname, "HTW_Berlin_Logo.png"),
+  join(__dirname, "HTW_Berlin_Logo.jpg"),
+  join(process.cwd(), "server", "HTW_Berlin_Logo.png"),
+  join(process.cwd(), "server", "HTW_Berlin_Logo.jpg"),
+];
+for (const candidatePath of logoCandidates) {
   try {
-    logoBuffer = readFileSync(join(__dirname, candidate));
+    logoBuffer = readFileSync(candidatePath);
     break;
   } catch {
     // nächste Datei versuchen
   }
+}
+
+export function getVerificationTextLayout(
+  sectionY: number,
+  germanTextHeight: number,
+  englishTextHeight: number,
+  urlTextHeight: number
+) {
+  const germanY = sectionY + 14;
+  const englishY = germanY + germanTextHeight + 4;
+  const urlY = englishY + englishTextHeight + 6;
+  const tokenY = urlY + urlTextHeight + 6;
+  return { germanY, englishY, urlY, tokenY };
+}
+
+export function hasEmbeddedHtwPdfLogo(): boolean {
+  return logoBuffer !== null;
 }
 
 export interface ThesisPdfData {
@@ -346,36 +368,24 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
       .text("Echtheitsprüfung / Document Verification", 64, y, { lineBreak: false });
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor(GRAY)
-      .text(
-        "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:",
-        64,
-        y + 14,
-        { width: qrX - 80, lineBreak: false }
-      );
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor(GRAY)
-      .text(
-        "This document can be verified by scanning the QR code or via the following link:",
-        64,
-        y + 26,
-        { width: qrX - 80, lineBreak: false }
-      );
-    doc
-      .fontSize(7.5)
-      .font("Helvetica")
-      .fillColor(HTW_GREEN)
-      .text(data.verifyUrl, 64, y + 42, { width: qrX - 80, lineBreak: false });
-    doc
-      .fontSize(7)
-      .font("Helvetica")
-      .fillColor(GRAY)
-      .text(`Verifikations-Token: ${data.verifyToken}`, 64, y + 58, { width: qrX - 80, lineBreak: false });
+    const verificationTextWidth = qrX - 84;
+    const verificationTextDe = "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:";
+    const verificationTextEn = "This document can be verified by scanning the QR code or via the following link:";
+    doc.fontSize(8).font("Helvetica");
+    const germanTextHeight = doc.heightOfString(verificationTextDe, { width: verificationTextWidth });
+    const englishTextHeight = doc.heightOfString(verificationTextEn, { width: verificationTextWidth });
+    doc.fontSize(7.5).font("Helvetica");
+    const urlTextHeight = doc.heightOfString(data.verifyUrl, { width: verificationTextWidth });
+    const verificationLayout = getVerificationTextLayout(y, germanTextHeight, englishTextHeight, urlTextHeight);
+
+    doc.fontSize(8).font("Helvetica").fillColor(GRAY)
+      .text(verificationTextDe, 64, verificationLayout.germanY, { width: verificationTextWidth });
+    doc.fontSize(8).font("Helvetica").fillColor(GRAY)
+      .text(verificationTextEn, 64, verificationLayout.englishY, { width: verificationTextWidth });
+    doc.fontSize(7.5).font("Helvetica").fillColor(HTW_GREEN)
+      .text(data.verifyUrl, 64, verificationLayout.urlY, { width: verificationTextWidth });
+    doc.fontSize(7).font("Helvetica").fillColor(GRAY)
+      .text(`Verifikations-Token: ${data.verifyToken}`, 64, verificationLayout.tokenY, { width: verificationTextWidth });
 
     // Cursor explizit unter den QR-Code setzen (kein automatischer Umbruch)
     (doc as any).y = qrY + 110;

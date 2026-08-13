@@ -1454,6 +1454,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zuständigkeiten und Grenzen der Verwaltung im Dashboard übersichtlich darstellen
 - [x] E-Mail-Auslösung und Dashboardlogik automatisiert getestet (2 Tests)
 
+## PDF: Anmeldung zur Abschlussarbeit
+- [x] Offizielles HTW-Berlin-Logo in das Studierendendokument eingebettet
+- [x] Überlappung im Verifizierungsbereich der PDF-Vorlage korrigiert
+- [x] Generiertes PDF visuell geprüft und PDF-Erzeugung automatisiert abgesichert (2 Tests)
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
