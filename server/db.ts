@@ -2804,6 +2804,31 @@ async function getCrossDepartmentSupervisionRecords() {
   }));
 }
 
+/** Aggregierte Erstbetreuungskapazitäten nach primärem Prüfer:innen-Fachbereich und Semester. */
+async function getCrossDepartmentCapacityRecords() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const examinerUser = aliasedTable(users, "cross_department_capacity_examiner");
+  const rows = await db.select({
+    examinerDepartment: examinerDepartments.department,
+    examinerDepartmentFallback: examinerUser.department,
+    semester: examinerSemesterCapacities.semester,
+    maxFirst: examinerSemesterCapacities.maxFirst,
+    adminOverride: examinerSemesterCapacities.adminOverride,
+    adminMaxFirst: examinerSemesterCapacities.adminMaxFirst,
+  })
+    .from(examinerSemesterCapacities)
+    .innerJoin(examinerUser, eq(examinerSemesterCapacities.examinerId, examinerUser.id))
+    .leftJoin(examinerDepartments, and(eq(examinerDepartments.userId, examinerUser.id), eq(examinerDepartments.isPrimary, 1)));
+
+  return rows.map((row) => ({
+    examinerDepartment: row.examinerDepartment ?? row.examinerDepartmentFallback,
+    semester: row.semester,
+    capacity: row.adminOverride === 1 && row.adminMaxFirst !== null ? row.adminMaxFirst : row.maxFirst,
+  }));
+}
+
 /**
  * Kreuztabelle der angenommenen Betreuungen nach Herkunftsfachbereich der
  * Studierenden und primärem Fachbereich der erstbetreuenden Prüfer:innen.
@@ -2812,9 +2837,13 @@ export async function getCrossDepartmentSupervisionOverview(sourceDepartment?: s
   return buildCrossDepartmentSupervisionOverview(await getCrossDepartmentSupervisionRecords(), sourceDepartment, semester);
 }
 
-/** Zeitreihe der Volumen interner und fachbereichsübergreifender Betreuungen. */
+/** Zeitreihe der Volumen und Erstbetreuungskapazitäten je Fachbereich. */
 export async function getCrossDepartmentSupervisionTimeSeries(sourceDepartment?: string | null) {
-  return buildCrossDepartmentSupervisionTimeSeries(await getCrossDepartmentSupervisionRecords(), sourceDepartment);
+  const [supervisionRecords, capacityRecords] = await Promise.all([
+    getCrossDepartmentSupervisionRecords(),
+    getCrossDepartmentCapacityRecords(),
+  ]);
+  return buildCrossDepartmentSupervisionTimeSeries(supervisionRecords, sourceDepartment, capacityRecords);
 }
 
 /**

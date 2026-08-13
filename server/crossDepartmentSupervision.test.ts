@@ -41,4 +41,18 @@ describe("fachbereichsübergreifende Betreuungen", () => {
     expect(series.points[0]?.workloadByExaminerDepartment.find((item) => item.department === "FB2")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
     expect(series.points[1]?.workloadByExaminerDepartment.find((item) => item.department === "FB4")).toMatchObject({ total: 1, internal: 0, incoming: 1 });
   });
+
+  it("stellt je Fachbereich die wirksame Erstbetreuungskapazität neben dem Volumen bereit", () => {
+    const series = buildCrossDepartmentSupervisionTimeSeries(records, null, [
+      { examinerDepartment: "FB1", semester: "SoSe2026", capacity: 2 },
+      { examinerDepartment: "FB3", semester: "WS2026", capacity: 5 },
+      { examinerDepartment: "FB2", semester: "WS2026", capacity: 1 },
+      { examinerDepartment: "FB4", semester: "SS2027", capacity: 4 },
+    ]);
+
+    expect(series.semesters).toEqual(["SoSe2026", "WS2026", "SS2027"]);
+    expect(series.points[0]?.capacityByExaminerDepartment.find((item) => item.department === "FB1")).toEqual({ department: "FB1", capacity: 2 });
+    expect(series.points[1]?.capacityByExaminerDepartment.find((item) => item.department === "FB3")).toEqual({ department: "FB3", capacity: 5 });
+    expect(series.points[2]?.capacityByExaminerDepartment.find((item) => item.department === "FB4")).toEqual({ department: "FB4", capacity: 4 });
+  });
 });

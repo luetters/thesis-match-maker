@@ -2200,6 +2200,7 @@ function StatisticsView() {
   const { data: stats, isLoading } = trpc.admin.stats.useQuery();
   const [crossDepartmentSemester, setCrossDepartmentSemester] = useState("ALL");
   const [timeSeriesMetric, setTimeSeriesMetric] = useState<"total" | "internal" | "incoming">("total");
+  const [capacityComparisonDepartment, setCapacityComparisonDepartment] = useState<"ALL" | "FB1" | "FB2" | "FB3" | "FB4" | "FB5">("ALL");
   const { data: crossDepartment, isLoading: crossDepartmentLoading } = trpc.reporting.getCrossDepartmentSupervisions.useQuery(
     crossDepartmentSemester === "ALL" ? undefined : { semester: crossDepartmentSemester },
   );
@@ -2208,6 +2209,15 @@ function StatisticsView() {
     semester: point.semester,
     ...Object.fromEntries(point.workloadByExaminerDepartment.map((volume) => [volume.department, volume[timeSeriesMetric]])),
   })) ?? [], [crossDepartmentTimeSeries, timeSeriesMetric]);
+  const capacityComparisonData = useMemo(() => crossDepartmentTimeSeries?.points.map((point) => {
+    const workload = capacityComparisonDepartment === "ALL"
+      ? point.workloadByExaminerDepartment.reduce((sum, item) => sum + item.total, 0)
+      : point.workloadByExaminerDepartment.find((item) => item.department === capacityComparisonDepartment)?.total ?? 0;
+    const capacity = capacityComparisonDepartment === "ALL"
+      ? point.capacityByExaminerDepartment.reduce((sum, item) => sum + item.capacity, 0)
+      : point.capacityByExaminerDepartment.find((item) => item.department === capacityComparisonDepartment)?.capacity ?? 0;
+    return { semester: point.semester, workload, capacity };
+  }) ?? [], [capacityComparisonDepartment, crossDepartmentTimeSeries]);
   const departmentSeriesColors: Record<string, string> = {
     FB1: "#2563eb",
     FB2: "#0f766e",
@@ -2390,6 +2400,41 @@ function StatisticsView() {
                 ))}
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        )}
+        {timeSeriesChartData.length > 0 && (
+          <div className="mt-8 border-t border-gray-100 pt-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h4 className="font-semibold text-gray-900">Betreuungsvolumen im Vergleich zur Kapazität</h4>
+                <p className="mt-1 text-xs text-gray-500">Die gestrichelte Linie zeigt die wirksame Erstbetreuungskapazität; administrative Überschreibungen haben Vorrang.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label htmlFor="capacity-comparison-department" className="text-xs font-semibold text-gray-600">Fachbereich</label>
+                <select
+                  id="capacity-comparison-department"
+                  value={capacityComparisonDepartment}
+                  onChange={(event) => setCapacityComparisonDepartment(event.target.value as typeof capacityComparisonDepartment)}
+                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#76B900]/40"
+                >
+                  <option value="ALL">Alle Fachbereiche</option>
+                  {crossDepartmentTimeSeries?.departments.map((department) => <option key={department} value={department}>{department}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="mt-4 h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={capacityComparisonData} margin={{ top: 8, right: 20, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="semester" tick={{ fontSize: 11, fill: "#6b7280" }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
+                  <RechartsTooltip />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                  <Line type="monotone" dataKey="workload" name="Tatsächliches Betreuungsvolumen" stroke="#76B900" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="capacity" name="Wirksame Erstbetreuungskapazität" stroke="#475569" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>

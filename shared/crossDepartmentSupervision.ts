@@ -19,6 +19,17 @@ export type ExaminerDepartmentWorkload = {
   incoming: number;
 };
 
+export type CrossDepartmentCapacityRecord = {
+  examinerDepartment: string | null;
+  semester: string;
+  capacity: number;
+};
+
+export type ExaminerDepartmentCapacity = {
+  department: HtwDepartment;
+  capacity: number;
+};
+
 function normaliseDepartment(value: string | null): HtwDepartment | null {
   return HTW_DEPARTMENTS.includes(value as HtwDepartment) ? value as HtwDepartment : null;
 }
@@ -29,6 +40,15 @@ function buildWorkloadByExaminerDepartment(records: CrossDepartmentSupervisionRe
     total: records.filter((record) => record.examinerDepartment === department).length,
     internal: records.filter((record) => record.examinerDepartment === department && record.studentDepartment === department).length,
     incoming: records.filter((record) => record.examinerDepartment === department && record.studentDepartment !== department).length,
+  }));
+}
+
+function buildCapacityByExaminerDepartment(records: CrossDepartmentCapacityRecord[]): ExaminerDepartmentCapacity[] {
+  return HTW_DEPARTMENTS.map((department) => ({
+    department,
+    capacity: records
+      .filter((record) => record.examinerDepartment === department)
+      .reduce((sum, record) => sum + record.capacity, 0),
   }));
 }
 
@@ -84,10 +104,15 @@ export function buildCrossDepartmentSupervisionOverview(
 export function buildCrossDepartmentSupervisionTimeSeries(
   records: CrossDepartmentSupervisionRecord[],
   sourceDepartment?: string | null,
+  capacityRecords: CrossDepartmentCapacityRecord[] = [],
 ) {
   const scoped = records.filter((record) => !sourceDepartment || record.studentDepartment === sourceDepartment);
   const valid = scoped.filter((record) => normaliseDepartment(record.studentDepartment) && normaliseDepartment(record.examinerDepartment));
-  const semesters = sortSemestersChronologically(Array.from(new Set(valid.map((record) => record.targetSemester).filter((value): value is string => Boolean(value)))));
+  const validCapacityRecords = capacityRecords.filter((record) => normaliseDepartment(record.examinerDepartment));
+  const semesters = sortSemestersChronologically(Array.from(new Set([
+    ...valid.map((record) => record.targetSemester).filter((value): value is string => Boolean(value)),
+    ...validCapacityRecords.map((record) => record.semester),
+  ])));
 
   return {
     departments: HTW_DEPARTMENTS,
@@ -95,6 +120,7 @@ export function buildCrossDepartmentSupervisionTimeSeries(
     points: semesters.map((semester) => ({
       semester,
       workloadByExaminerDepartment: buildWorkloadByExaminerDepartment(valid.filter((record) => record.targetSemester === semester)),
+      capacityByExaminerDepartment: buildCapacityByExaminerDepartment(validCapacityRecords.filter((record) => record.semester === semester)),
     })),
   };
 }

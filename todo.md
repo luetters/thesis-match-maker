@@ -1522,6 +1522,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Vergleichbare Zeitreihenansicht in den Verwaltungsstatistiken integriert
 - [x] Zeitreihendaten und Darstellungslogik automatisiert getestet
 
+## Zeitreihe: Kapazitätsvergleich
+- [x] Semesterkapazitäten je Fachbereich mit dem tatsächlichen Betreuungsvolumen zusammengeführt
+- [x] Zusätzliche Kapazitätslinie in der Zeitreihenansicht dargestellt
+- [x] Kapazitätsvergleich und Anzeige automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
