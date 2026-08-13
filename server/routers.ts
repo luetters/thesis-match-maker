@@ -1,6 +1,7 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 import { examinerTopics, users, thesisRequests, auditLog, userRoles } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -686,12 +687,13 @@ export const appRouter = router({
             };
             const roleLabel = roleLabels[input.role] ?? input.role;
             const siteOrigin = input.origin ?? "https://thesis.htw-berlin.com";
-            const adminUrl = `${siteOrigin}/admin`;
+            const approvalNotice = getRegistrationApprovalNotice(input.role);
+            const adminUrl = `${siteOrigin}${approvalNotice.dashboardPath}`;
             const logoUrl = `${siteOrigin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
             for (const adminEmail of superadminEmails) {
               await sendEmail({
                 to: adminEmail,
-                subject: `[HTW Berlin Thesis Match Maker] Neue Registrierung: ${input.name} (${roleLabel})`,
+                subject: `[HTW Berlin Thesis Match Maker] ${approvalNotice.subjectPrefix}: ${input.name} (${roleLabel})`,
                 html: `<!DOCTYPE html>
 <html lang="de">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -705,16 +707,16 @@ export const appRouter = router({
         <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Fachbereich 3</span>
       </td></tr>
       <tr><td style="padding:32px">
-        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Neue Registrierung wartet auf Freischaltung</h2>
-        <p style="color:#374151;font-size:14px;margin:0 0 20px 0">Eine neue Person hat sich registriert und wartet auf Ihre Freischaltung:</p>
+        <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">${approvalNotice.headline}</h2>
+        <p style="color:#374151;font-size:14px;margin:0 0 20px 0">${approvalNotice.intro}</p>
         <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden">
           <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">Name</td><td style="padding:12px 16px;color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb">${input.name}</td></tr>
           <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">E-Mail</td><td style="padding:12px 16px;font-size:14px;border-bottom:1px solid #e5e7eb"><a href="mailto:${input.email}" style="color:#76B900;text-decoration:none">${input.email}</a></td></tr>
           <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%">Gewünschte Rolle</td><td style="padding:12px 16px;color:#111827;font-size:14px">${roleLabel}</td></tr>
         </table>
-        <p style="color:#374151;font-size:14px;margin:24px 0 20px 0">Bitte melden Sie sich im Admin-Dashboard an, um den Zugang freizuschalten oder abzulehnen.</p>
+        <p style="color:#374151;font-size:14px;margin:24px 0 20px 0">${approvalNotice.instruction}</p>
         <p style="margin:0 0 32px 0">
-          <a href="${adminUrl}" style="background:#76B900;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;font-weight:bold">Zum Admin-Dashboard</a>
+          <a href="${adminUrl}" style="background:#76B900;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;font-weight:bold">${approvalNotice.actionLabel}</a>
         </p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
         <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">⚠️ <strong>Hinweis:</strong> Diese Nachricht wurde automatisch generiert.</p>
@@ -723,7 +725,7 @@ export const appRouter = router({
   </td></tr>
 </table>
 </body></html>`,
-                text: `Neue Registrierung wartet auf Freischaltung\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\nBitte melden Sie sich im Admin-Dashboard an:\n${adminUrl}`,
+                text: `${approvalNotice.headline}\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\n${approvalNotice.instruction}\n${adminUrl}`,
               });
             }
           } catch (emailErr) {

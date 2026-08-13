@@ -1788,6 +1788,34 @@ function Overview() {
         ))}
       </div>
 
+      <section className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm" aria-labelledby="admin-responsibilities-title">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-semibold">i</div>
+          <div className="min-w-0 flex-1">
+            <h2 id="admin-responsibilities-title" className="font-semibold text-gray-900">Ihre Zuständigkeiten in der Verwaltung</h2>
+            <p className="text-sm text-gray-500 mt-1">Sie bearbeiten operative Vorgänge. Rollen mit erweiterten Systemrechten werden ausschließlich durch Superadmins verwaltet.</p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 mt-4 text-sm">
+          <div className="rounded-xl bg-[#76B900]/5 border border-[#76B900]/20 p-4">
+            <p className="font-semibold text-[#4d7900]">Sie können freigeben oder ablehnen</p>
+            <ul className="mt-2 space-y-1 text-gray-700 list-disc list-inside">
+              <li>Studierende</li>
+              <li>Erstprüfer:innen</li>
+              <li>Zweitprüfer:innen</li>
+            </ul>
+          </div>
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
+            <p className="font-semibold text-amber-800">Superadmin-Freigabe erforderlich</p>
+            <ul className="mt-2 space-y-1 text-gray-700 list-disc list-inside">
+              <li>Verwaltungsmitarbeiter:innen</li>
+              <li>PA-Vorsitz, Dekanat und Studiengangsleitung</li>
+              <li>Superadmin-Rollen</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Prüfer:innen-Aufschlüsselung: Intern vs. Extern */}
       {(internCount > 0 || externCount > 0) && (
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">

@@ -1449,6 +1449,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Freigabeberechtigung der Verwaltung auf Studierende, Erstprüfer:innen und Zweitprüfer:innen beschränkt
 - [x] Rollenregeln und Fehlermeldungen automatisiert getestet
 
+## Verwaltungsanmeldung und Zuständigkeiten
+- [x] Superadmins bei neuen Anmeldungen als Verwaltungsmitarbeiter:innen per E-Mail benachrichtigen
+- [x] Zuständigkeiten und Grenzen der Verwaltung im Dashboard übersichtlich darstellen
+- [x] E-Mail-Auslösung und Dashboardlogik automatisiert getestet (2 Tests)
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
