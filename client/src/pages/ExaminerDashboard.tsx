@@ -5,6 +5,7 @@ import Profile from "@/pages/Profile";
 import SupervisionCapacities from "@/pages/SupervisionCapacities";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { trpc } from "@/lib/trpc";
+import { appendCommissionPreference } from "@/lib/commissionPreferences";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -4790,10 +4791,31 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
   const { data: examiners = [], isLoading } = trpc.newExaminers.getList.useQuery();
   const utils = trpc.useUtils();
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
-  const { data: currentPrefs } = trpc.thesisPhase27.getCommissionPreferences.useQuery();
-  const setPrefs = trpc.thesisPhase27.setCommissionPreferences.useMutation({
-    onSuccess: () => utils.thesisPhase27.getCommissionPreferences.invalidate(),
-  });
+  const { data: currentPrefs, isLoading: prefsLoading } = trpc.thesisPhase27.getCommissionPreferences.useQuery();
+  const setPrefs = trpc.thesisPhase27.setCommissionPreferences.useMutation();
+
+  const addToPreferences = async (examinerId: number, examinerName: string) => {
+    if (!currentPrefs) {
+      toast.error("Ihre Kommissionspräferenzen werden noch geladen. Bitte versuchen Sie es gleich erneut.");
+      return;
+    }
+
+    const currentIds = currentPrefs.secondExaminerIds ?? [];
+    if (currentIds.includes(examinerId)) return;
+
+    try {
+      await setPrefs.mutateAsync({
+        secondExaminerIds: appendCommissionPreference(currentIds, examinerId),
+      });
+      setAddedIds((previous) => new Set(Array.from(previous).concat(examinerId)));
+      await utils.thesisPhase27.getCommissionPreferences.invalidate();
+      toast.success(`${examinerName} wurde zu Ihren Kommissionspräferenzen hinzugefügt.`);
+      onAddToPreferences?.();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unbekannter Fehler";
+      toast.error(`Die Kommissionspräferenz konnte nicht gespeichert werden: ${message}`);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -4862,19 +4884,12 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
                 Registriert: {ex.roleConfirmedAt ? new Date(ex.roleConfirmedAt).toLocaleDateString("de-DE") : "–"}
               </div>
               <button
-                onClick={() => {
-                  const currentIds = currentPrefs?.secondExaminerIds ?? [];
-                  if (!currentIds.includes(ex.id)) {
-                    setPrefs.mutate({ secondExaminerIds: [...currentIds, ex.id] });
-                  }
-                  setAddedIds(prev => new Set(Array.from(prev).concat(ex.id)));
-                  if (onAddToPreferences) onAddToPreferences();
-                }}
-                disabled={addedIds.has(ex.id) || (currentPrefs?.secondExaminerIds ?? []).includes(ex.id)}
-                className="w-full text-sm font-semibold py-2 rounded-lg transition-colors text-white"
+                onClick={() => void addToPreferences(ex.id, ex.name ?? "Die Prüferin bzw. der Prüfer")}
+                disabled={prefsLoading || setPrefs.isPending || addedIds.has(ex.id) || (currentPrefs?.secondExaminerIds ?? []).includes(ex.id)}
+                className="w-full text-sm font-semibold py-2 rounded-lg transition-colors text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: "#76B900" }}
               >
-                Zu Kommissionspräferenzen hinzufügen
+                {setPrefs.isPending ? "Wird hinzugefügt…" : addedIds.has(ex.id) || (currentPrefs?.secondExaminerIds ?? []).includes(ex.id) ? "Bereits hinzugefügt" : "Zu Kommissionspräferenzen hinzufügen"}
               </button>
             </div>
           );

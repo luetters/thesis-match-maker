@@ -1440,6 +1440,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Datenbestand und Darstellung in den Fachbereichsfiltern geprüft
 - [x] Fachbereichsbezeichnungen in Onboarding, Profilen und Prüfer:innen-Dashboard auf die offiziellen Namen korrigiert
 
+## Fehlerbehebung: Neue Prüfer:innen
+- [x] Aktion „Zu Kommissionspräferenzen hinzufügen“ auf der Seite „Neue Prüfer:innen“ analysiert und repariert
+- [x] Fehlerfeedback und automatisierte Absicherung des Klickpfads ergänzt (2 Tests)
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
