@@ -4277,19 +4277,26 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const userRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus })
+    const userRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department })
       .from(users).where(eq(users.id, userId)).limit(1);
     const user = userRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    // Verwaltung darf Studierende, Zweitprüfer:innen und Erstprüfer:innen freischalten
-    const adminAllowedRoles = ["student", "examiner", "second_examiner"];
-    if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
-      return {
-        success: false,
-        error: "Die Freischaltung von Verwaltungsmitarbeiter:innen und Leitungsrollen kann nur durch Superadmins erfolgen. Verwaltungsmitarbeiter:innen dürfen nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen.",
-      };
+    if (confirmedByRole === "admin") {
+      if (requestedRole !== "student") {
+        return {
+          success: false,
+          error: "Verwaltungsmitarbeiter:innen dürfen ausschließlich Studierende ihres zugeordneten Fachbereichs freischalten. Die Freigabe anderer Rollen erfolgt durch Superadmins.",
+        };
+      }
+      const adminDepartment = await getAdminDepartment(confirmedBy);
+      if (!canManageDepartment(adminDepartment, user.department)) {
+        return {
+          success: false,
+          error: "Sie dürfen ausschließlich Studierende Ihres zugeordneten Fachbereichs freischalten.",
+        };
+      }
     }
     const nowTs = new Date().toISOString().slice(0, 19).replace("T", " ");
     await db.update(users)
@@ -4387,18 +4394,26 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rejectUserRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus })
+    const rejectUserRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department })
       .from(users).where(eq(users.id, userId)).limit(1);
     const user = rejectUserRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    const adminAllowedRoles = ["student", "examiner", "second_examiner"];
-    if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
-      return {
-        success: false,
-        error: "Die Ablehnung von Verwaltungsmitarbeiter:innen und Leitungsrollen kann nur durch Superadmins erfolgen. Verwaltungsmitarbeiter:innen dürfen nur Studierende, Erstprüfer:innen und Zweitprüfer:innen ablehnen.",
-      };
+    if (confirmedByRole === "admin") {
+      if (requestedRole !== "student") {
+        return {
+          success: false,
+          error: "Verwaltungsmitarbeiter:innen dürfen ausschließlich Studierende ihres zugeordneten Fachbereichs ablehnen. Die Ablehnung anderer Rollen erfolgt durch Superadmins.",
+        };
+      }
+      const adminDepartment = await getAdminDepartment(confirmedBy);
+      if (!canManageDepartment(adminDepartment, user.department)) {
+        return {
+          success: false,
+          error: "Sie dürfen ausschließlich Studierende Ihres zugeordneten Fachbereichs ablehnen.",
+        };
+      }
     }
     const nowTsReject = new Date().toISOString().slice(0, 19).replace("T", " ");
     await db.update(users)

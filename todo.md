@@ -1527,6 +1527,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zusätzliche Kapazitätslinie in der Zeitreihenansicht dargestellt
 - [x] Kapazitätsvergleich und Anzeige automatisiert getestet
 
+## Fachbereichsgebundene Studierendenfreigabe
+- [x] Bestehende Freigabegrenzen für Verwaltungsmitarbeiter:innen und Studierende geprüft
+- [x] Freigabe und Ablehnung von Studierenden serverseitig auf den eigenen Fachbereich beschränkt
+- [x] Fachbereichsgrenze für Studierendenfreigaben automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

@@ -82,10 +82,11 @@ interface FakeDb {
  * @param userRow - Der Nutzer-Datensatz (oder null für "nicht gefunden")
  * @param epRows - examinerProfiles-Zeilen (für second_examiner-Pfad)
  */
-function makeRoleDb(userRow: unknown | null, epRows: unknown[] = []): FakeDb {
+function makeRoleDb(userRow: unknown | null, epRows: unknown[] = [], adminDepartment?: string): FakeDb {
   let selectCallIndex = 0;
   const selectResponses = [
     userRow ? [userRow] : [],  // 1. select: users-Abfrage
+    ...(adminDepartment === undefined ? [] : [[{ department: adminDepartment }]]), // 2. select: Fachbereich der Verwaltung
     epRows,                     // 2. select: examinerProfiles (nur bei second_examiner)
   ];
 
@@ -160,12 +161,12 @@ describe("approveUserRole", () => {
     fakeDbHolder.db = makeRoleDb(user);
     const result = await approveUserRole(2, 10, "admin");
     expect(result).toMatchObject({ success: false });
-    expect(result.error).toContain("nur durch Superadmins");
+    expect(result.error).toContain("ausschließlich Studierende");
   });
 
-  it("bestätigt Studierenden-Rolle: users.update mit role=student und roleStatus=approved", async () => {
-    const user = { id: 3, email: "s0123@student.htw-berlin.de", name: "Maria Muster", requestedRole: "student", roleStatus: "pending" };
-    const fakeDb = makeRoleDb(user);
+  it("bestätigt Studierenden-Rolle des eigenen Fachbereichs: users.update mit role=student und roleStatus=approved", async () => {
+    const user = { id: 3, email: "s0123@student.htw-berlin.de", name: "Maria Muster", requestedRole: "student", roleStatus: "pending", department: "FB3" };
+    const fakeDb = makeRoleDb(user, [], "FB3");
     fakeDbHolder.db = fakeDb;
 
     const result = await approveUserRole(3, 10, "admin");
@@ -229,18 +230,27 @@ describe("approveUserRole", () => {
     expect(fakeDb._insertSpy!.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("admin darf student-Rolle bestätigen", async () => {
-    const user = { id: 8, email: "s0456@student.htw-berlin.de", name: "Student Test", requestedRole: "student", roleStatus: "pending" };
-    fakeDbHolder.db = makeRoleDb(user);
+  it("admin darf student-Rolle im eigenen Fachbereich bestätigen", async () => {
+    const user = { id: 8, email: "s0456@student.htw-berlin.de", name: "Student Test", requestedRole: "student", roleStatus: "pending", department: "FB3" };
+    fakeDbHolder.db = makeRoleDb(user, [], "FB3");
     const result = await approveUserRole(8, 20, "admin");
     expect(result).toEqual({ success: true });
   });
 
-  it("admin darf examiner-Rolle bestätigen", async () => {
+  it("admin darf examiner-Rolle nicht bestätigen", async () => {
     const user = { id: 9, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
     const result = await approveUserRole(9, 20, "admin");
-    expect(result).toEqual({ success: true });
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("ausschließlich Studierende");
+  });
+
+  it("admin darf Studierende eines anderen Fachbereichs nicht bestätigen", async () => {
+    const user = { id: 11, email: "s0999@student.htw-berlin.de", name: "Anderer Fachbereich", requestedRole: "student", roleStatus: "pending", department: "FB2" };
+    fakeDbHolder.db = makeRoleDb(user, [], "FB3");
+    const result = await approveUserRole(11, 20, "admin");
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("zugeordneten Fachbereichs");
   });
 
   it("gibt { success: false } bei DB-Fehler im update", async () => {
@@ -285,16 +295,17 @@ describe("rejectUserRole", () => {
     expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
   });
 
-  it("erlaubt Verwaltung, eine Erstprüfer:innen-Rolle abzulehnen", async () => {
+  it("verbietet Verwaltung, eine Erstprüfer:innen-Rolle abzulehnen", async () => {
     const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
     const result = await rejectUserRole(2, 10, "admin");
-    expect(result).toEqual({ success: true });
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("ausschließlich Studierende");
   });
 
-  it("lehnt Studierenden-Rolle ab: users.update mit roleStatus=rejected", async () => {
-    const user = { id: 3, email: "s0789@student.htw-berlin.de", name: "Abgelehnt Test", requestedRole: "student", roleStatus: "pending" };
-    const fakeDb = makeRoleDb(user);
+  it("lehnt Studierenden-Rolle des eigenen Fachbereichs ab: users.update mit roleStatus=rejected", async () => {
+    const user = { id: 3, email: "s0789@student.htw-berlin.de", name: "Abgelehnt Test", requestedRole: "student", roleStatus: "pending", department: "FB3" };
+    const fakeDb = makeRoleDb(user, [], "FB3");
     fakeDbHolder.db = fakeDb;
 
     const result = await rejectUserRole(3, 10, "admin");
@@ -362,11 +373,20 @@ describe("rejectUserRole", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("admin darf second_examiner-Rolle ablehnen", async () => {
+  it("admin darf second_examiner-Rolle nicht ablehnen", async () => {
     const user = { id: 8, email: "zweit@htw-berlin.de", name: "Zweit Abgelehnt", requestedRole: "second_examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
     const result = await rejectUserRole(8, 20, "admin");
-    expect(result).toEqual({ success: true });
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("ausschließlich Studierende");
+  });
+
+  it("admin darf Studierende eines anderen Fachbereichs nicht ablehnen", async () => {
+    const user = { id: 10, email: "s0888@student.htw-berlin.de", name: "Anderer Fachbereich", requestedRole: "student", roleStatus: "pending", department: "FB2" };
+    fakeDbHolder.db = makeRoleDb(user, [], "FB3");
+    const result = await rejectUserRole(10, 20, "admin");
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("zugeordneten Fachbereichs");
   });
 
   it("gibt { success: false } bei DB-Fehler im update", async () => {
@@ -624,7 +644,7 @@ describe("rejectUserRole – E-Mail-Benachrichtigung", () => {
     const user = { id: 10, email: "zweit@htw-berlin.de", name: "Zweit Test", requestedRole: "second_examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
 
-    await rejectUserRole(10, 20, "admin");
+    await rejectUserRole(10, 99, "superadmin");
 
     expect(emailHelperModule.sendEmail).toHaveBeenCalledOnce();
     const sendArg = (emailHelperModule.sendEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
