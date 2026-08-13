@@ -2,6 +2,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
+import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 import { examinerTopics, users, thesisRequests, auditLog, userRoles } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -552,7 +553,7 @@ export const appRouter = router({
           lastName: z.string().max(128).optional(),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
           password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
-          role: z.enum(["student", "examiner", "second_examiner", "admin", "programme_director"]),
+          role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
           programmeId: z.number().int().positive().optional(),
           department: z.string().optional(),
@@ -580,11 +581,11 @@ export const appRouter = router({
               message: "Studierende müssen sich mit ihrer Studierenden-E-Mail-Adresse (@student.htw-berlin.de) registrieren.",
             });
           }
-        } else if (input.role === "examiner" || input.role === "admin" || input.role === "programme_director") {
+        } else if (input.role === "examiner" || input.role === "admin") {
           if (!isHtwEmail) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Prüfer:innen, Studiengangsleitung und Verwaltungsmitarbeitende müssen sich mit einer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
+              message: "Prüfer:innen und Verwaltungsmitarbeitende müssen sich mit einer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) registrieren.",
             });
           }
         }
@@ -1951,6 +1952,15 @@ export const appRouter = router({
         role: z.enum(["student", "examiner", "second_examiner", "admin", "user", "superadmin", "pav", "dean", "vice_dean", "programme_director"]),
       }))
       .mutation(async ({ ctx, input }) => {
+        if (input.role === "programme_director") {
+          const existingRoles = await getUserRoles(input.userId);
+          if (!isEligibleForProgrammeDirector(existingRoles)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Die Zusatzrolle Studiengangsleitung kann nur bereits freigeschalteten Erstprüfer:innen zugewiesen werden.",
+            });
+          }
+        }
         await addUserRole(input.userId, input.role as AppRole, ctx.user.id);
         await createAuditLogEntry({
           action: "ROLE_ADDED",
@@ -1986,6 +1996,12 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        if (input.role === "programme_director") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Studiengangsleitung ist eine Zusatzrolle. Weisen Sie sie einer bestehenden Erstprüfer:innen-Rolle über die Zusatzrollenverwaltung zu.",
+          });
+        }
         await updateUserRole(input.userId, input.role as any);
         await createAuditLogEntry({
           action: "ROLE_CHANGED",

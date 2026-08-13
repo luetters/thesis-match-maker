@@ -1526,7 +1526,6 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
                         <option value="pav">PA-Vorsitzende:r</option>
                         <option value="dean">Dekan:in</option>
                         <option value="vice_dean">Prodekan:in</option>
-                        <option value="programme_director">Studiengangsleitung</option>
                         <option value="admin">Admin</option>
                         <option value="user">Nutzer:in</option>
                       </select>

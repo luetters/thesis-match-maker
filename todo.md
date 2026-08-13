@@ -1459,6 +1459,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Überlappung im Verifizierungsbereich der PDF-Vorlage korrigiert
 - [x] Generiertes PDF visuell geprüft und PDF-Erzeugung automatisiert abgesichert (2 Tests)
 
+## Erstregistrierung: Studiengangsleitung
+- [x] Studiengangsleitung aus der Rollenauswahl und Servervalidierung der Erstregistrierung entfernt
+- [x] Administrative Zusatzrollenzuweisung auf bereits freigeschaltete Prüfer:innen beschränkt
+- [x] Rollenregeln automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
