@@ -1444,6 +1444,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Aktion „Zu Kommissionspräferenzen hinzufügen“ auf der Seite „Neue Prüfer:innen“ analysiert und repariert
 - [x] Fehlerfeedback und automatisierte Absicherung des Klickpfads ergänzt (2 Tests)
 
+## Fehlerbehebung: Verwaltungsmitarbeiter:innen
+- [x] Unsinnige Fehlermeldung bei der Anmeldung als Verwaltungsmitarbeiter:in analysiert und korrigiert
+- [x] Freigabeberechtigung der Verwaltung auf Studierende, Erstprüfer:innen und Zweitprüfer:innen beschränkt
+- [x] Rollenregeln und Fehlermeldungen automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

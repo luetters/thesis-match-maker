@@ -155,14 +155,12 @@ describe("approveUserRole", () => {
     expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
   });
 
-  it("gibt { success: false } wenn admin versucht eine nicht erlaubte Rolle zu bestätigen", async () => {
-    const user = { id: 2, email: "test@htw-berlin.de", name: "Test", requestedRole: "pav", roleStatus: "pending" };
+  it("verhindert, dass Verwaltung eine Verwaltungsrolle bestätigt", async () => {
+    const user = { id: 2, email: "test@htw-berlin.de", name: "Test", requestedRole: "admin", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
     const result = await approveUserRole(2, 10, "admin");
-    expect(result).toEqual({
-      success: false,
-      error: "Verwaltung darf nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen",
-    });
+    expect(result).toMatchObject({ success: false });
+    expect(result.error).toContain("nur durch Superadmins");
   });
 
   it("bestätigt Studierenden-Rolle: users.update mit role=student und roleStatus=approved", async () => {
@@ -287,14 +285,11 @@ describe("rejectUserRole", () => {
     expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
   });
 
-  it("gibt { success: false } wenn admin versucht examiner-Rolle abzulehnen", async () => {
+  it("erlaubt Verwaltung, eine Erstprüfer:innen-Rolle abzulehnen", async () => {
     const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user);
     const result = await rejectUserRole(2, 10, "admin");
-    expect(result).toEqual({
-      success: false,
-      error: "Verwaltung darf nur Studierende und Zweitprüfer:innen ablehnen",
-    });
+    expect(result).toEqual({ success: true });
   });
 
   it("lehnt Studierenden-Rolle ab: users.update mit roleStatus=rejected", async () => {

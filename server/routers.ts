@@ -4406,7 +4406,8 @@ export const appRouter = router({
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
-        const result = await approveUserRole(input.userId, ctx.user.id, ctx.user.role);
+        const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
+        const result = await approveUserRole(input.userId, ctx.user.id, confirmerRole);
         if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Bestätigen." });
         return { success: true };
       }),
@@ -4422,7 +4423,8 @@ export const appRouter = router({
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
-        const result = await rejectUserRole(input.userId, ctx.user.id, ctx.user.role, input.reason);
+        const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
+        const result = await rejectUserRole(input.userId, ctx.user.id, confirmerRole, input.reason);
         if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fehler beim Ablehnen." });
         return { success: true };
       }),
@@ -4435,8 +4437,9 @@ export const appRouter = router({
         if (!roles.includes("admin") && !roles.includes("superadmin")) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
         }
+        const confirmerRole = roles.includes("superadmin") ? "superadmin" : "admin";
         const results = await Promise.allSettled(
-          input.userIds.map((uid) => approveUserRole(uid, ctx.user.id, ctx.user.role))
+          input.userIds.map((uid) => approveUserRole(uid, ctx.user.id, confirmerRole))
         );
         const succeeded = results.filter(
           (r) => r.status === "fulfilled" && (r as PromiseFulfilledResult<{ success: boolean }>).value?.success

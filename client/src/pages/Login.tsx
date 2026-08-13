@@ -890,8 +890,12 @@ export default function Login() {
                             </p>
                             <p className="text-xs mt-1" style={{ color: "rgba(251,191,36,0.75)" }}>
                               {lang === 'de'
-                                ? 'Ihr Konto muss zunächst von der Verwaltung freigeschaltet werden. Sie erhalten eine E-Mail, sobald Ihr Zugang aktiv ist.'
-                                : 'Your account must first be approved by the administration. You will receive an email once your access is active.'}
+                                ? registeredRole === 'admin'
+                                  ? 'Ihre Anmeldung als Verwaltungsmitarbeiter:in muss zunächst von einem Superadmin freigeschaltet werden. Sie erhalten eine E-Mail, sobald Ihr Zugang aktiv ist.'
+                                  : 'Ihr Konto muss zunächst von der Verwaltung freigeschaltet werden. Sie erhalten eine E-Mail, sobald Ihr Zugang aktiv ist.'
+                                : registeredRole === 'admin'
+                                  ? 'Your administration registration must first be approved by a superadmin. You will receive an email once your access is active.'
+                                  : 'Your account must first be approved by the administration. You will receive an email once your access is active.'}
                             </p>
                           </div>
                         </div>
@@ -904,7 +908,9 @@ export default function Login() {
                         <ol className="space-y-2">
                           {[
                             lang === 'de' ? 'E-Mail-Postfach prüfen – Bestätigungs-E-Mail ist unterwegs' : 'Check your inbox – a confirmation email is on its way',
-                            lang === 'de' ? 'Auf Freischaltung durch die Verwaltung warten' : 'Wait for approval by the administration',
+                            lang === 'de'
+                              ? registeredRole === 'admin' ? 'Auf Freischaltung durch einen Superadmin warten' : 'Auf Freischaltung durch die Verwaltung warten'
+                              : registeredRole === 'admin' ? 'Wait for approval by a superadmin' : 'Wait for approval by the administration',
                             lang === 'de' ? 'Nach Erhalt der Freischaltungs-E-Mail anmelden' : 'Sign in after receiving the approval email',
                           ].map((step, i) => (
                             <li key={i} className="flex items-start gap-2.5 text-xs text-white/60">

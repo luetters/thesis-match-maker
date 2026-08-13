@@ -4150,7 +4150,10 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     // Verwaltung darf Studierende, Zweitprüfer:innen und Erstprüfer:innen freischalten
     const adminAllowedRoles = ["student", "examiner", "second_examiner"];
     if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
-      return { success: false, error: "Verwaltung darf nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen" };
+      return {
+        success: false,
+        error: "Die Freischaltung von Verwaltungsmitarbeiter:innen und Leitungsrollen kann nur durch Superadmins erfolgen. Verwaltungsmitarbeiter:innen dürfen nur Studierende, Erstprüfer:innen und Zweitprüfer:innen bestätigen.",
+      };
     }
     const nowTs = new Date().toISOString().slice(0, 19).replace("T", " ");
     await db.update(users)
@@ -4254,8 +4257,12 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
-    if (confirmedByRole === "admin" && requestedRole !== "student" && requestedRole !== "second_examiner") {
-      return { success: false, error: "Verwaltung darf nur Studierende und Zweitprüfer:innen ablehnen" };
+    const adminAllowedRoles = ["student", "examiner", "second_examiner"];
+    if (confirmedByRole === "admin" && !adminAllowedRoles.includes(requestedRole)) {
+      return {
+        success: false,
+        error: "Die Ablehnung von Verwaltungsmitarbeiter:innen und Leitungsrollen kann nur durch Superadmins erfolgen. Verwaltungsmitarbeiter:innen dürfen nur Studierende, Erstprüfer:innen und Zweitprüfer:innen ablehnen.",
+      };
     }
     const nowTsReject = new Date().toISOString().slice(0, 19).replace("T", " ");
     await db.update(users)
