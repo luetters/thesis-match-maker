@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDeadlineUrgency, getReadableThesisStatus, isAwaitingExaminerReview } from "../shared/examinerThesisStatus";
+import { getDeadlineUrgency, getReadableThesisStatus, isAwaitingExaminerReview, matchesExaminerThesisFilters } from "../shared/examinerThesisStatus";
 
 describe("Erweiterte Thesis-Statusansicht für Prüfer:innen", () => {
   it("ordnet Statuswerte verständlichen Phasen zu", () => {
@@ -19,5 +19,13 @@ describe("Erweiterte Thesis-Statusansicht für Prüfer:innen", () => {
   it("filtert nur tatsächlich bei der aktuellen Person ausstehende Begutachtungen", () => {
     expect(isAwaitingExaminerReview({ status: "PENDING_FIRST_EXAMINER", examinerId: 7 }, 7)).toBe(true);
     expect(isAwaitingExaminerReview({ status: "PENDING_SECOND_EXAMINER", secondExaminerId: 8 }, 7)).toBe(false);
+  });
+
+  it("kombiniert Studiengangs- und eigene Rollenfilter", () => {
+    const request = { programmeId: 12, examinerId: 7, secondExaminerId: 9 };
+    expect(matchesExaminerThesisFilters(request, 7, "12", "first")).toBe(true);
+    expect(matchesExaminerThesisFilters(request, 7, "12", "second")).toBe(false);
+    expect(matchesExaminerThesisFilters(request, 7, "99", "all")).toBe(false);
+    expect(matchesExaminerThesisFilters(request, 7, "all", "all")).toBe(true);
   });
 });

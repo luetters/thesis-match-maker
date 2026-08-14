@@ -15,7 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { buildFullName } from "@shared/const";
 import { getCurrentSemesterValue } from "@shared/currentSemester";
-import { getDeadlineUrgency, isAwaitingExaminerReview } from "@shared/examinerThesisStatus";
+import { getDeadlineUrgency, isAwaitingExaminerReview, matchesExaminerThesisFilters, type ExaminerRoleFilter } from "@shared/examinerThesisStatus";
 import { getThesisStatusPresentation, thesisStatusToneClasses } from "@shared/thesisStatusPresentation";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
@@ -3967,6 +3967,8 @@ function ExaminerStatusHistory() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [semesterFilter, setSemesterFilter] = useState<string>(() => getCurrentSemesterValue());
   const [awaitingOnly, setAwaitingOnly] = useState(false);
+  const [programmeFilter, setProgrammeFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState<ExaminerRoleFilter>("all");
   const [sort, setSort] = useState<{ key: "deadline" | "status"; direction: "asc" | "desc" }>({ key: "deadline", direction: "asc" });
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
     { thesisRequestId: selectedId! },
@@ -3989,8 +3991,18 @@ function ExaminerStatusHistory() {
     ).concat(getCurrentSemesterValue())
   );
   const allAssignments = assignments as Array<any>;
+  const availableProgrammes = Array.from(new Map(
+    allAssignments
+      .map((request) => {
+        const key = String(request.programmeId ?? request.programmeName ?? "");
+        const label = request.programmeAbbreviation ?? request.programmeName ?? "Unbekannter Studiengang";
+        return key ? [key, label] : null;
+      })
+      .filter((programme): programme is [string, string] => programme !== null)
+  ).entries()).map(([key, label]) => ({ key, label }));
   const filteredAssignments = allAssignments
     .filter((request) => semesterFilter === "all" || request.targetSemester === semesterFilter)
+    .filter((request) => matchesExaminerThesisFilters(request, user?.id, programmeFilter, roleFilter))
     .filter((request) => !awaitingOnly || isAwaitingExaminerReview(request, user?.id));
   const sortedAssignments = [...filteredAssignments].sort((left, right) => {
     const comparison = sort.key === "deadline"
@@ -4015,7 +4027,12 @@ function ExaminerStatusHistory() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <div><h2 className="text-lg font-semibold text-gray-900">Betreute Abschlussarbeiten</h2><p className="mt-1 text-sm text-gray-600">Klicken Sie auf einen Namen, um die vollständige Fallhistorie zu öffnen.</p></div>
-        <div className="flex flex-wrap items-center gap-3"><label className="text-sm font-medium text-gray-700">Semester<select value={semesterFilter} onChange={(event) => { setSemesterFilter(event.target.value); setSelectedId(null); }} className="ml-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"><option value="all">Alle Semester</option>{allSemesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}</select></label><button type="button" onClick={() => { setAwaitingOnly((value) => !value); setSelectedId(null); }} className={`rounded-xl px-3 py-2 text-sm font-semibold ${awaitingOnly ? "bg-[#76B900] text-white" : "border border-gray-200 bg-white text-gray-700"}`}>Warten auf meine Begutachtung</button></div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium text-gray-700">Semester<select value={semesterFilter} onChange={(event) => { setSemesterFilter(event.target.value); setSelectedId(null); }} className="ml-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"><option value="all">Alle Semester</option>{allSemesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}</select></label>
+          <label className="text-sm font-medium text-gray-700">Studiengang<select value={programmeFilter} onChange={(event) => { setProgrammeFilter(event.target.value); setSelectedId(null); }} className="ml-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"><option value="all">Alle Studiengänge</option>{availableProgrammes.map((programme) => <option key={programme.key} value={programme.key}>{programme.label}</option>)}</select></label>
+          <label className="text-sm font-medium text-gray-700">Eigene Rolle<select value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value as ExaminerRoleFilter); setSelectedId(null); }} className="ml-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"><option value="all">Erst- und Zweitbegutachtung</option><option value="first">Nur Erstgutachten</option><option value="second">Nur Zweitgutachten</option></select></label>
+          <button type="button" onClick={() => { setAwaitingOnly((value) => !value); setSelectedId(null); }} className={`rounded-xl px-3 py-2 text-sm font-semibold ${awaitingOnly ? "bg-[#76B900] text-white" : "border border-gray-200 bg-white text-gray-700"}`}>Warten auf meine Begutachtung</button>
+        </div>
       </div>
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full min-w-[800px]"><thead><tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"><th className="px-5 py-3">Name</th><th className="px-5 py-3">Studiengang</th><th className="px-5 py-3">Thema</th><th className="px-5 py-3"><button type="button" onClick={() => toggleSort("deadline")} className="inline-flex items-center gap-1 hover:text-gray-900">Geplantes Abgabedatum {sort.key === "deadline" && (sort.direction === "asc" ? "↑" : "↓")}</button></th><th className="px-5 py-3"><button type="button" onClick={() => toggleSort("status")} className="inline-flex items-center gap-1 hover:text-gray-900">Aktueller Status {sort.key === "status" && (sort.direction === "asc" ? "↑" : "↓")}</button></th></tr></thead><tbody>{sortedAssignments.map((request) => { const status = getThesisStatusPresentation(request); const urgency = getDeadlineUrgency(request.submissionDeadline); const deadlineClass = urgency === "overdue" ? "bg-red-50 text-red-800" : urgency === "due_soon" ? "bg-amber-50 text-amber-900" : "text-gray-700"; const deadlineLabel = urgency === "overdue" ? "Überfällig" : urgency === "due_soon" ? "Fällig in den nächsten 14 Tagen" : ""; return <tr key={request.id} className="border-t border-gray-100 text-sm text-gray-700 hover:bg-[#76B900]/5"><td className="px-5 py-3"><button type="button" onClick={() => setSelectedId(request.id)} className="font-semibold text-[#4a7200] hover:underline">{request.studentName ?? "Studierende:r"}</button></td><td className="px-5 py-3">{request.programmeAbbreviation ?? request.programmeName ?? "–"}</td><td className="max-w-[360px] px-5 py-3"><span className="line-clamp-2">{request.title || "Thema wird noch festgelegt"}</span></td><td className="px-5 py-3"><span className={`inline-flex flex-col rounded-lg px-2.5 py-1.5 ${deadlineClass}`}><span className="font-semibold">{request.submissionDeadline ? new Date(request.submissionDeadline).toLocaleDateString("de-DE") : "Noch nicht festgelegt"}</span>{deadlineLabel && <span className="text-xs">{deadlineLabel}</span>}</span></td><td className="px-5 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${thesisStatusToneClasses[status.tone]}`}>{status.label}</span></td></tr>; })}</tbody></table></div>{!sortedAssignments.length && <p className="p-8 text-center text-sm text-gray-500">Für diese Auswahl liegen keine betreuten Abschlussarbeiten vor.</p>}</div>
       {selectedAssignment && (

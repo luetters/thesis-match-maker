@@ -1608,3 +1608,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Schnellfilter für Arbeiten mit ausstehender Begutachtung ergänzt
 - [x] PDF-Export der vollständigen Fallhistorie für Prüfungsakten bereitgestellt
 - [x] Sortierung, Fristwarnungen, Filter und PDF-Export automatisiert getestet
+
+## Studiengangs- und Rollenfilter der Thesis-Statusansicht
+- [x] Bestehende Tabellenfilter und verfügbare Studiengangs- sowie Rollendaten geprüft
+- [x] Kombinierbare Filter nach Studiengang und eigener Erst- oder Zweitbegutachtungsrolle ergänzt
+- [x] Filterlogik automatisiert getestet

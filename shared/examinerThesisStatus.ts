@@ -37,3 +37,21 @@ export function isAwaitingExaminerReview(request: { status?: string | null; exam
   return (request.status === "PENDING_FIRST_EXAMINER" && (request.examinerId === userId || request.wantedExaminerId === userId)) ||
     (request.status === "PENDING_SECOND_EXAMINER" && (request.secondExaminerId === userId || request.wantedSecondExaminerId === userId));
 }
+
+export type ExaminerRoleFilter = "all" | "first" | "second";
+
+export function matchesExaminerThesisFilters(
+  request: { programmeId?: number | null; programmeName?: string | null; examinerId?: number | null; secondExaminerId?: number | null; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null },
+  userId: number | undefined,
+  programmeFilter: string,
+  roleFilter: ExaminerRoleFilter,
+) {
+  const programmeKey = String(request.programmeId ?? request.programmeName ?? "");
+  const matchesProgramme = programmeFilter === "all" || programmeKey === programmeFilter;
+  if (!matchesProgramme) return false;
+  if (roleFilter === "all") return true;
+  if (!userId) return false;
+  const isFirstExaminer = request.examinerId === userId || request.wantedExaminerId === userId;
+  const isSecondExaminer = request.secondExaminerId === userId || request.wantedSecondExaminerId === userId;
+  return roleFilter === "first" ? isFirstExaminer : isSecondExaminer;
+}
