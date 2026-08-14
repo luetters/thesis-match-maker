@@ -90,6 +90,7 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
   const canAccept = request.status === "PENDING_FIRST_EXAMINER";
   const canReject = request.status === "PENDING_FIRST_EXAMINER";
   const canWithdraw = request.status === "FIRST_EXAMINER_REJECTED";
+  const hasOfficialDocument = Boolean(request.examinerId && (request.secondExaminerId || request.externalSecondExaminerFirstName) && ["SECOND_EXAMINER_ACCEPTED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"].includes(request.status));
 
   return (
     <>
@@ -232,6 +233,16 @@ export function RequestDetailModal({ isOpen, onClose, request, onStatusChange }:
                 >
                   <FileText className="w-4 h-4" />
                   PDF herunterladen
+                </a>
+              </div>
+            )}
+
+            {hasOfficialDocument && (
+              <div className="rounded-xl border border-[#76B900]/30 bg-[#76B900]/5 p-4">
+                <label className="text-sm font-semibold text-[#4a7200]">Offizielles Anmeldedokument</label>
+                <p className="mt-1 text-xs text-gray-600">QR-geschütztes Dokument der vollständigen Prüfungskommission.</p>
+                <a href={`/api/thesis/${request.id}/registration.pdf`} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#76B900] px-4 py-2 text-sm font-medium text-white hover:bg-[#5a8c00]">
+                  <FileText className="h-4 w-4" /> Anmeldedokument herunterladen
                 </a>
               </div>
             )}

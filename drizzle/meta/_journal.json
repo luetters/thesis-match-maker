@@ -547,6 +547,20 @@
       "when": 1786691401419,
       "tag": "0077_grey_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "5",
+      "when": 1786713365467,
+      "tag": "0078_oval_arclight",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "5",
+      "when": 1786714835290,
+      "tag": "0079_oval_prowler",
+      "breakpoints": true
     }
   ]
 }

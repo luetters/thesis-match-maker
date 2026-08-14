@@ -379,6 +379,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter zugesagt hat
 	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
+	// Zeitstempel: offizielles QR-geschütztes Anmeldedokument an Studierende:n versandt
+	registrationDocumentSentAt: datetime("registration_document_sent_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter abgelehnt hat
 	secondExaminerRejectedAt: datetime("second_examiner_rejected_at", { mode: "string" }),
 	// Optionaler Ablehnungsgrund des Zweitgutachters
@@ -561,6 +563,24 @@ export const deadlineChanges = mysqlTable("deadline_changes", {
   changedBy: int("changed_by").notNull(),
   changedAt: datetime("changed_at", { mode: "string" }).notNull(),
 });
+
+// ─── Regelmäßige Anmelde- und Abgabefristen ───────────────────────────────────
+// Ein Eintrag kann als Fachbereichsstandard (programmeId = null) oder als
+// studiengangsspezifische Regel für ein Zielsemester hinterlegt werden.
+export const programmeSemesterDeadlines = mysqlTable("programme_semester_deadlines", {
+  id: int().autoincrement().notNull(),
+  department: varchar("department", { length: 8 }).notNull(),
+  programmeId: int("programme_id"),
+  semester: varchar("semester", { length: 32 }).notNull(),
+  registrationDeadline: datetime("registration_deadline", { mode: "string" }).notNull(),
+  submissionDeadline: datetime("submission_deadline", { mode: "string" }).notNull(),
+  updatedBy: int("updated_by").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("psd_department_semester_idx").on(table.department, table.semester),
+  index("psd_programme_semester_idx").on(table.programmeId, table.semester),
+]);
 
 // ─── Insert-Typen (werden in db.ts importiert) ────────────────────────────────────────────────
 import { InferInsertModel } from "drizzle-orm";

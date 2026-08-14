@@ -25,6 +25,7 @@ import {
   getUserRoles,
 } from "./db";
 import { buildFullName, getStatusBadge } from "@shared/const";
+import { buildSamlIntegrationGuidePdf } from "./samlGuidePdf";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +65,19 @@ async function getUserFromRequest(req: Request) {
   } catch {
     return null;
   }
+}
+
+async function exportSamlIntegrationGuidePdf(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const roles = await getUserRoles(user.id);
+  if (user.role !== "superadmin" && !roles.includes("superadmin")) {
+    return res.status(403).json({ error: "Nur Superadmins dürfen den SAML-Leitfaden herunterladen." });
+  }
+  const pdf = await buildSamlIntegrationGuidePdf();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_SAML2_Integrationsleitfaden.pdf"');
+  res.send(pdf);
 }
 
 function formatDate(d: Date | string | null | undefined): string {
@@ -1061,4 +1075,5 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/profile.pdf", exportProfilePdf);
   app.get("/api/export/thesis/:id/summary.pdf", exportThesisSummaryPdf);
   app.get("/api/export/thesis/:id/history.pdf", exportThesisHistoryPdf);
+  app.get("/api/export/saml-integration-guide.pdf", exportSamlIntegrationGuidePdf);
 }

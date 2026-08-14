@@ -3,6 +3,7 @@ import { AdminAssignExaminersModal } from "@/components/AdminAssignExaminersModa
 import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
+import { DeadlineManagementTab } from "@/components/DeadlineManagementTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -40,6 +41,7 @@ function useNavItems(pendingCount = 0, isSuperadmin = false) {
     { href: "/admin/audit", label: t.admin.audit, icon: Icons.log },
     { href: "/admin/users", label: t.admin.users, icon: Icons.users },
     { href: "/admin/settings", label: t.admin.settings, icon: IconSettings },
+    { href: "/admin/deadlines", label: "Fristen", icon: IconCalendar },
     { href: "/admin/stats", label: t.admin.stats, icon: IconStats },
     { href: "/admin/colloquiums", label: t.admin.colloquiums, icon: IconCalendar },
     { href: "/admin/email-templates", label: "E-Mail-Vorlagen", icon: Icons.list },
@@ -155,32 +157,32 @@ function DeadlineModal({
   const [dateValue, setDateValue] = useState(
     currentDeadline ? new Date(currentDeadline).toISOString().split("T")[0] : ""
   );
-  const setDeadlineMutation = trpc.admin.setDeadline.useMutation({
-    onSuccess: () => { toast.success("Deadline gespeichert!"); utils.thesis.all.invalidate(); onClose(); },
-    onError: (err) => toast.error(err.message),
+  const [reason, setReason] = useState("");
+  const setDeadlineMutation = (trpc as any).deadlines.setIndividualSubmissionDeadline.useMutation({
+    onSuccess: () => { toast.success("Individueller Abgabetermin gespeichert und protokolliert."); utils.thesis.all.invalidate(); onClose(); },
+    onError: (err: Error) => toast.error(err.message),
   });
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold text-gray-900 mb-1">Deadline setzen</h3>
+        <h3 className="font-bold text-gray-900 mb-1">Individuellen Abgabetermin festlegen</h3>
         <p className="text-sm text-gray-500 mb-5 truncate">{thesisTitle}</p>
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">Dieser Termin gilt individuell für die studierende Person und überschreibt die Regelfrist. Jede Änderung wird mit Begründung protokolliert.</p>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Abgabedatum</label>
         <input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none mb-5" />
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none mb-4" />
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Begründung der Festlegung oder Änderung</label>
+        <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="z. B. genehmigte Fristverlängerung wegen …" className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none mb-5" />
         <div className="flex gap-3">
-          <button onClick={() => setDeadlineMutation.mutate({ thesisId, deadline: dateValue || null })}
+          <button onClick={() => {
+            if (!dateValue || reason.trim().length < 3) { toast.error("Bitte geben Sie Datum und eine kurze Begründung an."); return; }
+            setDeadlineMutation.mutate({ thesisRequestId: thesisId, newDeadline: new Date(`${dateValue}T12:00:00`).toISOString(), reason: reason.trim() });
+          }}
             disabled={setDeadlineMutation.isPending}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ backgroundColor: "#76B900" }}>
-            {setDeadlineMutation.isPending ? "Speichern..." : "Deadline speichern"}
+            {setDeadlineMutation.isPending ? "Speichern..." : "Abgabetermin speichern"}
           </button>
-          {currentDeadline && (
-            <button onClick={() => setDeadlineMutation.mutate({ thesisId, deadline: null })}
-              disabled={setDeadlineMutation.isPending}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50">
-              Entfernen
-            </button>
-          )}
           <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Abbrechen</button>
         </div>
       </div>
@@ -580,6 +582,9 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        {Boolean((req as any).examinerId && ((req as any).secondExaminerId || (req as any).externalSecondExaminerFirstName) && ["SECOND_EXAMINER_ACCEPTED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"].includes(req.status)) && (
+                          <a href={`/api/thesis/${req.id}/registration.pdf`} className="rounded-lg border border-[#76B900]/40 px-2.5 py-1.5 text-xs font-semibold text-[#4a7200] hover:bg-[#76B900]/10" title="QR-geschütztes Anmeldedokument herunterladen">Dokument</a>
+                        )}
                         <button
                           onClick={() => setAssignModal({ id: req.id, title: req.title })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
@@ -632,11 +637,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                           );
                         })()}
                         <button
-                          onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: req.deadline })}
+                          onClick={() => setDeadlineModal({ id: req.id, title: req.title, deadline: (req as any).submissionDeadline ?? req.deadline })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                          title={req.deadline ? `Deadline: ${new Date(req.deadline).toLocaleDateString("de-DE")}` : "Deadline setzen"}
+                          title={(req as any).submissionDeadline ? `Individueller Abgabetermin: ${new Date((req as any).submissionDeadline).toLocaleDateString("de-DE")}` : "Individuellen Abgabetermin festlegen"}
                         >
-                          {req.deadline ? "📅" : "Deadline"}
+                          {(req as any).submissionDeadline ? "Abgabe" : "Abgabe setzen"}
                         </button>
                         {req.deadline && (
                           <button
@@ -2655,7 +2660,7 @@ function LoginAttemptsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "deadlines" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
   const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
@@ -2682,6 +2687,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/users") setActiveTab("users");
       else if (item.href === "/admin/stats") setActiveTab("stats");
       else if (item.href === "/admin/settings") setActiveTab("settings");
+      else if (item.href === "/admin/deadlines") setActiveTab("deadlines");
       else if (item.href === "/admin/email-templates") setActiveTab("email_templates");
       else if (item.href === "/admin/login-attempts") setActiveTab("login_attempts");
     },
@@ -2696,6 +2702,7 @@ export default function AdminDashboard() {
     users: "Nutzerverwaltung",
     stats: "Statistiken",
     settings: "Einstellungen",
+    deadlines: "Fristenverwaltung",
     email_templates: "E-Mail-Vorlagen",
     login_attempts: "Login-Protokoll",
   };
@@ -2710,6 +2717,7 @@ export default function AdminDashboard() {
       {activeTab === "users" && <UserManagement onNavigateToRequests={(userId, userName) => { setSelectedUserFilter({ userId, userName }); setActiveTab("requests"); }} />}
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
+      {activeTab === "deadlines" && <DeadlineManagementTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "login_attempts" && <LoginAttemptsView />}
     </ThesisDashboardLayout>

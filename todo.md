@@ -1544,6 +1544,43 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Optionale SAML-Anmeldung und Superadmin-Konfiguration ohne Aktivierung integriert
 - [x] Abstimmungsdokument für die HTW Berlin erstellt und Integration automatisiert getestet
 
+## Bedienung der SAML-2.0-Anmeldung
+- [x] Eindeutigen Superadmin-Schalter zur Aktivierung oder Deaktivierung der SAML-Anmeldung ergänzt
+- [x] Benutzerfreundliche Fehlerseite mit Hilfetexten für fehlgeschlagene SAML-Anmeldungen bereitgestellt
+- [x] SAML-2.0-Integrationsleitfaden als PDF im Superadmin-Bereich herunterladbar gemacht
+- [x] Aktivierung, Fehlerseite und PDF-Export automatisiert getestet
+
+## Offizielles Anmeldedokument nach Kommissionsbildung
+- [x] Dokumenterzeugung, Kommissionsstatus und bestehende Versand- sowie Downloadrechte geprüft
+- [x] QR-geschütztes Anmeldedokument bei vollständiger Kommissionsbildung automatisch als E-Mail-Anhang an Studierende gesendet
+- [x] Geschützten Dokumentdownload am Anfragedatensatz für Verwaltung sowie Erst- und Zweitgutachter:innen angezeigt
+- [x] Dokumentversand und Downloadberechtigungen automatisiert getestet
+
+## Einreichung des offiziellen Anmeldedokuments
+- [x] Dokumentstatusdaten und bestehende Einreichungshinweise geprüft
+- [x] Klaren Ablaufhinweis zur Einreichung bei der zuständigen Fachbereichsverwaltung im Studierenden-Dashboard ergänzt
+- [x] Zeitpunkt des letzten E-Mail-Versands als Tooltip am Dokumentdownload angezeigt
+- [x] Einreichungshinweis und Versandzeitpunkt automatisiert getestet
+
+## Fristenverwaltung und Verteidigungsfreigabe
+- [x] Bestehende Fristen-, Verwaltungsfreigabe- und Kolloquiumslogik geprüft
+- [x] Regelmäßige Anmelde- und Abgabefristen nach Fachbereich, Studiengang und Semester hinterlegt
+- [x] Individuelle Abgabetermine durch die zuständige Fachbereichsverwaltung mit Begründungsprotokoll verwaltet
+- [x] Abgabetermin und begründete Verschiebungen für Prüfer:innen am Studierendendatensatz angezeigt
+- [x] Terminfindung für Kolloquien bis zur Verwaltungsfreigabe der Verteidigungsfähigkeit gesperrt
+- [x] Fristen, Protokollierung und Sperrlogik automatisiert getestet
+
+## Neue Prüfer:innen ohne bestehende Präferenz
+- [x] Ermittlung neuer Prüfer:innen und bestehende Präferenzfilter geprüft
+- [x] Liste und Zähler auf noch nicht hinzugefügte Prüfer:innen beschränkt
+- [x] Filterlogik automatisiert getestet
+
+## Thesis-Statusansicht für Prüfer:innen
+- [x] Bestehende Statusansicht, Semesterfilter und Historienprotokoll geprüft
+- [x] Semesterbasierte Tabellenübersicht mit Name, Studiengang, Thema und geplantem Abgabetermin umgesetzt
+- [x] Detailhistorie um aktuellen Klartextstatus, Erst- und Zweitgutachter:in sowie Thema und Studiengang ergänzt
+- [x] Statusansicht und Historienaufbereitung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
