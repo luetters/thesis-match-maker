@@ -1562,6 +1562,14 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zeitpunkt des letzten E-Mail-Versands als Tooltip am Dokumentdownload angezeigt
 - [x] Einreichungshinweis und Versandzeitpunkt automatisiert getestet
 
+## Fristenverwaltung und Verteidigungsfreigabe
+- [x] Bestehende Fristen-, Verwaltungsfreigabe- und Kolloquiumslogik geprüft
+- [x] Regelmäßige Anmelde- und Abgabefristen nach Fachbereich, Studiengang und Semester hinterlegt
+- [x] Individuelle Abgabetermine durch die zuständige Fachbereichsverwaltung mit Begründungsprotokoll verwaltet
+- [x] Abgabetermin und begründete Verschiebungen für Prüfer:innen am Studierendendatensatz angezeigt
+- [x] Terminfindung für Kolloquien bis zur Verwaltungsfreigabe der Verteidigungsfähigkeit gesperrt
+- [x] Fristen, Protokollierung und Sperrlogik automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

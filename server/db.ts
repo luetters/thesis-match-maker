@@ -24,8 +24,9 @@ import {
   savedFilters,
   examinerSemesterCapacities,
   userRoles,
-  deadlineChanges,
-  examinerTopics,
+	deadlineChanges,
+	programmeSemesterDeadlines,
+	examinerTopics,
   loginAttempts,
   examinerSeenNotifications,
   passwordResetTokens,
@@ -38,6 +39,7 @@ import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, bu
 import { formatConsentForExport } from "./studentConsent";
 import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
 import { buildCrossDepartmentSupervisionOverview, buildCrossDepartmentSupervisionTimeSeries } from "../shared/crossDepartmentSupervision";
+import { resolveProgrammeSemesterDeadline, type ProgrammeSemesterDeadlineRule } from "../shared/programmeSemesterDeadline";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -445,6 +447,8 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       studentName: users.name,
       studentEmail: users.email,
       studentAvatarUrl: users.avatarUrl,
+      submissionDeadline: thesisRequests.submissionDeadline,
+      defenseEligibility: thesisRequests.defenseEligibility,
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
       firstExaminerName: firstExaminerAlias.name,
@@ -5945,6 +5949,95 @@ export async function getDeadlineChanges(thesisRequestId: number) {
     .leftJoin(changedByUser, eq(deadlineChanges.changedBy, changedByUser.id))
     .where(eq(deadlineChanges.thesisRequestId, thesisRequestId))
     .orderBy(desc(deadlineChanges.changedAt));
+}
+
+/** Liefert die fachliche Zuordnung einer Thesis für fristbezogene Verwaltungsrechte. */
+export async function getThesisDeadlineScope(thesisRequestId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const student = aliasedTable(users, "deadline_scope_student");
+  const [row] = await db
+    .select({
+      thesisRequestId: thesisRequests.id,
+      studentId: thesisRequests.studentId,
+      programmeId: student.programmeId,
+      department: programmes.fachbereich,
+      targetSemester: thesisRequests.targetSemester,
+      submissionDeadline: thesisRequests.submissionDeadline,
+    })
+    .from(thesisRequests)
+    .innerJoin(student, eq(thesisRequests.studentId, student.id))
+    .leftJoin(programmes, eq(student.programmeId, programmes.id))
+    .where(eq(thesisRequests.id, thesisRequestId))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Regeltermine, optional auf einen Fachbereich eingeschränkt. */
+export async function getProgrammeSemesterDeadlines(scopeDepartment?: string | null) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      id: programmeSemesterDeadlines.id,
+      department: programmeSemesterDeadlines.department,
+      programmeId: programmeSemesterDeadlines.programmeId,
+      semester: programmeSemesterDeadlines.semester,
+      registrationDeadline: programmeSemesterDeadlines.registrationDeadline,
+      submissionDeadline: programmeSemesterDeadlines.submissionDeadline,
+      updatedAt: programmeSemesterDeadlines.updatedAt,
+      programmeName: programmes.name,
+      programmeAbbreviation: programmes.abbreviation,
+    })
+    .from(programmeSemesterDeadlines)
+    .leftJoin(programmes, eq(programmeSemesterDeadlines.programmeId, programmes.id))
+    .where(scopeDepartment ? eq(programmeSemesterDeadlines.department, scopeDepartment) : undefined)
+    .orderBy(desc(programmeSemesterDeadlines.semester), programmeSemesterDeadlines.department);
+  return rows;
+}
+
+/** Legt eine Regel an oder aktualisiert sie; Studiengang = null bedeutet Fachbereichsstandard. */
+export async function upsertProgrammeSemesterDeadline(input: {
+  department: string;
+  programmeId: number | null;
+  semester: string;
+  registrationDeadline: string;
+  submissionDeadline: string;
+  updatedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const programmeCondition = input.programmeId === null
+    ? isNull(programmeSemesterDeadlines.programmeId)
+    : eq(programmeSemesterDeadlines.programmeId, input.programmeId);
+  const [existing] = await db.select({ id: programmeSemesterDeadlines.id })
+    .from(programmeSemesterDeadlines)
+    .where(and(
+      eq(programmeSemesterDeadlines.department, input.department),
+      eq(programmeSemesterDeadlines.semester, input.semester),
+      programmeCondition,
+    ))
+    .limit(1);
+  const values = {
+    department: input.department,
+    programmeId: input.programmeId,
+    semester: input.semester,
+    registrationDeadline: input.registrationDeadline,
+    submissionDeadline: input.submissionDeadline,
+    updatedBy: input.updatedBy,
+  };
+  if (existing) {
+    await db.update(programmeSemesterDeadlines).set(values).where(eq(programmeSemesterDeadlines.id, existing.id));
+    return { id: existing.id, created: false };
+  }
+  const [inserted] = await db.insert(programmeSemesterDeadlines).values(values);
+  return { id: inserted.insertId, created: true };
+}
+
+/** Ermittelt die studiengangsspezifische Regel, sonst den Fachbereichsstandard. */
+export async function getEffectiveProgrammeSemesterDeadline(input: { department: string; programmeId?: number | null; semester: string }) {
+  const rules = await getProgrammeSemesterDeadlines(input.department) as ProgrammeSemesterDeadlineRule[];
+  return resolveProgrammeSemesterDeadline(rules, input);
 }
 
 // ─── Phase: Examiner/PAV-initiierter Antrag ──────────────────────────────────

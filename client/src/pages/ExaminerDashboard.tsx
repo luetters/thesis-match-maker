@@ -700,7 +700,7 @@ function ConditionalReasonBox({ requestId, reason, conditionalAt, onUpdated }: {
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; submissionDeadline?: string | null; defenseEligibility?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -734,6 +734,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [conditionalReason, setConditionalReason] = useState("");
   const [showDetails, setShowDetails] = useState(false);
   const utils = trpc.useUtils();
+  const { data: deadlineChanges = [] } = (trpc as any).deadlines.getChangesForRequest.useQuery({ thesisRequestId: req.id }, { enabled: Boolean(req.submissionDeadline) });
 
   const { data: secondCandidates = [] } = (trpc.thesis as any).getAllSecondExaminerCandidates?.useQuery?.();
 
@@ -1484,6 +1485,13 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {req.submissionDeadline && (
+        <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">
+          <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">Abgabetermin</span><span className="font-bold">{new Date(req.submissionDeadline).toLocaleDateString("de-DE", { dateStyle: "long" })}</span></div>
+          {deadlineChanges.length > 0 && <div className="mt-2 border-t border-sky-200 pt-2 text-xs text-sky-900"><strong>Termin verschoben.</strong> {deadlineChanges.length === 1 ? "Eine Änderung" : `${deadlineChanges.length} Änderungen`} wurde protokolliert. Zuletzt: {deadlineChanges[0].reason} ({new Date(deadlineChanges[0].changedAt).toLocaleDateString("de-DE")}).</div>}
         </div>
       )}
 

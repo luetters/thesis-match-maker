@@ -171,6 +171,9 @@ import {
   setDefenseDate,
   closeCase,
   getDeadlineChanges,
+  getThesisDeadlineScope,
+  getProgrammeSemesterDeadlines,
+  upsertProgrammeSemesterDeadline,
   createExaminerInitiatedDraft,
   getDraftByInviteToken,
   confirmStudentDraft,
@@ -255,6 +258,17 @@ function userHasRole(user: { role: string; roles?: string[] }, role: string): bo
     return user.roles.includes(role);
   }
   return user.role === role;
+}
+
+async function assertDeadlineDepartmentScope(ctx: { user: { id: number; role: string; roles?: string[] } }, thesisRequestId: number) {
+  const scope = await getThesisDeadlineScope(thesisRequestId);
+  if (!scope) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden." });
+  if (userHasRole(ctx.user, "superadmin")) return scope;
+  const department = await getAdminDepartment(ctx.user.id);
+  if (!department || department !== scope.department) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen Abgabefristen nur für Studierende Ihres eigenen Fachbereichs verwalten." });
+  }
+  return scope;
 }
 
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -4173,6 +4187,74 @@ export const appRouter = router({
           .set({ maxAssignments: input.newMaxAssignments, allowMultiple: 1 })
           .where(eq(examinerTopics.id, input.topicId));
         return { success: true };
+      }),
+  }),
+
+  // ─── Fristenverwaltung der Fachbereiche ───────────────────────────────────
+  deadlines: router({
+    list: adminProcedure.query(async ({ ctx }) => {
+      const scope = userHasRole(ctx.user, "superadmin") ? null : await getAdminDepartment(ctx.user.id);
+      return getProgrammeSemesterDeadlines(scope);
+    }),
+    saveRule: adminProcedure
+      .input(z.object({
+        department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]),
+        programmeId: z.number().int().positive().nullable(),
+        semester: z.string().min(3).max(32),
+        registrationDeadline: z.string().min(10),
+        submissionDeadline: z.string().min(10),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!userHasRole(ctx.user, "superadmin")) {
+          const department = await getAdminDepartment(ctx.user.id);
+          if (department !== input.department) throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen Fristen nur für Ihren Fachbereich verwalten." });
+        }
+        if (new Date(input.registrationDeadline) > new Date(input.submissionDeadline)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Die Anmeldefrist darf nicht nach der Abgabefrist liegen." });
+        }
+        const saved = await upsertProgrammeSemesterDeadline({ ...input, updatedBy: ctx.user.id });
+        return { success: true, ...saved };
+      }),
+    setIndividualSubmissionDeadline: adminProcedure
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        newDeadline: z.string().min(10),
+        reason: z.string().min(3).max(512),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const scope = await assertDeadlineDepartmentScope(ctx, input.thesisRequestId);
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden." });
+        await extendDeadline(input.thesisRequestId, ctx.user.id, input.newDeadline, input.reason);
+        await createAuditLogEntry({
+          thesisRequestId: input.thesisRequestId,
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "STATUS_CHANGED",
+          reason: input.reason,
+          metadata: { action: "submission_deadline_changed", newDeadline: input.newDeadline, department: scope.department },
+        });
+        await notifyThesisParticipants({
+          thesisRequestId: input.thesisRequestId,
+          studentId: thesis.studentId,
+          examinerId: thesis.examinerId,
+          secondExaminerId: thesis.secondExaminerId,
+          title: "Abgabetermin geändert",
+          message: `Der Abgabetermin für „${thesis.title}" wurde auf ${new Date(input.newDeadline).toLocaleDateString("de-DE")} verschoben. Begründung: ${input.reason}`,
+          type: "status_change",
+        });
+        return { success: true };
+      }),
+    getChangesForRequest: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const thesis = await getThesisRequestById(input.thesisRequestId);
+        if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden." });
+        const isInvolved = [thesis.studentId, thesis.examinerId, thesis.secondExaminerId].includes(ctx.user.id);
+        const isAdministrator = userHasRole(ctx.user, "admin") || userHasRole(ctx.user, "superadmin");
+        if (!isInvolved && !isAdministrator) throw new TRPCError({ code: "FORBIDDEN" });
+        if (isAdministrator) await assertDeadlineDepartmentScope(ctx, input.thesisRequestId);
+        return getDeadlineChanges(input.thesisRequestId);
       }),
   }),
 
