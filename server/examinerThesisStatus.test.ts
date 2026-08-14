@@ -23,9 +23,9 @@ describe("Erweiterte Thesis-Statusansicht für Prüfer:innen", () => {
 
   it("kombiniert Studiengangs- und eigene Rollenfilter", () => {
     const request = { programmeId: 12, examinerId: 7, secondExaminerId: 9 };
-    expect(matchesExaminerThesisFilters(request, 7, "12", "first")).toBe(true);
-    expect(matchesExaminerThesisFilters(request, 7, "12", "second")).toBe(false);
-    expect(matchesExaminerThesisFilters(request, 7, "99", "all")).toBe(false);
-    expect(matchesExaminerThesisFilters(request, 7, "all", "all")).toBe(true);
+    expect(matchesExaminerThesisFilters(request, 7, ["12", "17"], "first")).toBe(true);
+    expect(matchesExaminerThesisFilters(request, 7, ["12"], "second")).toBe(false);
+    expect(matchesExaminerThesisFilters(request, 7, ["99"], "all")).toBe(false);
+    expect(matchesExaminerThesisFilters(request, 7, [], "all")).toBe(true);
   });
 });

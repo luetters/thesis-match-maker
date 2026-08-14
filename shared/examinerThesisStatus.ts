@@ -43,11 +43,11 @@ export type ExaminerRoleFilter = "all" | "first" | "second";
 export function matchesExaminerThesisFilters(
   request: { programmeId?: number | null; programmeName?: string | null; examinerId?: number | null; secondExaminerId?: number | null; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null },
   userId: number | undefined,
-  programmeFilter: string,
+  programmeFilters: string[],
   roleFilter: ExaminerRoleFilter,
 ) {
   const programmeKey = String(request.programmeId ?? request.programmeName ?? "");
-  const matchesProgramme = programmeFilter === "all" || programmeKey === programmeFilter;
+  const matchesProgramme = programmeFilters.length === 0 || programmeFilters.includes(programmeKey);
   if (!matchesProgramme) return false;
   if (roleFilter === "all") return true;
   if (!userId) return false;

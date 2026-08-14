@@ -1613,3 +1613,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Bestehende Tabellenfilter und verfügbare Studiengangs- sowie Rollendaten geprüft
 - [x] Kombinierbare Filter nach Studiengang und eigener Erst- oder Zweitbegutachtungsrolle ergänzt
 - [x] Filterlogik automatisiert getestet
+
+## Mehrfachfilter der Thesis-Statusansicht
+- [x] Bestehende Filterzustände und Tabellenaufbereitung geprüft
+- [x] Mehrfachauswahl von Studiengängen sowie aktive Filterchips ergänzt
+- [x] Ergebnisanzahl und kombinierte Filterlogik automatisiert getestet
