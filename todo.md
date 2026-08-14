@@ -1564,3 +1564,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Konfliktprüfung beim Erstellen einer Abstimmung und vor der finalen Terminbestätigung erzwingen
 - [x] Raumkonflikte in der Terminabstimmung verständlich anzeigen und blockieren
 - [x] Konfliktlogik mit Vitest absichern (4 zusätzliche Tests)
+
+## Erweiterte Thesis-Statusansicht für Prüfer:innen
+- [x] Statusdaten, Fristenlogik und PDF-Exportmöglichkeiten geprüft
+- [x] Tabelle nach Abgabetermin und Status sortierbar gemacht sowie fällige und überfällige Arbeiten hervorgehoben
+- [x] Schnellfilter für Arbeiten mit ausstehender Begutachtung ergänzt
+- [x] PDF-Export der vollständigen Fallhistorie für Prüfungsakten bereitgestellt
+- [x] Sortierung, Fristwarnungen, Filter und PDF-Export automatisiert getestet

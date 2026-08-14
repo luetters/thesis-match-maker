@@ -454,6 +454,8 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       wantedSecondExaminerEmail: wantedSecondExaminerAlias.email,
       wantedSecondExaminerAvatarUrl: wantedSecondExaminerAlias.avatarUrl,
       wantedExaminerId: thesisRequests.wantedExaminerId,
+      submissionDeadline: thesisRequests.submissionDeadline,
+      defenseEligibility: thesisRequests.defenseEligibility,
       studySpecializations: thesisRequests.studySpecializations,
       personalInterests: thesisRequests.personalInterests,
       keywords: thesisRequests.keywords,

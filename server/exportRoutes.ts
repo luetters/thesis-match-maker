@@ -19,6 +19,7 @@ import {
   getAllExaminers,
   getThesisRequestById,
   getThesisRequestByIdWithNames,
+  getAuditLogByThesis,
   getUserByOpenId,
   getProfile,
   getUserRoles,
@@ -970,6 +971,88 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   res.send(pdfBuffer);
 }
 
+// ─── Endpunkt 5: Vollständige Fallhistorie für Prüfungsakten ──────────────────
+
+async function exportThesisHistoryPdf(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet" });
+
+  const thesisId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(thesisId)) return res.status(400).json({ error: "Ungültige Antrags-ID" });
+  const thesis = await getThesisRequestByIdWithNames(thesisId);
+  if (!thesis) return res.status(404).json({ error: "Antrag nicht gefunden" });
+
+  const roles = await getUserRoles(user.id);
+  const isAdmin = roles.some((role) => ["admin", "superadmin", "pav"].includes(role)) || ["admin", "superadmin", "pav"].includes(user.role ?? "");
+  const isAssignedExaminer = thesis.examinerId === user.id || thesis.secondExaminerId === user.id;
+  if (!isAdmin && !isAssignedExaminer) return res.status(403).json({ error: "Keine Berechtigung" });
+
+  const auditEntries = await getAuditLogByThesis(thesisId);
+  const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+  const margin = 50;
+  const width = doc.page.width - margin * 2;
+  const bottomLimit = doc.page.height - 60;
+  let y = 80;
+  const currentStatus = getStatusBadge(thesis.status ?? "").label;
+  const subtitle = `Antrag #${thesis.id} · Stand: ${formatDate(new Date())}`;
+  const ensureSpace = (needed: number) => {
+    if (y + needed > bottomLimit) {
+      doc.addPage();
+      y = 80;
+      drawHeader(doc, "Fallhistorie (Fortsetzung)", subtitle);
+    }
+  };
+  const actionLabels: Record<string, string> = {
+    THESIS_CREATED: "Antrag erstellt",
+    THESIS_CREATED_WITH_WANTED_EXAMINER: "Antrag erstellt",
+    STATUS_CHANGED: "Status geändert",
+    EXAMINER_ACCEPTED: "Prüfer:in hat angenommen",
+    EXAMINER_REJECTED: "Prüfer:in hat abgelehnt",
+    FIRST_EXAMINER_ASSIGNED: "Erstgutachter:in zugewiesen",
+    SECOND_EXAMINER_ASSIGNED: "Zweitgutachter:in zugewiesen",
+    DEADLINE_SET: "Abgabetermin gesetzt",
+    COLLOQUIUM_CREATED: "Kolloquium angelegt",
+  };
+
+  drawHeader(doc, "Fallhistorie für Prüfungsakte", subtitle);
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(14).text(thesis.title ?? "Thema wird noch festgelegt", margin, y, { width });
+  y = doc.y + 8;
+  doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(`Studierende:r: ${thesis.studentName ?? "–"} · Studiengang: ${(thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? "–"}`, margin, y, { width });
+  y = doc.y + 4;
+  doc.text(`Aktueller Status: ${currentStatus}`, margin, y, { width });
+  y = doc.y + 4;
+  doc.text(`Erstgutachter:in: ${thesis.firstExaminerName ?? "Noch nicht zugeordnet"} · Zweitgutachter:in: ${thesis.secondExaminerName ?? "Noch nicht zugeordnet"}`, margin, y, { width });
+  y = doc.y + 18;
+
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Verlauf", margin, y);
+  y += 20;
+  for (const entry of auditEntries) {
+    const reason = entry.reason ? `Begründung: ${entry.reason}` : "";
+    const statusChange = entry.fromStatus && entry.toStatus ? `${getStatusBadge(entry.fromStatus).label} → ${getStatusBadge(entry.toStatus).label}` : "";
+    doc.font("Helvetica-Oblique").fontSize(8);
+    const height = 40 + doc.heightOfString(reason, { width: width - 28 });
+    ensureSpace(height + 10);
+    doc.circle(margin + 5, y + 6, 4).fill(HTW_GREEN);
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(9).text(actionLabels[entry.action] ?? entry.action, margin + 18, y, { width: width - 18 });
+    y = doc.y + 2;
+    if (statusChange) { doc.fillColor(GRAY).font("Helvetica").fontSize(8).text(statusChange, margin + 18, y, { width: width - 18 }); y = doc.y + 2; }
+    if (reason) { doc.fillColor(GRAY).font("Helvetica-Oblique").fontSize(8).text(reason, margin + 18, y, { width: width - 18 }); y = doc.y + 2; }
+    doc.fillColor(GRAY).font("Helvetica").fontSize(7.5).text(new Date(entry.createdAt).toLocaleString("de-DE"), margin + 18, y, { width: width - 18 });
+    y = doc.y + 12;
+  }
+
+  const pages = doc.bufferedPageRange();
+  for (let index = 0; index < pages.count; index++) { doc.switchToPage(pages.start + index); drawFooter(doc, index + 1, pages.count); }
+  doc.end();
+  await new Promise<void>((resolve) => doc.on("end", resolve));
+  const filename = `HTW_Fallhistorie_${thesis.id}.pdf`;
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(Buffer.concat(chunks));
+}
+
 // ─── Registrierung ────────────────────────────────────────────────────────────
 
 export function registerExportRoutes(app: Express) {
@@ -977,4 +1060,5 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/examiners.pdf", exportExaminersPdf);
   app.get("/api/export/profile.pdf", exportProfilePdf);
   app.get("/api/export/thesis/:id/summary.pdf", exportThesisSummaryPdf);
+  app.get("/api/export/thesis/:id/history.pdf", exportThesisHistoryPdf);
 }
