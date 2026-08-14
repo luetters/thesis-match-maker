@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerUploadRoutes } from "../uploadRoutes";
 import { registerExportRoutes } from "../exportRoutes";
 import { registerMagicLinkRoutes } from "../magicLinkRoutes";
+import { registerSamlAuthRoutes } from "../samlAuthRoutes";
 import { appRouter } from "../routers";
 import { processColloquiumSchedulingReminders } from "../colloquiumScheduling";
 import { createContext } from "./context";
@@ -47,6 +48,7 @@ async function startServer() {
   registerUploadRoutes(app);
   registerExportRoutes(app);
   registerMagicLinkRoutes(app); // Nur noch Logout-Route
+  registerSamlAuthRoutes(app); // Optionale SAML-2.0-Anmeldung
   // Heartbeat: automatische E-Mail-Erinnerungen drei und einen Tag vor Ablauf
   // einer offenen Kolloquiums-Terminabstimmung. taskUid ist serverseitig durch
   // den Heartbeat authentifiziert und wird nie aus dem Request-Body gelesen.

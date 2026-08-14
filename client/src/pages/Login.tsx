@@ -18,6 +18,7 @@ import {
   LogIn,
   CheckCircle2,
   User,
+  ShieldCheck,
   HelpCircle,
   X,
   ChevronDown,
@@ -243,6 +244,7 @@ export default function Login() {
   const returnTo = params.get("returnTo") ?? "/";
   const urlError = params.get("error");
   const inviteToken = params.get("inviteToken") ?? undefined;
+  const samlStatusQuery = trpc.saml.status.useQuery();
 
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
@@ -332,6 +334,10 @@ export default function Login() {
       localStorage.removeItem(REMEMBER_KEY);
     }
     loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
+  }
+
+  function startSamlLogin() {
+    window.location.assign(`/api/auth/saml/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   function handleRegisterSubmit(e: React.FormEvent) {
@@ -501,6 +507,20 @@ export default function Login() {
                 </div>
                 <div className="text-white/30 text-lg">→</div>
               </button>
+
+              {samlStatusQuery.data?.enabled && samlStatusQuery.data.ready && (
+                <>
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+                    <span className="text-white/30 text-xs">oder</span>
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  </div>
+                  <button type="button" onClick={startSamlLogin} className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 hover:scale-[1.01]" style={{ background: "rgba(59,130,246,0.07)", borderColor: "rgba(59,130,246,0.35)" }}>
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(59,130,246,0.14)", color: "#93c5fd" }}><ShieldCheck className="w-7 h-7" /></div>
+                    <div className="flex-1 min-w-0"><div className="font-bold text-white text-base">Mit HTW Berlin Web Login anmelden</div><div className="text-white/60 text-xs mt-1 leading-relaxed">Melden Sie sich über das zentrale HTW-Berlin-Portal an.</div></div><div className="text-white/30 text-lg">→</div>
+                  </button>
+                </>
+              )}
 
               {/* Trennlinie */}
               <div className="flex items-center gap-3 py-1">

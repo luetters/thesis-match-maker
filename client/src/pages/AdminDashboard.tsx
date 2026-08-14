@@ -2,6 +2,7 @@ import { StatusBadge, ThesisDashboardLayout } from "@/components/ThesisDashboard
 import { AdminAssignExaminersModal } from "@/components/AdminAssignExaminersModal";
 import { InvolvedPersonsTable, type PersonRow } from "@/components/InvolvedPersonsTable";
 import RoleApprovalTab from "@/components/RoleApprovalTab";
+import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -33,6 +34,7 @@ function useNavItems(pendingCount = 0, isSuperadmin = false) {
   return [
     { href: "/admin/role-approvals", label: `Freischaltungen${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: Icons.users },
     ...(isSuperadmin ? [{ href: "/admin/cross-department-approvals", label: "Übergreifende Freigaben", icon: IconStats }] : []),
+    ...(isSuperadmin ? [{ href: "/admin/saml", label: "SAML-Anmeldung", icon: IconSettings }] : []),
     { href: "/admin", label: t.admin.overview, icon: Icons.home },
     { href: "/admin/requests", label: t.admin.requests, icon: Icons.list },
     { href: "/admin/audit", label: t.admin.audit, icon: Icons.log },
@@ -2653,7 +2655,7 @@ function LoginAttemptsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "cross_department_approvals" | "email_templates" | "login_attempts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
   const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
@@ -2673,6 +2675,7 @@ export default function AdminDashboard() {
     onClick: () => {
       if (item.href === "/admin/role-approvals") setActiveTab("role_approvals");
       else if (item.href === "/admin/cross-department-approvals") setActiveTab("cross_department_approvals");
+      else if (item.href === "/admin/saml") setActiveTab("saml");
       else if (item.href === "/admin") setActiveTab("overview");
       else if (item.href === "/admin/requests") setActiveTab("requests");
       else if (item.href === "/admin/audit") setActiveTab("audit");
@@ -2686,6 +2689,7 @@ export default function AdminDashboard() {
   const titles: Record<string, string> = {
     role_approvals: "Freischaltungen",
     cross_department_approvals: "Übergreifende Freigaben",
+    saml: "SAML-Anmeldung",
     overview: "Verwaltungs-Dashboard",
     requests: "Alle Anfragen",
     audit: "Audit-Log",
@@ -2699,6 +2703,7 @@ export default function AdminDashboard() {
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab]}>
       {activeTab === "role_approvals" && <RoleApprovalTab canApproveAll={hasRole("superadmin")} />}
       {activeTab === "cross_department_approvals" && hasRole("superadmin") && <RoleApprovalTab canApproveAll view="cross_department" />}
+      {activeTab === "saml" && hasRole("superadmin") && <SamlConfigurationTab />}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} highlightId={highlightRequestId} onHighlightClear={() => setHighlightRequestId(null)} />}
       {activeTab === "audit" && <AuditLogView onNavigateToRequest={(id) => { setHighlightRequestId(id); setActiveTab("requests"); }} />}

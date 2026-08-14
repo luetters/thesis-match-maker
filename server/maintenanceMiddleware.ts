@@ -13,6 +13,7 @@ import { jwtVerify, importJWK } from "jose";
 
 const BYPASS_PATHS = [
   "/api/auth",
+  "/api/auth/saml",
   "/api/oauth",
   "/api/trpc/auth.me",
   "/api/trpc/auth.loginWithPassword",

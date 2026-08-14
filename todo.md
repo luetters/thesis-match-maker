@@ -1538,6 +1538,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Superadmin-Übersicht für fachbereichsübergreifende Freigabeanfragen mit schnellen Bearbeitungsaktionen bereitgestellt
 - [x] Erweiterte Freigabeansichten und Audit-Kontext automatisiert getestet
 
+## Optionale SAML-2.0-Anmeldung
+- [x] Bestehenden Anmeldefluss und öffentlich erreichbare HTW-Berlin-IdP-Informationen analysiert
+- [x] SAML-Konfigurationsmodell und sichere Service-Provider-Schnittstellen vorbereitet
+- [x] Optionale SAML-Anmeldung und Superadmin-Konfiguration ohne Aktivierung integriert
+- [x] Abstimmungsdokument für die HTW Berlin erstellt und Integration automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

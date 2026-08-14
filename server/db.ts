@@ -1244,6 +1244,25 @@ export async function getUserByEmail(email: string) {
   return pwAccount ?? bySecondEmail[0];
 }
 
+export async function getUserBySamlIdentity(samlIssuer: string, samlSubject: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(users)
+    .where(and(eq(users.samlIssuer, samlIssuer), eq(users.samlSubject, samlSubject)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function linkSamlIdentity(userId: number, samlIssuer: string, samlSubject: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.update(users).set({
+    samlIssuer,
+    samlSubject,
+    samlLinkedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+  }).where(eq(users.id, userId));
+}
+
 export async function setUserPasswordHash(userId: number, hash: string) {
   const db = await getDb();
   if (!db) return;

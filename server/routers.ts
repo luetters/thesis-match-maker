@@ -214,6 +214,7 @@ import {
   type NotificationTypeKey,
 } from "./db";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
+import { SAML_SETTING_KEYS, getSamlConfigurationIssues, isSamlConfigurationReady, parseSamlConfiguration } from "./samlAuth";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { parse as parseCookie } from "cookie";
@@ -459,6 +460,64 @@ const profileRouterDef = router({
 export const appRouter = router({
   system: systemRouter,
   profile: profileRouterDef,
+
+  saml: router({
+    status: publicProcedure.query(async () => {
+      const settings = await getSystemSettings();
+      const configuration = parseSamlConfiguration(Object.fromEntries(settings.map((setting) => [setting.key, setting.value])));
+      return {
+        enabled: configuration.enabled,
+        ready: isSamlConfigurationReady(configuration),
+        issues: configuration.enabled ? getSamlConfigurationIssues(configuration) : [],
+      };
+    }),
+    configuration: superadminProcedure.query(async () => {
+      const settings = await getSystemSettings();
+      const configuration = parseSamlConfiguration(Object.fromEntries(settings.map((setting) => [setting.key, setting.value])));
+      return { ...configuration, ready: isSamlConfigurationReady(configuration), issues: getSamlConfigurationIssues(configuration) };
+    }),
+    updateConfiguration: superadminProcedure
+      .input(z.object({
+        enabled: z.boolean(),
+        idpEntryPoint: z.string().max(2048),
+        idpIssuer: z.string().max(2048),
+        idpCertificate: z.string().max(12000),
+        spEntityId: z.string().max(2048),
+        acsUrl: z.string().max(2048),
+        emailAttribute: z.string().min(1).max(256),
+        givenNameAttribute: z.string().min(1).max(256),
+        surnameAttribute: z.string().min(1).max(256),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const configuration = parseSamlConfiguration({
+          [SAML_SETTING_KEYS.enabled]: input.enabled ? "true" : "false",
+          [SAML_SETTING_KEYS.idpEntryPoint]: input.idpEntryPoint,
+          [SAML_SETTING_KEYS.idpIssuer]: input.idpIssuer,
+          [SAML_SETTING_KEYS.idpCertificate]: input.idpCertificate,
+          [SAML_SETTING_KEYS.spEntityId]: input.spEntityId,
+          [SAML_SETTING_KEYS.acsUrl]: input.acsUrl,
+          [SAML_SETTING_KEYS.emailAttribute]: input.emailAttribute,
+          [SAML_SETTING_KEYS.givenNameAttribute]: input.givenNameAttribute,
+          [SAML_SETTING_KEYS.surnameAttribute]: input.surnameAttribute,
+        });
+        const issues = getSamlConfigurationIssues(configuration);
+        if (configuration.enabled && issues.length > 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `SAML kann noch nicht aktiviert werden: ${issues.join(" ")}` });
+        }
+        await Promise.all([
+          upsertSystemSetting(SAML_SETTING_KEYS.enabled, configuration.enabled ? "true" : "false", ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.idpEntryPoint, configuration.idpEntryPoint, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.idpIssuer, configuration.idpIssuer, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.idpCertificate, configuration.idpCertificate, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.spEntityId, configuration.spEntityId, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.acsUrl, configuration.acsUrl, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.emailAttribute, configuration.emailAttribute, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.givenNameAttribute, configuration.givenNameAttribute, ctx.user.id),
+          upsertSystemSetting(SAML_SETTING_KEYS.surnameAttribute, configuration.surnameAttribute, ctx.user.id),
+        ]);
+        return { success: true, ready: isSamlConfigurationReady(configuration), issues };
+      }),
+  }),
 
   // Öffentliche Systemstatus-Prozedur (kein Auth erforderlich)
   maintenanceStatus: publicProcedure.query(async () => {

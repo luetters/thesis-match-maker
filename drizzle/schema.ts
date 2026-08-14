@@ -398,6 +398,11 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	passwordHash: varchar({ length: 255 }),
+	// Optionale Föderationszuordnung für die SAML-2.0-Anmeldung.
+	// Das lokale Passwort bleibt unabhängig davon weiterhin verfügbar.
+	samlSubject: varchar("saml_subject", { length: 512 }),
+	samlIssuer: varchar("saml_issuer", { length: 512 }),
+	samlLinkedAt: timestamp("saml_linked_at", { mode: "string" }),
 	programmeId: int("programme_id"),
 	preferredLanguage: mysqlEnum(['de','en']).default('de').notNull(),
 	roleStatus: mysqlEnum(['approved','pending','rejected']).default('approved').notNull(),
@@ -447,6 +452,7 @@ export const users = mysqlTable("users", {
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),
+	uniqueIndex("users_saml_issuer_subject_unique").on(table.samlIssuer, table.samlSubject),
 ]);
 
 // ─── Fehlende Tabellen (wurden in db.ts referenziert, aber nicht definiert) ───
