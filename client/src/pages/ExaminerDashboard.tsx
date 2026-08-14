@@ -4818,6 +4818,10 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
       });
       setAddedIds((previous) => new Set(Array.from(previous).concat(examinerId)));
       await utils.thesisPhase27.getCommissionPreferences.invalidate();
+      await Promise.all([
+        utils.newExaminers.getList.invalidate(),
+        utils.newExaminers.getCount.invalidate(),
+      ]);
       toast.success(`${examinerName} wurde zu Ihren Kommissionspräferenzen hinzugefügt.`);
       onAddToPreferences?.();
     } catch (error) {
@@ -4834,7 +4838,9 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
     );
   }
 
-  if (examiners.length === 0) {
+  const visibleExaminers = examiners.filter((examiner) => !addedIds.has(examiner.id) && !(currentPrefs?.secondExaminerIds ?? []).includes(examiner.id));
+
+  if (visibleExaminers.length === 0) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -4855,12 +4861,12 @@ function NewExaminersView({ onAddToPreferences }: { onAddToPreferences?: () => v
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p className="text-sm text-blue-700">
-          <strong>{examiners.length} neue Prüfer:in{examiners.length !== 1 ? "nen" : ""}</strong> seit Ihrer letzten Anmeldung.
+          <strong>{visibleExaminers.length} neue Prüfer:in{visibleExaminers.length !== 1 ? "nen" : ""}</strong> seit Ihrer letzten Anmeldung.
           Sie können diese direkt in Ihre Präferenzliste aufnehmen.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        {examiners.map((ex) => {
+        {visibleExaminers.map((ex) => {
           const programs: string[] = Array.isArray(ex.studyPrograms)
             ? ex.studyPrograms as string[]
             : typeof ex.studyPrograms === "string"

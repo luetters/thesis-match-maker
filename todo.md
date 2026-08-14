@@ -1570,6 +1570,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Terminfindung für Kolloquien bis zur Verwaltungsfreigabe der Verteidigungsfähigkeit gesperrt
 - [x] Fristen, Protokollierung und Sperrlogik automatisiert getestet
 
+## Neue Prüfer:innen ohne bestehende Präferenz
+- [x] Ermittlung neuer Prüfer:innen und bestehende Präferenzfilter geprüft
+- [x] Liste und Zähler auf noch nicht hinzugefügte Prüfer:innen beschränkt
+- [x] Filterlogik automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

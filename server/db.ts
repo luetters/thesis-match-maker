@@ -7245,11 +7245,19 @@ export async function getNewExaminersCount(userId: number): Promise<number> {
   const rows = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(users)
+    .leftJoin(
+      examinerCommissionPreferences,
+      and(
+        eq(examinerCommissionPreferences.firstExaminerId, userId),
+        eq(examinerCommissionPreferences.secondExaminerId, users.id),
+      ),
+    )
     .where(
       and(
         eq(users.role, "examiner"),
         eq(users.roleStatus, "approved"),
-        gt(users.roleConfirmedAt, lastSeen)
+        gt(users.roleConfirmedAt, lastSeen),
+        isNull(examinerCommissionPreferences.id),
       )
     );
   return Number(rows[0]?.count ?? 0);
@@ -7280,11 +7288,19 @@ export async function getNewExaminers(userId: number): Promise<Array<{
     })
     .from(users)
     .leftJoin(examinerProfiles, eq(examinerProfiles.userId, users.id))
+    .leftJoin(
+      examinerCommissionPreferences,
+      and(
+        eq(examinerCommissionPreferences.firstExaminerId, userId),
+        eq(examinerCommissionPreferences.secondExaminerId, users.id),
+      ),
+    )
     .where(
       and(
         eq(users.role, "examiner"),
         eq(users.roleStatus, "approved"),
-        gt(users.roleConfirmedAt, lastSeen)
+        gt(users.roleConfirmedAt, lastSeen),
+        isNull(examinerCommissionPreferences.id),
       )
     )
     .orderBy(desc(users.roleConfirmedAt));
