@@ -1488,7 +1488,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
       )}
 
       {/* Anmeldedokument – Vorschau + Download */}
-      {(["FIRST_EXAMINER_ACCEPTED", "SECOND_EXAMINER_ASSIGNED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && (
+      {(["SECOND_EXAMINER_ACCEPTED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"] as string[]).includes(req.status) && req.examinerId && (req.secondExaminerId || (req as any).externalSecondExaminerFirstName) && (
         <div className="mb-3 flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setShowRegPreview(true)}

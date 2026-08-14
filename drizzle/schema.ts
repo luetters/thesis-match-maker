@@ -379,6 +379,8 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	secondExaminerRequestedAt: datetime("second_examiner_requested_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter zugesagt hat
 	secondExaminerAcceptedAt: datetime("second_examiner_accepted_at", { mode: "string" }),
+	// Zeitstempel: offizielles QR-geschütztes Anmeldedokument an Studierende:n versandt
+	registrationDocumentSentAt: datetime("registration_document_sent_at", { mode: "string" }),
 	// Zeitstempel: wann der Zweitgutachter abgelehnt hat
 	secondExaminerRejectedAt: datetime("second_examiner_rejected_at", { mode: "string" }),
 	// Optionaler Ablehnungsgrund des Zweitgutachters

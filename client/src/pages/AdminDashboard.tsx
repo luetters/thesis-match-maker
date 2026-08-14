@@ -580,6 +580,9 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        {Boolean((req as any).examinerId && ((req as any).secondExaminerId || (req as any).externalSecondExaminerFirstName) && ["SECOND_EXAMINER_ACCEPTED", "MATCHED", "REGISTERED", "ACCEPTED", "COMPLETED"].includes(req.status)) && (
+                          <a href={`/api/thesis/${req.id}/registration.pdf`} className="rounded-lg border border-[#76B900]/40 px-2.5 py-1.5 text-xs font-semibold text-[#4a7200] hover:bg-[#76B900]/10" title="QR-geschütztes Anmeldedokument herunterladen">Dokument</a>
+                        )}
                         <button
                           onClick={() => setAssignModal({ id: req.id, title: req.title })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"

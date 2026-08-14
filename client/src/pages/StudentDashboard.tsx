@@ -2476,7 +2476,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </a>
           </div>
           {/* Anmeldedokument – Vorschau + Download */}
-          {("FIRST_EXAMINER_ACCEPTED SECOND_EXAMINER_ASSIGNED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && (
+          {("SECOND_EXAMINER_ACCEPTED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && req.examinerId && (req.secondExaminerId || (req as any).externalSecondExaminerFirstName) && (
             <>
               <button
                 onClick={() => setShowRegPreview(true)}

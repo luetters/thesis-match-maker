@@ -1550,6 +1550,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] SAML-2.0-Integrationsleitfaden als PDF im Superadmin-Bereich herunterladbar gemacht
 - [x] Aktivierung, Fehlerseite und PDF-Export automatisiert getestet
 
+## Offizielles Anmeldedokument nach Kommissionsbildung
+- [x] Dokumenterzeugung, Kommissionsstatus und bestehende Versand- sowie Downloadrechte geprüft
+- [x] QR-geschütztes Anmeldedokument bei vollständiger Kommissionsbildung automatisch als E-Mail-Anhang an Studierende gesendet
+- [x] Geschützten Dokumentdownload am Anfragedatensatz für Verwaltung sowie Erst- und Zweitgutachter:innen angezeigt
+- [x] Dokumentversand und Downloadberechtigungen automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

@@ -6594,22 +6594,8 @@ export async function acceptAsSecondExaminer(
     }
   }
 
-  // E-Mail an Studierenden
-  const [student] = await db
-    .select({ name: users.name, email: users.email })
-    .from(users)
-    .where(eq(users.id, thesis.studentId))
-    .limit(1);
-  if (student?.email) {
-    const { sendEmail } = await import("./emailHelper");
-    const { subject, html, text } = buildSecondExaminerConfirmedEmail({
-      recipientName: student.name,
-      recipientRole: "student",
-      secondExaminerName,
-      thesisTitle: thesis.title,
-    });
-    await sendEmail({ to: student.email, subject, html, text });
-  }
+  const { sendOfficialRegistrationDocument } = await import("./thesisRegistrationDocument");
+  await sendOfficialRegistrationDocument(thesisRequestId);
 }
 
 /**
@@ -7046,6 +7032,9 @@ export async function adminDirectAssignExaminers(
   }
 
   await db.update(thesisRequests).set(updateData as any).where(eq(thesisRequests.id, thesisRequestId));
+
+  const { sendOfficialRegistrationDocument } = await import("./thesisRegistrationDocument");
+  await sendOfficialRegistrationDocument(thesisRequestId);
 
   return { success: true, newStatus };
 }

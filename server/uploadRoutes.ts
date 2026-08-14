@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
 import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, getAllColloquiums, getColloquiumsByExaminer } from "./db";
 import { generateThesisPdf } from "./thesisPdf";
+import { hasCompleteCommission } from "./thesisRegistrationDocument";
 import crypto from "crypto";
 import { generateDeadlineIcs, createIcsEvent } from "./icsHelper";
 import { storagePut } from "./storage";
@@ -268,6 +269,9 @@ export function registerUploadRoutes(app: Express) {
 
       const thesis = await getThesisRequestById(thesisId);
       if (!thesis) { res.status(404).json({ error: "Thesis nicht gefunden" }); return; }
+      if (!hasCompleteCommission(thesis)) {
+        res.status(409).json({ error: "Das offizielle Anmeldedokument steht erst nach vollständiger Kommissionsbildung zur Verfügung." }); return;
+      }
 
       // Student, zugewiesene Gutachter oder Admin/PAV dürfen herunterladen
       const allowedRoles = ["admin", "superadmin", "pav", "dean", "vice_dean"];
