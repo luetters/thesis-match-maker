@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { buildFullName } from "@shared/const";
 import { getCurrentSemesterValue } from "@shared/currentSemester";
+import { getThesisStatusPresentation, thesisStatusToneClasses } from "@shared/thesisStatusPresentation";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
 import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
@@ -3960,11 +3961,9 @@ function MyColloquiums() {
 
 // --- Statushistorie (Prüfer:in) ---
 function ExaminerStatusHistory() {
-  const { t } = useLanguage();
   const { data: assignments, isLoading } = trpc.thesis.examinerRequests.useQuery();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [semesterFilter, setSemesterFilter] = useState<string>(() => getCurrentSemesterValue());
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const { data: logs } = trpc.auditLog.byThesis.useQuery(
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
@@ -3985,86 +3984,34 @@ function ExaminerStatusHistory() {
       )
     ).concat(getCurrentSemesterValue())
   );
-  // Gefilterte Zuweisungen (Semester + Suche)
-  const filteredAssignments = (assignments as Array<{ id: number; title: string; studentName?: string; targetSemester?: string | null; programmeAbbreviation?: string | null }>)
-    .filter((r) => semesterFilter === "all" || r.targetSemester === semesterFilter)
-    .filter((r) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        (r.studentName ?? "").toLowerCase().includes(q) ||
-        (r.title ?? "").toLowerCase().includes(q) ||
-        (r.programmeAbbreviation ?? "").toLowerCase().includes(q)
-      );
-    });
+  const filteredAssignments = (assignments as Array<any>).filter((request) => semesterFilter === "all" || request.targetSemester === semesterFilter);
+  const selectedAssignment = filteredAssignments.find((request) => request.id === selectedId) ?? (assignments as Array<any>).find((request) => request.id === selectedId);
   const actionLabel: Record<string, string> = {
-    THESIS_CREATED: t.examiner.auditThesisCreated ?? "Anfrage eingereicht",
-    STATUS_CHANGED: t.examiner.auditStatusChanged ?? "Status geändert",
-    EXAMINER_ACCEPTED: t.examiner.auditExaminerAccepted ?? "Prüfer:in hat angenommen",
-    EXAMINER_REJECTED: t.examiner.auditExaminerRejected ?? "Prüfer:in hat abgelehnt",
-    FIRST_EXAMINER_ASSIGNED: t.examiner.auditFirstAssigned ?? "Erstprüfer:in zugewiesen",
-    SECOND_EXAMINER_ASSIGNED: t.examiner.auditSecondAssigned ?? "Zweitprüfer:in zugewiesen",
-    COLLOQUIUM_CREATED: t.examiner.auditColloquiumCreated ?? "Kolloquium angelegt",
-    DEADLINE_SET: t.examiner.auditDeadlineSet ?? "Abgabefrist gesetzt",
+    THESIS_CREATED: "Antrag erstellt",
+    THESIS_CREATED_WITH_WANTED_EXAMINER: "Antrag mit gewünschter Erstprüferin bzw. gewünschtem Erstprüfer erstellt",
+    STATUS_CHANGED: "Status geändert",
+    EXAMINER_ACCEPTED: "Prüfer:in hat angenommen",
+    EXAMINER_REJECTED: "Prüfer:in hat abgelehnt",
+    FIRST_EXAMINER_ASSIGNED: "Erstgutachter:in zugewiesen",
+    SECOND_EXAMINER_ASSIGNED: "Zweitgutachter:in zugewiesen",
+    COLLOQUIUM_CREATED: "Kolloquium angelegt",
+    DEADLINE_SET: "Abgabetermin gesetzt",
   };
   return (
     <div className="space-y-5">
-      {/* Suchfeld */}
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
-        <input
-          type="text"
-          placeholder="Nach Name oder Titel suchen..."
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setSelectedId(null); }}
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 bg-white"
-          style={{ '--tw-ring-color': '#76B900' } as React.CSSProperties}
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => { setSearchQuery(""); setSelectedId(null); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >×</button>
-        )}
+      <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div><h2 className="text-lg font-semibold text-gray-900">Betreute Abschlussarbeiten</h2><p className="mt-1 text-sm text-gray-600">Wählen Sie ein Semester; mit einem Klick auf den Namen öffnen Sie die vollständige Fallhistorie.</p></div>
+        <label className="text-sm font-medium text-gray-700">Semester<select value={semesterFilter} onChange={(event) => { setSemesterFilter(event.target.value); setSelectedId(null); }} className="ml-3 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"><option value="all">Alle Semester</option>{allSemesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}</select></label>
       </div>
-      <div className="flex flex-wrap gap-4 items-end">
-        {/* Semesterfilter */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Semester</label>
-          <select
-            value={semesterFilter}
-            onChange={(e) => { setSemesterFilter(e.target.value); setSelectedId(null); }}
-            className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
-          >
-            <option value="all">Alle Semester</option>
-            {allSemesters.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        {/* Thesis-Auswahl */}
-        <div className="flex-1 min-w-[260px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Abschlussarbeit</label>
-          <select
-            value={selectedId ?? ""}
-            onChange={(e) => setSelectedId(e.target.value ? Number(e.target.value) : null)}
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none bg-white"
-          >
-            <option value="">-- Bitte wählen --</option>
-            {filteredAssignments.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.studentName
-                  ? `${r.studentName}${r.programmeAbbreviation ? ` (${r.programmeAbbreviation})` : ""} – ${r.title}`
-                  : r.title}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[760px]"><thead><tr className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"><th className="px-5 py-3">Name</th><th className="px-5 py-3">Studiengang</th><th className="px-5 py-3">Thema</th><th className="px-5 py-3">Geplantes Abgabedatum</th><th className="px-5 py-3">Aktueller Status</th></tr></thead><tbody>{filteredAssignments.map((request) => { const status = getThesisStatusPresentation(request); return <tr key={request.id} className="border-t border-gray-100 text-sm text-gray-700 hover:bg-[#76B900]/5"><td className="px-5 py-3"><button type="button" onClick={() => setSelectedId(request.id)} className="font-semibold text-[#4a7200] hover:underline">{request.studentName ?? "Studierende:r"}</button></td><td className="px-5 py-3">{request.programmeAbbreviation ?? request.programmeName ?? "–"}</td><td className="max-w-[360px] px-5 py-3"><span className="line-clamp-2">{request.title || "Thema wird noch festgelegt"}</span></td><td className="px-5 py-3">{request.submissionDeadline ? new Date(request.submissionDeadline).toLocaleDateString("de-DE") : "Noch nicht festgelegt"}</td><td className="px-5 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${thesisStatusToneClasses[status.tone]}`}>{status.label}</span></td></tr>; })}</tbody></table></div>
+        {!filteredAssignments.length && <p className="p-8 text-center text-sm text-gray-500">Für dieses Semester liegen keine betreuten Abschlussarbeiten vor.</p>}
       </div>
-      {selectedId && (
+      {selectedAssignment && (
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-5">{t.examiner.history ?? "Thesis Status"}</h3>
+          {(() => { const status = getThesisStatusPresentation(selectedAssignment); return <div className={`mb-5 rounded-xl px-4 py-3 ${thesisStatusToneClasses[status.tone]}`}><p className="text-xs font-semibold uppercase tracking-wide">Aktueller Status</p><p className="mt-1 text-lg font-bold">{status.label}</p></div>; })()}
+          <div className="mb-6 grid gap-4 border-b border-gray-100 pb-5 md:grid-cols-2"><div><h3 className="text-lg font-semibold text-gray-900">{selectedAssignment.studentName ?? "Studierende:r"}</h3><p className="mt-1 text-sm text-gray-600">{selectedAssignment.programmeAbbreviation ?? selectedAssignment.programmeName ?? "Studiengang nicht hinterlegt"}</p><p className="mt-3 font-medium text-gray-900">{selectedAssignment.title || "Thema wird noch festgelegt"}</p></div><div className="space-y-1.5 text-sm text-gray-700"><p><span className="font-semibold">Erstgutachter:in:</span> {selectedAssignment.firstExaminerName ?? "Noch nicht zugeordnet"}</p><p><span className="font-semibold">Zweitgutachter:in:</span> {selectedAssignment.secondExaminerName ?? "Noch nicht zugeordnet"}</p><p><span className="font-semibold">Geplantes Abgabedatum:</span> {selectedAssignment.submissionDeadline ? new Date(selectedAssignment.submissionDeadline).toLocaleDateString("de-DE", { dateStyle: "long" }) : "Noch nicht festgelegt"}</p></div></div>
+          <h4 className="mb-5 font-semibold text-gray-900">Vollständige Historie</h4>
           {!logs?.length ? (
             <p className="text-sm text-gray-500">Noch keine Einträge.</p>
           ) : (
@@ -4080,8 +4027,9 @@ function ExaminerStatusHistory() {
                   <div className="pl-2">
                     <p className="text-sm font-semibold text-gray-900">{actionLabel[log.action] ?? log.action}</p>
                     {log.fromStatus && log.toStatus && (
-                      <p className="text-xs text-gray-500">{log.fromStatus} → {log.toStatus}</p>
+                      <p className="text-xs text-gray-500">{getThesisStatusPresentation({ status: log.fromStatus }).label} → {getThesisStatusPresentation({ status: log.toStatus }).label}</p>
                     )}
+                    {(log.action === "THESIS_CREATED" || log.action === "THESIS_CREATED_WITH_WANTED_EXAMINER") && <p className="text-xs text-gray-600">Thema: {selectedAssignment.title || "Thema wird noch festgelegt"} · Studiengang: {selectedAssignment.programmeAbbreviation ?? selectedAssignment.programmeName ?? "–"}</p>}
                     {log.reason && <p className="text-xs text-gray-500 italic mt-0.5">Begründung: {log.reason}</p>}
                     <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
                   </div>

@@ -1575,6 +1575,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Liste und Zähler auf noch nicht hinzugefügte Prüfer:innen beschränkt
 - [x] Filterlogik automatisiert getestet
 
+## Thesis-Statusansicht für Prüfer:innen
+- [x] Bestehende Statusansicht, Semesterfilter und Historienprotokoll geprüft
+- [x] Semesterbasierte Tabellenübersicht mit Name, Studiengang, Thema und geplantem Abgabetermin umgesetzt
+- [x] Detailhistorie um aktuellen Klartextstatus, Erst- und Zweitgutachter:in sowie Thema und Studiengang ergänzt
+- [x] Statusansicht und Historienaufbereitung automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
