@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getRoleBadge } from "@shared/const";
+import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -991,6 +992,7 @@ export default function SuperadminDashboard() {
     { id: "pav", label: "PAV", icon: "🏫" },
     { id: "audit", label: "Audit-Log", icon: "📋" },
     { id: "config", label: t.superadmin.tabs.settings, icon: "⚙️" },
+    { id: "saml", label: "SAML 2.0", icon: "🔐" },
     { id: "email_templates", label: t.superadmin.tabs.emailTemplates, icon: "✉️" },
     { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
   ];
@@ -1046,6 +1048,7 @@ export default function SuperadminDashboard() {
       {activeTab === "pav" && <PavManagementTab />}
       {activeTab === "audit" && <AuditLogTab />}
       {activeTab === "config" && <SystemConfigTab />}
+      {activeTab === "saml" && <SamlConfigurationTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "admin_management" && <AdminManagementTab />}
     </ThesisDashboardLayout>

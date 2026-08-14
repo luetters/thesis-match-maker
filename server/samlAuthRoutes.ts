@@ -12,7 +12,7 @@ async function loadSamlConfiguration() {
 }
 
 function redirectToLogin(res: Response, code: string) {
-  res.redirect(`/login?error=${encodeURIComponent(code)}`);
+  res.redirect(`/saml/error?code=${encodeURIComponent(code)}`);
 }
 
 export function registerSamlAuthRoutes(app: Express) {

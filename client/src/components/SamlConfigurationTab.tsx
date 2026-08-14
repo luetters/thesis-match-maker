@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Copy, ExternalLink, Save, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, Download, ExternalLink, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,13 @@ export function SamlConfigurationTab() {
     },
     onError: (error) => toast.error(error.message ?? "SAML-Konfiguration konnte nicht gespeichert werden."),
   });
+  const toggleMutation = trpc.saml.setEnabled.useMutation({
+    onSuccess: async ({ enabled }) => {
+      await Promise.all([utils.saml.configuration.invalidate(), utils.saml.status.invalidate()]);
+      toast.success(enabled ? "Die SAML-Anmeldung ist aktiviert." : "Die SAML-Anmeldung ist deaktiviert.");
+    },
+    onError: (error) => toast.error(error.message ?? "SAML-Anmeldung konnte nicht umgestellt werden."),
+  });
 
   const update = <K extends keyof SamlForm>(key: K, value: SamlForm[K]) => setForm((current) => ({ ...current, [key]: value }));
   const issues = configurationQuery.data?.issues ?? [];
@@ -89,7 +96,7 @@ export function SamlConfigurationTab() {
             <p className="mt-1 text-sm text-gray-500">Diese Werte werden an die Identity-Management-Stelle übermittelt.</p>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2">
-            <Switch id="saml-enabled" checked={form.enabled} onCheckedChange={(value) => update("enabled", value)} />
+            <Switch id="saml-enabled" checked={configurationQuery.data?.enabled ?? false} disabled={toggleMutation.isPending} onCheckedChange={(value) => toggleMutation.mutate({ enabled: value })} />
             <Label htmlFor="saml-enabled" className="font-medium text-gray-800">SAML-Anmeldung aktivieren</Label>
           </div>
         </div>
@@ -129,6 +136,12 @@ export function SamlConfigurationTab() {
           <Field label="Vorname-Attribut" value={form.givenNameAttribute} onChange={(value) => update("givenNameAttribute", value)} />
           <Field label="Nachname-Attribut" value={form.surnameAttribute} onChange={(value) => update("surnameAttribute", value)} />
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="font-semibold text-gray-900">Integrationsleitfaden</h3>
+        <p className="mt-1 text-sm text-gray-500">Laden Sie die aktuelle Kurzfassung als PDF herunter, um sie an die zuständige Stelle der HTW Berlin weiterzugeben.</p>
+        <Button type="button" variant="outline" className="mt-4 gap-2" onClick={() => window.location.assign("/api/export/saml-integration-guide.pdf")}><Download className="h-4 w-4" /> Leitfaden als PDF herunterladen</Button>
       </section>
 
       <div className="flex justify-end">

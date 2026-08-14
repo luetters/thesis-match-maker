@@ -1544,6 +1544,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Optionale SAML-Anmeldung und Superadmin-Konfiguration ohne Aktivierung integriert
 - [x] Abstimmungsdokument für die HTW Berlin erstellt und Integration automatisiert getestet
 
+## Bedienung der SAML-2.0-Anmeldung
+- [x] Eindeutigen Superadmin-Schalter zur Aktivierung oder Deaktivierung der SAML-Anmeldung ergänzt
+- [x] Benutzerfreundliche Fehlerseite mit Hilfetexten für fehlgeschlagene SAML-Anmeldungen bereitgestellt
+- [x] SAML-2.0-Integrationsleitfaden als PDF im Superadmin-Bereich herunterladbar gemacht
+- [x] Aktivierung, Fehlerseite und PDF-Export automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert

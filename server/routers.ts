@@ -517,6 +517,19 @@ export const appRouter = router({
         ]);
         return { success: true, ready: isSamlConfigurationReady(configuration), issues };
       }),
+    setEnabled: superadminProcedure
+      .input(z.object({ enabled: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const settings = await getSystemSettings();
+        const existingConfiguration = parseSamlConfiguration(Object.fromEntries(settings.map((setting) => [setting.key, setting.value])));
+        const configuration = { ...existingConfiguration, enabled: input.enabled };
+        const issues = getSamlConfigurationIssues(configuration);
+        if (input.enabled && issues.length > 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `SAML kann noch nicht aktiviert werden: ${issues.join(" ")}` });
+        }
+        await upsertSystemSetting(SAML_SETTING_KEYS.enabled, input.enabled ? "true" : "false", ctx.user.id);
+        return { enabled: input.enabled, ready: isSamlConfigurationReady(configuration), issues };
+      }),
   }),
 
   // Öffentliche Systemstatus-Prozedur (kein Auth erforderlich)
