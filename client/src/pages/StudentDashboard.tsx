@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { isInternalExaminer, sortExaminersForStudentDepartment } from "@shared/examinerDepartmentPriority";
+import { getRegistrationDocumentGuidance } from "@shared/registrationDocumentGuidance";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { SummaryPdfPreviewModal } from "@/components/SummaryPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
@@ -2476,21 +2477,32 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </a>
           </div>
           {/* Anmeldedokument – Vorschau + Download */}
-          {("SECOND_EXAMINER_ACCEPTED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && req.examinerId && (req.secondExaminerId || (req as any).externalSecondExaminerFirstName) && (
+          {("SECOND_EXAMINER_ACCEPTED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && req.examinerId && (req.secondExaminerId || (req as any).externalSecondExaminerFirstName) && (() => {
+            const guidance = getRegistrationDocumentGuidance({ department: (req as any).programmeFachbereich, targetSemester: req.targetSemester });
+            const sentAt = (req as any).registrationDocumentSentAt;
+            const sentAtLabel = sentAt ? new Date(sentAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : null;
+            return (
             <>
-              <button
-                onClick={() => setShowRegPreview(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors"
-                title="Anmeldedokument im Browser ansehen"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Anmeldedokument ansehen
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => setShowRegPreview(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors" title="Anmeldedokument im Browser ansehen">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    Anmeldedokument ansehen
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{sentAtLabel ? `Zuletzt per E-Mail versandt am ${sentAtLabel}.` : "Der Versandzeitpunkt wird nach erfolgreichem E-Mail-Versand angezeigt."}</TooltipContent>
+              </Tooltip>
+              <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+                <p className="font-semibold">Nächster Schritt: bei der Fachbereichsverwaltung einreichen</p>
+                <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-5 text-blue-900">
+                  <li>Laden Sie das offizielle Dokument mit Verifikations-QR-Code herunter und prüfen Sie die Angaben.</li>
+                  <li>Reichen Sie das Dokument bei der <strong>Verwaltung {guidance.department}</strong> ein. Gemeint ist stets die Verwaltung des Fachbereichs Ihres Studiengangs.</li>
+                  <li>{guidance.deadlineText}</li>
+                </ol>
+              </div>
             </>
-          )}
+            );
+          })()}
           {/* Anfrage bearbeiten – nur bei noch nicht beantworteten Anfragen */}
           {EDITABLE_STATUSES.includes(req.status) && (
             <button

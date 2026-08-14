@@ -355,6 +355,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
       exposeKey: thesisRequests.exposeKey,
       rejectionReason: thesisRequests.rejectionReason,
       createdAt: thesisRequests.createdAt,
+      registrationDocumentSentAt: thesisRequests.registrationDocumentSentAt,
       examinerId: thesisRequests.examinerId,
       secondExaminerId: thesisRequests.secondExaminerId,
       studentId: thesisRequests.studentId,
@@ -405,6 +406,7 @@ export async function getThesisRequestsByStudent(studentId: number) {
       // Studiengang
       programmeName: programmes.name,
       programmeAbbreviation: programmes.abbreviation,
+      programmeFachbereich: programmes.fachbereich,
     })
     .from(thesisRequests)
     .leftJoin(studentAlias, eq(thesisRequests.studentId, studentAlias.id))

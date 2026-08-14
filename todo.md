@@ -1556,6 +1556,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Geschützten Dokumentdownload am Anfragedatensatz für Verwaltung sowie Erst- und Zweitgutachter:innen angezeigt
 - [x] Dokumentversand und Downloadberechtigungen automatisiert getestet
 
+## Einreichung des offiziellen Anmeldedokuments
+- [x] Dokumentstatusdaten und bestehende Einreichungshinweise geprüft
+- [x] Klaren Ablaufhinweis zur Einreichung bei der zuständigen Fachbereichsverwaltung im Studierenden-Dashboard ergänzt
+- [x] Zeitpunkt des letzten E-Mail-Versands als Tooltip am Dokumentdownload angezeigt
+- [x] Einreichungshinweis und Versandzeitpunkt automatisiert getestet
+
 ## Terminabstimmung für Kolloquien
 - [x] Detaillierten Umsetzungsplan für eine dreiseitige Terminabstimmung erstellt
 - [x] Bestehende Kolloquiumsverwaltung und Datenmodell für eine gemeinsame Terminabstimmung analysiert
