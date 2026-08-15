@@ -1656,3 +1656,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Registrierungsseiten und vorhandene Übersetzungsressourcen vollständig geprüft
 - [x] Fehlende englische Texte für Anmeldung, Kontoerstellung und Registrierungsformulare ergänzt
 - [x] Sprachwechsel im Registrierungsprozess automatisiert getestet
+
+## Persistente Sprachpräferenz
+- [x] Bestehende Sprachverwaltung, Profildaten und Anmeldeabläufe geprüft
+- [x] Sprachpräferenz im Nutzerprofil gespeichert und geschützte Schnittstelle bereitgestellt
+- [x] Gespeicherte Sprachpräferenz beim Anmelden und Wechseln der Sprache angewendet
+- [x] Sprachpersistenz automatisiert getestet

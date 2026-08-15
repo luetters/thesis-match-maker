@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { trpc } from "@/lib/trpc";
+import { type PortalLanguage, resolvePreferredLanguage } from "@shared/languagePreference";
 
-export type Language = "de" | "en";
+export type Language = PortalLanguage;
 
 export const translations = {
   de: {
@@ -1848,19 +1850,52 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const utils = trpc.useUtils();
+  const { data: authenticatedUser } = trpc.auth.me.useQuery(undefined, { retry: false });
+  const savePreference = trpc.profile.update.useMutation();
+  const loadedProfileForUserId = useRef<number | null>(null);
   const [lang, setLang] = useState<Language>(() => {
     try {
-      return (localStorage.getItem("htw-lang") as Language) ?? "de";
+      return resolvePreferredLanguage(localStorage.getItem("htw-lang"), null);
     } catch {
       return "de";
     }
   });
 
-  const handleSetLang = (newLang: Language) => {
+  const storeLanguageLocally = (newLang: Language) => {
     setLang(newLang);
     try {
       localStorage.setItem("htw-lang", newLang);
     } catch {}
+  };
+
+  useEffect(() => {
+    const userId = authenticatedUser?.id ?? null;
+    if (userId === null) {
+      loadedProfileForUserId.current = null;
+      return;
+    }
+    if (loadedProfileForUserId.current === userId) return;
+
+    const preferredLanguage = (authenticatedUser as { preferredLanguage?: unknown }).preferredLanguage;
+    storeLanguageLocally(resolvePreferredLanguage(null, preferredLanguage));
+    loadedProfileForUserId.current = userId;
+  }, [authenticatedUser]);
+
+  const handleSetLang = (newLang: Language) => {
+    storeLanguageLocally(newLang);
+    if (!authenticatedUser) return;
+
+    savePreference.mutate(
+      { preferredLanguage: newLang },
+      {
+        onSuccess: () => {
+          utils.auth.me.setData(undefined, (current) =>
+            current ? { ...current, preferredLanguage: newLang } : current,
+          );
+        },
+      },
+    );
   };
 
   return (
