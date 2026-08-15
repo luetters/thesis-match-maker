@@ -1,10 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { getStatusBadge } from "@shared/const";
 import { LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
+import { buildLandingPortalMetrics } from "@shared/landingPortalHighlights";
 
 // ─── Status Badge ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -288,7 +289,13 @@ export default function Home() {
   const { t } = useLanguage();
   const [showLogin, setShowLogin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isHeroVideoPaused, setIsHeroVideoPaused] = useState(false);
+  const [processStepsVisible, setProcessStepsVisible] = useState(false);
   const [, navigate] = useLocation();
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const processSectionRef = useRef<HTMLElement>(null);
+  const { data: portalHighlights } = trpc.landing.getPortalHighlights.useQuery(undefined, { staleTime: 60_000 });
+  const portalMetrics = buildLandingPortalMetrics(portalHighlights);
 
   // Auto-Redirect: Eingeloggte Nutzer:innen direkt zum Dashboard weiterleiten
   useEffect(() => {
@@ -302,6 +309,35 @@ export default function Home() {
     else if (hasR("student")) navigate("/student");
     else if (hasR("examiner") || hasR("second_examiner")) navigate("/examiner");
   }, [isAuthenticated, loading, user, navigate]);
+
+  useEffect(() => {
+    const section = processSectionRef.current;
+    if (!section) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+      setProcessStepsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) {
+        setProcessStepsVisible(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.18 });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleHeroVideo = () => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play().then(() => setIsHeroVideoPaused(false)).catch(() => setIsHeroVideoPaused(true));
+    } else {
+      video.pause();
+      setIsHeroVideoPaused(true);
+    }
+  };
 
   const handleRoleNavigate = (path: string) => {
     setMobileMenuOpen(false);
@@ -482,13 +518,9 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Stats */}
-              <div className="flex gap-8 mt-12">
-                {[
-                  { value: "480+", label: t.landing.fachbereich === "Fachbereich 3" ? "Arbeiten / Jahr" : "Theses / Year" },
-                  { value: "365+", label: t.landing.fachbereich === "Fachbereich 3" ? "Prüfer:innen" : "Examiners" },
-                  { value: "7 + 12", label: "Bachelor / Master" },
-                ].map((stat) => (
+              {/* Aktuelle, ausschließlich aggregierte Portalkennzahlen */}
+              <div className="flex flex-wrap gap-x-8 gap-y-4 mt-12" aria-label="Aktuelle Portalkennzahlen">
+                {portalMetrics.map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl font-extrabold" style={{ color: "#76B900" }}>{stat.value}</div>
                     <div className="text-sm text-gray-500">{stat.label}</div>
@@ -506,6 +538,7 @@ export default function Home() {
                   className="home-hero-fallback h-full w-full object-cover opacity-75"
                 />
                 <video
+                  ref={heroVideoRef}
                   className="home-hero-video absolute inset-0 h-full w-full object-cover"
                   autoPlay
                   muted
@@ -518,6 +551,19 @@ export default function Home() {
                   <source src={LANDING_HERO_MEDIA.videoUrl} type="video/mp4" />
                 </video>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b2a]/85 via-[#0d1b2a]/15 to-transparent" />
+                <button
+                  type="button"
+                  onClick={toggleHeroVideo}
+                  aria-pressed={isHeroVideoPaused}
+                  aria-label={isHeroVideoPaused ? "Videoanimation starten" : "Videoanimation pausieren"}
+                  className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-[#0d1b2a]/70 text-white backdrop-blur-sm transition-colors hover:bg-[#0d1b2a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  {isHeroVideoPaused ? (
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  ) : (
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3v14H7zm7 0h3v14h-3z" /></svg>
+                  )}
+                </button>
                 <div className="absolute inset-x-0 bottom-0 p-7 text-white">
                   <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#b5e86a]">
                     <span className="inline-block h-2 w-2 rounded-full bg-[#b5e86a]" />
@@ -614,7 +660,7 @@ export default function Home() {
       </section>
 
       {/* ─── Ablauf ──────────────────────────────────────────────────────── */}
-      <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
+      <section ref={processSectionRef} className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
@@ -624,20 +670,25 @@ export default function Home() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {t.landing.process.steps.map((step, i) => (
-              <PhaseStep
+              <div
                 key={step.number}
-                number={step.number}
-                title={step.title}
-                description={step.description}
-                icon={[
+                className={`transition-all duration-700 ease-out motion-reduce:translate-y-0 motion-reduce:transition-none ${processStepsVisible ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"}`}
+                style={{ transitionDelay: `${Math.min(i * 90, 450)}ms` }}
+              >
+                <PhaseStep
+                  number={step.number}
+                  title={step.title}
+                  description={step.description}
+                  icon={[
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
                   <svg key="s" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
-                ][i]}
-              />
+                  ][i]}
+                />
+              </div>
             ))}
           </div>
         </div>

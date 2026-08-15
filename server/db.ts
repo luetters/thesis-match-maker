@@ -1226,6 +1226,19 @@ export async function getThesisStats() {
   };
 }
 
+/** Datenschutzarme, aggregierte Kennzahlen für die öffentliche Startseite. */
+export async function getPublicPortalHighlights() {
+  const [userStats, thesisStats] = await Promise.all([getUserStatistics(), getThesisStats()]);
+  const byStatus = new Map((thesisStats?.byStatus ?? []).map((entry) => [entry.name, entry.value]));
+  const confirmedStatuses = ["SECOND_EXAMINER_ACCEPTED", "MATCHED", "APPROVED", "IN_PROGRESS", "SUBMITTED", "DEFENCE_ELIGIBLE", "COMPLETED"];
+
+  return {
+    registeredUsers: userStats.total ?? 0,
+    thesisRequests: thesisStats?.total ?? 0,
+    confirmedCommissions: confirmedStatuses.reduce((total, status) => total + (byStatus.get(status) ?? 0), 0),
+  };
+}
+
 // ─── Password Auth Helpers ────────────────────────────────────────────────────
 export async function getUserByEmail(email: string) {
   const db = await getDb();

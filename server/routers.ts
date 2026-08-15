@@ -44,6 +44,7 @@ import {
   updateUserRole,
   upsertExaminerProfile,
   getThesisStats,
+  getPublicPortalHighlights,
   getUserByEmail,
   setUserPasswordHash,
   getSystemSettings,
@@ -474,6 +475,10 @@ const profileRouterDef = router({
 export const appRouter = router({
   system: systemRouter,
   profile: profileRouterDef,
+
+  landing: router({
+    getPortalHighlights: publicProcedure.query(async () => getPublicPortalHighlights()),
+  }),
 
   saml: router({
     status: publicProcedure.query(async () => {

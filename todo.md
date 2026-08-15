@@ -1624,3 +1624,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Modernes, ruhiges Hintergrundvideo für die Startseite erstellt
 - [x] Zugängliche Videoanimation mit Bewegungsreduktion und Fallback in die Startseite integriert
 - [x] Startseite und Medienverhalten automatisiert getestet
+
+## Dynamische Startseite
+- [x] Kennzahlenquellen, Hero-Video und Prozessschritte geprüft
+- [x] Aktuelle Portalkennzahlen und steuerbare Videopause im Hero-Bereich integriert
+- [x] Dezente und zugängliche Prozesseinblendungen beim Scrollen ergänzt
+- [x] Startseitenkennzahlen, Videosteuerung und Prozesseinblendungen automatisiert getestet
