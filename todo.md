@@ -1651,3 +1651,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Statische Startseitentexte und Übersetzungsressourcen vollständig geprüft
 - [x] Dezenten Sprachhinweis im Hero-Bereich und fehlende englische Übersetzungen ergänzt
 - [x] Vollständigkeit der Sprachumschaltung automatisiert getestet
+
+## Englische Übersetzung des Registrierungsprozesses
+- [x] Registrierungsseiten und vorhandene Übersetzungsressourcen vollständig geprüft
+- [x] Fehlende englische Texte für Anmeldung, Kontoerstellung und Registrierungsformulare ergänzt
+- [x] Sprachwechsel im Registrierungsprozess automatisiert getestet

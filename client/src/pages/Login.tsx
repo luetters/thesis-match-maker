@@ -32,31 +32,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 
 // ─── FAQ-Modal ────────────────────────────────────────────────────────────────
-const faqItems = [
-  {
-    q: "Ich habe eine HTW Berlin E-Mail-Adresse. Kann ich mich damit direkt anmelden?",
-    a: "Nein. Ihre HTW Berlin E-Mail-Adresse ist Ihr Benutzername in diesem System, aber Sie m\u00fcssen sich zun\u00e4chst einmalig registrieren. Erst nach der Registrierung (und ggf. Freischaltung durch die Verwaltung) k\u00f6nnen Sie sich anmelden."
-  },
-  {
-    q: "Welches Passwort soll ich verwenden?",
-    a: "Bitte w\u00e4hlen Sie ein neues, eigenes Passwort ausschlie\u00dflich f\u00fcr dieses System. Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort (z.\u00a0B. f\u00fcr Moodle, LSF oder Webmail). Das Passwort muss mindestens 8 Zeichen lang sein."
-  },
-  {
-    q: "Ich habe mein Passwort vergessen. Was kann ich tun?",
-    a: "Klicken Sie auf der Anmeldeseite auf \"Passwort vergessen?\". Geben Sie Ihre E-Mail-Adresse ein und Sie erhalten einen Link zum Zur\u00fccksetzen des Passworts. Der Link ist 24 Stunden g\u00fcltig."
-  },
-  {
-    q: "Ich habe mich registriert, kann mich aber nicht anmelden.",
-    a: "Pr\u00fcfer:innen und Verwaltungsmitarbeitende m\u00fcssen nach der Registrierung erst durch die Verwaltung der HTW Berlin freigeschaltet werden. Studierende mit einer @student.htw-berlin.de-Adresse werden automatisch freigeschaltet. Bitte haben Sie etwas Geduld oder wenden Sie sich an die Verwaltung."
-  },
-  {
-    q: "Welche E-Mail-Adresse muss ich verwenden?",
-    a: "Studierende m\u00fcssen ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de) verwenden. Pr\u00fcfer:innen und Verwaltungsmitarbeitende verwenden ihre HTW Berlin-Dienstadresse (@htw-berlin.de oder @htw-berlin.com). Externe Zweitgutachter:innen k\u00f6nnen eine beliebige E-Mail-Adresse nutzen."
-  },
-  {
-    q: "Ich erhalte keine E-Mail mit dem Passwort-Reset-Link.",
-    a: "Bitte pr\u00fcfen Sie Ihren Spam-Ordner. Falls die E-Mail dort nicht zu finden ist, wenden Sie sich an die Verwaltung der HTW Berlin."
-  },
+const faqItems = (lang: string) => lang === "de" ? [
+  { q: "Ich habe eine HTW Berlin E-Mail-Adresse. Kann ich mich damit direkt anmelden?", a: "Nein. Ihre HTW Berlin E-Mail-Adresse ist Ihr Benutzername in diesem System, aber Sie müssen sich zunächst einmalig registrieren. Erst nach der Registrierung und gegebenenfalls Freischaltung können Sie sich anmelden." },
+  { q: "Welches Passwort soll ich verwenden?", a: "Bitte wählen Sie ein neues, eigenes Passwort ausschließlich für dieses System. Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort. Das Passwort muss mindestens 8 Zeichen lang sein." },
+  { q: "Ich habe mein Passwort vergessen. Was kann ich tun?", a: "Klicken Sie auf „Passwort vergessen?“. Geben Sie Ihre E-Mail-Adresse ein und Sie erhalten einen Link zum Zurücksetzen des Passworts." },
+  { q: "Ich habe mich registriert, kann mich aber nicht anmelden.", a: "Prüfer:innen und Verwaltungsmitarbeitende werden nach der Registrierung durch die Verwaltung freigeschaltet. Studierende mit einer @student.htw-berlin.de-Adresse werden automatisch freigeschaltet." },
+  { q: "Welche E-Mail-Adresse muss ich verwenden?", a: "Studierende verwenden @student.htw-berlin.de. Prüfer:innen und Verwaltungsmitarbeitende verwenden @htw-berlin.de oder @htw-berlin.com. Externe Zweitgutachter:innen können eine beliebige E-Mail-Adresse verwenden." },
+  { q: "Ich erhalte keine E-Mail mit dem Passwort-Reset-Link.", a: "Bitte prüfen Sie Ihren Spam-Ordner. Falls die E-Mail dort nicht zu finden ist, wenden Sie sich an die Verwaltung der HTW Berlin." },
+] : [
+  { q: "I have an HTW Berlin email address. Can I sign in directly?", a: "No. Your HTW Berlin email address is your username in this system, but you must register first. You can sign in after registration and, where applicable, approval." },
+  { q: "Which password should I use?", a: "Please choose a new, personal password exclusively for this system. Never use your HTW Berlin password. The password must be at least 8 characters long." },
+  { q: "I forgot my password. What can I do?", a: "Select “Forgot password?”, enter your email address, and you will receive a reset link." },
+  { q: "I registered but cannot sign in.", a: "Examiners and administration staff are activated by administration after registration. Students with a @student.htw-berlin.de address are activated automatically." },
+  { q: "Which email address should I use?", a: "Students use @student.htw-berlin.de. Examiners and administration staff use @htw-berlin.de or @htw-berlin.com. External second examiners may use any email address." },
+  { q: "I did not receive a password reset email.", a: "Please check your spam folder. If you cannot find the email, contact HTW Berlin administration." },
 ];
 
 function FaqModal({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: string }) {
@@ -90,7 +79,7 @@ function FaqModal({ open, onClose, lang }: { open: boolean; onClose: () => void;
         </div>
         {/* FAQ Items */}
         <div className="divide-y" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          {faqItems.map((item, i) => (
+          {faqItems(lang).map((item, i) => (
             <div key={i}>
               <button
                 type="button"
@@ -173,6 +162,7 @@ export default function Login() {
       bgColor: "rgba(168,85,247,0.08)",
     },
   ];
+  const departmentOptions = ["FB1", "FB2", "FB3", "FB4", "FB5"] as const;
 
   // Schritte: "action" → "login" | ("role" → "register")
   const [step, setStep] = useState<"action" | "login" | "role" | "register">("action");
@@ -348,7 +338,7 @@ export default function Login() {
       return;
     }
     if ((selectedRole ?? "student") === "student" && !regProgrammeId) {
-      toast.error("Bitte wählen Sie Ihren Studiengang aus.");
+      toast.error(L.selectProgrammeRequired);
       return;
     }
     if (regPassword !== regPasswordConfirm) {
@@ -471,7 +461,7 @@ export default function Login() {
             >
               <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#60a5fa" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               <div style={{ color: "rgba(147,197,253,0.9)" }}>
-                <span className="font-semibold">Erstmalig hier?</span> Ihre HTW-Berlin-E-Mail-Adresse allein reicht nicht aus – Sie müssen sich zunächst <button type="button" onClick={() => setStep("role")} className="underline font-semibold hover:text-white transition-colors">registrieren</button>. Das Passwort für dieses System ist <span className="font-semibold">nicht</span> Ihr HTW-Passwort.
+                <span className="font-semibold">{L.firstTimeTitle}</span> {L.firstTimeHintBefore}<button type="button" onClick={() => setStep("role")} className="underline font-semibold hover:text-white transition-colors">{L.firstTimeHintLink}</button>{L.firstTimeHintAfter}
               </div>
             </div>
             <div className="space-y-3">
@@ -499,10 +489,10 @@ export default function Login() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white text-base">{L.signInBtn}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(118,185,0,0.2)", color: "#76b900" }}>Bereits registriert</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(118,185,0,0.2)", color: "#76b900" }}>{L.registeredBadge}</span>
                   </div>
                   <div className="text-white/60 text-xs mt-1 leading-relaxed">
-                    Sie haben bereits ein Konto und möchten sich anmelden.
+                    {L.signInCardDescription}
                   </div>
                 </div>
                 <div className="text-white/30 text-lg">→</div>
@@ -512,12 +502,12 @@ export default function Login() {
                 <>
                   <div className="flex items-center gap-3 py-1">
                     <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
-                    <span className="text-white/30 text-xs">oder</span>
+                    <span className="text-white/30 text-xs">{L.or}</span>
                     <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
                   </div>
                   <button type="button" onClick={startSamlLogin} className="w-full text-left rounded-xl border transition-all duration-200 p-4 flex items-center gap-4 hover:scale-[1.01]" style={{ background: "rgba(59,130,246,0.07)", borderColor: "rgba(59,130,246,0.35)" }}>
                     <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(59,130,246,0.14)", color: "#93c5fd" }}><ShieldCheck className="w-7 h-7" /></div>
-                    <div className="flex-1 min-w-0"><div className="font-bold text-white text-base">Mit HTW Berlin Web Login anmelden</div><div className="text-white/60 text-xs mt-1 leading-relaxed">Melden Sie sich über das zentrale HTW-Berlin-Portal an.</div></div><div className="text-white/30 text-lg">→</div>
+                    <div className="flex-1 min-w-0"><div className="font-bold text-white text-base">{L.samlSignInTitle}</div><div className="text-white/60 text-xs mt-1 leading-relaxed">{L.samlSignInDescription}</div></div><div className="text-white/30 text-lg">→</div>
                   </button>
                 </>
               )}
@@ -525,7 +515,7 @@ export default function Login() {
               {/* Trennlinie */}
               <div className="flex items-center gap-3 py-1">
                 <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
-                <span className="text-white/30 text-xs">oder</span>
+                <span className="text-white/30 text-xs">{L.or}</span>
                 <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
               </div>
 
@@ -555,10 +545,10 @@ export default function Login() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-white/90 text-sm">{L.createAccount}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}>Erstmalig</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(59,130,246,0.15)", color: "#60a5fa" }}>{L.firstTimeBadge}</span>
                   </div>
                   <div className="text-white/50 text-xs mt-0.5 leading-relaxed">
-                    Noch kein Konto? Jetzt registrieren – Freischaltung durch die Verwaltung erforderlich.
+                    {L.createAccountCardDescription}
                   </div>
                 </div>
                 <div className="text-white/20 text-lg">→</div>
@@ -633,7 +623,7 @@ export default function Login() {
                       style={{ background: "rgba(234,179,8,0.07)", border: "1px solid rgba(234,179,8,0.2)", color: "rgba(253,224,71,0.75)" }}
                     >
                       <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
-                      <span>Dieses Passwort ist <strong>nicht</strong> Ihr HTW-Passwort – es wurde bei der Registrierung in diesem System vergeben.</span>
+                      <span>{L.passwordSystemNotice}</span>
                     </div>
                     {/* Passwort vergessen – prominent direkt unter dem Eingabefeld */}
                     <div className="flex justify-end pt-0.5">
@@ -678,10 +668,9 @@ export default function Login() {
                       className="p-3 rounded-xl text-sm"
                       style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.3)" }}
                     >
-                      <p className="font-semibold mb-1" style={{ color: "#60a5fa" }}>Kein Konto gefunden</p>
+                      <p className="font-semibold mb-1" style={{ color: "#60a5fa" }}>{L.noAccountFoundTitle}</p>
                       <p style={{ color: "rgba(147,197,253,0.85)" }} className="mb-2">
-                        Für <strong>{loginEmail.trim()}</strong> existiert noch kein Konto in diesem System.
-                        Ihre HTW-Berlin-E-Mail-Adresse ist zwar korrekt, aber Sie müssen sich zunächst registrieren.
+                        {L.noAccountFoundBefore} <strong>{loginEmail.trim()}</strong>. {L.noAccountFoundAfter}
                       </p>
                       <button
                         type="button"
@@ -690,7 +679,7 @@ export default function Login() {
                         style={{ background: "rgba(59,130,246,0.2)", color: "#93c5fd" }}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                        Jetzt registrieren
+                        {L.registerNow}
                       </button>
                     </div>
                   )}
@@ -1055,7 +1044,7 @@ export default function Login() {
                                     : "border-white/10 text-white/40 hover:border-white/30 hover:text-white/60"
                                 }`}
                               >
-                                {type === "bachelor" ? "🎓 Bachelor" : "🎖️ Master"}
+                            {type === "bachelor" ? `🎓 ${L.degreeBachelor}` : `🎖️ ${L.degreeMaster}`}
                               </button>
                             ))}
                           </div>
@@ -1065,19 +1054,13 @@ export default function Login() {
                             onChange={(e) => { setRegFachbereich(e.target.value); setRegProgrammeId(null); }}
                             className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
                           >
-                            {[
-                              { value: "FB1", label: "FB 1 – Ingenieurwissenschaften – Energie und Information" },
-                              { value: "FB2", label: "FB 2 – Ingenieurwissenschaften – Technik und Leben" },
-                              { value: "FB3", label: "FB 3 – Wirtschafts- und Rechtswissenschaften" },
-                              { value: "FB4", label: "FB 4 – Informatik, Kommunikation und Wirtschaft" },
-                              { value: "FB5", label: "FB 5 – Gestaltung und Kultur" },
-                            ].map(fb => (
-                              <option key={fb.value} value={fb.value} className="bg-gray-900">{fb.label}</option>
+                            {departmentOptions.map((department) => (
+                              <option key={department} value={department} className="bg-gray-900">{L.departmentNames[department]}</option>
                             ))}
                           </select>
                           {/* Studiengang-Dropdown */}
                           {programmesQuery.isLoading ? (
-                            <div className="text-white/30 text-xs py-2">Lade Studiengänge...</div>
+                            <div className="text-white/30 text-xs py-2">{L.loadingProgrammes}</div>
                           ) : (
                             <select
                               value={regProgrammeId ?? ""}
@@ -1097,8 +1080,8 @@ export default function Login() {
 
                         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
                           <div>
-                            <p className="text-sm font-medium text-white/85">Optionale Einwilligungen</p>
-                            <p className="mt-0.5 text-xs text-white/45">Beide Angaben sind freiwillig und können unausgewählt bleiben.</p>
+                            <p className="text-sm font-medium text-white/85">{L.optionalConsentsTitle}</p>
+                            <p className="mt-0.5 text-xs text-white/45">{L.optionalConsentsDescription}</p>
                           </div>
                           <label htmlFor="plagiarism-consent" className="flex cursor-pointer items-start gap-3 text-sm text-white/75">
                             <Checkbox
@@ -1107,7 +1090,7 @@ export default function Login() {
                               onCheckedChange={(checked) => setRegPlagiarismConsent(checked === true)}
                               className="mt-0.5 border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
                             />
-                            <span>Ich bin mit einer Plagiatsprüfung meiner Abschlussarbeit einverstanden.</span>
+                            <span>{L.plagiarismConsent}</span>
                           </label>
                           <label htmlFor="ai-review-consent" className="flex cursor-pointer items-start gap-3 text-sm text-white/75">
                             <Checkbox
@@ -1116,7 +1099,7 @@ export default function Login() {
                               onCheckedChange={(checked) => setRegAiReviewConsent(checked === true)}
                               className="mt-0.5 border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
                             />
-                            <span>Ich bin mit einer Prüfung meiner Abschlussarbeit auf den Einsatz von KI einverstanden.</span>
+                            <span>{L.aiReviewConsent}</span>
                           </label>
                         </div>
                       </>
@@ -1124,7 +1107,7 @@ export default function Login() {
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label className="text-white/70 text-sm">Vorname</Label>
+                          <Label className="text-white/70 text-sm">{L.firstName}</Label>
                           <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                             <Input
@@ -1140,7 +1123,7 @@ export default function Login() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-white/70 text-sm">Nachname</Label>
+                          <Label className="text-white/70 text-sm">{L.lastName}</Label>
                           <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                             <Input
