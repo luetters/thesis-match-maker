@@ -425,14 +425,14 @@ export default function Home() {
               type="button"
               onClick={() => setIsHighContrast((current) => toggleHighContrastPreference(current))}
               aria-pressed={isHighContrast}
-              aria-label={isHighContrast ? "Hochkontrastmodus deaktivieren" : "Hochkontrastmodus aktivieren"}
+              aria-label={isHighContrast ? t.landing.accessibility.disableContrast : t.landing.accessibility.enableContrast}
               className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${isHighContrast ? "border-yellow-300 bg-yellow-300 text-black focus-visible:outline-yellow-300" : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 focus-visible:outline-[#76B900]"}`}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="8" />
                 <path d="M12 4a8 8 0 0 1 0 16V4Z" fill="currentColor" stroke="none" />
               </svg>
-              <span className="hidden sm:inline">Kontrast</span>
+              <span className="hidden sm:inline">{t.landing.accessibility.contrast}</span>
             </button>
             <LanguageSwitcher className="text-gray-600" />
             {isAuthenticated ? (
@@ -567,7 +567,7 @@ export default function Home() {
               </div>
 
               {/* Aktuelle, ausschließlich aggregierte Portalkennzahlen */}
-              <div className="flex flex-wrap gap-x-8 gap-y-4 mt-12" aria-label="Aktuelle Portalkennzahlen">
+              <div className="flex flex-wrap gap-x-8 gap-y-4 mt-12" aria-label={t.landing.portalHighlights}>
                 {portalMetrics.map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl font-extrabold" style={{ color: "#76B900" }}>{stat.value}</div>
@@ -603,7 +603,7 @@ export default function Home() {
                   type="button"
                   onClick={toggleHeroVideo}
                   aria-pressed={isHeroVideoPaused}
-                  aria-label={isHeroVideoPaused ? "Videoanimation starten" : "Videoanimation pausieren"}
+                  aria-label={isHeroVideoPaused ? t.landing.accessibility.startVideo : t.landing.accessibility.pauseVideo}
                   className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-[#0d1b2a]/70 text-white backdrop-blur-sm transition-colors hover:bg-[#0d1b2a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   {isHeroVideoPaused ? (
@@ -615,10 +615,10 @@ export default function Home() {
                 <div className="absolute inset-x-0 bottom-0 p-7 text-white">
                   <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#b5e86a]">
                     <span className="inline-block h-2 w-2 rounded-full bg-[#b5e86a]" />
-                    Abschlussarbeiten im Blick
+                    {t.landing.heroPreview.label}
                   </div>
                   <p className="max-w-sm text-lg font-semibold leading-snug">
-                    Von der Themenidee bis zur Verteidigung – strukturiert begleitet.
+                    {t.landing.heroPreview.headline}
                   </p>
                 </div>
               </div>
@@ -626,20 +626,20 @@ export default function Home() {
                 className="-mt-6 mx-5 relative rounded-2xl p-6 shadow-xl border border-gray-200 bg-white"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-gray-500 text-sm font-medium">Matching-Anfrage</span>
+                  <span className="text-gray-500 text-sm font-medium">{t.landing.heroPreview.request}</span>
                   <span
                     className="px-2.5 py-1 rounded-full text-xs font-semibold text-white"
                     style={{ backgroundColor: "#76B900" }}
                   >
-                    Bestätigt
+                    {t.landing.heroPreview.confirmed}
                   </span>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { label: "Thema", value: "LLMs in der Kundenbetreuung" },
-                    { label: "Studiengang", value: "M.Sc. Wirtschaftsinformatik" },
-                    { label: "Sprache", value: "Deutsch" },
-                    { label: "Semester", value: "WS 2025/26" },
+                    { label: t.landing.heroPreview.topic, value: t.landing.heroPreview.topicValue },
+                    { label: t.landing.heroPreview.programme, value: t.landing.heroPreview.programmeValue },
+                    { label: t.landing.heroPreview.language, value: t.landing.heroPreview.languageValue },
+                    { label: t.landing.heroPreview.semester, value: t.landing.heroPreview.semesterValue },
                   ].map((row) => (
                     <div key={row.label} className="flex justify-between">
                       <span className="text-gray-400 text-sm">{row.label}</span>
@@ -655,8 +655,8 @@ export default function Home() {
                     AS
                   </div>
                   <div>
-                    <div className="text-gray-800 text-sm font-semibold">Prof. Dr. Anna Schmidt</div>
-                    <div className="text-gray-400 text-xs">Erstprüferin</div>
+                    <div className="text-gray-800 text-sm font-semibold">{t.landing.heroPreview.examinerName}</div>
+                    <div className="text-gray-400 text-xs">{t.landing.heroPreview.firstExaminer}</div>
                   </div>
                   <div className="ml-auto">
                     <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="currentColor" viewBox="0 0 20 20">

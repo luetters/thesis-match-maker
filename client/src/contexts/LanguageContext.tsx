@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 
 export type Language = "de" | "en";
 
-const translations = {
+export const translations = {
   de: {
     // Navigation & Layout
     nav: {
@@ -37,6 +37,30 @@ const translations = {
       heroDesc: "Die zentrale Plattform der HTW Berlin für das Matchmaking zwischen Studierenden und Prüfer:innen – von der ersten Betreuungsanfrage bis zum Kolloquium.",
       startAsStudent: "Als Studierende:r starten",
       examinerArea: "Prüfer:innen-Bereich",
+      portalHighlights: "Aktuelle Portalkennzahlen",
+      accessibility: {
+        contrast: "Kontrast",
+        enableContrast: "Hochkontrastmodus aktivieren",
+        disableContrast: "Hochkontrastmodus deaktivieren",
+        startVideo: "Videoanimation starten",
+        pauseVideo: "Videoanimation pausieren",
+      },
+      heroPreview: {
+        label: "Abschlussarbeiten im Blick",
+        headline: "Von der Themenidee bis zur Verteidigung – strukturiert begleitet.",
+        request: "Matching-Anfrage",
+        confirmed: "Bestätigt",
+        topic: "Thema",
+        programme: "Studiengang",
+        language: "Sprache",
+        semester: "Semester",
+        firstExaminer: "Erstprüfer:in",
+        topicValue: "LLMs in der Kundenbetreuung",
+        programmeValue: "M.Sc. Wirtschaftsinformatik",
+        languageValue: "Deutsch",
+        semesterValue: "WS 2025/26",
+        examinerName: "Prof. Dr. Anna Schmidt",
+      },
       features: {
         match: "Betreuer:innen finden",
         matchDesc: "Finden Sie passende Erst- und Zweitprüfer:innen für Ihre Abschlussarbeit.",
@@ -870,6 +894,30 @@ const translations = {
       heroDesc: "The central HTW Berlin platform for matching students with thesis supervisors – from the first supervision request to the colloquium.",
       startAsStudent: "Start as Student",
       examinerArea: "Examiner Area",
+      portalHighlights: "Current portal highlights",
+      accessibility: {
+        contrast: "Contrast",
+        enableContrast: "Enable high-contrast mode",
+        disableContrast: "Disable high-contrast mode",
+        startVideo: "Start video animation",
+        pauseVideo: "Pause video animation",
+      },
+      heroPreview: {
+        label: "Theses at a glance",
+        headline: "Structured support from the first idea to the defence.",
+        request: "Matching request",
+        confirmed: "Confirmed",
+        topic: "Topic",
+        programme: "Study programme",
+        language: "Language",
+        semester: "Semester",
+        firstExaminer: "First examiner",
+        topicValue: "LLMs in Customer Service",
+        programmeValue: "M.Sc. Business Informatics",
+        languageValue: "English",
+        semesterValue: "Winter Semester 2025/26",
+        examinerName: "Prof. Dr. Anna Schmidt",
+      },
       features: {
         match: "Find Supervisors",
         matchDesc: "Find suitable first and second examiners for your thesis.",

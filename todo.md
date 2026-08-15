@@ -1641,3 +1641,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fünf Videoassets für die Hintergrundabfolge und das neue Hero-Video bereitgestellt
 - [x] Zugängliche Hintergrund-Videoabfolge und Hero-Videoaustausch integriert
 - [x] Medienverhalten und Bewegungsreduktion automatisiert getestet
+
+## Englische Übersetzung des Hero-Bereichs
+- [x] Bestehende Hero-Texte und Übersetzungsstruktur geprüft
+- [x] Englische Hero- und Steuerungstexte ergänzt
+- [x] Sprachwechsel automatisiert getestet
