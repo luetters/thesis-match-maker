@@ -253,6 +253,13 @@
   background: linear-gradient(135deg, #f0f9e8 0%, #e8f5e9 30%, #f0f7ff 70%, #e8f0ff 100%);
 }
 
+/* Die Hero-Animation ist dekorativ. Bei reduzierter Bewegung bleibt der Bildfallback sichtbar. */
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-video {
+    display: none;
+  }
+}
+
 /* ── Status Badges ── */
 .badge-pending {
   background-color: #fef9c3;

@@ -4,6 +4,7 @@ import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { getStatusBadge } from "@shared/const";
+import { LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
 
 // ─── Status Badge ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -496,18 +497,39 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Demo Card */}
+            {/* Ruhige Hero-Animation mit Bildfallback bei reduzierter Bewegung. */}
             <div className="hidden lg:block">
-              {/* HTW-Foto */}
-              <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200 mb-4">
+              <div className="relative h-[302px] overflow-hidden rounded-2xl border border-emerald-900/20 bg-[#0d1b2a] shadow-2xl">
                 <img
-                  src="/manus-storage/htw-banner_7aece4c8.jpg"
+                  src={LANDING_HERO_MEDIA.fallbackImageUrl}
                   alt="HTW Berlin Campus"
-                  className="w-full h-48 object-cover"
+                  className="home-hero-fallback h-full w-full object-cover opacity-75"
                 />
+                <video
+                  className="home-hero-video absolute inset-0 h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  poster={LANDING_HERO_MEDIA.posterUrl}
+                  aria-hidden="true"
+                >
+                  <source src={LANDING_HERO_MEDIA.videoUrl} type="video/mp4" />
+                </video>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b2a]/85 via-[#0d1b2a]/15 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-7 text-white">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[#b5e86a]">
+                    <span className="inline-block h-2 w-2 rounded-full bg-[#b5e86a]" />
+                    Abschlussarbeiten im Blick
+                  </div>
+                  <p className="max-w-sm text-lg font-semibold leading-snug">
+                    Von der Themenidee bis zur Verteidigung – strukturiert begleitet.
+                  </p>
+                </div>
               </div>
               <div
-                className="rounded-2xl p-6 shadow-xl border border-gray-200 bg-white"
+                className="-mt-6 mx-5 relative rounded-2xl p-6 shadow-xl border border-gray-200 bg-white"
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-gray-500 text-sm font-medium">Matching-Anfrage</span>
