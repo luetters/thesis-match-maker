@@ -4,7 +4,7 @@ import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { getStatusBadge } from "@shared/const";
-import { LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
+import { getNextLandingBackgroundVideoIndex, LANDING_BACKGROUND_VIDEOS, LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
 import { buildLandingPortalMetrics } from "@shared/landingPortalHighlights";
 import { getHighContrastPreference, HIGH_CONTRAST_STORAGE_KEY, toggleHighContrastPreference } from "@shared/homeAccessibility";
 
@@ -292,6 +292,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHeroVideoPaused, setIsHeroVideoPaused] = useState(false);
   const [processStepsVisible, setProcessStepsVisible] = useState(false);
+  const [backgroundVideoIndex, setBackgroundVideoIndex] = useState(0);
   const [isHighContrast, setIsHighContrast] = useState(() => {
     try {
       return getHighContrastPreference(window.localStorage.getItem(HIGH_CONTRAST_STORAGE_KEY));
@@ -301,6 +302,7 @@ export default function Home() {
   });
   const [, navigate] = useLocation();
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   const processSectionRef = useRef<HTMLElement>(null);
   const { data: portalHighlights } = trpc.landing.getPortalHighlights.useQuery(undefined, { staleTime: 60_000 });
   const portalMetrics = buildLandingPortalMetrics(portalHighlights);
@@ -345,15 +347,17 @@ export default function Home() {
   }, []);
 
   const toggleHeroVideo = () => {
-    const video = heroVideoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      void video.play().then(() => setIsHeroVideoPaused(false)).catch(() => setIsHeroVideoPaused(true));
+    const videos = [heroVideoRef.current, backgroundVideoRef.current].filter((video): video is HTMLVideoElement => Boolean(video));
+    if (videos.length === 0) return;
+    if (isHeroVideoPaused) {
+      void Promise.all(videos.map((video) => video.play())).then(() => setIsHeroVideoPaused(false)).catch(() => setIsHeroVideoPaused(true));
     } else {
-      video.pause();
+      videos.forEach((video) => video.pause());
       setIsHeroVideoPaused(true);
     }
   };
+
+  const activeBackgroundVideo = LANDING_BACKGROUND_VIDEOS[backgroundVideoIndex];
 
   const handleRoleNavigate = (path: string) => {
     setMobileMenuOpen(false);
@@ -365,9 +369,24 @@ export default function Home() {
   };
 
   return (
-    <div className={`min-h-screen bg-white ${isHighContrast ? "home-high-contrast" : ""}`}>
+    <div className={`relative min-h-screen overflow-hidden bg-white ${isHighContrast ? "home-high-contrast" : ""}`}>
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#0d1b2a]" aria-hidden="true">
+        <video
+          key={activeBackgroundVideo.url}
+          ref={backgroundVideoRef}
+          className="home-background-video h-full w-full object-cover"
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          onEnded={() => setBackgroundVideoIndex((current) => getNextLandingBackgroundVideoIndex(current))}
+        >
+          <source src={activeBackgroundVideo.url} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-[#0d1b2a]/82" />
+      </div>
       {/* ─── Navigation ─────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200 bg-white shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur-sm">
         <div className="container flex items-center justify-between h-16">
           <button
             onClick={() => navigate("/")}
@@ -508,7 +527,7 @@ export default function Home() {
       </nav>
 
       {/* ─── Hero ────────────────────────────────────────────────────────── */}
-      <section className="hero-gradient pt-16 min-h-screen flex items-center">
+      <section className="hero-gradient relative z-10 pt-16 min-h-screen flex items-center">
         <div className="container py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -652,7 +671,7 @@ export default function Home() {
       </section>
 
       {/* ─── Drei Perspektiven ───────────────────────────────────────────── */}
-      <section className="py-20 bg-gray-50">
+      <section className="relative z-10 py-20 bg-white">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">
@@ -689,7 +708,7 @@ export default function Home() {
       </section>
 
       {/* ─── Ablauf ──────────────────────────────────────────────────────── */}
-      <section ref={processSectionRef} className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
+      <section ref={processSectionRef} className="relative z-10 py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>
@@ -724,7 +743,7 @@ export default function Home() {
       </section>
 
       {/* ─── Technischer Rahmen ──────────────────────────────────────────── */}
-      <section className="py-20" style={{ backgroundColor: "#f0f8f0" }}>
+      <section className="relative z-10 py-20" style={{ backgroundColor: "#f0f8f0" }}>
         <div className="container">
           <div className="text-center mb-12">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#76B900" }}>

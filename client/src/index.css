@@ -250,7 +250,7 @@
 
 /* ── Hero Gradient ── */
 .hero-gradient {
-  background: linear-gradient(135deg, #f0f9e8 0%, #e8f5e9 30%, #f0f7ff 70%, #e8f0ff 100%);
+  background: linear-gradient(135deg, rgb(240 249 232 / 89%) 0%, rgb(232 245 233 / 86%) 30%, rgb(240 247 255 / 84%) 70%, rgb(232 240 255 / 88%) 100%);
 }
 
 /* Die Hero-Animation ist dekorativ. Bei reduzierter Bewegung bleibt der Bildfallback sichtbar. */
@@ -304,6 +304,10 @@
 .home-high-contrast .home-hero-video {
   filter: grayscale(1) contrast(1.5);
   opacity: 0.35;
+}
+
+.home-high-contrast .home-background-video {
+  display: none;
 }
 
 .home-high-contrast :focus-visible {

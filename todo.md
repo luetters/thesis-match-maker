@@ -1635,3 +1635,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Startseitengestaltung und Kontrastanforderungen geprüft
 - [x] Gut sichtbaren Hochkontrast-Schalter und kontraststarke Startseitenstile integriert
 - [x] Bedienung und Kontrastmodus automatisiert getestet
+
+## Videoabfolge der Startseite
+- [x] Bereitgestellte Videos, bestehende Hero-Medien und Barrierefreiheitsanforderungen geprüft
+- [x] Fünf Videoassets für die Hintergrundabfolge und das neue Hero-Video bereitgestellt
+- [x] Zugängliche Hintergrund-Videoabfolge und Hero-Videoaustausch integriert
+- [x] Medienverhalten und Bewegungsreduktion automatisiert getestet
