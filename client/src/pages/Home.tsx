@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { getStatusBadge } from "@shared/const";
 import { LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
 import { buildLandingPortalMetrics } from "@shared/landingPortalHighlights";
+import { getHighContrastPreference, HIGH_CONTRAST_STORAGE_KEY, toggleHighContrastPreference } from "@shared/homeAccessibility";
 
 // ─── Status Badge ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -291,6 +292,13 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isHeroVideoPaused, setIsHeroVideoPaused] = useState(false);
   const [processStepsVisible, setProcessStepsVisible] = useState(false);
+  const [isHighContrast, setIsHighContrast] = useState(() => {
+    try {
+      return getHighContrastPreference(window.localStorage.getItem(HIGH_CONTRAST_STORAGE_KEY));
+    } catch {
+      return false;
+    }
+  });
   const [, navigate] = useLocation();
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const processSectionRef = useRef<HTMLElement>(null);
@@ -309,6 +317,14 @@ export default function Home() {
     else if (hasR("student")) navigate("/student");
     else if (hasR("examiner") || hasR("second_examiner")) navigate("/examiner");
   }, [isAuthenticated, loading, user, navigate]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HIGH_CONTRAST_STORAGE_KEY, String(isHighContrast));
+    } catch {
+      // Die Darstellung bleibt funktionsfähig, wenn der Browser keinen Speicher zulässt.
+    }
+  }, [isHighContrast]);
 
   useEffect(() => {
     const section = processSectionRef.current;
@@ -349,7 +365,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-white ${isHighContrast ? "home-high-contrast" : ""}`}>
       {/* ─── Navigation ─────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200 bg-white shadow-sm">
         <div className="container flex items-center justify-between h-16">
@@ -386,6 +402,19 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsHighContrast((current) => toggleHighContrastPreference(current))}
+              aria-pressed={isHighContrast}
+              aria-label={isHighContrast ? "Hochkontrastmodus deaktivieren" : "Hochkontrastmodus aktivieren"}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${isHighContrast ? "border-yellow-300 bg-yellow-300 text-black focus-visible:outline-yellow-300" : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 focus-visible:outline-[#76B900]"}`}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 4a8 8 0 0 1 0 16V4Z" fill="currentColor" stroke="none" />
+              </svg>
+              <span className="hidden sm:inline">Kontrast</span>
+            </button>
             <LanguageSwitcher className="text-gray-600" />
             {isAuthenticated ? (
               <button

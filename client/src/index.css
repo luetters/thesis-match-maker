@@ -260,6 +260,57 @@
   }
 }
 
+/* ── Startseite: explizit aktivierter Hochkontrastmodus ───────────────────── */
+.home-high-contrast {
+  background: #000 !important;
+  color: #fff;
+}
+
+.home-high-contrast .hero-gradient,
+.home-high-contrast section,
+.home-high-contrast nav,
+.home-high-contrast [class*="bg-white"],
+.home-high-contrast [class*="bg-gray"],
+.home-high-contrast [class*="bg-emerald"],
+.home-high-contrast [style*="background"] {
+  background-color: #000 !important;
+  background-image: none !important;
+}
+
+.home-high-contrast :is(h1, h2, h3, h4, p, span, li, label, small, div),
+.home-high-contrast [class*="text-gray"],
+.home-high-contrast [style*="color"] {
+  color: #fff !important;
+}
+
+.home-high-contrast :is(a, button) {
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  background-color: #000 !important;
+}
+
+.home-high-contrast :is(a, button):hover,
+.home-high-contrast :is(a, button)[aria-pressed="true"] {
+  color: #000 !important;
+  background-color: #ffeb3b !important;
+  border-color: #ffeb3b !important;
+}
+
+.home-high-contrast [class*="border"],
+.home-high-contrast hr {
+  border-color: #fff !important;
+}
+
+.home-high-contrast .home-hero-video {
+  filter: grayscale(1) contrast(1.5);
+  opacity: 0.35;
+}
+
+.home-high-contrast :focus-visible {
+  outline: 3px solid #ffeb3b !important;
+  outline-offset: 3px !important;
+}
+
 /* ── Status Badges ── */
 .badge-pending {
   background-color: #fef9c3;

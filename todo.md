@@ -1630,3 +1630,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Aktuelle Portalkennzahlen und steuerbare Videopause im Hero-Bereich integriert
 - [x] Dezente und zugängliche Prozesseinblendungen beim Scrollen ergänzt
 - [x] Startseitenkennzahlen, Videosteuerung und Prozesseinblendungen automatisiert getestet
+
+## Hochkontrastmodus der Startseite
+- [x] Startseitengestaltung und Kontrastanforderungen geprüft
+- [x] Gut sichtbaren Hochkontrast-Schalter und kontraststarke Startseitenstile integriert
+- [x] Bedienung und Kontrastmodus automatisiert getestet
