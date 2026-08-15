@@ -113,11 +113,17 @@ export async function sendOfficialRegistrationDocument(thesisRequestId: number) 
   if ((thesis as any).registrationDocumentSentAt) return { sent: false, reason: "already_sent" as const };
   try {
     const { student, pdf, filename } = await buildOfficialRegistrationDocument(thesisRequestId);
+    const lang = student?.preferredLanguage === "en" ? "en" : "de";
+    const studentName = getPersonName(student, lang === "en" ? "Student" : "Studierende:r");
     const sent = await sendEmail({
       to: student.email!,
-      subject: "Ihr offizielles Anmeldedokument zur Abschlussarbeit",
-      html: `<p>Sehr geehrte:r ${getPersonName(student, "Studierende:r")},</p><p>Ihre Prüfungskommission ist vollständig. Das offizielle Anmeldedokument mit Verifikations-QR-Code erhalten Sie im Anhang.</p><p>Bitte verwenden Sie dieses Dokument für die weiteren administrativen Schritte und reichen Sie nicht lediglich die E-Mail ein.</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
-      text: `Ihre Prüfungskommission ist vollständig. Das offizielle Anmeldedokument mit Verifikations-QR-Code finden Sie im Anhang. Bitte verwenden Sie dieses Dokument für die weiteren administrativen Schritte.`,
+      subject: lang === "en" ? "Your official thesis registration document" : "Ihr offizielles Anmeldedokument zur Abschlussarbeit",
+      html: lang === "en"
+        ? `<p>Dear ${studentName},</p><p>Your examination committee is complete. Please find the official registration document with verification QR code attached.</p><p>Please use this document for the remaining administrative steps and do not submit the email alone.</p><p>Kind regards<br>HTW Berlin – Examination Office</p>`
+        : `<p>Sehr geehrte:r ${studentName},</p><p>Ihre Prüfungskommission ist vollständig. Das offizielle Anmeldedokument mit Verifikations-QR-Code erhalten Sie im Anhang.</p><p>Bitte verwenden Sie dieses Dokument für die weiteren administrativen Schritte und reichen Sie nicht lediglich die E-Mail ein.</p><p>Mit freundlichen Grüßen<br>HTW Berlin – Prüfungsverwaltung</p>`,
+      text: lang === "en"
+        ? "Your examination committee is complete. The official registration document with verification QR code is attached. Please use this document for the remaining administrative steps."
+        : "Ihre Prüfungskommission ist vollständig. Das offizielle Anmeldedokument mit Verifikations-QR-Code finden Sie im Anhang. Bitte verwenden Sie dieses Dokument für die weiteren administrativen Schritte.",
       attachments: [{ filename, content: pdf, contentType: "application/pdf" }],
     });
     if (!sent) return { sent: false, reason: "email_failed" as const };

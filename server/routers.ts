@@ -2515,6 +2515,7 @@ export const appRouter = router({
               requestedAt: thesis.createdAt,
               acceptUrl,
               declineUrl,
+              lang: examinerUser.preferredLanguage === "en" ? "en" : "de",
             });
             await sendEmail({ to: examinerUser.email ?? "", subject: tpl.subject, html: tpl.html });
             sent.push(`Erstgutachter:in (${examinerUser.email})`);
@@ -2545,6 +2546,7 @@ export const appRouter = router({
               requestedAt: thesis.secondExaminerRequestedAt ?? undefined,
               acceptUrl,
               declineUrl,
+              lang: secondUser.preferredLanguage === "en" ? "en" : "de",
             });
             await sendEmail({ to: secondUser.email ?? "", subject: tpl.subject, html: tpl.html });
             sent.push(`Zweitgutachter:in (${secondUser.email})`);
@@ -2872,6 +2874,7 @@ export const appRouter = router({
             programmeLevel: prog.level,
             dashboardUrl,
             removed: false,
+            lang: pavUser.preferredLanguage === "en" ? "en" : "de",
           });
         }
         return { success: true };
@@ -2894,6 +2897,7 @@ export const appRouter = router({
             programmeLevel: prog.level,
             dashboardUrl,
             removed: true,
+            lang: pavUser.preferredLanguage === "en" ? "en" : "de",
           });
         }
         return { success: true };
@@ -3371,6 +3375,7 @@ export const appRouter = router({
             examinerName: examinerUser?.name,
             role: input.examinerRole,
             thesisTitle: thesis.title ?? "Abschlussarbeit",
+            lang: examinerLang,
           });
           await sendEmail({ to: examinerEmail, subject: tpl.subject, html: tpl.html });
         }
@@ -4975,20 +4980,15 @@ export const appRouter = router({
         // Einladungs-E-Mail senden
         const registerUrl = `${input.origin}/register?inviteToken=${token}&role=second_examiner&email=${encodeURIComponent(input.inviteeEmail)}&thesisId=${input.thesisRequestId}`;
         const { sendEmail } = await import("./emailHelper");
-        const studentName = (req as any).studentName ?? "Studierende:r";
-        const firstExaminerName = ctx.user.name ?? "Erstgutachter:in";
-        const thesisTitle = req.title ?? "(kein Titel)";
+        const lang = ctx.user.preferredLanguage === "en" ? "en" : "de";
+        const studentName = (req as any).studentName ?? (lang === "en" ? "Student" : "Studierende:r");
+        const firstExaminerName = ctx.user.name ?? (lang === "en" ? "First examiner" : "Erstgutachter:in");
+        const thesisTitle = req.title ?? (lang === "en" ? "(no title)" : "(kein Titel)");
         await sendEmail({
           to: input.inviteeEmail,
-          subject: `Einladung als Zweitgutachter:in – Thesis Match HTW Berlin`,
-          html: `<p>Sehr geehrte:r ${input.inviteeName},</p>
-<p>Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p>
-<p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p>
-<p>Um die Einladung anzunehmen, registrieren Sie sich bitte im Thesis-Match-System der HTW Berlin:</p>
-<p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p>
-<p>Der Link ist 14 Tage gültig.</p>
-<p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
-          text: `Sehr geehrte:r ${input.inviteeName},\n\nSie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
+          subject: lang === "en" ? "Invitation as second examiner – Thesis Match HTW Berlin" : "Einladung als Zweitgutachter:in – Thesis Match HTW Berlin",
+          html: lang === "en" ? `<p>Dear ${input.inviteeName},</p><p>You have been invited by <strong>${firstExaminerName}</strong> as second examiner for ${studentName}'s thesis.</p><p><strong>Thesis title:</strong> ${thesisTitle}</p><p>To accept the invitation, please register in the HTW Berlin Thesis Match system:</p><p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Register and accept invitation</a></p><p>The link is valid for 14 days.</p><p>Kind regards<br>Thesis Match HTW Berlin</p>` : `<p>Sehr geehrte:r ${input.inviteeName},</p><p>Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p><p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p><p>Um die Einladung anzunehmen, registrieren Sie sich bitte im Thesis-Match-System der HTW Berlin:</p><p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p><p>Der Link ist 14 Tage gültig.</p><p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
+          text: lang === "en" ? `Dear ${input.inviteeName},\n\nYou have been invited as second examiner.\n\nRegistration: ${registerUrl}` : `Sehr geehrte:r ${input.inviteeName},\n\nSie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
         });
         await createAuditLogEntry({
           thesisRequestId: input.thesisRequestId,
@@ -5028,22 +5028,18 @@ export const appRouter = router({
         // E-Mail erneut senden
         const registerUrl = `${input.origin}/register?inviteToken=${inviteToken}&role=second_examiner&email=${encodeURIComponent(inviteeEmail)}&thesisId=${input.thesisRequestId}`;
         const { sendEmail } = await import("./emailHelper");
+        const lang = ctx.user.preferredLanguage === "en" ? "en" : "de";
         const firstName = (req as any).externalSecondExaminerFirstName ?? "";
         const lastName = (req as any).externalSecondExaminerLastName ?? "";
         const inviteeName = `${firstName} ${lastName}`.trim() || inviteeEmail;
-        const studentName = (req as any).studentName ?? "Studierende:r";
-        const firstExaminerName = ctx.user.name ?? "Erstgutachter:in";
-        const thesisTitle = req.title ?? "(kein Titel)";
+        const studentName = (req as any).studentName ?? (lang === "en" ? "Student" : "Studierende:r");
+        const firstExaminerName = ctx.user.name ?? (lang === "en" ? "First examiner" : "Erstgutachter:in");
+        const thesisTitle = req.title ?? (lang === "en" ? "(no title)" : "(kein Titel)");
         await sendEmail({
           to: inviteeEmail,
-          subject: `Erinnerung: Einladung als Zweitgutachter:in – Thesis Match HTW Berlin`,
-          html: `<p>Sehr geehrte:r ${inviteeName},</p>
-<p>Dies ist eine Erinnerung: Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p>
-<p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p>
-<p>Bitte registrieren Sie sich im Thesis-Match-System der HTW Berlin, um die Einladung anzunehmen:</p>
-<p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p>
-<p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
-          text: `Erinnerung: Sie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
+          subject: lang === "en" ? "Reminder: invitation as second examiner – Thesis Match HTW Berlin" : "Erinnerung: Einladung als Zweitgutachter:in – Thesis Match HTW Berlin",
+          html: lang === "en" ? `<p>Dear ${inviteeName},</p><p>This is a reminder: you have been invited by <strong>${firstExaminerName}</strong> as second examiner for ${studentName}'s thesis.</p><p><strong>Thesis title:</strong> ${thesisTitle}</p><p>Please register in the HTW Berlin Thesis Match system to accept the invitation:</p><p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Register and accept invitation</a></p><p>Kind regards<br>Thesis Match HTW Berlin</p>` : `<p>Sehr geehrte:r ${inviteeName},</p><p>Dies ist eine Erinnerung: Sie wurden von <strong>${firstExaminerName}</strong> als Zweitgutachter:in für die Abschlussarbeit von <strong>${studentName}</strong> eingeladen.</p><p><strong>Titel der Arbeit:</strong> ${thesisTitle}</p><p>Bitte registrieren Sie sich im Thesis-Match-System der HTW Berlin, um die Einladung anzunehmen:</p><p><a href="${registerUrl}" style="background:#76B900;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Jetzt registrieren &amp; Einladung annehmen</a></p><p>Mit freundlichen Grüßen<br>Thesis Match HTW Berlin</p>`,
+          text: lang === "en" ? `Reminder: you have been invited as second examiner.\n\nRegistration: ${registerUrl}` : `Erinnerung: Sie wurden als Zweitgutachter:in eingeladen.\n\nRegistrierung: ${registerUrl}`,
         });
         await createAuditLogEntry({
           thesisRequestId: input.thesisRequestId,

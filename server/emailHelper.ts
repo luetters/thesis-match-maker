@@ -80,6 +80,7 @@ function buildEmailHtml({
   ctaAcceptUrl,
   ctaRejectUrl,
   footer,
+  lang = "de",
 }: {
   title: string;
   greeting: string;
@@ -87,6 +88,7 @@ function buildEmailHtml({
   ctaAcceptUrl?: string;
   ctaRejectUrl?: string;
   footer?: string;
+  lang?: "de" | "en";
 }): string {
   const HTW_GREEN = "#006937";
   const HTW_NAVY = "#0d1b2a";
@@ -98,7 +100,7 @@ function buildEmailHtml({
          style="display: inline-block; padding: 14px 28px; background-color: ${HTW_GREEN};
                 color: #ffffff; text-decoration: none; border-radius: 10px;
                 font-weight: 600; font-size: 15px; margin-right: 12px;">
-        ✓ Anfrage annehmen
+        ${lang === "en" ? "✓ Accept request" : "✓ Anfrage annehmen"}
       </a>
       ${
         ctaRejectUrl
@@ -106,7 +108,7 @@ function buildEmailHtml({
                style="display: inline-block; padding: 14px 28px; background-color: #ffffff;
                       color: #dc2626; text-decoration: none; border-radius: 10px;
                       font-weight: 600; font-size: 15px; border: 2px solid #dc2626;">
-               ✕ Anfrage ablehnen
+               ${lang === "en" ? "✕ Decline request" : "✕ Anfrage ablehnen"}
              </a>`
           : ""
       }
@@ -114,7 +116,7 @@ function buildEmailHtml({
     : "";
 
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -159,8 +161,8 @@ function buildEmailHtml({
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">
-                Hochschule für Technik und Wirtschaft Berlin · Fachbereich 3<br/>
-                Diese E-Mail wurde automatisch generiert. Bitte nicht antworten.
+                HTW Berlin · ${lang === "en" ? "Department 3" : "Fachbereich 3"}<br/>
+                ${lang === "en" ? "This email was generated automatically. Please do not reply." : "Diese E-Mail wurde automatisch generiert. Bitte nicht antworten."}
               </p>
             </td>
           </tr>
@@ -246,31 +248,33 @@ export async function sendExaminerCTAEmail({
   // DB-Vorlage laden (Fallback auf hartkodierten Text)
   const tpl = await loadTemplate("examiner_proposal", vars, lang);
 
-  const subject = tpl?.subject ?? `Betreuungsanfrage: ${thesisTitle}`;
+  const useEnglish = lang === "en";
+  const subject = tpl?.subject ?? (useEnglish ? `Supervision request: ${thesisTitle}` : `Betreuungsanfrage: ${thesisTitle}`);
   const html = tpl?.html ?? buildEmailHtml({
-    title: "Neue Betreuungsanfrage",
-    greeting: `Guten Tag ${examinerName},`,
+    title: useEnglish ? "New supervision request" : "Neue Betreuungsanfrage",
+    greeting: useEnglish ? `Dear ${examinerName},` : `Guten Tag ${examinerName},`,
     body: `
-      <p>Sie haben eine neue Betreuungsanfrage für eine Abschlussarbeit erhalten:</p>
+      <p>${useEnglish ? "You have received a new supervision request for a thesis:" : "Sie haben eine neue Betreuungsanfrage für eine Abschlussarbeit erhalten:"}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f9fafb; border-radius: 10px; overflow: hidden;">
         <tr>
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">Thema</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">${useEnglish ? "Title" : "Thema"}</td>
           <td style="padding: 12px 16px; color: #111827; font-weight: 600; font-size: 13px;">${thesisTitle}</td>
         </tr>
         <tr style="background: #ffffff;">
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Studierende:r</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "Student" : "Studierende:r"}</td>
           <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${studentName}</td>
         </tr>
         <tr>
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Fachbereich</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "Department" : "Fachbereich"}</td>
           <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${department}</td>
         </tr>
       </table>
-      <p>Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab. <strong>Kein Login erforderlich.</strong></p>
+      <p>${useEnglish ? "Please accept or decline the request. <strong>No login required.</strong>" : "Bitte nehmen Sie die Anfrage an oder lehnen Sie sie ab. <strong>Kein Login erforderlich.</strong>"}</p>
     `,
     ctaAcceptUrl: acceptUrl,
     ctaRejectUrl: rejectUrl,
-    footer: `Dieser Link ist <strong>24 Stunden</strong> gültig. Nach Ablauf ist keine Aktion mehr möglich.`,
+    footer: useEnglish ? `This link is valid for <strong>24 hours</strong>. No action is possible after it expires.` : `Dieser Link ist <strong>24 Stunden</strong> gültig. Nach Ablauf ist keine Aktion mehr möglich.`,
+    lang,
   });
   const text = tpl?.text;
 
@@ -308,9 +312,10 @@ export async function sendStatusChangeEmail({
   if (!config) return false;
   const { transporter, from } = config;
 
+  const useEnglish = lang === "en";
   const statusLabels: Record<string, { label: string; color: string; emoji: string }> = {
-    ACCEPTED: { label: "Angenommen", color: "#006937", emoji: "✓" },
-    REJECTED: { label: "Abgelehnt", color: "#dc2626", emoji: "✕" },
+    ACCEPTED: { label: useEnglish ? "Accepted" : "Angenommen", color: "#006937", emoji: "✓" },
+    REJECTED: { label: useEnglish ? "Rejected" : "Abgelehnt", color: "#dc2626", emoji: "✕" },
     MATCHED: { label: "Matched", color: "#2563eb", emoji: "🎉" },
   };
   const statusInfo = statusLabels[newStatus] ?? { label: newStatus, color: "#6b7280", emoji: "•" };
@@ -327,31 +332,32 @@ export async function sendStatusChangeEmail({
   // DB-Vorlage laden (Fallback auf hartkodierten Text)
   const tpl = await loadTemplate("status_change", vars, lang);
 
-  const subject = tpl?.subject ?? `Thesis Match: Status geändert – ${statusInfo.label}`;
+  const subject = tpl?.subject ?? (useEnglish ? `Thesis Match: Status updated – ${statusInfo.label}` : `Thesis Match: Status geändert – ${statusInfo.label}`);
   const html = tpl?.html ?? buildEmailHtml({
-    title: `Statusänderung: ${statusInfo.emoji} ${statusInfo.label}`,
-    greeting: `Guten Tag ${studentName},`,
+    title: `${useEnglish ? "Status update" : "Statusänderung"}: ${statusInfo.emoji} ${statusInfo.label}`,
+    greeting: useEnglish ? `Dear ${studentName},` : `Guten Tag ${studentName},`,
     body: `
-      <p>Der Status Ihrer Abschlussarbeits-Anfrage hat sich geändert:</p>
+      <p>${useEnglish ? "The status of your thesis application has changed:" : "Der Status Ihrer Abschlussarbeits-Anfrage hat sich geändert:"}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f9fafb; border-radius: 10px; overflow: hidden;">
         <tr>
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">Thema</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">${useEnglish ? "Title" : "Thema"}</td>
           <td style="padding: 12px 16px; color: #111827; font-weight: 600; font-size: 13px;">${thesisTitle}</td>
         </tr>
         <tr style="background: #ffffff;">
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Neuer Status</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "New status" : "Neuer Status"}</td>
           <td style="padding: 12px 16px;">
             <span style="display: inline-block; padding: 4px 10px; background-color: ${statusInfo.color}20; color: ${statusInfo.color}; border-radius: 20px; font-size: 12px; font-weight: 600;">
               ${statusInfo.label}
             </span>
           </td>
         </tr>
-        ${reason ? `<tr><td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Begründung</td><td style="padding: 12px 16px; color: #111827; font-size: 13px;">${reason}</td></tr>` : ""}
+        ${reason ? `<tr><td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "Reason" : "Begründung"}</td><td style="padding: 12px 16px; color: #111827; font-size: 13px;">${reason}</td></tr>` : ""}
       </table>
-      ${newStatus === "MATCHED" ? "<p>🎉 Herzlichen Glückwunsch! Ihre Anfrage wurde erfolgreich einem Prüfer:innen-Team zugewiesen.</p>" : ""}
+      ${newStatus === "MATCHED" ? `<p>🎉 ${useEnglish ? "Congratulations! Your application has been successfully assigned to an examination team." : "Herzlichen Glückwunsch! Ihre Anfrage wurde erfolgreich einem Prüfer:innen-Team zugewiesen."}</p>` : ""}
     `,
     ctaAcceptUrl: dashboardUrl,
-    footer: "Melden Sie sich in Ihrem Dashboard an, um weitere Details einzusehen.",
+    footer: useEnglish ? "Sign in to your dashboard to view further details." : "Melden Sie sich in Ihrem Dashboard an, um weitere Details einzusehen.",
+    lang,
   });
   const text = tpl?.text;
 
@@ -375,6 +381,7 @@ export async function sendPavProgrammeAssignmentEmail({
   programmeLevel,
   dashboardUrl,
   removed = false,
+  lang,
 }: {
   to: string;
   pavName: string;
@@ -382,41 +389,44 @@ export async function sendPavProgrammeAssignmentEmail({
   programmeLevel: string;
   dashboardUrl: string;
   removed?: boolean;
+  lang?: "de" | "en";
 }): Promise<boolean> {
   const config = getTransporter();
   if (!config) return false;
   const { transporter, from } = config;
-  const action = removed ? "entfernt" : "zugewiesen";
+  const useEnglish = lang === "en";
+  const action = removed ? (useEnglish ? "removed" : "entfernt") : (useEnglish ? "assigned" : "zugewiesen");
   const emoji = removed ? "🔴" : "🟢";
   const html = buildEmailHtml({
-    title: `Studiengang ${removed ? "entfernt" : "zugewiesen"}: ${programmeName}`,
-    greeting: `Guten Tag ${pavName},`,
+    title: `${useEnglish ? "Programme" : "Studiengang"} ${action}: ${programmeName}`,
+    greeting: useEnglish ? `Dear ${pavName},` : `Guten Tag ${pavName},`,
     body: `
-      <p>Ihre Zustaendigkeiten als PA-Vorsitzende:r wurden aktualisiert:</p>
+      <p>${useEnglish ? "Your responsibilities as examination committee chair have been updated:" : "Ihre Zuständigkeiten als PA-Vorsitzende:r wurden aktualisiert:"}</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f9fafb; border-radius: 10px; overflow: hidden;">
         <tr>
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">Studiengang</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px; width: 40%;">${useEnglish ? "Programme" : "Studiengang"}</td>
           <td style="padding: 12px 16px; color: #111827; font-weight: 600; font-size: 13px;">${programmeName}</td>
         </tr>
         <tr style="background: #ffffff;">
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Abschluss</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "Degree" : "Abschluss"}</td>
           <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${programmeLevel === "master" ? "Master" : "Bachelor"}</td>
         </tr>
         <tr>
-          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">Aktion</td>
-          <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${emoji} Studiengang wurde ${action}</td>
+          <td style="padding: 12px 16px; color: #6b7280; font-size: 13px;">${useEnglish ? "Action" : "Aktion"}</td>
+          <td style="padding: 12px 16px; color: #111827; font-size: 13px;">${emoji} ${useEnglish ? "Programme was" : "Studiengang wurde"} ${action}</td>
         </tr>
       </table>
-      ${!removed ? "<p>Sie koennen ab sofort im PAV-Dashboard unzugeteilte Studierende dieses Studiengangs einsehen und Pruefer:innen vorschlagen.</p>" : "<p>Dieser Studiengang ist nicht mehr in Ihrer Zustaendigkeit. Bereits eingereichte Vorschlaege bleiben bestehen.</p>"}
+      ${!removed ? `<p>${useEnglish ? "You can now view unassigned students in this programme in the examination committee dashboard and propose examiners." : "Sie können ab sofort im PAV-Dashboard unzugeteilte Studierende dieses Studiengangs einsehen und Prüfer:innen vorschlagen."}</p>` : `<p>${useEnglish ? "This programme is no longer within your responsibilities. Existing proposals remain in place." : "Dieser Studiengang ist nicht mehr in Ihrer Zuständigkeit. Bereits eingereichte Vorschläge bleiben bestehen."}</p>`}
     `,
     ctaAcceptUrl: dashboardUrl,
-    footer: "Melden Sie sich in Ihrem PAV-Dashboard an, um Ihre aktuellen Zustaendigkeiten einzusehen.",
+    footer: useEnglish ? "Sign in to your examination committee dashboard to view your current responsibilities." : "Melden Sie sich in Ihrem PAV-Dashboard an, um Ihre aktuellen Zuständigkeiten einzusehen.",
+    lang,
   });
   try {
     await transporter.sendMail({
       from,
       to,
-      subject: `PAV-Zustaendigkeit ${removed ? "entfernt" : "aktualisiert"}: ${programmeName}`,
+      subject: `${useEnglish ? "Examination committee responsibility" : "PAV-Zuständigkeit"} ${removed ? action : (useEnglish ? "updated" : "aktualisiert")}: ${programmeName}`,
       html,
     });
     console.log(`[Email] PAV-Zuweisung-E-Mail an ${to} gesendet (${action}: ${programmeName}).`);

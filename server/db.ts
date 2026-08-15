@@ -4354,7 +4354,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const userRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department })
+    const userRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department, preferredLanguage: users.preferredLanguage })
       .from(users).where(eq(users.id, userId)).limit(1);
     const user = userRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
@@ -4403,17 +4403,10 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = {
-        student: "Studierende:r",
-        examiner: "Prüfer:in (Erstprüfer:in)",
-        second_examiner: "Zweitprüfer:in",
-        admin: "Verwaltung",
-        pav: "PA-Vorsitz",
-        dean: "Dekan:in",
-        vice_dean: "Prodekan:in",
-        superadmin: "Superadmin",
-        programme_director: "Studiengangsleitung",
-      };
+      const userLang = user.preferredLanguage === "en" ? "en" : "de";
+      const roleLabels: Record<string, string> = userLang === "en"
+        ? { student: "Student", examiner: "Examiner (First Examiner)", second_examiner: "Second Examiner", admin: "Administration", pav: "Examination Committee Chair", dean: "Dean", vice_dean: "Vice Dean", superadmin: "Superadmin", programme_director: "Programme Director" }
+        : { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", pav: "PA-Vorsitz", dean: "Dekan:in", vice_dean: "Prodekan:in", superadmin: "Superadmin", programme_director: "Studiengangsleitung" };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
       const dashboardLinks: Record<string, string> = {
         student: "/student",
@@ -4435,6 +4428,7 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
           dashboardPath: dashboardLink,
           // Erstprüfer:innen erhalten automatisch Zweitprüfer:innen-Rechte – explizit in der E-Mail erwähnen
           includeSecondExaminerNote: requestedRole === "examiner",
+          lang: userLang,
         });
         await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {
@@ -4471,7 +4465,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
   const db = await getDb();
   if (!db) return { success: false, error: "DB nicht verfügbar" };
   try {
-    const rejectUserRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department })
+    const rejectUserRows = await db.select({ id: users.id, email: users.email, name: users.name, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department, preferredLanguage: users.preferredLanguage })
       .from(users).where(eq(users.id, userId)).limit(1);
     const user = rejectUserRows[0];
     if (!user) return { success: false, error: "Nutzer nicht gefunden" };
@@ -4507,7 +4501,10 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     });
     // E-Mail-Benachrichtigung an den Nutzer senden (Vorlage aus DB)
     if (user.email) {
-      const roleLabels: Record<string, string> = { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", programme_director: "Studiengangsleitung" };
+      const userLang = user.preferredLanguage === "en" ? "en" : "de";
+      const roleLabels: Record<string, string> = userLang === "en"
+        ? { student: "Student", examiner: "Examiner (First Examiner)", second_examiner: "Second Examiner", admin: "Administration", programme_director: "Programme Director" }
+        : { student: "Studierende:r", examiner: "Prüfer:in (Erstprüfer:in)", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", programme_director: "Studiengangsleitung" };
       const roleLabel = roleLabels[requestedRole] ?? requestedRole;
       const reasonBlock = reason
         ? `<p style="color:#474747;line-height:1.6"><strong>Begründung:</strong> ${reason}</p>`
@@ -4519,6 +4516,7 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
           userName: user.name ?? "Nutzende:r",
           roleLabel,
           reason,
+          lang: userLang,
         });
         await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });
       } catch (err) {
@@ -6655,17 +6653,18 @@ export async function acceptAsSecondExaminer(
 
   // Zweitgutachter-Name für Benachrichtigungen
   const [secondExaminerUser] = await db
-    .select({ name: users.name, email: users.email })
+    .select({ name: users.name, email: users.email, preferredLanguage: users.preferredLanguage })
     .from(users)
     .where(eq(users.id, examinerId))
     .limit(1);
   const secondExaminerName = secondExaminerUser?.name ?? "der Zweitgutachter:in";
 
   // In-App-Benachrichtigung für Studierenden
+  const [studentForNotification] = await db.select({ preferredLanguage: users.preferredLanguage }).from(users).where(eq(users.id, thesis.studentId)).limit(1);
   await db.insert(notifications).values({
     userId: thesis.studentId,
-    title: "Zweitgutachter:in bestätigt",
-    message: `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" bestätigt.`,
+    title: studentForNotification?.preferredLanguage === "en" ? "Second examiner confirmed" : "Zweitgutachter:in bestätigt",
+    message: studentForNotification?.preferredLanguage === "en" ? `${secondExaminerName} has confirmed the second supervision for your application “${thesis.title}”.` : `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" bestätigt.`,
     type: "status_change",
     thesisRequestId,
     read: 0,
@@ -6673,10 +6672,11 @@ export async function acceptAsSecondExaminer(
 
   // In-App-Benachrichtigung für Erstgutachter (falls vorhanden)
   if (thesis.examinerId) {
+    const [firstExaminerNotification] = await db.select({ preferredLanguage: users.preferredLanguage }).from(users).where(eq(users.id, thesis.examinerId)).limit(1);
     await db.insert(notifications).values({
       userId: thesis.examinerId,
-      title: "Zweitgutachter:in bestätigt",
-      message: `${secondExaminerName} hat die Zweitbetreuung für „${thesis.title}" bestätigt.`,
+      title: firstExaminerNotification?.preferredLanguage === "en" ? "Second examiner confirmed" : "Zweitgutachter:in bestätigt",
+      message: firstExaminerNotification?.preferredLanguage === "en" ? `${secondExaminerName} has confirmed the second supervision for “${thesis.title}”.` : `${secondExaminerName} hat die Zweitbetreuung für „${thesis.title}" bestätigt.`,
       type: "status_change",
       thesisRequestId,
       read: 0,
@@ -6686,7 +6686,7 @@ export async function acceptAsSecondExaminer(
   // E-Mail an Erstgutachter
   if (thesis.examinerId) {
     const [firstExaminer] = await db
-      .select({ name: users.name, email: users.email })
+      .select({ name: users.name, email: users.email, preferredLanguage: users.preferredLanguage })
       .from(users)
       .where(eq(users.id, thesis.examinerId))
       .limit(1);
@@ -6697,6 +6697,7 @@ export async function acceptAsSecondExaminer(
         recipientRole: "first",
         secondExaminerName,
         thesisTitle: thesis.title,
+        lang: firstExaminer.preferredLanguage === "en" ? "en" : "de",
       });
       await sendEmail({ to: firstExaminer.email, subject, html, text });
     }
@@ -6752,22 +6753,24 @@ export async function rejectAsSecondExaminer(
     .limit(1);
   const secondExaminerName = secondExaminerUser?.name ?? "die Zweitgutachter:in";
 
+  // Studierendenprofil vor der Benachrichtigung laden, damit dessen Sprachpräferenz gilt.
+  const [student] = await db
+    .select({ name: users.name, email: users.email, preferredLanguage: users.preferredLanguage })
+    .from(users)
+    .where(eq(users.id, thesis.studentId))
+    .limit(1);
+
   // In-App-Benachrichtigung für Studierenden
   await db.insert(notifications).values({
     userId: thesis.studentId,
-    title: "Zweitgutachter:in hat abgelehnt",
-    message: `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" abgelehnt. Bitte wählen Sie eine andere Person.${rejectionReason ? ` Begründung: ${rejectionReason}` : ""}`,
+    title: student?.preferredLanguage === "en" ? "Second examiner declined" : "Zweitgutachter:in hat abgelehnt",
+    message: student?.preferredLanguage === "en" ? `${secondExaminerName} has declined the second supervision for your application “${thesis.title}”. Please select another person.${rejectionReason ? ` Reason: ${rejectionReason}` : ""}` : `${secondExaminerName} hat die Zweitbetreuung Ihrer Anfrage „${thesis.title}" abgelehnt. Bitte wählen Sie eine andere Person.${rejectionReason ? ` Begründung: ${rejectionReason}` : ""}`,
     type: "status_change",
     thesisRequestId,
     read: 0,
   });
 
   // E-Mail an Studierenden
-  const [student] = await db
-    .select({ name: users.name, email: users.email })
-    .from(users)
-    .where(eq(users.id, thesis.studentId))
-    .limit(1);
   if (student?.email) {
     const { sendEmail } = await import("./emailHelper");
     const { subject, html, text } = buildSecondExaminerRejectedEmail({
@@ -6775,6 +6778,7 @@ export async function rejectAsSecondExaminer(
       secondExaminerName,
       thesisTitle: thesis.title,
       rejectionReason,
+      lang: student.preferredLanguage === "en" ? "en" : "de",
     });
     await sendEmail({ to: student.email, subject, html, text });
   }
@@ -6800,7 +6804,7 @@ export async function notifySecondExaminerOfSelection(
   if (!thesis) return;
 
   const [secondExaminer] = await db
-    .select({ name: users.name, email: users.email })
+    .select({ name: users.name, email: users.email, preferredLanguage: users.preferredLanguage })
     .from(users)
     .where(eq(users.id, secondExaminerId))
     .limit(1);
@@ -6820,6 +6824,7 @@ export async function notifySecondExaminerOfSelection(
     thesisTitle: thesis.title,
     semester: thesis.targetSemester ?? undefined,
     personalNote: personalNote ?? undefined,
+    lang: secondExaminer.preferredLanguage === "en" ? "en" : "de",
   });
   await sendEmail({ to: secondExaminer.email, subject, html, text });
 }

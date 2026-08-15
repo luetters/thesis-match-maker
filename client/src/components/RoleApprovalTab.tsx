@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { buildFullName, getRoleBadge } from "@shared/const";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Studierende:r",
@@ -263,6 +264,28 @@ export default function RoleApprovalTab({
   view?: "standard" | "cross_department";
 }) {
   const utils = trpc.useUtils();
+  const { lang } = useLanguage();
+  const messages = lang === "en"
+    ? {
+        approved: "User has been approved.",
+        approveError: "Unable to approve the user.",
+        manyPartial: (succeeded: number, failed: number) => `${succeeded} approved, ${failed} failed.`,
+        manyApproved: (count: number) => `${count} ${count === 1 ? "person has" : "people have"} been approved.`,
+        rejected: "Registration has been declined.",
+        rejectError: "Unable to decline the registration.",
+        roleUpdated: "Requested role has been updated.",
+        roleError: "Unable to update the requested role.",
+      }
+    : {
+        approved: "Nutzer:in wurde freigeschaltet.",
+        approveError: "Fehler beim Freischalten.",
+        manyPartial: (succeeded: number, failed: number) => `${succeeded} freigeschaltet, ${failed} fehlgeschlagen.`,
+        manyApproved: (count: number) => `${count} Person${count !== 1 ? "en" : ""} wurden freigeschaltet.`,
+        rejected: "Registrierung wurde abgelehnt.",
+        rejectError: "Fehler beim Ablehnen.",
+        roleUpdated: "Gewünschte Rolle wurde angepasst.",
+        roleError: "Fehler beim Anpassen der Rolle.",
+      };
 
   const [rejectDialog, setRejectDialog] = useState<RejectDialogState>({
     open: false,
@@ -289,10 +312,10 @@ export default function RoleApprovalTab({
   const approveMutation = trpc.roleApproval.approve.useMutation({
     onSuccess: async () => {
       await utils.roleApproval.getPending.invalidate();
-      toast.success("Nutzer:in wurde freigeschaltet.");
+      toast.success(messages.approved);
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler beim Freischalten.");
+      toast.error(err.message ?? messages.approveError);
     },
   });
 
@@ -301,13 +324,13 @@ export default function RoleApprovalTab({
       await utils.roleApproval.getPending.invalidate();
       setApproveAllDialog({ open: false, users: [], groupTitle: "" });
       if (data.failed > 0) {
-        toast.warning(`${data.succeeded} freigeschaltet, ${data.failed} fehlgeschlagen.`);
+        toast.warning(messages.manyPartial(data.succeeded, data.failed));
       } else {
-        toast.success(`${data.succeeded} Person${data.succeeded !== 1 ? "en" : ""} wurden freigeschaltet.`);
+        toast.success(messages.manyApproved(data.succeeded));
       }
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler bei der Gruppen-Freischaltung.");
+      toast.error(err.message ?? messages.approveError);
     },
   });
 
@@ -315,10 +338,10 @@ export default function RoleApprovalTab({
     onSuccess: async () => {
       await utils.roleApproval.getPending.invalidate();
       setRejectDialog({ open: false, user: null, reason: "" });
-      toast.success("Registrierung wurde abgelehnt.");
+      toast.success(messages.rejected);
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler beim Ablehnen.");
+      toast.error(err.message ?? messages.rejectError);
     },
   });
 
@@ -326,10 +349,10 @@ export default function RoleApprovalTab({
     onSuccess: async () => {
       await utils.roleApproval.getPending.invalidate();
       setEditRoleDialog({ open: false, user: null, selectedRole: "" });
-      toast.success("Gewünschte Rolle wurde angepasst.");
+      toast.success(messages.roleUpdated);
     },
     onError: (err) => {
-      toast.error(err.message ?? "Fehler beim Anpassen der Rolle.");
+      toast.error(err.message ?? messages.roleError);
     },
   });
 

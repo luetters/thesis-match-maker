@@ -38,17 +38,25 @@ function schedulingEmail(opts: {
   kind: "invitation" | "reminder" | "confirmation" | "confirmed" | "expired";
   recipientName: string;
   recipientRole: ParticipantRole;
+  lang?: "de" | "en";
   thesisTitle: string;
   deadline?: string;
   selectedSlot?: string;
   locationLabel?: string;
 }): { subject: string; html: string; text: string } {
+  const lang = opts.lang === "en" ? "en" : "de";
   const dashboardUrl = `${PORTAL_URL}${participantDashboardPath(opts.recipientRole)}`;
-  const greeting = `Sehr geehrte:r ${escapeHtml(opts.recipientName)},`;
-  const deadline = opts.deadline ? `Die Abstimmung läuft bis <strong>${escapeHtml(new Date(opts.deadline).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }))}</strong>.` : "";
-  const slot = opts.selectedSlot ? `Vorgeschlagener Termin: <strong>${escapeHtml(opts.selectedSlot)}</strong>.` : "";
-  const location = opts.locationLabel ? `Ort / Online-Teilnahme: <strong>${escapeHtml(opts.locationLabel)}</strong>.` : "";
+  const greeting = lang === "en" ? `Dear ${escapeHtml(opts.recipientName)},` : `Sehr geehrte:r ${escapeHtml(opts.recipientName)},`;
+  const dateLocale = lang === "en" ? "en-GB" : "de-DE";
+  const deadline = opts.deadline
+    ? lang === "en"
+      ? `The poll remains open until <strong>${escapeHtml(new Date(opts.deadline).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" }))}</strong>.`
+      : `Die Abstimmung läuft bis <strong>${escapeHtml(new Date(opts.deadline).toLocaleString(dateLocale, { dateStyle: "medium", timeStyle: "short" }))}</strong>.`
+    : "";
+  const slot = opts.selectedSlot ? (lang === "en" ? `Proposed date: <strong>${escapeHtml(opts.selectedSlot)}</strong>.` : `Vorgeschlagener Termin: <strong>${escapeHtml(opts.selectedSlot)}</strong>.`) : "";
+  const location = opts.locationLabel ? (lang === "en" ? `Location / online participation: <strong>${escapeHtml(opts.locationLabel)}</strong>.` : `Ort / Online-Teilnahme: <strong>${escapeHtml(opts.locationLabel)}</strong>.`) : "";
   const content = {
+    de: {
     invitation: {
       subject: "HTW Berlin – Bitte stimmen Sie einen Kolloquiumstermin ab",
       headline: "Kolloquiumstermin abstimmen",
@@ -79,7 +87,15 @@ function schedulingEmail(opts: {
       message: "Die Frist für die Terminabstimmung ist abgelaufen. Die Erstprüferin oder der Erstprüfer kann eine neue Abstimmungsrunde eröffnen.",
       cta: "Abstimmung anzeigen",
     },
-  }[opts.kind];
+    },
+    en: {
+      invitation: { subject: "HTW Berlin – Please coordinate a colloquium date", headline: "Coordinate a colloquium date", message: "A joint scheduling poll has been opened for this thesis. Please share your availability for the proposed time slots.", cta: "Open scheduling poll" },
+      reminder: { subject: "HTW Berlin – Reminder: Please coordinate the colloquium date", headline: "Scheduling reminder", message: "Your availability for the scheduling poll is still outstanding. Please respond so that a binding colloquium date can be found.", cta: "Provide availability" },
+      confirmation: { subject: "HTW Berlin – Please confirm the colloquium date", headline: "Final date confirmation", message: "All participants are available for a date. Please confirm the proposed date as binding.", cta: "Confirm date" },
+      confirmed: { subject: "HTW Berlin – Colloquium date confirmed", headline: "Colloquium confirmed", message: "All three participants have confirmed the date. The colloquium has been entered in the system as binding.", cta: "View date" },
+      expired: { subject: "HTW Berlin – Colloquium scheduling deadline has expired", headline: "Scheduling poll expired", message: "The deadline for the scheduling poll has expired. The first examiner can start a new scheduling round.", cta: "View poll" },
+    },
+  }[lang][opts.kind];
   const thesis = escapeHtml(opts.thesisTitle);
   const html = `
     <div style="font-family:Arial,sans-serif;color:#1f2937;max-width:640px;margin:0 auto;line-height:1.55">
@@ -87,7 +103,7 @@ function schedulingEmail(opts: {
       <p>${greeting}</p>
       <p>${content.message}</p>
       <div style="background:#f0f7e6;border-left:4px solid #76B900;padding:14px 16px;margin:18px 0;border-radius:0 8px 8px 0">
-        <strong>Abschlussarbeit</strong><br>${thesis}
+        <strong>${lang === "en" ? "Thesis" : "Abschlussarbeit"}</strong><br>${thesis}
       </div>
       ${deadline ? `<p>${deadline}</p>` : ""}
       ${slot ? `<p>${slot}</p>` : ""}
@@ -96,12 +112,12 @@ function schedulingEmail(opts: {
       <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0" />
       <p style="font-size:12px;color:#6b7280">HTW Berlin – Thesis Match Maker</p>
     </div>`;
-  const text = `${content.headline}\n\n${content.message}\n\nAbschlussarbeit: ${opts.thesisTitle}${opts.deadline ? `\nFrist: ${opts.deadline}` : ""}${opts.selectedSlot ? `\nTermin: ${opts.selectedSlot}` : ""}${opts.locationLabel ? `\nOrt / Online-Teilnahme: ${opts.locationLabel}` : ""}\n\n${dashboardUrl}`;
+  const text = `${content.headline}\n\n${content.message}\n\n${lang === "en" ? "Thesis" : "Abschlussarbeit"}: ${opts.thesisTitle}${opts.deadline ? `\n${lang === "en" ? "Deadline" : "Frist"}: ${opts.deadline}` : ""}${opts.selectedSlot ? `\n${lang === "en" ? "Date" : "Termin"}: ${opts.selectedSlot}` : ""}${opts.locationLabel ? `\n${lang === "en" ? "Location / online participation" : "Ort / Online-Teilnahme"}: ${opts.locationLabel}` : ""}\n\n${dashboardUrl}`;
   return { subject: content.subject, html, text };
 }
 
 async function notifyAndEmailParticipant(opts: {
-  user: { id: number; name: string | null; email: string | null };
+  user: { id: number; name: string | null; email: string | null; preferredLanguage?: string | null };
   role: ParticipantRole;
   thesisRequestId: number;
   thesisTitle: string;
@@ -112,25 +128,27 @@ async function notifyAndEmailParticipant(opts: {
   selectedSlot?: string;
   locationLabel?: string;
 }) {
-  await createNotification({
-    userId: opts.user.id,
-    title: opts.notificationTitle,
-    message: opts.notificationMessage,
-    type: "info" as any,
-    thesisRequestId: opts.thesisRequestId,
-  });
-  if (!opts.user.email) return;
-  if (!(await isNotificationEnabled(opts.user.id, "colloquium_scheduling"))) return;
-  const email = schedulingEmail({
+  const lang = opts.user.preferredLanguage === "en" ? "en" : "de";
+  const notification = schedulingEmail({
     kind: opts.kind,
-    recipientName: opts.user.name ?? "Nutzende:r",
+    recipientName: opts.user.name ?? (lang === "en" ? "User" : "Nutzende:r"),
     recipientRole: opts.role,
+    lang,
     thesisTitle: opts.thesisTitle,
     deadline: opts.deadline,
     selectedSlot: opts.selectedSlot,
     locationLabel: opts.locationLabel,
   });
-  await sendEmail({ to: opts.user.email, subject: email.subject, html: email.html, text: email.text });
+  await createNotification({
+    userId: opts.user.id,
+    title: notification.subject.replace("HTW Berlin – ", ""),
+    message: notification.text.split("\n\n")[1] ?? notification.text,
+    type: "info" as any,
+    thesisRequestId: opts.thesisRequestId,
+  });
+  if (!opts.user.email) return;
+  if (!(await isNotificationEnabled(opts.user.id, "colloquium_scheduling"))) return;
+  await sendEmail({ to: opts.user.email, subject: notification.subject, html: notification.html, text: notification.text });
 }
 
 async function getPollContext(pollId: number) {

@@ -1662,3 +1662,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Sprachpräferenz im Nutzerprofil gespeichert und geschützte Schnittstelle bereitgestellt
 - [x] Gespeicherte Sprachpräferenz beim Anmelden und Wechseln der Sprache angewendet
 - [x] Sprachpersistenz automatisiert getestet
+
+## Sprachabhängige E-Mails und Systemmeldungen
+- [x] E-Mail-Vorlagen, Systemmeldungen und vorhandene Sprachweitergabe vollständig geprüft
+- [x] Fehlende Übersetzungen und sprachabhängige E-Mail-Vorlagen im Server ergänzt
+- [x] Sichtbare Systemmeldungen und Sprachweitergabe im Client vervollständigt
+- [x] Sprachabhängige Kommunikation automatisiert getestet

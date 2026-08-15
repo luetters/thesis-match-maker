@@ -12,8 +12,15 @@ const LOGO_URL = `${SITE_URL_BASE}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
 const FOOTER_NOTE_DE = "Dies ist eine automatisch generierte E-Mail vom Thesis Match Maker der HTW Berlin.";
 const FOOTER_NOTE_EN = "This is an automatically generated email from the Thesis Match Maker of HTW Berlin.";
 
-function htmlWrapper(content: string, showEnglishBelow = true): string {
-  const englishBelowBanner = showEnglishBelow
+function localizeContent(content: string, lang?: Lang): string {
+  if (!lang) return content;
+  const [german, english] = content.split(divider());
+  return lang === "en" ? (english ?? german) : german;
+}
+
+function htmlWrapper(content: string, lang?: Lang, showEnglishBelow = true): string {
+  const selectedContent = localizeContent(content, lang);
+  const englishBelowBanner = !lang && showEnglishBelow
     ? `<tr><td style="padding:8px 32px;background:#f0f7e6;border-bottom:1px solid #d4edaa">
         <p style="color:#5a7a00;font-size:12px;margin:0;font-style:italic">🇬🇧 <a href="#english" style="color:#5a7a00;text-decoration:underline">English below</a></p>
       </td></tr>`
@@ -31,11 +38,14 @@ function htmlWrapper(content: string, showEnglishBelow = true): string {
       </td></tr>
       ${englishBelowBanner}
       <tr><td style="padding:32px">
-        ${content}
+        ${selectedContent}
       </td></tr>
       <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
-        <p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">${FOOTER_NOTE_DE}</p>
-        <p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>
+        ${lang === "en"
+          ? `<p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>`
+          : lang === "de"
+          ? `<p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_DE}</p>`
+          : `<p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">${FOOTER_NOTE_DE}</p><p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>`}
       </td></tr>
     </table>
   </td></tr>
@@ -350,10 +360,15 @@ export function directAssignmentEmail(opts: {
   examinerName?: string | null;
   role: "first" | "second";
   thesisTitle: string;
+  lang?: Lang;
 }): { subject: string; html: string } {
   const roleDE = opts.role === "first" ? "Erstprüfer:in" : "Zweitprüfer:in";
   const roleEN = opts.role === "first" ? "first examiner" : "second examiner";
-  const subject = `HTW Berlin – Zuweisung als ${roleDE} / Assignment as ${roleEN}: ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Assignment as ${roleEN}: ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Zuweisung als ${roleDE}: ${opts.thesisTitle}`
+    : `HTW Berlin – Zuweisung als ${roleDE} / Assignment as ${roleEN}: ${opts.thesisTitle}`;
 
   const body = `
     ${p(`Sehr geehrte/r ${opts.examinerName ?? "Prüfer:in"},`)}
@@ -370,7 +385,7 @@ export function directAssignmentEmail(opts: {
     ${p("This assignment is binding and does not require further confirmation on your part. For questions, please contact the examination committee.")}
     ${p("Kind regards,<br>HTW Berlin – Examination Committee")}
   `;
-  return { subject, html: htmlWrapper(body) };
+  return { subject, html: htmlWrapper(body, opts.lang) };
 }
 
 // ─── Standard-Templates für Prüfer (Zusage / Absage / Ausgebucht) ─────────────
@@ -461,9 +476,14 @@ export function roleApprovedEmail(opts: {
   roleLabel: string;
   dashboardPath: string; // z.B. "/examiner"
   includeSecondExaminerNote?: boolean; // true für examiner-Rolle
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
   const dashboardUrl = `${SITE_URL}${opts.dashboardPath}`;
-  const subject = `Ihre Rolle wurde freigeschaltet – HTW Berlin Thesis Match Maker / Your role has been activated`;
+  const subject = opts.lang === "en"
+    ? "Your role has been activated – HTW Berlin Thesis Match Maker"
+    : opts.lang === "de"
+    ? "Ihre Rolle wurde freigeschaltet – HTW Berlin Thesis Match Maker"
+    : "Ihre Rolle wurde freigeschaltet – HTW Berlin Thesis Match Maker / Your role has been activated";
   // Optionaler Hinweis auf automatische Zweitprüfer:innen-Berechtigung (nur für examiner)
   const secondExaminerNoteDE = opts.includeSecondExaminerNote
     ? `<div style="margin:16px 0;padding:12px 16px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 6px 6px 0">
@@ -503,8 +523,10 @@ export function roleApprovedEmail(opts: {
   `;
   return {
     subject,
-    html: htmlWrapper(body),
-    text: `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.${secondExaminerTextDE}\nZum Dashboard: ${dashboardUrl}\n\nYour role as ${opts.roleLabel} has been activated.${secondExaminerTextEN}\nGo to dashboard: ${dashboardUrl}`,
+    html: htmlWrapper(body, opts.lang),
+    text: opts.lang === "en"
+      ? `Your role as ${opts.roleLabel} has been activated.${secondExaminerTextEN}\nGo to dashboard: ${dashboardUrl}`
+      : `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.${secondExaminerTextDE}\nZum Dashboard: ${dashboardUrl}`,
   };
 }
 
@@ -512,8 +534,13 @@ export function roleRejectedEmail(opts: {
   userName: string;
   roleLabel: string;
   reason?: string;
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
-  const subject = `Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker / Your role request was declined`;
+  const subject = opts.lang === "en"
+    ? "Your role request was declined – HTW Berlin Thesis Match Maker"
+    : opts.lang === "de"
+    ? "Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker"
+    : "Ihre Rollenanfrage wurde abgelehnt – HTW Berlin Thesis Match Maker / Your role request was declined";
   const reasonBlockDE = opts.reason ? p(`<strong>Begründung:</strong> ${opts.reason}`) : "";
   const reasonBlockEN = opts.reason ? p(`<strong>Reason:</strong> ${opts.reason}`) : "";
   const body = `
@@ -532,8 +559,10 @@ export function roleRejectedEmail(opts: {
   `;
   return {
     subject,
-    html: htmlWrapper(body),
-    text: `Ihre Rollenanfrage als ${opts.roleLabel} wurde abgelehnt.${opts.reason ? " Begründung: " + opts.reason : ""}\n\nYour role request as ${opts.roleLabel} was declined.${opts.reason ? " Reason: " + opts.reason : ""}`,
+    html: htmlWrapper(body, opts.lang),
+    text: opts.lang === "en"
+      ? `Your role request as ${opts.roleLabel} was declined.${opts.reason ? " Reason: " + opts.reason : ""}`
+      : `Ihre Rollenanfrage als ${opts.roleLabel} wurde abgelehnt.${opts.reason ? " Begründung: " + opts.reason : ""}`,
   };
 }
 
@@ -543,8 +572,13 @@ export function buildSecondExaminerConfirmedEmail(opts: {
   recipientRole: "first" | "student";
   secondExaminerName: string;
   thesisTitle: string;
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
-  const subject = `Zweitgutachter:in bestätigt / Second Examiner Confirmed – ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `Second examiner confirmed – ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `Zweitgutachter:in bestätigt – ${opts.thesisTitle}`
+    : `Zweitgutachter:in bestätigt / Second Examiner Confirmed – ${opts.thesisTitle}`;
   const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
 
   const bodyDE = opts.recipientRole === "student"
@@ -570,10 +604,14 @@ export function buildSecondExaminerConfirmedEmail(opts: {
        ${p("Kind regards,<br>HTW Berlin – Examination Office")}`;
 
   const body = `${bodyDE}${divider()}${bodyEN}`;
-  const text = opts.recipientRole === "student"
-    ? `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`
-    : `${opts.secondExaminerName} hat die Zweitbetreuung für "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`;
-  return { subject, html: htmlWrapper(body), text };
+  const text = opts.lang === "en"
+    ? opts.recipientRole === "student"
+      ? `${opts.secondExaminerName} has confirmed the second supervision for your thesis "${opts.thesisTitle}".\n\nDashboard: ${baseUrl}`
+      : `${opts.secondExaminerName} has confirmed the second supervision for "${opts.thesisTitle}".\n\nDashboard: ${baseUrl}`
+    : opts.recipientRole === "student"
+      ? `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`
+      : `${opts.secondExaminerName} hat die Zweitbetreuung für "${opts.thesisTitle}" bestätigt.\n\nDashboard: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body, opts.lang), text };
 }
 
 // ─── Zweitgutachter: Ablehnung ────────────────────────────────────────────────
@@ -582,8 +620,13 @@ export function buildSecondExaminerRejectedEmail(opts: {
   secondExaminerName: string;
   thesisTitle: string;
   rejectionReason?: string;
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
-  const subject = `Zweitgutachter:in hat abgelehnt / Second Examiner Declined – ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `Second examiner declined – ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `Zweitgutachter:in hat abgelehnt – ${opts.thesisTitle}`
+    : `Zweitgutachter:in hat abgelehnt / Second Examiner Declined – ${opts.thesisTitle}`;
   const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
   const reasonDE = opts.rejectionReason ? p(`<strong>Begründung:</strong> ${opts.rejectionReason}`) : "";
   const reasonEN = opts.rejectionReason ? p(`<strong>Reason:</strong> ${opts.rejectionReason}`) : "";
@@ -605,8 +648,10 @@ export function buildSecondExaminerRejectedEmail(opts: {
     <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a></p>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
-  const text = `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" abgelehnt.${opts.rejectionReason ? `\nBegründung: ${opts.rejectionReason}` : ""}\n\nBitte wählen Sie eine andere Person.\n\nDashboard: ${baseUrl}`;
-  return { subject, html: htmlWrapper(body), text };
+  const text = opts.lang === "en"
+    ? `${opts.secondExaminerName} has declined the second supervision for your thesis "${opts.thesisTitle}".${opts.rejectionReason ? `\nReason: ${opts.rejectionReason}` : ""}\n\nPlease select another person.\n\nDashboard: ${baseUrl}`
+    : `${opts.secondExaminerName} hat die Zweitbetreuung Ihrer Abschlussarbeit "${opts.thesisTitle}" abgelehnt.${opts.rejectionReason ? `\nBegründung: ${opts.rejectionReason}` : ""}\n\nBitte wählen Sie eine andere Person.\n\nDashboard: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body, opts.lang), text };
 }
 
 // ─── Zweitgutachter: Anfrage ──────────────────────────────────────────────────
@@ -616,8 +661,13 @@ export function buildSecondExaminerRequestEmail(opts: {
   thesisTitle: string;
   semester?: string;
   personalNote?: string;
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
-  const subject = `Anfrage als Zweitgutachter:in / Request as Second Examiner – ${opts.thesisTitle}`;
+  const subject = opts.lang === "en"
+    ? `Request as second examiner – ${opts.thesisTitle}`
+    : opts.lang === "de"
+    ? `Anfrage als Zweitgutachter:in – ${opts.thesisTitle}`
+    : `Anfrage als Zweitgutachter:in / Request as Second Examiner – ${opts.thesisTitle}`;
   const baseUrl = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
   const personalNoteBlockDE = opts.personalNote
     ? `<div style="margin:16px 0;padding:16px;background:#f0fdf4;border-left:4px solid #006937;border-radius:4px;">
@@ -659,8 +709,10 @@ export function buildSecondExaminerRequestEmail(opts: {
     <p style="margin:20px 0 12px 0"><a href="${baseUrl}" style="background:#76B900;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard – Respond to Request</a></p>
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
-  const text = `${opts.studentName} hat Sie als Zweitgutachter:in für "${opts.thesisTitle}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`;
-  return { subject, html: htmlWrapper(body), text };
+  const text = opts.lang === "en"
+    ? `${opts.studentName} has selected you as second examiner for "${opts.thesisTitle}".\n\nPlease sign in and respond to the request: ${baseUrl}`
+    : `${opts.studentName} hat Sie als Zweitgutachter:in für "${opts.thesisTitle}" ausgewählt.\n\nBitte melden Sie sich an und beantworten Sie die Anfrage: ${baseUrl}`;
+  return { subject, html: htmlWrapper(body, opts.lang), text };
 }
 
 // ─── Erinnerungsmail an Gutachter:in ─────────────────────────────────────────
@@ -675,10 +727,15 @@ export function buildExaminerReminderEmail(opts: {
   acceptUrl?: string;
   declineUrl?: string;
   dashboardUrl?: string;
+  lang?: Lang;
 }): { subject: string; html: string; text: string } {
   const roleDE = opts.role === "first" ? "Erstgutachter:in" : "Zweitgutachter:in";
   const roleEN = opts.role === "first" ? "first examiner" : "second examiner";
-  const subject = `HTW Berlin – Erinnerung: Ausstehende Anfrage als ${roleDE} / Reminder: Pending request as ${roleEN}`;
+  const subject = opts.lang === "en"
+    ? `HTW Berlin – Reminder: Pending request as ${roleEN}`
+    : opts.lang === "de"
+    ? `HTW Berlin – Erinnerung: Ausstehende Anfrage als ${roleDE}`
+    : `HTW Berlin – Erinnerung: Ausstehende Anfrage als ${roleDE} / Reminder: Pending request as ${roleEN}`;
 
   const ctaDE = opts.acceptUrl && opts.declineUrl
     ? `<p style="margin:20px 0 12px 0">
@@ -751,7 +808,9 @@ export function buildExaminerReminderEmail(opts: {
     ${p("Kind regards,<br>HTW Berlin – Examination Office")}
   `;
 
-  const text = `Erinnerung: Ausstehende Anfrage als ${roleDE} für "${opts.thesisTitle}"${opts.studentName ? ` von ${opts.studentName}` : ""}.\n\nBitte beantworten Sie die Anfrage über das Portal.`;
+  const text = opts.lang === "en"
+    ? `Reminder: Pending request as ${roleEN} for "${opts.thesisTitle}"${opts.studentName ? ` from ${opts.studentName}` : ""}.\n\nPlease respond through the portal.`
+    : `Erinnerung: Ausstehende Anfrage als ${roleDE} für "${opts.thesisTitle}"${opts.studentName ? ` von ${opts.studentName}` : ""}.\n\nBitte beantworten Sie die Anfrage über das Portal.`;
 
-  return { subject, html: htmlWrapper(body), text };
+  return { subject, html: htmlWrapper(body, opts.lang), text };
 }
