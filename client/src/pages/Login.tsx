@@ -209,15 +209,15 @@ export default function Login() {
     const role = selectedRole ?? "student";
     if (role === "student") {
       if (!regEmailLower.endsWith("@student.htw-berlin.de")) {
-        return L.emailDomainErrorStudent ?? "Bitte verwenden Sie Ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de).";
+        return L.emailDomainErrorStudent;
       }
     } else if (role === "examiner") {
       if (!regEmailLower.endsWith("@htw-berlin.de") && !regEmailLower.endsWith("@htw-berlin.com")) {
-        return L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).";
+        return L.emailDomainErrorExaminer;
       }
     } else if (role === "admin") {
       if (!regEmailLower.endsWith("@htw-berlin.de") && !regEmailLower.endsWith("@htw-berlin.com")) {
-        return L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).";
+        return L.emailDomainErrorExaminer;
       }
     }
     return null;
@@ -574,8 +574,8 @@ export default function Login() {
               style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)" }}
             >
               <CardHeader className="pb-4">
-                <CardTitle className="text-white text-xl">{L.signInTitle ?? "Anmelden"}</CardTitle>
-                <CardDescription className="text-white/50">{L.signInDesc ?? "Melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse an."}</CardDescription>
+                <CardTitle className="text-white text-xl">{L.signInTitle}</CardTitle>
+                <CardDescription className="text-white/50">{L.signInDesc}</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -631,7 +631,7 @@ export default function Login() {
                         type="button"
                         onClick={() => {
                           if (!loginEmail.trim()) {
-                            toast.error(L.enterEmailFirst ?? "Bitte geben Sie zuerst Ihre E-Mail-Adresse ein.");
+                            toast.error(L.enterEmailFirst);
                             return;
                           }
                           requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
@@ -725,7 +725,7 @@ export default function Login() {
 
                   {/* Wechsel zu Registrierung */}
                   <p className="text-center text-white/40 text-xs">
-                    {L.noAccountYet ?? "Noch kein Konto?"}{" "}
+                      {L.noAccountYet}{" "}
                     <button
                       type="button"
                       onClick={() => setStep("role")}
@@ -753,10 +753,10 @@ export default function Login() {
             </button>
             <div className="text-center mb-6">
               <h2 className="text-xl font-semibold text-white mb-1">
-                {L.selectRoleTitle ?? "Welche Rolle trifft auf Sie zu?"}
+                {L.selectRoleTitle}
               </h2>
               <p className="text-white/50 text-sm">
-                {L.selectRoleSubtitle ?? "Wählen Sie Ihre Rolle, um fortzufahren."}
+                {L.selectRoleSubtitle}
               </p>
             </div>
             <div className="space-y-3">
@@ -1242,7 +1242,7 @@ export default function Login() {
                       </p>
                       <p>
                         {selectedRole === "student"
-                          ? (L.studentAutoApproval ?? "✅ Studierende mit @student.htw-berlin.de werden sofort freigeschaltet und können sich direkt nach der Registrierung anmelden.")
+                          ? L.studentAutoApproval
                           : L.pendingApproval}
                       </p>
                     </div>
@@ -1272,7 +1272,7 @@ export default function Login() {
 
                     {/* Wechsel zu Login */}
                     <p className="text-center text-white/40 text-xs">
-                      {L.alreadyHaveAccount ?? "Bereits registriert?"}{" "}
+                      {L.alreadyHaveAccount}{" "}
                       <button
                         type="button"
                         onClick={() => setStep("login")}
