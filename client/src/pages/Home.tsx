@@ -20,13 +20,9 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Login Modal ────────────────────────────────────────────────────────────
 type LoginRole = "student" | "examiner" | "admin";
-const LOGIN_ROLES: { id: LoginRole; label: string; description: string; accentColor: string; bgColor: string; borderColor: string }[] = [
-  { id: "student", label: "Studierende:r", description: "Ich möchte eine Abschlussarbeit anmelden und Prüfer:innen finden.", accentColor: "#76b900", bgColor: "#f0f9e8", borderColor: "#76b900" },
-  { id: "examiner", label: "Prüfer:in", description: "Ich betreue Abschlussarbeiten als Erst- oder Zweitprüfer:in.", accentColor: "#3b82f6", bgColor: "#eff6ff", borderColor: "#3b82f6" },
-  { id: "admin", label: "Verwaltungsmitarbeiter:in", description: "Ich bin in der Studiengangs- oder Prüfungsverwaltung tätig.", accentColor: "#a855f7", bgColor: "#faf5ff", borderColor: "#a855f7" },
-];
 
 function LoginModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState<"role" | "email">("role");
   const [selectedRole, setSelectedRole] = useState<LoginRole | null>(null);
   const [email, setEmail] = useState("");
@@ -48,14 +44,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     },
     onError: (e) => setError(e.message),
   });
+  const loginRoles: { id: LoginRole; label: string; description: string; accentColor: string; bgColor: string; borderColor: string }[] = [
+    { id: "student", ...t.landing.loginModal.roles.student, accentColor: "#76b900", bgColor: "#f0f9e8", borderColor: "#76b900" },
+    { id: "examiner", ...t.landing.loginModal.roles.examiner, accentColor: "#3b82f6", bgColor: "#eff6ff", borderColor: "#3b82f6" },
+    { id: "admin", ...t.landing.loginModal.roles.admin, accentColor: "#a855f7", bgColor: "#faf5ff", borderColor: "#a855f7" },
+  ];
+
   const handlePasswordLogin = () => {
-    if (!email.includes("@")) { setError("Bitte eine gültige E-Mail-Adresse eingeben."); return; }
-    if (!password) { setError("Bitte ein Passwort eingeben."); return; }
+    if (!email.includes("@")) { setError(t.landing.loginModal.invalidEmail); return; }
+    if (!password) { setError(t.landing.loginModal.missingPassword); return; }
     setError("");
     loginWithPassword.mutate({ email, password });
   };
 
-  const selectedRoleOption = LOGIN_ROLES.find((r) => r.id === selectedRole);
+  const selectedRoleOption = loginRoles.find((r) => r.id === selectedRole);
 
   return (
     <div
@@ -81,10 +83,10 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         {/* ── SCHRITT 1: Rollenauswahl ── */}
         {step === "role" && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Wie möchten Sie sich anmelden?</h2>
-            <p className="text-sm text-gray-500 mb-5">Bitte wählen Sie Ihre Rolle an der HTW Berlin.</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">{t.landing.loginModal.chooseRoleTitle}</h2>
+            <p className="text-sm text-gray-500 mb-5">{t.landing.loginModal.chooseRoleDescription}</p>
             <div className="space-y-3">
-              {LOGIN_ROLES.map((option) => (
+              {loginRoles.map((option) => (
                 <button
                   key={option.id}
                   type="button"
@@ -105,7 +107,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
             <button onClick={onClose} className="mt-5 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors">
-              Abbrechen
+              {t.landing.loginModal.cancel}
             </button>
           </div>
         )}
@@ -121,7 +123,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Rolle ändern
+              {t.landing.loginModal.changeRole}
             </button>
             {selectedRoleOption && (
               <div
@@ -134,9 +136,9 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 {selectedRoleOption.label}
               </div>
             )}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Anmelden</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t.landing.loginModal.loginTitle}</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">E-Mail-Adresse</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.landing.loginModal.emailLabel}</label>
               <input
                 type="email"
                 value={email}
@@ -148,20 +150,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Passwort</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t.landing.loginModal.passwordLabel}</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()}
-                placeholder="Ihr Passwort"
+                placeholder={t.landing.loginModal.passwordPlaceholder}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
               />
             </div>
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
             {resetSent && (
               <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5 text-sm text-primary mb-2">
-                Eine E-Mail mit dem Reset-Link wurde gesendet. Bitte prüfen Sie Ihr Postfach.
+                {t.landing.loginModal.resetSent}
               </div>
             )}
             <button
@@ -176,33 +178,33 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : null}
-              {loginWithPassword.isPending ? "Anmelden..." : "Anmelden"}
+              {loginWithPassword.isPending ? t.landing.loginModal.loginLoading : t.landing.loginModal.loginTitle}
             </button>
             {!resetSent && (
               <button
                 type="button"
                 onClick={() => {
-                  if (!email.includes("@")) { setError("Bitte zuerst Ihre E-Mail-Adresse eingeben."); return; }
+                  if (!email.includes("@")) { setError(t.landing.loginModal.missingEmailForReset); return; }
                   setError("");
                   requestReset.mutate({ email, origin: window.location.origin });
                 }}
                 disabled={requestReset.isPending}
                 className="w-full text-center text-xs text-gray-400 hover:text-[#76B900] transition-colors mt-2"
               >
-                {requestReset.isPending ? "Wird gesendet…" : "Passwort vergessen?"}
+                {requestReset.isPending ? t.landing.loginModal.sending : t.landing.loginModal.forgotPassword}
               </button>
             )}
             <div className="mt-4 border-t border-gray-100 pt-4 text-center">
               <p className="text-xs text-gray-500">
-                Noch kein Konto?{" "}
-                <a href="/login" className="font-medium hover:underline" style={{ color: "#76B900" }}>Jetzt registrieren</a>
+                {t.landing.loginModal.noAccount}{" "}
+                <a href="/login" className="font-medium hover:underline" style={{ color: "#76B900" }}>{t.landing.loginModal.registerNow}</a>
               </p>
             </div>
             <button
               onClick={onClose}
               className="mt-3 w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Abbrechen
+              {t.landing.loginModal.cancel}
             </button>
           </>
         )}
@@ -246,12 +248,14 @@ function RoleCard({
   features,
   icon,
   onClick,
+  buttonLabel,
 }: {
   title: string;
   description: string;
   features: string[];
   icon?: string;
   onClick: () => void;
+  buttonLabel: string;
 }) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 card-hover flex flex-col">
@@ -275,7 +279,7 @@ function RoleCard({
         className="flex items-center gap-2 text-sm font-semibold transition-colors"
         style={{ color: "#76B900" }}
       >
-        Bereich öffnen
+        {buttonLabel}
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
@@ -462,7 +466,7 @@ export default function Home() {
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
               className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              aria-label="Menü öffnen"
+              aria-label={t.nav.openNav}
             >
               {mobileMenuOpen ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -546,6 +550,9 @@ export default function Home() {
               </p>
               <p className="text-base text-gray-600 mb-8 leading-relaxed max-w-lg">
                 {t.landing.heroDesc}
+              </p>
+              <p className="mb-5 text-xs font-medium tracking-wide text-gray-500" aria-live="polite">
+                {t.landing.languageNotice}
               </p>
               <div className="flex flex-wrap gap-4">
                 <button
@@ -688,6 +695,7 @@ export default function Home() {
               features={[...t.landing.roles.studentFeatures]}
               icon="/manus-storage/icon-female_612c1055.webp"
               onClick={() => handleRoleNavigate("/student")}
+              buttonLabel={t.landing.openArea}
             />
             <RoleCard
               title={t.landing.roles.examiner}
@@ -695,6 +703,7 @@ export default function Home() {
               features={[...t.landing.roles.examinerFeatures]}
               icon="/manus-storage/icon-male2_9e670c3a.webp"
               onClick={() => handleRoleNavigate("/examiner")}
+              buttonLabel={t.landing.openArea}
             />
             <RoleCard
               title={t.landing.roles.admin}
@@ -702,6 +711,7 @@ export default function Home() {
               features={[...t.landing.roles.adminFeatures]}
               icon="/manus-storage/icon-allgender_64b60a63.webp"
               onClick={() => handleRoleNavigate("/admin")}
+              buttonLabel={t.landing.openArea}
             />
           </div>
         </div>

@@ -1646,3 +1646,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Bestehende Hero-Texte und Übersetzungsstruktur geprüft
 - [x] Englische Hero- und Steuerungstexte ergänzt
 - [x] Sprachwechsel automatisiert getestet
+
+## Vollständige Startseitenübersetzung
+- [x] Statische Startseitentexte und Übersetzungsressourcen vollständig geprüft
+- [x] Dezenten Sprachhinweis im Hero-Bereich und fehlende englische Übersetzungen ergänzt
+- [x] Vollständigkeit der Sprachumschaltung automatisiert getestet

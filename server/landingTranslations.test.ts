@@ -7,5 +7,8 @@ describe("Landing-Übersetzungen", () => {
     expect(translations.en.landing.heroPreview.request).toBe("Matching request");
     expect(translations.en.landing.heroPreview.firstExaminer).toBe("First examiner");
     expect(translations.en.landing.accessibility.contrast).toBe("Contrast");
+    expect(translations.en.landing.languageNotice).toBe("Active language: English");
+    expect(translations.en.landing.loginModal.chooseRoleTitle).toBe("How would you like to sign in?");
+    expect(translations.en.landing.openArea).toBe("Open area");
   });
 });
