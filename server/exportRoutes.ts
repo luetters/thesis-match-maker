@@ -25,6 +25,7 @@ import {
   getUserRoles,
 } from "./db";
 import { buildFullName, getStatusBadge } from "@shared/const";
+import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
 import { buildSamlIntegrationGuidePdf } from "./samlGuidePdf";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -990,16 +991,17 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
 async function exportThesisHistoryPdf(req: Request, res: Response) {
   const user = await getUserFromRequest(req);
   if (!user) return res.status(401).json({ error: "Nicht angemeldet" });
+  const copy = getThesisHistoryPdfCopy(user.preferredLanguage === "en" ? "en" : "de");
 
   const thesisId = Number.parseInt(req.params.id, 10);
-  if (!Number.isInteger(thesisId)) return res.status(400).json({ error: "Ungültige Antrags-ID" });
+  if (!Number.isInteger(thesisId)) return res.status(400).json({ error: copy.invalidId });
   const thesis = await getThesisRequestByIdWithNames(thesisId);
-  if (!thesis) return res.status(404).json({ error: "Antrag nicht gefunden" });
+  if (!thesis) return res.status(404).json({ error: copy.notFound });
 
   const roles = await getUserRoles(user.id);
   const isAdmin = roles.some((role) => ["admin", "superadmin", "pav"].includes(role)) || ["admin", "superadmin", "pav"].includes(user.role ?? "");
   const isAssignedExaminer = thesis.examinerId === user.id || thesis.secondExaminerId === user.id;
-  if (!isAdmin && !isAssignedExaminer) return res.status(403).json({ error: "Keine Berechtigung" });
+  if (!isAdmin && !isAssignedExaminer) return res.status(403).json({ error: copy.forbidden });
 
   const auditEntries = await getAuditLogByThesis(thesisId);
   const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
@@ -1010,40 +1012,40 @@ async function exportThesisHistoryPdf(req: Request, res: Response) {
   const bottomLimit = doc.page.height - 60;
   let y = 80;
   const currentStatus = getStatusBadge(thesis.status ?? "").label;
-  const subtitle = `Antrag #${thesis.id} · Stand: ${formatDate(new Date())}`;
+  const subtitle = copy.subtitle(thesis.id, new Date());
   const ensureSpace = (needed: number) => {
     if (y + needed > bottomLimit) {
       doc.addPage();
       y = 80;
-      drawHeader(doc, "Fallhistorie (Fortsetzung)", subtitle);
+      drawHeader(doc, copy.continuation, subtitle);
     }
   };
   const actionLabels: Record<string, string> = {
-    THESIS_CREATED: "Antrag erstellt",
-    THESIS_CREATED_WITH_WANTED_EXAMINER: "Antrag erstellt",
-    STATUS_CHANGED: "Status geändert",
-    EXAMINER_ACCEPTED: "Prüfer:in hat angenommen",
-    EXAMINER_REJECTED: "Prüfer:in hat abgelehnt",
-    FIRST_EXAMINER_ASSIGNED: "Erstgutachter:in zugewiesen",
-    SECOND_EXAMINER_ASSIGNED: "Zweitgutachter:in zugewiesen",
-    DEADLINE_SET: "Abgabetermin gesetzt",
-    COLLOQUIUM_CREATED: "Kolloquium angelegt",
+    THESIS_CREATED: copy.created,
+    THESIS_CREATED_WITH_WANTED_EXAMINER: copy.created,
+    STATUS_CHANGED: copy.statusChanged,
+    EXAMINER_ACCEPTED: copy.accepted,
+    EXAMINER_REJECTED: copy.rejected,
+    FIRST_EXAMINER_ASSIGNED: copy.firstAssigned,
+    SECOND_EXAMINER_ASSIGNED: copy.secondAssigned,
+    DEADLINE_SET: copy.deadline,
+    COLLOQUIUM_CREATED: copy.colloquium,
   };
 
-  drawHeader(doc, "Fallhistorie für Prüfungsakte", subtitle);
-  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(14).text(thesis.title ?? "Thema wird noch festgelegt", margin, y, { width });
+  drawHeader(doc, copy.heading, subtitle);
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(14).text(thesis.title ?? copy.noTitle, margin, y, { width });
   y = doc.y + 8;
-  doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(`Studierende:r: ${thesis.studentName ?? "–"} · Studiengang: ${(thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? "–"}`, margin, y, { width });
+  doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(`${copy.student}: ${thesis.studentName ?? "–"} · ${copy.programme}: ${(thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? "–"}`, margin, y, { width });
   y = doc.y + 4;
-  doc.text(`Aktueller Status: ${currentStatus}`, margin, y, { width });
+  doc.text(`${copy.currentStatus}: ${currentStatus}`, margin, y, { width });
   y = doc.y + 4;
-  doc.text(`Erstgutachter:in: ${thesis.firstExaminerName ?? "Noch nicht zugeordnet"} · Zweitgutachter:in: ${thesis.secondExaminerName ?? "Noch nicht zugeordnet"}`, margin, y, { width });
+  doc.text(`${copy.firstExaminer}: ${thesis.firstExaminerName ?? copy.unassigned} · ${copy.secondExaminer}: ${thesis.secondExaminerName ?? copy.unassigned}`, margin, y, { width });
   y = doc.y + 18;
 
-  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Verlauf", margin, y);
+  doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text(copy.history, margin, y);
   y += 20;
   for (const entry of auditEntries) {
-    const reason = entry.reason ? `Begründung: ${entry.reason}` : "";
+    const reason = entry.reason ? `${copy.reason}: ${entry.reason}` : "";
     const statusChange = entry.fromStatus && entry.toStatus ? `${getStatusBadge(entry.fromStatus).label} → ${getStatusBadge(entry.toStatus).label}` : "";
     doc.font("Helvetica-Oblique").fontSize(8);
     const height = 40 + doc.heightOfString(reason, { width: width - 28 });
@@ -1053,7 +1055,7 @@ async function exportThesisHistoryPdf(req: Request, res: Response) {
     y = doc.y + 2;
     if (statusChange) { doc.fillColor(GRAY).font("Helvetica").fontSize(8).text(statusChange, margin + 18, y, { width: width - 18 }); y = doc.y + 2; }
     if (reason) { doc.fillColor(GRAY).font("Helvetica-Oblique").fontSize(8).text(reason, margin + 18, y, { width: width - 18 }); y = doc.y + 2; }
-    doc.fillColor(GRAY).font("Helvetica").fontSize(7.5).text(new Date(entry.createdAt).toLocaleString("de-DE"), margin + 18, y, { width: width - 18 });
+    doc.fillColor(GRAY).font("Helvetica").fontSize(7.5).text(new Date(entry.createdAt).toLocaleString(copy.locale), margin + 18, y, { width: width - 18 });
     y = doc.y + 12;
   }
 

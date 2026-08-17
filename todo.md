@@ -1674,3 +1674,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Deutsche und englische E-Mail-Vorlagen getrennt im Verwaltungsbereich bearbeitbar gemacht
 - [x] Zeitformate in Benachrichtigungen nach Empfängersprache vereinheitlicht
 - [x] Versand-Sprache im Audit-Log angezeigt und Erweiterungen automatisiert getestet
+
+## E-Mail-Vorschau und lokalisierte Prüfungsakten
+- [x] Vorlagenvorschau, PDF-Erzeugung und Sprachpräferenzen vollständig geprüft
+- [x] Sprachabhängige E-Mail-Vorschau im Verwaltungsbereich integriert
+- [x] Prüfungsakten-PDFs anhand der gespeicherten Nutzerpräferenz lokalisiert
+- [x] Vorschau und lokalisierte PDFs automatisiert getestet

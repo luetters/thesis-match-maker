@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { fillEmailTemplatePreview } from "@shared/emailTemplatePreview";
 
 const PLACEHOLDER_COLORS: Record<string, string> = {
   "{{studentName}}": "bg-blue-100 text-blue-700",
@@ -48,6 +49,7 @@ export function EmailTemplatesTab() {
   const [activeLang, setActiveLang] = useState<Lang>("de");
   // Vorschau-Modus (HTML oder Text)
   const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   function startEdit(t: {
     key: string;
@@ -75,6 +77,7 @@ export function EmailTemplatesTab() {
     });
     setActiveLang("de");
     setPreviewMode("html");
+    setShowEmailPreview(false);
     setSaveStatus(null);
   }
 
@@ -124,6 +127,15 @@ export function EmailTemplatesTab() {
     if (!editForm) return "";
     return activeLang === "de" ? editForm.textBodyDe : editForm.textBodyEn;
   }
+
+  const previewHtml = useMemo(
+    () => fillEmailTemplatePreview(getCurrentHtmlBody(), activeLang),
+    [editForm, activeLang],
+  );
+  const previewText = useMemo(
+    () => fillEmailTemplatePreview(getCurrentTextBody(), activeLang),
+    [editForm, activeLang],
+  );
 
   if (isLoading) {
     return (
@@ -327,6 +339,40 @@ export function EmailTemplatesTab() {
                   </span>
                 </div>
               </div>
+
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-5 py-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">E-Mail-Vorschau</p>
+                  <p className="text-xs text-gray-500">Vorschau mit Beispieldaten in der aktuell ausgewählten Sprache.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPreview((visible) => !visible)}
+                  aria-expanded={showEmailPreview}
+                  className="rounded-lg border border-[#76B900] px-3 py-1.5 text-xs font-semibold text-[#456d00] transition-colors hover:bg-[#76B900]/10"
+                >
+                  {showEmailPreview ? "Vorschau ausblenden" : "Vorschau öffnen"}
+                </button>
+              </div>
+
+              {showEmailPreview && (
+                <div className="space-y-3 border-b border-gray-100 bg-slate-50 p-5">
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+                    <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{activeLang === "de" ? "Betreff" : "Subject"}</span>
+                    {fillEmailTemplatePreview(getCurrentSubject(), activeLang) || "—"}
+                  </div>
+                  <iframe
+                    title={activeLang === "de" ? "E-Mail-Vorschau auf Deutsch" : "Email preview in English"}
+                    sandbox=""
+                    srcDoc={previewHtml || `<p style="font-family:Arial,sans-serif;color:#64748b">${activeLang === "de" ? "Kein HTML-Inhalt vorhanden." : "No HTML content available."}</p>`}
+                    className="h-80 w-full rounded-lg border border-slate-200 bg-white"
+                  />
+                  <details className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-semibold text-slate-700">{activeLang === "de" ? "Textversion anzeigen" : "Show text version"}</summary>
+                    <pre className="mt-2 whitespace-pre-wrap font-sans text-xs text-slate-600">{previewText || "—"}</pre>
+                  </details>
+                </div>
+              )}
 
               {/* Tab-Inhalt */}
               <div className="p-5 space-y-4">
