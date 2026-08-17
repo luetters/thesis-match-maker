@@ -341,6 +341,7 @@ export function registerUploadRoutes(app: Express) {
         secondExaminerName: secondExaminer ? (buildFullName({ firstName: (secondExaminer as any)?.firstName, lastName: (secondExaminer as any)?.lastName, academicTitle: (secondExaminer as any)?.academicTitle, name: secondExaminer?.name }) || null) : null,
         targetSemester: thesis.targetSemester ?? null,
         language: thesis.language ?? "de",
+        documentLanguage: (student as any)?.preferredLanguage === "en" ? "en" : "de",
         submissionDeadline: (thesis as any)?.submissionDeadline ?? (thesis as any)?.deadline ?? null,
         verifyUrl,
         verifyToken: docToken,

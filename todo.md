@@ -1680,3 +1680,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Sprachabhängige E-Mail-Vorschau im Verwaltungsbereich integriert
 - [x] Prüfungsakten-PDFs anhand der gespeicherten Nutzerpräferenz lokalisiert
 - [x] Vorschau und lokalisierte PDFs automatisiert getestet
+
+## Manuelle Sprache und lokalisierte Studierendendokumente
+- [x] PDF-Download, Testmail-Versand und Studierendendokumente vollständig geprüft
+- [x] Manuelle Sprachauswahl vor dem Prüfungsakten-PDF-Download ergänzt
+- [x] Testmail aus der E-Mail-Vorschau an die angemeldete Verwaltungsperson sendbar gemacht
+- [x] Studierendendokumente anhand der bevorzugten Sprache automatisch lokalisiert
+- [x] Erweiterungen automatisiert getestet

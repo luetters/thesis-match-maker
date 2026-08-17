@@ -69,6 +69,7 @@ export interface ThesisPdfData {
   createdAt: Date;
   disclaimerDe?: string | null;
   disclaimerEn?: string | null;
+  documentLanguage?: "de" | "en" | null;
 }
 
 const HTW_GREEN = "#76B900";
@@ -76,8 +77,8 @@ const HTW_DARK = "#1a1a2e";
 const GRAY = "#6b7280";
 const LIGHT_GRAY = "#f3f4f6";
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString("de-DE", {
+function formatDate(d: Date, language: "de" | "en" = "de"): string {
+  return d.toLocaleDateString(language === "en" ? "en-GB" : "de-DE", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -89,7 +90,9 @@ function degreeLabel(type?: string | null): string {
   return type === "master" ? "Master" : "Bachelor";
 }
 
-export function consentLabel(value?: number | boolean | null): string {
+export function consentLabel(value?: number | boolean | null, language?: "de" | "en"): string {
+  if (language === "en") return value ? "Consented" : "Not granted";
+  if (language === "de") return value ? "Einverstanden" : "Nicht erteilt";
   return value ? "Einverstanden / Consented" : "Nicht erteilt / Not granted";
 }
 
@@ -106,6 +109,8 @@ async function trimToFirstPage(pdfBuffer: Buffer): Promise<Buffer> {
 }
 
 export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
+  const documentLanguage = data.documentLanguage === "en" ? "en" : "de";
+  const isEnglish = documentLanguage === "en";
   const qrBuffer = await QRCode.toBuffer(data.verifyUrl, {
     errorCorrectionLevel: "H",
     width: 120,
@@ -121,7 +126,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       bufferPages: true,
       autoFirstPage: true,
       info: {
-        Title: "Thesis-Anmeldedokument / Thesis Registration Document",
+        Title: isEnglish ? "Thesis Registration Document" : "Anmeldung zur Abschlussarbeit",
         Author: "HTW Berlin - Thesis-Management",
         Subject: data.title,
         Keywords: "HTW Berlin, Abschlussarbeit, Thesis",
@@ -186,24 +191,24 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(8.5)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Hochschule für Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 28, { lineBreak: false });
+      .text(isEnglish ? "University of Applied Sciences Berlin" : "Hochschule für Technik und Wirtschaft Berlin", logoX + logoW + 14, logoY + 28, { lineBreak: false });
     doc
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Fachbereich 3 – Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 42, { lineBreak: false });
+      .text(isEnglish ? "Department 3 – Business and Law" : "Fachbereich 3 – Wirtschafts- und Rechtswissenschaften", logoX + logoW + 14, logoY + 42, { lineBreak: false });
 
     // Dokumenttitel
     doc
       .fontSize(16)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Anmeldung zur Abschlussarbeit", 60, 100, { lineBreak: false });
+      .text(isEnglish ? "Thesis Registration Document" : "Anmeldung zur Abschlussarbeit", 60, 100, { lineBreak: false });
     doc
       .fontSize(11)
       .font("Helvetica")
       .fillColor(GRAY)
-      .text("Thesis Registration Document", 60, 120, { lineBreak: false });
+      .text("HTW Berlin – Thesis Management", 60, 120, { lineBreak: false });
 
     // Trennlinie
     doc.moveTo(60, 138).lineTo(60 + pageWidth, 138).strokeColor(HTW_GREEN).lineWidth(1.5).stroke();
@@ -226,7 +231,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(7.5)
         .font("Helvetica-Bold")
         .fillColor(HTW_GREEN)
-        .text(`${labelDe} / ${labelEn}`, 64, currentY, { lineBreak: false });
+        .text(isEnglish ? labelEn : labelDe, 64, currentY, { lineBreak: false });
       doc
         .fontSize(11)
         .font("Helvetica-Bold")
@@ -247,7 +252,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(7.5)
         .font("Helvetica-Bold")
         .fillColor(HTW_GREEN)
-        .text(`${labelDe} / ${labelEn}`, 64, currentY, { lineBreak: false });
+        .text(isEnglish ? labelEn : labelDe, 64, currentY, { lineBreak: false });
       doc
         .fontSize(10)
         .font("Helvetica")
@@ -260,7 +265,7 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
           .fontSize(7.5)
           .font("Helvetica-Bold")
           .fillColor(HTW_GREEN)
-          .text(`${col2.labelDe} / ${col2.labelEn}`, x2, currentY, { lineBreak: false });
+          .text(isEnglish ? col2.labelEn : col2.labelDe, x2, currentY, { lineBreak: false });
         doc
           .fontSize(10)
           .font("Helvetica")
@@ -350,13 +355,13 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       "Abgabefrist",
       "Submission Deadline",
       data.submissionDeadline
-        ? (() => { try { return formatDate(new Date(data.submissionDeadline!)); } catch { return data.submissionDeadline!; } })()
-        : (data.language === "en" ? "Not yet set" : "Noch nicht festgelegt"),
+        ? (() => { try { return formatDate(new Date(data.submissionDeadline!), documentLanguage); } catch { return data.submissionDeadline!; } })()
+        : (isEnglish ? "Not yet set" : "Noch nicht festgelegt"),
       y,
       {
         labelDe: "Datum der Erstellung",
         labelEn: "Date of Document Production",
-        value: formatDate(data.createdAt),
+        value: formatDate(data.createdAt, documentLanguage),
       }
     );
 
@@ -364,12 +369,12 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     y = drawRow(
       "Plagiatsprüfung",
       "Plagiarism Check",
-      consentLabel(data.plagiarismConsent),
+      consentLabel(data.plagiarismConsent, documentLanguage),
       y,
       {
         labelDe: "KI-Prüfung",
         labelEn: "AI Review",
-        value: consentLabel(data.aiReviewConsent),
+        value: consentLabel(data.aiReviewConsent, documentLanguage),
       }
     );
 
@@ -386,25 +391,24 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
       .fontSize(8.5)
       .font("Helvetica-Bold")
       .fillColor(HTW_DARK)
-      .text("Echtheitsprüfung / Document Verification", 64, y, { lineBreak: false });
+      .text(isEnglish ? "Document Verification" : "Echtheitsprüfung", 64, y, { lineBreak: false });
     const verificationTextWidth = qrX - 84;
-    const verificationTextDe = "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:";
-    const verificationTextEn = "This document can be verified by scanning the QR code or via the following link:";
+    const verificationText = isEnglish
+      ? "This document can be verified by scanning the QR code or via the following link:"
+      : "Dieses Dokument kann durch Scannen des QR-Codes oder über folgenden Link verifiziert werden:";
     doc.fontSize(8).font("Helvetica");
-    const germanTextHeight = doc.heightOfString(verificationTextDe, { width: verificationTextWidth });
-    const englishTextHeight = doc.heightOfString(verificationTextEn, { width: verificationTextWidth });
+    const germanTextHeight = doc.heightOfString(verificationText, { width: verificationTextWidth });
+    const englishTextHeight = 0;
     doc.fontSize(7.5).font("Helvetica");
     const urlTextHeight = doc.heightOfString(data.verifyUrl, { width: verificationTextWidth });
     const verificationLayout = getVerificationTextLayout(y, germanTextHeight, englishTextHeight, urlTextHeight);
 
     doc.fontSize(8).font("Helvetica").fillColor(GRAY)
-      .text(verificationTextDe, 64, verificationLayout.germanY, { width: verificationTextWidth });
-    doc.fontSize(8).font("Helvetica").fillColor(GRAY)
-      .text(verificationTextEn, 64, verificationLayout.englishY, { width: verificationTextWidth });
+      .text(verificationText, 64, verificationLayout.germanY, { width: verificationTextWidth });
     doc.fontSize(7.5).font("Helvetica").fillColor(HTW_GREEN)
       .text(data.verifyUrl, 64, verificationLayout.urlY, { width: verificationTextWidth });
     doc.fontSize(7).font("Helvetica").fillColor(GRAY)
-      .text(`Verifikations-Token: ${data.verifyToken}`, 64, verificationLayout.tokenY, { width: verificationTextWidth });
+      .text(`${isEnglish ? "Verification token" : "Verifikations-Token"}: ${data.verifyToken}`, 64, verificationLayout.tokenY, { width: verificationTextWidth });
 
     // Cursor explizit unter den QR-Code setzen (kein automatischer Umbruch)
     (doc as any).y = qrY + 110;
@@ -414,9 +418,8 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
     // Footer-Balken: 40pt hoch → startet bei pageHeight - 40
     // Disclaimer: 2 Zeilen à ~18pt + Überschrift ~11pt + Abstand = ~60pt
     // → disclaimerY = pageHeight - 40 - 8 (Abstand) - 60 = pageHeight - 108
-    const disclaimerDe = data.disclaimerDe ?? "";
-    const disclaimerEn = data.disclaimerEn ?? "";
-    if (disclaimerDe || disclaimerEn) {
+    const disclaimer = isEnglish ? (data.disclaimerEn ?? "") : (data.disclaimerDe ?? "");
+    if (disclaimer) {
       const disclaimerY = pageHeight - 148;
       doc
         .moveTo(60, disclaimerY - 8)
@@ -428,26 +431,8 @@ export async function generateThesisPdf(data: ThesisPdfData): Promise<Buffer> {
         .fontSize(6.5)
         .font("Helvetica-Bold")
         .fillColor(GRAY)
-        .text("Hinweis / Disclaimer", 60, disclaimerY, { lineBreak: false });
-      if (disclaimerDe) {
-        doc
-          .fontSize(6)
-          .font("Helvetica")
-          .fillColor(GRAY)
-          .text(disclaimerDe, 60, disclaimerY + 11, {
-            width: pageWidth,
-            // lineBreak: false würde langen Text abschneiden – wir erlauben einen
-            // Umbruch, aber begrenzen die Höhe durch die absolute Y-Position des Footers
-          });
-      }
-      if (disclaimerEn) {
-        const enY = disclaimerY + 11 + (disclaimerDe ? 20 : 0);
-        doc
-          .fontSize(6)
-          .font("Helvetica")
-          .fillColor(GRAY)
-          .text(disclaimerEn, 60, enY, { width: pageWidth });
-      }
+        .text(isEnglish ? "Note" : "Hinweis", 60, disclaimerY, { lineBreak: false });
+      doc.fontSize(6).font("Helvetica").fillColor(GRAY).text(disclaimer, 60, disclaimerY + 11, { width: pageWidth });
     }
 
     // ── Footer-Balken – immer an absoluter Position ────────────────────────────

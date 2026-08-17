@@ -41,6 +41,7 @@ export function EmailTemplatesTab() {
     },
     onError: () => setSaveStatus("error"),
   });
+  const sendPreviewMutation = trpc.emailTemplates.sendPreviewToSelf.useMutation();
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
@@ -50,6 +51,7 @@ export function EmailTemplatesTab() {
   // Vorschau-Modus (HTML oder Text)
   const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [testMailStatus, setTestMailStatus] = useState<"sent" | "error" | null>(null);
 
   function startEdit(t: {
     key: string;
@@ -79,6 +81,7 @@ export function EmailTemplatesTab() {
     setPreviewMode("html");
     setShowEmailPreview(false);
     setSaveStatus(null);
+    setTestMailStatus(null);
   }
 
   function cancelEdit() {
@@ -345,14 +348,26 @@ export function EmailTemplatesTab() {
                   <p className="text-xs font-semibold text-gray-700">E-Mail-Vorschau</p>
                   <p className="text-xs text-gray-500">Vorschau mit Beispieldaten in der aktuell ausgewählten Sprache.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowEmailPreview((visible) => !visible)}
-                  aria-expanded={showEmailPreview}
-                  className="rounded-lg border border-[#76B900] px-3 py-1.5 text-xs font-semibold text-[#456d00] transition-colors hover:bg-[#76B900]/10"
-                >
-                  {showEmailPreview ? "Vorschau ausblenden" : "Vorschau öffnen"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {testMailStatus === "sent" && <span className="text-xs font-medium text-green-700">Testmail versendet</span>}
+                  {testMailStatus === "error" && <span className="text-xs font-medium text-red-700">Testmail fehlgeschlagen</span>}
+                  <button
+                    type="button"
+                    disabled={!editingKey || !getCurrentSubject() || !previewHtml || sendPreviewMutation.isPending}
+                    onClick={() => sendPreviewMutation.mutate({ templateKey: editingKey!, language: activeLang, subject: fillEmailTemplatePreview(getCurrentSubject(), activeLang), html: previewHtml, text: previewText }, { onSuccess: () => setTestMailStatus("sent"), onError: () => setTestMailStatus("error") })}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sendPreviewMutation.isPending ? "Wird versendet…" : "Testmail an mich senden"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailPreview((visible) => !visible)}
+                    aria-expanded={showEmailPreview}
+                    className="rounded-lg border border-[#76B900] px-3 py-1.5 text-xs font-semibold text-[#456d00] transition-colors hover:bg-[#76B900]/10"
+                  >
+                    {showEmailPreview ? "Vorschau ausblenden" : "Vorschau öffnen"}
+                  </button>
+                </div>
               </div>
 
               {showEmailPreview && (

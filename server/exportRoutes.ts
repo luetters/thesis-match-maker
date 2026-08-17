@@ -991,7 +991,8 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
 async function exportThesisHistoryPdf(req: Request, res: Response) {
   const user = await getUserFromRequest(req);
   if (!user) return res.status(401).json({ error: "Nicht angemeldet" });
-  const copy = getThesisHistoryPdfCopy(user.preferredLanguage === "en" ? "en" : "de");
+  const requestedLanguage = req.query.lang === "en" || req.query.lang === "de" ? req.query.lang : null;
+  const copy = getThesisHistoryPdfCopy(requestedLanguage ?? (user.preferredLanguage === "en" ? "en" : "de"));
 
   const thesisId = Number.parseInt(req.params.id, 10);
   if (!Number.isInteger(thesisId)) return res.status(400).json({ error: copy.invalidId });

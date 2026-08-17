@@ -3580,6 +3580,27 @@ export const appRouter = router({
         );
         return { success: true };
       }),
+    /** Sendet die aktuell bearbeitete Sprachversion ausschließlich an die angemeldete Verwaltungsperson. */
+    sendPreviewToSelf: adminProcedure
+      .input(z.object({
+        templateKey: z.string().min(1).max(100),
+        language: z.enum(["de", "en"]),
+        subject: z.string().min(1).max(500),
+        html: z.string().min(1).max(200_000),
+        text: z.string().max(100_000).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Für Ihr Konto ist keine E-Mail-Adresse hinterlegt." });
+        const sent = await sendEmail({ to: ctx.user.email, subject: input.subject, html: input.html, text: input.text });
+        if (!sent) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Die Testmail konnte nicht versendet werden." });
+        await createAuditLogEntry({
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          action: "EMAIL_TEMPLATE_TEST_SENT",
+          metadata: { templateKey: input.templateKey, emailLanguage: input.language, recipientEmail: ctx.user.email },
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Admin-Erweiterung: Onboarding-Reset ──────────────────────────────────

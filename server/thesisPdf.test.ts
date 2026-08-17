@@ -19,4 +19,11 @@ describe("Thesis-PDF-Vorlage", () => {
     expect(consentLabel(0)).toBe("Nicht erteilt / Not granted");
     expect(consentLabel(false)).toBe("Nicht erteilt / Not granted");
   });
+
+  it("liefert Einwilligungswerte in der ausgewählten Dokumentensprache", () => {
+    expect(consentLabel(true, "de")).toBe("Einverstanden");
+    expect(consentLabel(false, "de")).toBe("Nicht erteilt");
+    expect(consentLabel(true, "en")).toBe("Consented");
+    expect(consentLabel(false, "en")).toBe("Not granted");
+  });
 });
