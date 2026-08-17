@@ -1668,3 +1668,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fehlende Übersetzungen und sprachabhängige E-Mail-Vorlagen im Server ergänzt
 - [x] Sichtbare Systemmeldungen und Sprachweitergabe im Client vervollständigt
 - [x] Sprachabhängige Kommunikation automatisiert getestet
+
+## Mehrsprachige Vorlagen und Versandprotokoll
+- [x] Vorlagenverwaltung, Benachrichtigungsformate und Versandprotokoll vollständig geprüft
+- [x] Deutsche und englische E-Mail-Vorlagen getrennt im Verwaltungsbereich bearbeitbar gemacht
+- [x] Zeitformate in Benachrichtigungen nach Empfängersprache vereinheitlicht
+- [x] Versand-Sprache im Audit-Log angezeigt und Erweiterungen automatisiert getestet

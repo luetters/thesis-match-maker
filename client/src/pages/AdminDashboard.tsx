@@ -966,6 +966,11 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
                             <span className="ml-1">{isExpanded ? "▲" : "▼"}</span>
                           </span>
                         )}
+                        {typeof (log.metadata as { emailLanguage?: unknown } | null)?.emailLanguage === "string" && (
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${(log.metadata as { emailLanguage?: string }).emailLanguage === "en" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>
+                            E-Mail: {(log.metadata as { emailLanguage?: string }).emailLanguage === "en" ? "English" : "Deutsch"}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-5 py-3 hidden sm:table-cell">

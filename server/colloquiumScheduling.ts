@@ -395,11 +395,11 @@ export async function selectColloquiumSchedulingSlot(input: { pollId: number; sl
   await db.update(colloquiumSchedulingSlots).set({ isSelected: 1 }).where(eq(colloquiumSchedulingSlots.id, input.slotId));
   await db.update(colloquiumSchedulingParticipants).set({ confirmedAt: null, declinedAt: null, declineReason: null }).where(eq(colloquiumSchedulingParticipants.pollId, input.pollId));
   await db.update(colloquiumSchedulingPolls).set({ status: "AWAITING_CONFIRMATION", selectedSlotId: input.slotId }).where(eq(colloquiumSchedulingPolls.id, input.pollId));
-  const selectedSlot = fromDbDate(slot.startsAt).toLocaleString("de-DE", { dateStyle: "full", timeStyle: "short" });
   const locationLabel = [poll.location, poll.room, poll.onlineLink].filter(Boolean).join(" · ");
   for (const participant of participants) {
     const user = usersById.get(participant.userId);
     if (!user) continue;
+    const selectedSlot = fromDbDate(slot.startsAt).toLocaleString(user.preferredLanguage === "en" ? "en-GB" : "de-DE", { dateStyle: "full", timeStyle: "short" });
     await notifyAndEmailParticipant({
       user,
       role: participant.participantRole as ParticipantRole,
@@ -469,11 +469,11 @@ export async function confirmColloquiumSchedulingSlot(input: { pollId: number; u
     await tx.update(colloquiumSchedulingPolls).set({ status: "CONFIRMED", finalizedAt: now }).where(eq(colloquiumSchedulingPolls.id, poll.id));
     return [result] as const;
   });
-  const selectedSlotLabel = fromDbDate(selectedSlot.startsAt).toLocaleString("de-DE", { dateStyle: "full", timeStyle: "short" });
   const locationLabel = [poll.location, poll.room, poll.onlineLink].filter(Boolean).join(" · ");
   for (const item of updatedParticipants) {
     const user = usersById.get(item.userId);
     if (!user) continue;
+    const selectedSlotLabel = fromDbDate(selectedSlot.startsAt).toLocaleString(user.preferredLanguage === "en" ? "en-GB" : "de-DE", { dateStyle: "full", timeStyle: "short" });
     await notifyAndEmailParticipant({
       user,
       role: item.participantRole as ParticipantRole,

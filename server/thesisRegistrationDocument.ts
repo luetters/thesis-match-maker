@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { programmes, thesisRequests } from "../drizzle/schema";
 import {
   createThesisDocToken,
+  createAuditLogEntry,
   getDb,
   getSystemSetting,
   getThesisRequestById,
@@ -127,6 +128,12 @@ export async function sendOfficialRegistrationDocument(thesisRequestId: number) 
       attachments: [{ filename, content: pdf, contentType: "application/pdf" }],
     });
     if (!sent) return { sent: false, reason: "email_failed" as const };
+    await createAuditLogEntry({
+      thesisRequestId,
+      actorId: 0,
+      action: "OFFICIAL_REGISTRATION_DOCUMENT_SENT",
+      metadata: { recipientEmail: student.email, emailLanguage: lang },
+    } as any);
     const db = await getDb();
     if (db) await db.update(thesisRequests).set({ registrationDocumentSentAt: new Date().toISOString().slice(0, 19).replace("T", " ") } as any).where(eq(thesisRequests.id, thesisRequestId));
     return { sent: true as const, filename };

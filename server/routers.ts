@@ -4995,6 +4995,7 @@ export const appRouter = router({
           actorId: ctx.user.id,
           action: "FIRST_EXAMINER_INVITED_EXTERNAL_SECOND",
           reason: `Erstgutachter:in hat externe Person (${input.inviteeEmail}) als Zweitgutachter:in eingeladen.`,
+          metadata: { emailLanguage: lang, recipientEmail: input.inviteeEmail },
         });
         return { success: true, token };
       }),
@@ -5046,6 +5047,7 @@ export const appRouter = router({
           actorId: ctx.user.id,
           action: "FIRST_EXAMINER_RESENT_INVITE",
           reason: `Einladungs-E-Mail erneut an ${inviteeEmail} gesendet.`,
+          metadata: { emailLanguage: lang, recipientEmail: inviteeEmail },
         });
         return { success: true };
       }),
