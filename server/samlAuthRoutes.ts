@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { generateServiceProviderMetadata } from "@node-saml/node-saml";
 import { SignJWT } from "jose";
 import { COOKIE_NAME } from "../shared/const";
+import { SESSION_MAX_AGE_MS } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { getSystemSettings, getUserByEmail, getUserBySamlIdentity, getUserRoles, linkSamlIdentity, logLoginAttempt } from "./db";
 import { createSamlClient, getSafeSamlReturnTo, getSamlConfigurationIssues, getSamlProfileIdentity, isSamlConfigurationReady, parseSamlConfiguration } from "./samlAuth";
@@ -78,7 +79,7 @@ export function registerSamlAuthRoutes(app: Express) {
         .setIssuedAt()
         .setExpirationTime(Math.floor((Date.now() + 365 * 24 * 60 * 60 * 1000) / 1000))
         .sign(secret);
-      res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(req), maxAge: 365 * 24 * 60 * 60 * 1000 });
+      res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(req), maxAge: SESSION_MAX_AGE_MS });
       await logLoginAttempt({
         email: identity.email,
         success: true,

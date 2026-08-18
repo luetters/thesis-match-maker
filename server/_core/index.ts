@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import helmet from "helmet";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -40,9 +42,54 @@ async function startServer() {
   const server = createServer(app);
   // Trust reverse proxy (Cloud Run, Cloudflare) so req.protocol reflects x-forwarded-proto
   app.set("trust proxy", true);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.disable("x-powered-by");
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        mediaSrc: ["'self'", "blob:", "https:"],
+        connectSrc: ["'self'", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        fontSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'", "https:"],
+      },
+    } : false,
+    crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  }));
+  // tRPC payloads are text metadata only; file routes use dedicated multer limits.
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ limit: "1mb", extended: true }));
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 600,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? ""),
+    handler: (_req, res) => res.status(429).json({ error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." }),
+  });
+  const authenticationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    skipSuccessfulRequests: true,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? ""),
+    handler: (_req, res) => res.status(429).json({ error: "Zu viele Anmeldeversuche. Bitte warten Sie 15 Minuten." }),
+  });
+  app.use("/api", apiLimiter);
+  app.use([
+    "/api/trpc/auth/loginWithPassword",
+    "/api/trpc/auth.requestPasswordReset",
+    "/api/trpc/auth.resetPassword",
+    "/api/trpc/auth.register",
+  ], authenticationLimiter);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerUploadRoutes(app);
@@ -61,13 +108,8 @@ async function startServer() {
       const result = await processColloquiumSchedulingReminders(cronUser.taskUid);
       return res.json(result);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
       console.error("[ColloquiumSchedulingHeartbeat]", error);
-      return res.status(500).json({
-        error: detail,
-        context: { url: req.originalUrl },
-        timestamp: new Date().toISOString(),
-      });
+      return res.status(500).json({ error: "Die geplante Verarbeitung konnte nicht abgeschlossen werden." });
     }
   });
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)

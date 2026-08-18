@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
@@ -889,10 +889,10 @@ export const appRouter = router({
         })
           .setProtectedHeader({ alg: "HS256" })
           .setIssuedAt()
-          .setExpirationTime(Math.floor((Date.now() + ONE_YEAR_MS) / 1000))
+          .setExpirationTime(Math.floor((Date.now() + SESSION_MAX_AGE_MS) / 1000))
           .sign(secret);
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
         // Multi-Rollen: roles[] aus user_roles laden
         const userRolesArr = await getUserRoles(user.id);
         if (userRolesArr.length === 0 && user.role && user.role !== 'user') {

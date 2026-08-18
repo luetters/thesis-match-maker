@@ -1687,3 +1687,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Testmail aus der E-Mail-Vorschau an die angemeldete Verwaltungsperson sendbar gemacht
 - [x] Studierendendokumente anhand der bevorzugten Sprache automatisch lokalisiert
 - [x] Erweiterungen automatisiert getestet
+
+## Sicherheitshärtung
+- [x] Anmelde-, Sitzungs-, Eingabe-, Berechtigungs- und Dokumentzugriffsflächen geprüft
+- [x] Sicherheitsheader sowie Schutz gegen Anmelde- und Anfrageüberlastung ergänzt
+- [x] Berechtigungs-, Eingabe- und Dokumentzugriffsgrenzen gezielt gehärtet
+- [x] Sicherheitsmaßnahmen automatisiert getestet

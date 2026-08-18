@@ -28,6 +28,28 @@ async function getUserFromRequest(req: Request) {
   }
 }
 
+export function isPdfBuffer(buffer: Buffer): boolean {
+  return buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+}
+
+export function hasExpectedFileSignature(file: Express.Multer.File): boolean {
+  const header = file.buffer.subarray(0, 12);
+  if (file.mimetype === "application/pdf") return isPdfBuffer(file.buffer);
+  if (file.mimetype === "image/png") return header.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (file.mimetype === "image/jpeg") return header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+  if (file.mimetype === "image/gif") return header.subarray(0, 3).toString("ascii") === "GIF";
+  if (file.mimetype === "image/webp") return header.subarray(0, 4).toString("ascii") === "RIFF" && header.subarray(8, 12).toString("ascii") === "WEBP";
+  if (file.mimetype.includes("officedocument") || file.mimetype === "application/vnd.ms-powerpoint") return header.subarray(0, 2).toString("ascii") === "PK";
+  if (file.mimetype === "application/msword") return header[0] === 0xd0 && header[1] === 0xcf && header[2] === 0x11 && header[3] === 0xe0;
+  return false;
+}
+
+export function canAccessThesisRecord(user: any, thesis: any): boolean {
+  if (!user || !thesis) return false;
+  if (user.role === "admin" || user.role === "superadmin") return true;
+  return [thesis.studentId, thesis.firstExaminerId, thesis.secondExaminerId].includes(user.id);
+}
+
 // In-memory storage: Datei wird direkt zu S3 weitergeleitet
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -76,6 +98,10 @@ export function registerUploadRoutes(app: Express) {
           res.status(400).json({ error: "Keine Datei übermittelt." });
           return;
         }
+        if (!isPdfBuffer(req.file.buffer)) {
+          res.status(400).json({ error: "Die Datei ist kein gültiges PDF-Dokument." });
+          return;
+        }
         const fileName = `expose-pre-${user.id}-${Date.now()}.pdf`;
         const { key, url } = await storagePut(
           `exposes/${fileName}`,
@@ -84,9 +110,8 @@ export function registerUploadRoutes(app: Express) {
         );
         res.json({ success: true, url, key });
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Upload fehlgeschlagen.";
         console.error("[Upload/expose] Fehler:", err);
-        res.status(500).json({ error: message });
+        res.status(500).json({ error: "Der Upload konnte nicht abgeschlossen werden." });
       }
     }
   );
@@ -125,13 +150,17 @@ export function registerUploadRoutes(app: Express) {
         }
 
         // Nur Eigentümer:in oder Admin darf hochladen
-        if (thesis.studentId !== user.id && user.role !== "admin") {
+        if (thesis.studentId !== user.id && user.role !== "admin" && user.role !== "superadmin") {
           res.status(403).json({ error: "Kein Zugriff." });
           return;
         }
 
         if (!req.file) {
           res.status(400).json({ error: "Keine Datei übermittelt." });
+          return;
+        }
+        if (!isPdfBuffer(req.file.buffer)) {
+          res.status(400).json({ error: "Die Datei ist kein gültiges PDF-Dokument." });
           return;
         }
 
@@ -157,9 +186,8 @@ export function registerUploadRoutes(app: Express) {
 
         res.json({ success: true, url, key });
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Upload fehlgeschlagen.";
         console.error("[Upload] Fehler:", err);
-        res.status(500).json({ error: message });
+        res.status(500).json({ error: "Der Upload konnte nicht abgeschlossen werden." });
       }
     }
   );
@@ -389,7 +417,6 @@ export function registerUploadRoutes(app: Express) {
       res.json({
         valid: true,
         studentName: doc.studentName,
-        matrikelNr: doc.matrikelNr,
         programmeName: doc.programmeName,
         title: doc.title,
         firstExaminerName: doc.firstExaminerName,
@@ -408,8 +435,11 @@ export function registerUploadRoutes(app: Express) {
     const thesisId = parseInt(req.params.id, 10);
     if (isNaN(thesisId)) { res.status(400).json({ error: "Ungültige Thesis-ID" }); return; }
     try {
+      const user = await getUserFromRequest(req);
+      if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
       const thesis = await getThesisRequestById(thesisId);
       if (!thesis) { res.status(404).json({ error: "Thesis nicht gefunden" }); return; }
+      if (!canAccessThesisRecord(user, thesis)) { res.status(403).json({ error: "Kein Zugriff auf diese Frist." }); return; }
       if (!thesis.deadline) { res.status(404).json({ error: "Keine Deadline gesetzt" }); return; }
       const student = thesis.studentId ? await getUserById(thesis.studentId) : null;
       const icsContent = generateDeadlineIcs({
@@ -424,8 +454,8 @@ export function registerUploadRoutes(app: Express) {
       res.setHeader("Content-Disposition", `attachment; filename="thesis-deadline-${thesisId}.ics"`);
       res.send(icsContent);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
-      res.status(500).json({ error: message });
+      console.error("[ICS/deadline] Fehler:", err);
+      res.status(500).json({ error: "ICS-Generierung fehlgeschlagen" });
     }
   });
 
@@ -434,11 +464,14 @@ export function registerUploadRoutes(app: Express) {
     const colloquiumId = parseInt(req.params.id, 10);
     if (isNaN(colloquiumId)) { res.status(400).json({ error: "Ungültige Kolloquium-ID" }); return; }
     try {
+      const user = await getUserFromRequest(req);
+      if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
       const all = await getAllColloquiums();
       const col = all.find((c) => c.id === colloquiumId);
       if (!col) { res.status(404).json({ error: "Kolloquium nicht gefunden" }); return; }
       // Thesis-Daten mit aufgelösten Namen laden
       const thesis = await getThesisRequestByIdWithNames(col.thesisRequestId);
+      if (!canAccessThesisRecord(user, thesis)) { res.status(403).json({ error: "Kein Zugriff auf dieses Kolloquium." }); return; }
       const icsContent = createIcsEvent({
         title: col.title,
         start: new Date(col.scheduledAt as string),
@@ -457,8 +490,8 @@ export function registerUploadRoutes(app: Express) {
       res.setHeader("Content-Disposition", `attachment; filename="kolloquium-${colloquiumId}.ics"`);
       res.send(icsContent);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "ICS-Generierung fehlgeschlagen";
-      res.status(500).json({ error: message });
+      console.error("[ICS/colloquium] Fehler:", err);
+      res.status(500).json({ error: "ICS-Generierung fehlgeschlagen" });
     }
   });
 
@@ -569,6 +602,7 @@ export function registerUploadRoutes(app: Express) {
         // Nur Studierende der eigenen Thesis d\u00fcrfen hochladen
         if (thesis.studentId !== user.id) { res.status(403).json({ error: "Kein Zugriff." }); return; }
         if (!req.file) { res.status(400).json({ error: "Keine Datei \u00fcbermittelt." }); return; }
+        if (!hasExpectedFileSignature(req.file)) { res.status(400).json({ error: "Dateityp und Dateiinhalt stimmen nicht überein." }); return; }
         const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 500) : null;
         const safeFilename = req.file.originalname.replace(/[^a-zA-Z0-9._\-\u00C0-\u024F]/g, "_");
         const storageFilename = `conditional-${thesisId}-${Date.now()}-${safeFilename}`;
@@ -598,9 +632,8 @@ export function registerUploadRoutes(app: Express) {
         });
         res.json({ success: true, key, url, filename: req.file.originalname });
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Upload fehlgeschlagen.";
         console.error("[Upload/conditional-docs] Fehler:", err);
-        res.status(500).json({ error: message });
+        res.status(500).json({ error: "Der Upload konnte nicht abgeschlossen werden." });
       }
     }
   );
@@ -625,6 +658,9 @@ export function registerUploadRoutes(app: Express) {
         const mimeType = req.file.mimetype;
         if (!['image/jpeg','image/png','image/webp','image/gif'].includes(mimeType)) {
           res.status(400).json({ error: "Nur JPEG, PNG, WebP oder GIF sind erlaubt." }); return;
+        }
+        if (!hasExpectedFileSignature(req.file)) {
+          res.status(400).json({ error: "Dateityp und Dateiinhalt stimmen nicht überein." }); return;
         }
         const ext = mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1];
         const storageKey = `banners/user-${user.id}-${Date.now()}.${ext}`;
