@@ -1738,3 +1738,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Notizformular, Serverprozedur und Datenmodell auf den Speicherfehler prüfen
 - [x] Dauerhaftes Speichern und datierte Anzeige von Notizen korrigieren
 - [x] Notizspeicherung automatisiert testen und veröffentlichen
+
+## Erweiterung der privaten Anfragenotizen
+- [x] Volltextsuche innerhalb eigener gespeicherter Notizen ergänzen
+- [x] Prioritäts-Tag mit farblicher Hervorhebung für wichtige Notizen ergänzen
+- [x] Autorisierte CSV- und PDF-Exporte eigener Anfragenotizen bereitstellen
+- [x] Such-, Prioritäts- und Exportfunktionen automatisiert testen und veröffentlichen

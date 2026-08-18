@@ -1,4 +1,4 @@
-import { aliasedTable, and, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { aliasedTable, and, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -6591,6 +6591,7 @@ export async function createExaminerComment(params: {
   thesisRequestId: number;
   examinerId: number;
   content: string;
+  priority?: "normal" | "important" | "urgent";
 }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -6598,6 +6599,7 @@ export async function createExaminerComment(params: {
     thesisRequestId: params.thesisRequestId,
     examinerId: params.examinerId,
     content: params.content,
+    priority: params.priority ?? "normal",
   });
   return (result[0] as any).insertId as number;
 }
@@ -6607,6 +6609,7 @@ export async function updateExaminerComment(params: {
   id: number;
   examinerId: number;
   content: string;
+  priority?: "normal" | "important" | "urgent";
 }): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -6620,8 +6623,36 @@ export async function updateExaminerComment(params: {
   if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
   await db
     .update(examinerComments)
-    .set({ content: params.content, updatedAt: now })
+    .set({ content: params.content, updatedAt: now, ...(params.priority ? { priority: params.priority } : {}) })
     .where(eq(examinerComments.id, params.id));
+}
+
+/** Durchsucht ausschließlich die eigenen privaten Notizen und ergänzt den zugehörigen Anfragetitel. */
+export async function searchExaminerComments(params: {
+  examinerId: number;
+  search?: string;
+  priority?: "normal" | "important" | "urgent";
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const filters = [eq(examinerComments.examinerId, params.examinerId)];
+  const term = params.search?.trim();
+  if (term) filters.push(like(examinerComments.content, `%${term}%`));
+  if (params.priority) filters.push(eq(examinerComments.priority, params.priority));
+  return db
+    .select({
+      id: examinerComments.id,
+      thesisRequestId: examinerComments.thesisRequestId,
+      thesisTitle: thesisRequests.title,
+      content: examinerComments.content,
+      priority: examinerComments.priority,
+      createdAt: examinerComments.createdAt,
+      updatedAt: examinerComments.updatedAt,
+    })
+    .from(examinerComments)
+    .innerJoin(thesisRequests, eq(examinerComments.thesisRequestId, thesisRequests.id))
+    .where(and(...filters))
+    .orderBy(desc(examinerComments.createdAt));
 }
 
 /** Löscht einen Kommentar (nur durch den Ersteller). */

@@ -23,6 +23,7 @@ import {
   getUserByOpenId,
   getProfile,
   getUserRoles,
+  searchExaminerComments,
 } from "./db";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
@@ -1070,6 +1071,79 @@ async function exportThesisHistoryPdf(req: Request, res: Response) {
   res.send(Buffer.concat(chunks));
 }
 
+function getNoteExportFilters(req: Request): { search?: string; priority?: "normal" | "important" | "urgent" } {
+  const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 200) : undefined;
+  const rawPriority = req.query.priority;
+  const priority = rawPriority === "normal" || rawPriority === "important" || rawPriority === "urgent" ? rawPriority : undefined;
+  return { search, priority };
+}
+
+function csvCell(value: unknown): string {
+  const text = String(value ?? "").replace(/\r?\n/g, " ");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+async function exportMyNotesCsv(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const notes = await searchExaminerComments({ examinerId: user.id, ...getNoteExportFilters(req) });
+  const rows = [
+    ["Anfrage-ID", "Thema", "Priorität", "Notiz", "Erstellt am", "Zuletzt bearbeitet"],
+    ...notes.map((note) => [
+      note.thesisRequestId,
+      note.thesisTitle,
+      note.priority,
+      note.content,
+      new Date(note.createdAt).toLocaleString("de-DE"),
+      new Date(note.updatedAt).toLocaleString("de-DE"),
+    ]),
+  ];
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Anfragenotizen.csv"');
+  res.send(`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\r\n")}`);
+}
+
+async function exportMyNotesPdf(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const notes = await searchExaminerComments({ examinerId: user.id, ...getNoteExportFilters(req) });
+  const doc = new PDFDocument({ size: "A4", margins: { top: 80, bottom: 50, left: 50, right: 50 }, bufferPages: true });
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+  const margin = 50;
+  const width = doc.page.width - margin * 2;
+  const subtitle = `${user.name ?? "HTW Berlin"} · ${new Date().toLocaleDateString("de-DE")}`;
+  const priorityLabels: Record<string, string> = { normal: "Normal", important: "Wichtig", urgent: "Dringend" };
+  const priorityColors: Record<string, string> = { normal: GRAY, important: "#B45309", urgent: "#B91C1C" };
+  drawHeader(doc, "Private Anfragenotizen", subtitle);
+  doc.fillColor(GRAY).font("Helvetica").fontSize(9).text("Dieser Export enthält ausschließlich Ihre eigenen privaten Notizen.", margin, 82, { width });
+  let y = doc.y + 18;
+  for (const note of notes) {
+    doc.font("Helvetica").fontSize(9);
+    const bodyHeight = doc.heightOfString(note.content, { width: width - 20 });
+    if (y + bodyHeight + 72 > doc.page.height - 55) {
+      doc.addPage();
+      drawHeader(doc, "Private Anfragenotizen", subtitle);
+      y = 82;
+    }
+    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(10).text(`#${note.thesisRequestId} · ${note.thesisTitle}`, margin, y, { width });
+    y = doc.y + 2;
+    doc.fillColor(priorityColors[note.priority] ?? GRAY).font("Helvetica-Bold").fontSize(8).text(priorityLabels[note.priority] ?? "Normal", margin, y);
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8).text(new Date(note.createdAt).toLocaleString("de-DE"), margin + 90, y, { width: width - 90 });
+    y = doc.y + 4;
+    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(note.content, margin, y, { width });
+    y = doc.y + 14;
+  }
+  if (notes.length === 0) doc.fillColor(GRAY).font("Helvetica-Oblique").fontSize(10).text("Keine Notizen für die gewählten Filter gefunden.", margin, y);
+  const pages = doc.bufferedPageRange();
+  for (let index = 0; index < pages.count; index++) { doc.switchToPage(pages.start + index); drawFooter(doc, index + 1, pages.count); }
+  doc.end();
+  await new Promise<void>((resolve) => doc.on("end", resolve));
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Anfragenotizen.pdf"');
+  res.send(Buffer.concat(chunks));
+}
+
 // ─── Registrierung ────────────────────────────────────────────────────────────
 
 export function registerExportRoutes(app: Express) {
@@ -1079,4 +1153,6 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/thesis/:id/summary.pdf", exportThesisSummaryPdf);
   app.get("/api/export/thesis/:id/history.pdf", exportThesisHistoryPdf);
   app.get("/api/export/saml-integration-guide.pdf", exportSamlIntegrationGuidePdf);
+  app.get("/api/export/my-notes.csv", exportMyNotesCsv);
+  app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
 }

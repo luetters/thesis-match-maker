@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { appendCommissionPreference } from "@/lib/commissionPreferences";
 import { UserAvatar } from "@/components/UserAvatar";
 import { WorkloadBadge } from "@/components/WorkloadBadge";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -719,8 +719,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
   const [newComment, setNewComment] = useState("");
+  const [newCommentPriority, setNewCommentPriority] = useState<"normal" | "important" | "urgent">("normal");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [editingCommentPriority, setEditingCommentPriority] = useState<"normal" | "important" | "urgent">("normal");
   const newCommentRef = useRef<HTMLTextAreaElement>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
   const [showSecondExaminerEmailDialog, setShowSecondExaminerEmailDialog] = useState(false);
@@ -793,6 +795,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const createComment = trpc.examinerComments.create.useMutation({
     onSuccess: () => {
       setNewComment("");
+      setNewCommentPriority("normal");
       utils.examinerComments.list.invalidate({ thesisRequestId: req.id });
       toast.success("Notiz wurde gespeichert.");
     },
@@ -1097,7 +1100,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               ) : comments && comments.length > 0 ? (
                 <div className="space-y-2 mb-2">
                   {comments.map((c) => (
-                    <div key={c.id} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                    <div key={c.id} className={`rounded-xl border p-3 ${c.priority === "urgent" ? "bg-red-50 border-red-200" : c.priority === "important" ? "bg-orange-50 border-orange-200" : "bg-amber-50 border-amber-100"}`}>
                       {editingCommentId === c.id ? (
                         <div className="space-y-1.5">
                           <FormatToolbar
@@ -1112,9 +1115,14 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                             rows={3}
                             className="w-full text-sm border border-gray-200 rounded-b-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#76B900]/40 font-mono"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
+                            <select value={editingCommentPriority} onChange={(event) => setEditingCommentPriority(event.target.value as "normal" | "important" | "urgent")} className="px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white text-gray-700">
+                              <option value="normal">Normal</option>
+                              <option value="important">Wichtig</option>
+                              <option value="urgent">Dringend</option>
+                            </select>
                             <button
-                              onClick={() => updateComment.mutate({ id: c.id, content: editingContent })}
+                              onClick={() => updateComment.mutate({ id: c.id, content: editingContent, priority: editingCommentPriority })}
                               disabled={updateComment.isPending || !editingContent.trim()}
                               className="px-3 py-1 text-xs font-semibold text-white rounded-lg disabled:opacity-50"
                               style={{ backgroundColor: "#76B900" }}
@@ -1122,7 +1130,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                               Speichern
                             </button>
                             <button
-                              onClick={() => { setEditingCommentId(null); setEditingContent(""); }}
+                              onClick={() => { setEditingCommentId(null); setEditingContent(""); setEditingCommentPriority("normal"); }}
                               className="px-3 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
                             >
                               Abbrechen
@@ -1138,8 +1146,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                               {c.updatedAt !== c.createdAt && " (bearbeitet)"}
                             </span>
                             <div className="flex gap-1.5">
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${c.priority === "urgent" ? "bg-red-100 text-red-700" : c.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>
+                                {c.priority === "urgent" ? "Dringend" : c.priority === "important" ? "Wichtig" : "Normal"}
+                              </span>
                               <button
-                                onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); }}
+                                onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); setEditingCommentPriority(c.priority ?? "normal"); }}
                                 className="text-xs text-gray-400 hover:text-gray-600 px-2 py-0.5 rounded hover:bg-gray-200 transition-colors"
                               >
                                 Bearbeiten
@@ -1176,14 +1187,21 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   rows={3}
                   className="w-full text-sm border border-amber-200 rounded-b-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300/60 bg-amber-50/50"
                 />
-                <button
-                  onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment.trim() })}
-                  disabled={createComment.isPending || !newComment.trim()}
-                  className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity"
-                  style={{ backgroundColor: "#76B900" }}
-                >
-                  {createComment.isPending ? "Wird gespeichert…" : "Notiz speichern"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <select value={newCommentPriority} onChange={(event) => setNewCommentPriority(event.target.value as "normal" | "important" | "urgent")} className="px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg bg-white text-gray-700">
+                    <option value="normal">Priorität: Normal</option>
+                    <option value="important">Priorität: Wichtig</option>
+                    <option value="urgent">Priorität: Dringend</option>
+                  </select>
+                  <button
+                    onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment.trim(), priority: newCommentPriority })}
+                    disabled={createComment.isPending || !newComment.trim()}
+                    className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity"
+                    style={{ backgroundColor: "#76B900" }}
+                  >
+                    {createComment.isPending ? "Wird gespeichert…" : "Notiz speichern"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2118,6 +2136,66 @@ function sortRequests<T extends { studentName?: string | null; programmeName?: s
   });
 }
 
+function PrivateNotesLibrary() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [priority, setPriority] = useState<"all" | "normal" | "important" | "urgent">("all");
+  const input = useMemo(() => ({
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(priority !== "all" ? { priority } : {}),
+  }), [search, priority]);
+  const { data: notes = [], isFetching } = trpc.examinerComments.search.useQuery(input, { enabled: isOpen });
+  const exportNotes = (format: "csv" | "pdf") => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (priority !== "all") params.set("priority", priority);
+    const suffix = params.toString();
+    window.open(`/api/export/my-notes.${format}${suffix ? `?${suffix}` : ""}`, "_blank", "noopener");
+  };
+
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">Meine privaten Notizen</h2>
+          <p className="mt-0.5 text-xs text-gray-500">Durchsuchen, priorisieren und ausschließlich eigene Notizen exportieren.</p>
+        </div>
+        <button onClick={() => setIsOpen((value) => !value)} className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100">
+          {isOpen ? "Suche schließen" : "Notizen durchsuchen"}
+        </button>
+      </div>
+      {isOpen && (
+        <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Notizen durchsuchen…" className="min-w-52 flex-1 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300/60" />
+            <select value={priority} onChange={(event) => setPriority(event.target.value as "all" | "normal" | "important" | "urgent")} className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-gray-700">
+              <option value="all">Alle Prioritäten</option>
+              <option value="normal">Normal</option>
+              <option value="important">Wichtig</option>
+              <option value="urgent">Dringend</option>
+            </select>
+            <button onClick={() => exportNotes("csv")} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">CSV herunterladen</button>
+            <button onClick={() => exportNotes("pdf")} className="rounded-lg px-3 py-2 text-xs font-semibold text-white" style={{ backgroundColor: "#006937" }}>PDF herunterladen</button>
+          </div>
+          {isFetching ? <p className="text-xs text-gray-500">Notizen werden gesucht…</p> : notes.length === 0 ? <p className="text-xs italic text-gray-500">Keine passenden Notizen gefunden.</p> : (
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+              {notes.map((note) => (
+                <article key={note.id} className={`rounded-xl border p-3 ${note.priority === "urgent" ? "border-red-200 bg-red-50" : note.priority === "important" ? "border-orange-200 bg-orange-50" : "border-amber-100 bg-white"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div><p className="text-xs font-semibold text-gray-800">#{note.thesisRequestId} · {note.thesisTitle}</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{note.content}</p></div>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${note.priority === "urgent" ? "bg-red-100 text-red-700" : note.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>{note.priority === "urgent" ? "Dringend" : note.priority === "important" ? "Wichtig" : "Normal"}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-gray-400">{new Date(note.createdAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function RequestsView() {
   const [sortKey, setSortKey] = useState<RequestSortKey>("date");
   const [filterMissingSecond, setFilterMissingSecond] = useState(false);
@@ -2157,26 +2235,29 @@ function RequestsView() {
     : allRequests.filter((r: any) => r.targetSemester === semesterFilter);
   if (!allRequests.length) {
     return (
-      <div className="text-center py-16">
-        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+      <div className="space-y-6">
+        <PrivateNotesLibrary />
+        <div className="text-center py-16">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
           <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
           </svg>
         </div>
-        <h3 className="text-gray-900 font-semibold mb-1">Keine offenen Anfragen</h3>
-        <p className="text-gray-500 text-sm">Sobald Studierende eine Anfrage stellen, erscheint sie hier.</p>
-        {/* Zweitgutachter-Hinweis */}
-        <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${
-          isSecondExaminer
-            ? "bg-green-50 border-green-200 text-green-800"
-            : "bg-gray-50 border-gray-200 text-gray-500"
-        }`}>
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            isSecondExaminer ? "bg-green-500" : "bg-gray-300"
-          }`} />
-          {isSecondExaminer
-            ? "Sie sind als Zweitgutachter:in eingetragen – Anfragen erscheinen hier, sobald Studierende Sie anfragen."
-            : "Sie sind aktuell nicht als Zweitgutachter:in eingetragen."}
+          <h3 className="text-gray-900 font-semibold mb-1">Keine offenen Anfragen</h3>
+          <p className="text-gray-500 text-sm">Sobald Studierende eine Anfrage stellen, erscheint sie hier.</p>
+          {/* Zweitgutachter-Hinweis */}
+          <div className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${
+            isSecondExaminer
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-gray-50 border-gray-200 text-gray-500"
+          }`}>
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              isSecondExaminer ? "bg-green-500" : "bg-gray-300"
+            }`} />
+            {isSecondExaminer
+              ? "Sie sind als Zweitgutachter:in eingetragen – Anfragen erscheinen hier, sobald Studierende Sie anfragen."
+              : "Sie sind aktuell nicht als Zweitgutachter:in eingetragen."}
+          </div>
         </div>
       </div>
     );
@@ -2204,6 +2285,7 @@ function RequestsView() {
 
   return (
     <div className="space-y-6">
+      <PrivateNotesLibrary />
       {/* Semesterfilter + Sortier-Leiste */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Semesterfilter */}

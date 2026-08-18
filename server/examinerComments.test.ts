@@ -30,6 +30,16 @@ describe("createExaminerComment", () => {
       thesisRequestId: 42,
       examinerId: 8,
       content: "Rückfrage im nächsten Termin klären.",
+      priority: "normal",
     });
+  });
+
+  it("speichert eine ausdrücklich gewählte Priorität", async () => {
+    const valuesSpy = vi.fn().mockResolvedValue([{ insertId: 74 }]);
+    fakeDbHolder.db = { insert: vi.fn().mockReturnValue({ values: valuesSpy }) };
+
+    await createExaminerComment({ thesisRequestId: 43, examinerId: 8, content: "Frist prüfen.", priority: "important" });
+
+    expect(valuesSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: "important" }));
   });
 });

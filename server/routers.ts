@@ -197,6 +197,7 @@ import {
   createExaminerComment,
   updateExaminerComment,
   deleteExaminerComment,
+  searchExaminerComments,
   getTopicsByExaminer,
   getActiveTopicsForExaminer,
   getAllActiveTopics,
@@ -5740,17 +5741,27 @@ export const appRouter = router({
         return getExaminerComments(input.thesisRequestId, ctx.user.id);
       }),
 
+    /** Durchsucht ausschließlich eigene private Notizen über alle Anfragen hinweg. */
+    search: protectedProcedure
+      .input(z.object({
+        search: z.string().trim().max(200).optional(),
+        priority: z.enum(["normal", "important", "urgent"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => searchExaminerComments({ examinerId: ctx.user.id, ...input })),
+
     /** Erstellt einen neuen Kommentar. */
     create: protectedProcedure
       .input(z.object({
         thesisRequestId: z.number(),
         content: z.string().min(1).max(4000),
+        priority: z.enum(["normal", "important", "urgent"]).default("normal"),
       }))
       .mutation(async ({ ctx, input }) => {
         const id = await createExaminerComment({
           thesisRequestId: input.thesisRequestId,
           examinerId: ctx.user.id,
           content: input.content,
+          priority: input.priority,
         });
         return { id };
       }),
@@ -5760,12 +5771,14 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         content: z.string().min(1).max(4000),
+        priority: z.enum(["normal", "important", "urgent"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await updateExaminerComment({
           id: input.id,
           examinerId: ctx.user.id,
           content: input.content,
+          priority: input.priority,
         });
         return { success: true };
       }),

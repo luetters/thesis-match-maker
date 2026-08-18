@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_comments` ADD `priority` enum('normal','important','urgent') DEFAULT 'normal' NOT NULL;
