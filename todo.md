@@ -1721,3 +1721,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Angriffsflächen, Berechtigungsgrenzen und Sitzungsverwaltung prüfen
 - [x] Abhängigkeiten und externe Angriffsflächen prüfen
 - [x] Verbleibende Risiken priorisieren und Maßnahmen empfehlen
+
+## Sicherheitskorrekturen für Biografien und Speicherobjekte
+- [x] HTML in Benutzer- und Prüfer:innenbiografien strikt auf sicheren Text reduzieren
+- [x] Unsichere HTML-Darstellung der Biografien durch sichere Textdarstellung ersetzen
+- [x] Private Dokumente aus öffentlichen Storage-Abrufwegen herauslösen und autorisiert ausliefern
+- [x] Sicherheitsregressionen automatisiert testen und die Änderung veröffentlichen

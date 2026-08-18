@@ -745,7 +745,7 @@ export default function ExaminerProfile() {
                   </svg>
                   {t.common.aboutMe ?? "Über mich"}
                 </h3>
-                <div className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: profile.bio }} />
+                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{profile.bio}</div>
               </div>
             )}
 

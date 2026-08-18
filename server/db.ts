@@ -40,6 +40,7 @@ import { formatConsentForExport } from "./studentConsent";
 import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
 import { buildCrossDepartmentSupervisionOverview, buildCrossDepartmentSupervisionTimeSeries } from "../shared/crossDepartmentSupervision";
 import { resolveProgrammeSemesterDeadline, type ProgrammeSemesterDeadlineRule } from "../shared/programmeSemesterDeadline";
+import { sanitizeBiographyText } from "./biographySanitization";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 /** Nur für Tests: setzt den DB-Cache zurück, damit getDb() neu initialisiert. */
@@ -124,29 +125,34 @@ export async function updateUserRole(userId: number, role: "student" | "examiner
 // --- Examiner Profiles --------------------------------------------------------
 
 export async function upsertExaminerProfile(profile: InsertExaminerProfile) {
+  const sanitizedProfile: InsertExaminerProfile = {
+    ...profile,
+    ...(typeof profile.bio === "string" ? { bio: sanitizeBiographyText(profile.bio) } : {}),
+    ...(typeof profile.researchFocus === "string" ? { researchFocus: sanitizeBiographyText(profile.researchFocus) } : {}),
+  };
   const db = await getDb();
   if (!db) return;
   const existing = await db
     .select()
     .from(examinerProfiles)
-    .where(eq(examinerProfiles.userId, profile.userId))
+    .where(eq(examinerProfiles.userId, sanitizedProfile.userId))
     .limit(1);
 
   if (existing.length > 0) {
     // Nur definierte Felder aktualisieren – undefined-Werte nicht als NULL überschreiben
     const updateData = Object.fromEntries(
-      Object.entries(profile).filter(([key, val]) => key !== 'userId' && val !== undefined)
+      Object.entries(sanitizedProfile).filter(([key, val]) => key !== 'userId' && val !== undefined)
     );
-    console.log('[upsertExaminerProfile] UPDATE userId=%d keys=%s', profile.userId, Object.keys(updateData).join(','));
+    console.log('[upsertExaminerProfile] UPDATE userId=%d keys=%s', sanitizedProfile.userId, Object.keys(updateData).join(','));
     if (Object.keys(updateData).length > 0) {
       await db
         .update(examinerProfiles)
         .set(updateData)
-        .where(eq(examinerProfiles.userId, profile.userId));
+        .where(eq(examinerProfiles.userId, sanitizedProfile.userId));
       console.log('[upsertExaminerProfile] UPDATE done');
     }
   } else {
-    await db.insert(examinerProfiles).values(profile);
+    await db.insert(examinerProfiles).values(sanitizedProfile);
   }
 }
 
@@ -958,7 +964,7 @@ export async function createExaminerByAdmin(data: {
     userId,
     title: data.title ?? null,
     department: data.department ?? null,
-    bio: data.bio ?? null,
+    bio: typeof data.bio === "string" ? sanitizeBiographyText(data.bio) : null,
     maxSupervisions: data.maxSupervisions ?? 5,
     tags: data.tags ?? [],
     languages: data.languages ?? ["Deutsch"],
@@ -1019,7 +1025,7 @@ export async function updateExaminerByAdmin(
   const profileUpdate: Record<string, unknown> = {};
   if (data.title !== undefined) profileUpdate.title = data.title;
   if (data.department !== undefined) profileUpdate.department = data.department;
-  if (data.bio !== undefined) profileUpdate.bio = data.bio;
+  if (data.bio !== undefined) profileUpdate.bio = sanitizeBiographyText(data.bio);
   if (data.maxSupervisions !== undefined) profileUpdate.maxSupervisions = data.maxSupervisions;
   if (data.tags !== undefined) profileUpdate.tags = data.tags;
   if (data.languages !== undefined) profileUpdate.languages = data.languages;
@@ -4726,7 +4732,7 @@ export async function updateProfile(
     } else if (data.name !== undefined) {
       setValues.name = data.name;
     }
-    if (data.bio !== undefined) setValues.bio = data.bio;
+    if (data.bio !== undefined) setValues.bio = sanitizeBiographyText(data.bio);
     if (data.phone !== undefined) setValues.phone = data.phone;
     if (data.department !== undefined) setValues.department = data.department;
     if (data.matrikelNr !== undefined) setValues.matrikelNr = data.matrikelNr;

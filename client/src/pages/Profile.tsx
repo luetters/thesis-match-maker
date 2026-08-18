@@ -1251,7 +1251,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 />
               ) : (
                 profile.bio
-                  ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: profile.bio }} />
+                  ? <div className="whitespace-pre-wrap text-sm text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50">{profile.bio}</div>
                   : <span className="text-gray-400 italic text-sm">{p.notSpecified}</span>
               )}
             </div>
@@ -1856,7 +1856,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   />
                 ) : (
                   (profile as any).examinerBio
-                    ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: (profile as any).examinerBio }} />
+                    ? <div className="whitespace-pre-wrap text-sm text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50">{(profile as any).examinerBio}</div>
                     : <div className="border border-dashed border-gray-200 rounded-xl p-4 text-center">
                         <p className="text-sm text-gray-400 italic">{p.notSpecified}</p>
                         {!editMode && <button onClick={handleEditStart} className="mt-2 text-xs text-[#2563eb] hover:underline">{lang === 'de' ? 'Biografie hinzufügen' : 'Add biography'}</button>}
@@ -1876,7 +1876,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   />
                 ) : (
                   (profile as any).examinerResearchFocus
-                    ? <div className="prose prose-sm max-w-none text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: (profile as any).examinerResearchFocus }} />
+                    ? <div className="whitespace-pre-wrap text-sm text-gray-800 border border-gray-100 rounded-xl p-4 bg-gray-50">{(profile as any).examinerResearchFocus}</div>
                     : <div className="border border-dashed border-gray-200 rounded-xl p-4 text-center">
                         <p className="text-sm text-gray-400 italic">{p.notSpecified}</p>
                         {!editMode && <button onClick={handleEditStart} className="mt-2 text-xs text-[#2563eb] hover:underline">{lang === 'de' ? 'Forschungsschwerpunkte hinzufügen' : 'Add research focus'}</button>}

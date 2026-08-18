@@ -50,12 +50,42 @@ export function canAccessThesisRecord(user: any, thesis: any): boolean {
   return [thesis.studentId, thesis.firstExaminerId, thesis.secondExaminerId].includes(user.id);
 }
 
+export function isPrivateThesisStorageKey(key: string): boolean {
+  return key.startsWith("exposes/") || key.startsWith("conditional-docs/");
+}
+
+async function canAccessPrivateThesisStorage(user: any, thesis: any): Promise<boolean> {
+  if (!user || !thesis) return false;
+  if ([thesis.studentId, thesis.examinerId, thesis.firstExaminerId, thesis.secondExaminerId].includes(user.id)) return true;
+  const roles = await getUserRoles(user.id);
+  const elevatedRoles = ["admin", "superadmin", "pav", "dean", "vice_dean"] as const;
+  return elevatedRoles.some((role) => roles.includes(role) || user.role === role);
+}
+
+async function resolvePrivateStorageThesis(key: string) {
+  const { getDb } = await import("./db");
+  const { conditionalDocuments, thesisRequests } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  const db = await getDb();
+  if (!db) return null;
+  if (key.startsWith("exposes/")) {
+    const rows = await db.select().from(thesisRequests).where(eq(thesisRequests.exposeKey, key)).limit(1);
+    return rows[0] ?? null;
+  }
+  if (key.startsWith("conditional-docs/")) {
+    const docs = await db.select({ thesisRequestId: conditionalDocuments.thesisRequestId })
+      .from(conditionalDocuments).where(eq(conditionalDocuments.storageKey, key)).limit(1);
+    return docs[0] ? await getThesisRequestById(docs[0].thesisRequestId) : null;
+  }
+  return null;
+}
+
 // In-memory storage: Datei wird direkt zu S3 weitergeleitet
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB für Fotos
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/gif", "image/webp"].includes(file.mimetype)) {
       cb(new Error("Nur Bilddateien sind erlaubt."));
     } else {
       cb(null, true);
@@ -209,6 +239,7 @@ export function registerUploadRoutes(app: Express) {
         const user = await getUserFromRequest(req);
         if (!user) { res.status(401).json({ error: "Nicht angemeldet." }); return; }
         if (!req.file) { res.status(400).json({ error: "Kein Foto übermittelt." }); return; }
+        if (!hasExpectedFileSignature(req.file)) { res.status(400).json({ error: "Dateityp und Dateiinhalt stimmen nicht überein." }); return; }
         const ext = req.file.mimetype.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
         const fileName = `photo-${user.id}-${Date.now()}.${ext}`;
         const { key, url } = await storagePut(`photos/${fileName}`, req.file.buffer, req.file.mimetype);
@@ -243,6 +274,9 @@ export function registerUploadRoutes(app: Express) {
         if (!['image/jpeg','image/png','image/webp','image/gif'].includes(mimeType)) {
           res.status(400).json({ error: "Nur JPEG, PNG, WebP oder GIF sind erlaubt." }); return;
         }
+        if (!hasExpectedFileSignature(req.file)) {
+          res.status(400).json({ error: "Dateityp und Dateiinhalt stimmen nicht überein." }); return;
+        }
         const ext = mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1];
         const storageKey = `avatars/user-${user.id}-${Date.now()}.${ext}`;
         const { key: savedKey, url } = await storagePut(storageKey, req.file.buffer, mimeType);
@@ -258,10 +292,26 @@ export function registerUploadRoutes(app: Express) {
     }
   );
 
-  // --- Storage-Proxy: Bilder direkt streamen (verhindert CloudFront-IP-Binding-Problem) ---
+  // --- Storage-Proxy: öffentliche Medien und autorisierte private Fachakten ---
   app.get("/api/storage/*", async (req: Request, res: Response) => {
     const key = (req.params as Record<string, string | undefined>)[0];
     if (!key) { res.status(400).send("Missing key"); return; }
+    const isPrivate = isPrivateThesisStorageKey(key);
+    if (isPrivate) {
+      const user = await getUserFromRequest(req);
+      if (!user) { res.status(401).send("Authentication required"); return; }
+      // Exposés vor dem Anlegen der Thesis dürfen nur von der hochladenden Person abgerufen werden.
+      if (key.startsWith(`exposes/expose-pre-${user.id}-`)) {
+        res.set("Cache-Control", "private, no-store");
+      } else {
+        const thesis = await resolvePrivateStorageThesis(key);
+        if (!thesis || !(await canAccessPrivateThesisStorage(user, thesis))) {
+          res.status(404).send("Not found");
+          return;
+        }
+        res.set("Cache-Control", "private, no-store");
+      }
+    }
     const forgeApiUrl = process.env.BUILT_IN_FORGE_API_URL;
     const forgeApiKey = process.env.BUILT_IN_FORGE_API_KEY;
     if (!forgeApiUrl || !forgeApiKey) { res.status(500).send("Not configured"); return; }
@@ -278,7 +328,7 @@ export function registerUploadRoutes(app: Express) {
       if (!imgResp.ok) { res.status(imgResp.status).send("Upstream error"); return; }
       const contentType = imgResp.headers.get("content-type") ?? "application/octet-stream";
       res.set("Content-Type", contentType);
-      res.set("Cache-Control", "public, max-age=3600");
+      if (!isPrivate) res.set("Cache-Control", "public, max-age=3600");
       const buf = await imgResp.arrayBuffer();
       res.send(Buffer.from(buf));
     } catch (err) {

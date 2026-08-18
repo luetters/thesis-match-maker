@@ -1,11 +1,21 @@
 import type { Express } from "express";
 import { ENV } from "./env";
 
+/** Private Fachakten dürfen nie über den öffentlichen Asset-Proxy ausgeliefert werden. */
+export function isPrivateStorageKey(key: string): boolean {
+  return key.startsWith("exposes/") || key.startsWith("conditional-docs/");
+}
+
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
     const key = (req.params as Record<string, string | undefined>)[0];
     if (!key) {
-      res.status(400).send("Missing storage key");
+      res.status(400).send("Missing key");
+      return;
+    }
+    if (isPrivateStorageKey(key)) {
+      // Keine Rückschlüsse auf die Existenz eines privaten Objekts zulassen.
+      res.status(404).send("Not found");
       return;
     }
 

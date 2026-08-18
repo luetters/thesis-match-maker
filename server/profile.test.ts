@@ -376,6 +376,16 @@ describe("updateProfile", () => {
     expect(setArg).not.toHaveProperty("firstName");
   });
 
+  it("bereinigt HTML aus Benutzerbiografien vor dem Speichern", async () => {
+    const { fakeDb, setSpy } = makeUpdateDb();
+    fakeDbHolder.db = fakeDb;
+
+    await updateProfile(10, { bio: '<img src=x onerror="alert(1)">Sichere Biografie' });
+
+    const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.bio).toBe("Sichere Biografie");
+  });
+
   it("setzt name automatisch aus firstName + lastName zusammen", async () => {
     const curRows = [{ firstName: "Alt", lastName: "Name", academicTitle: null }];
     const { fakeDb, setSpy } = makeUpdateDb(curRows);

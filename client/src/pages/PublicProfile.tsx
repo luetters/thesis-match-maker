@@ -254,7 +254,7 @@ export default function PublicProfile() {
 
             {/* Bio */}
             {profile.bio && (
-              <div className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: profile.bio }} />
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{profile.bio}</div>
             )}
           </div>
         </div>
