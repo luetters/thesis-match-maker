@@ -1,0 +1,220 @@
+server/_core/imageGeneration.ts:18:import { storagePut } from "server/storage";
+server/_core/imageGeneration.ts:84:  const { url } = await storagePut(
+server/_core/index.ts:10:import { registerUploadRoutes } from "../uploadRoutes";
+server/_core/index.ts:13:import { registerSamlAuthRoutes } from "../samlAuthRoutes";
+server/_core/sdk.ts:226:  async verifySession(
+server/_core/sdk.ts:289:    const session = await this.verifySession(sessionCookie);
+server/_core/systemRouter.ts:3:import { adminProcedure, publicProcedure, router } from "./trpc";
+server/_core/systemRouter.ts:6:  health: publicProcedure
+server/_core/systemRouter.ts:16:  notifyOwner: adminProcedure
+server/_core/trpc.ts:11:export const publicProcedure = t.procedure;
+server/_core/trpc.ts:28:export const protectedProcedure = t.procedure.use(requireUser);
+server/_core/trpc.ts:30:export const adminProcedure = t.procedure.use(
+server/_core/voiceTranscription.ts:20: * // After uploading audio to storage
+server/_core/voiceTranscription.ts:22: *   audioUrl: uploadedAudioUrl,
+server/_core/voiceTranscription.ts:126:    // Step 3: Create FormData for multipart upload to Whisper API
+server/_core/voiceTranscription.ts:252: *   transcribe: protectedProcedure
+server/routers.ts:8:import { examinerTopics, users, thesisRequests, auditLog, userRoles, twoFactorRecoveryCodes } from "../drizzle/schema";
+server/routers.ts:132:  getUserStatistics,
+server/routers.ts:200:  getTopicsByExaminer,
+server/routers.ts:201:  getActiveTopicsForExaminer,
+server/routers.ts:202:  getAllActiveTopics,
+server/routers.ts:221:import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
+server/routers.ts:222:import { SAML_SETTING_KEYS, getSamlConfigurationIssues, isSamlConfigurationReady, parseSamlConfiguration } from "./samlAuth";
+server/routers.ts:226:import QRCode from "qrcode";
+server/routers.ts:227:import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, generateRecoveryCodes, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
+server/routers.ts:237:import { createIcsEvent } from "./icsHelper";
+server/routers.ts:250:import { storagePut } from "./storage";
+server/routers.ts:255:import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+server/routers.ts:278:const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:286:const examinerProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:294:const anyExaminerProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:301:const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:308:const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:315:const pavProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:322:const deanProcedure = protectedProcedure.use(({ ctx, next }) => {
+server/routers.ts:331:  get: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:336:  update: protectedProcedure
+server/routers.ts:411:  getAssignedExaminers: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:415:  deleteAvatar: protectedProcedure
+server/routers.ts:422:  uploadAvatar: protectedProcedure
+server/routers.ts:435:      const { url } = await storagePut(key, buffer, input.mimeType);
+server/routers.ts:441:  setBannerColor: protectedProcedure
+server/routers.ts:452:  removeBanner: protectedProcedure.mutation(async ({ ctx }) => {
+server/routers.ts:461:  getBannerData: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:483:    getPortalHighlights: publicProcedure.query(async () => getPublicPortalHighlights()),
+server/routers.ts:486:  saml: router({
+server/routers.ts:487:    status: publicProcedure.query(async () => {
+server/routers.ts:496:    configuration: superadminProcedure.query(async () => {
+server/routers.ts:501:    updateConfiguration: superadminProcedure
+server/routers.ts:542:    setEnabled: superadminProcedure
+server/routers.ts:558:  maintenanceStatus: publicProcedure.query(async () => {
+server/routers.ts:569:    me: publicProcedure.query((opts) => opts.ctx.user),
+server/routers.ts:570:    logout: publicProcedure.mutation(({ ctx }) => {
+server/routers.ts:575:    twoFactorStatus: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:580:    beginTwoFactorSetup: protectedProcedure.mutation(async ({ ctx }) => {
+server/routers.ts:587:      return { qrCodeDataUrl: await QRCode.toDataURL(setup.otpauthUrl), manualKey: setup.secret };
+server/routers.ts:589:    confirmTwoFactorSetup: protectedProcedure
+server/routers.ts:594:        const result = verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code);
+server/routers.ts:604:    disableTwoFactor: protectedProcedure
+server/routers.ts:609:        if (!verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code).valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
+server/routers.ts:615:    changePassword: protectedProcedure
+server/routers.ts:634:    requestPasswordReset: publicProcedure
+server/routers.ts:669:    resetPassword: publicProcedure
+server/routers.ts:684:    register: publicProcedure
+server/routers.ts:878:    loginWithPassword: publicProcedure
+server/routers.ts:920:            ? verifyTwoFactorCode(twoFactorSecret, normalizedCode)
+server/routers.ts:963:        // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
+server/routers.ts:1015:            const topicRows = await db.select({ maxAssignments: examinerTopics.maxAssignments })
+server/routers.ts:1016:              .from(examinerTopics)
+server/routers.ts:1017:              .where(eq(examinerTopics.id, tid))
+server/routers.ts:1076:    all: adminProcedure.query(async () => {
+server/routers.ts:1251:    updateStatus: adminProcedure
+server/routers.ts:1335:    assignExaminer: adminProcedure
+server/routers.ts:1396:    getById: protectedProcedure
+server/routers.ts:1444:    list: protectedProcedure.query(async () => {
+server/routers.ts:1449:    allTags: protectedProcedure.query(async () => {
+server/routers.ts:1498:    respondViaToken: publicProcedure
+server/routers.ts:1507:        const payload = await verifyExaminerActionToken(input.token);
+server/routers.ts:1542:    getPublicProfile: publicProcedure
+server/routers.ts:1744:    generateActionToken: adminProcedure
+server/routers.ts:2074:    all: adminProcedure.query(async () => {
+server/routers.ts:2077:    byThesis: protectedProcedure
+server/routers.ts:2086:    studentHistory: protectedProcedure
+server/routers.ts:2096:    list: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:2099:    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:2102:    markRead: protectedProcedure
+server/routers.ts:2108:    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+server/routers.ts:2116:    users: adminProcedure.query(async () => {
+server/routers.ts:2120:    getUserRoles: adminProcedure
+server/routers.ts:2126:    addUserRole: adminProcedure
+server/routers.ts:2150:    removeUserRole: adminProcedure
+server/routers.ts:2168:    updateUserRole: superadminProcedure
+server/routers.ts:2190:    createExaminer: adminProcedure
+server/routers.ts:2213:    updateExaminer: adminProcedure
+server/routers.ts:2238:    deleteUser: adminProcedure
+server/routers.ts:2253:    getLoginAttempts: adminProcedure
+server/routers.ts:2273:    getLastPasswordResetSent: adminProcedure
+server/routers.ts:2280:    sendPasswordResetEmail: adminProcedure
+server/routers.ts:2321:    setDeadline: adminProcedure
+server/routers.ts:2354:    sendInvite: adminProcedure
+server/routers.ts:2407:    getMagicLinkUsersCount: adminProcedure
+server/routers.ts:2429:    sendPasswordResetToMagicLinkUsers: adminProcedure
+server/routers.ts:2490:    stats: adminProcedure.query(async () => {
+server/routers.ts:2495:    getExaminerCapacities: adminProcedure
+server/routers.ts:2503:    overrideExaminerCapacity: adminProcedure
+server/routers.ts:2523:    resetExaminerCapacityOverride: adminProcedure
+server/routers.ts:2534:    getExaminersWithAvailability: adminProcedure
+server/routers.ts:2540:    assignExaminers: adminProcedure
+server/routers.ts:2565:    sendExaminerReminder: adminProcedure
+server/routers.ts:2652:    setRole: protectedProcedure
+server/routers.ts:2661:    all: adminProcedure.query(async () => getAllColloquiums()),
+server/routers.ts:2662:    byThesis: protectedProcedure
+server/routers.ts:2665:    create: adminProcedure
+server/routers.ts:2693:    updateStatus: adminProcedure
+server/routers.ts:2702:    delete: adminProcedure
+server/routers.ts:2708:    getIcs: protectedProcedure
+server/routers.ts:2716:        const icsContent = createIcsEvent({
+server/routers.ts:2730:        return { icsContent, filename: `kolloquium-${col.id}.ics` };
+server/routers.ts:2742:      myPolls: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:2746:      byId: protectedProcedure
+server/routers.ts:2809:      respond: protectedProcedure
+server/routers.ts:2836:      confirm: protectedProcedure
+server/routers.ts:2870:    getSettings: superadminProcedure.query(async () => {
+server/routers.ts:2895:    updateSettings: superadminProcedure
+server/routers.ts:2922:    getTwoFactorEnrollmentGaps: superadminProcedure.query(async () => {
+server/routers.ts:2946:    listAllUsers: superadminProcedure.query(async () => {
+server/routers.ts:2951:    setUserRole: superadminProcedure
+server/routers.ts:2964:    resetExaminerOnboarding: superadminProcedure
+server/routers.ts:2971:    getPavUsers: superadminProcedure.query(async () => {
+server/routers.ts:2975:    assignPavProgramme: superadminProcedure
+server/routers.ts:2998:    removePavProgramme: superadminProcedure
+server/routers.ts:3021:    listExaminers: superadminProcedure
+server/routers.ts:3027:    updateExaminerProfile: superadminProcedure
+server/routers.ts:3044:    importExaminers: superadminProcedure
+server/routers.ts:3112:    getSuperadminStatus: protectedProcedure
+server/routers.ts:3117:    switchRole: protectedProcedure
+server/routers.ts:3132:    getRoleSwitchHistory: protectedProcedure
+server/routers.ts:3141:    getAllUsers: protectedProcedure
+server/routers.ts:3151:    getUserStatistics: protectedProcedure
+server/routers.ts:3157:        return await getUserStatistics();
+server/routers.ts:3160:    searchUsers: protectedProcedure
+server/routers.ts:3170:    getUserDetails: protectedProcedure
+server/routers.ts:3180:    getUserActivityLog: protectedProcedure
+server/routers.ts:3190:    updateUserStatus: protectedProcedure
+server/routers.ts:3202:    testSmtp: adminProcedure
+server/routers.ts:3220:    list: publicProcedure.query(async () => {
+server/routers.ts:3230:    setStudentProgramme: protectedProcedure
+server/routers.ts:3238:    getMyProgramme: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:3248:    getExaminerProgrammes: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:3251:    setExaminerProgrammes: protectedProcedure
+server/routers.ts:3353:    respondToProposal: publicProcedure
+server/routers.ts:3663:    getAll: adminProcedure.query(async () => {
+server/routers.ts:3667:    getByKey: adminProcedure
+server/routers.ts:3673:    update: adminProcedure
+server/routers.ts:3699:    sendPreviewToSelf: adminProcedure
+server/routers.ts:3723:    resetExaminerOnboarding: adminProcedure
+server/routers.ts:3776:            const topicRows2 = await db.select({ maxAssignments: examinerTopics.maxAssignments, allowMultiple: examinerTopics.allowMultiple })
+server/routers.ts:3777:              .from(examinerTopics)
+server/routers.ts:3778:              .where(eq(examinerTopics.id, tid))
+server/routers.ts:4009:    acceptRequest: publicProcedure
+server/routers.ts:4013:        const tokenData = await verifyExaminerActionToken(input.token);
+server/routers.ts:4032:    rejectRequest: publicProcedure
+server/routers.ts:4036:        const tokenData = await verifyExaminerActionToken(input.token);
+server/routers.ts:4095:    getAllSecondExaminerCandidates: protectedProcedure
+server/routers.ts:4181:    getCommissionPreferences: protectedProcedure
+server/routers.ts:4187:    setCommissionPreferences: protectedProcedure
+server/routers.ts:4201:    getMyTopics: protectedProcedure
+server/routers.ts:4206:        return getTopicsByExaminer(ctx.user.id);
+server/routers.ts:4210:    getAllActiveTopics: publicProcedure
+server/routers.ts:4212:        return getAllActiveTopics();
+server/routers.ts:4216:    getActiveTopicsForExaminer: publicProcedure
+server/routers.ts:4219:        return getActiveTopicsForExaminer(input.examinerId);
+server/routers.ts:4223:    createTopic: protectedProcedure
+server/routers.ts:4243:    updateTopic: protectedProcedure
+server/routers.ts:4266:    deleteTopic: protectedProcedure
+server/routers.ts:4277:    getStudentsByTopic: protectedProcedure
+server/routers.ts:4310:    increaseTopicLimit: protectedProcedure
+server/routers.ts:4323:          .select({ id: examinerTopics.id, examinerId: examinerTopics.examinerId, maxAssignments: examinerTopics.maxAssignments, allowMultiple: examinerTopics.allowMultiple })
+server/routers.ts:4324:          .from(examinerTopics)
+server/routers.ts:4325:          .where(eq(examinerTopics.id, input.topicId))
+server/routers.ts:4332:          .update(examinerTopics)
+server/routers.ts:4334:          .where(eq(examinerTopics.id, input.topicId));
+server/routers.ts:4341:    list: adminProcedure.query(async ({ ctx }) => {
+server/routers.ts:4345:    saveRule: adminProcedure
+server/routers.ts:4364:    setIndividualSubmissionDeadline: adminProcedure
+server/routers.ts:4394:    getChangesForRequest: protectedProcedure
+server/routers.ts:4410:    getStatsByPeriod: adminProcedure
+server/routers.ts:4425:    getStatsByFaculty: adminProcedure
+server/routers.ts:4435:    getCrossDepartmentSupervisions: adminProcedure
+server/routers.ts:4443:    getCrossDepartmentTimeSeries: adminProcedure
+server/routers.ts:4450:    getStatsByStatus: adminProcedure
+server/routers.ts:4460:    getAverageProcessingTime: adminProcedure
+server/routers.ts:4470:    getDropoutRate: adminProcedure
+server/routers.ts:4480:    getExaminerWorkload: adminProcedure
+server/routers.ts:4490:    exportCSV: adminProcedure
+server/routers.ts:4511:    searchThesis: protectedProcedure
+server/routers.ts:4529:    searchExaminers: protectedProcedure
+server/routers.ts:4543:    searchStudents: adminProcedure
+server/routers.ts:4553:    createFilter: protectedProcedure
+server/routers.ts:4571:    getFilters: protectedProcedure
+server/routers.ts:4578:    deleteFilter: protectedProcedure
+server/routers.ts:4588:    getTemplates: adminProcedure
+server/routers.ts:4595:    updateTemplate: adminProcedure
+server/routers.ts:4614:    getHistory: protectedProcedure
+server/routers.ts:4622:    getDue: adminProcedure
+server/routers.ts:4701:    updateExaminerCapacity: adminProcedure
+server/routers.ts:4715:    selectRole: protectedProcedure
+server/routers.ts:4726:    myStatus: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:4732:    getPending: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:4743:    approve: protectedProcedure
+server/routers.ts:4773:    reject: protectedProcedure
+server/routers.ts:4793:    approveMany: protectedProcedure
+server/routers.ts:4819:    assignAdminDepartment: protectedProcedure
+server/routers.ts:4833:    updateRequestedRole: protectedProcedure
+server/routers.ts:4878:    getAll: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts:4884:    save: protectedProcedure
+server/routers.ts:4897:    resolve: protectedProcedure
+server/routers.ts:5274:    getConditionalDocuments: protectedProcedure
+server/routers.ts:5294:    deleteConditionalDocument: protectedProcedure
+server/routers.ts:5305:        const isOwner = doc.uploadedByUserId === ctx.user.id;

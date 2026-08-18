@@ -1,0 +1,10 @@
+server/_core/index.ts:3:import helmet from "helmet";
+server/_core/index.ts:4:import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+server/_core/index.ts:46:  app.use(helmet({
+server/_core/index.ts:69:  const apiLimiter = rateLimit({
+server/_core/index.ts:77:  const authenticationLimiter = rateLimit({
+server/_core/oauth.ts:45:      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+server/routers.ts:975:        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+server/samlAuthRoutes.ts:82:      res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(req), maxAge: SESSION_MAX_AGE_MS });
+package.json:76:    "express-rate-limit": "^8.6.2",
+package.json:78:    "helmet": "^8.3.0",

@@ -1716,3 +1716,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Überfällige Konten in der Superadmin-Liste farblich und mit Warnsymbol hervorheben
 - [x] Automatisierte Tests sowie TypeScript-Prüfung durchführen
 - [x] Globale 30-Tage-Frist ab Aktivierung der Rollenpflicht umsetzen
+
+## Sicherheitsbewertung verbleibender Risiken
+- [x] Angriffsflächen, Berechtigungsgrenzen und Sitzungsverwaltung prüfen
+- [x] Abhängigkeiten und externe Angriffsflächen prüfen
+- [x] Verbleibende Risiken priorisieren und Maßnahmen empfehlen
