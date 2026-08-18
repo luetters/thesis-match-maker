@@ -1699,3 +1699,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Sicherheitsübersicht für fehlgeschlagene Anmeldungen und aktuelle Warnungen integriert
 - [x] Optionale TOTP-basierte Zwei-Faktor-Authentifizierung für Administrationskonten implementiert
 - [x] Sicherheitsübersicht und Zwei-Faktor-Authentifizierung automatisiert getestet
+
+## Wiederherstellungscodes und 2FA-Pflicht
+- [x] Bestehende 2FA-Daten, Rollenverwaltung und Anmeldeabläufe prüfen
+- [x] Einmalige Wiederherstellungscodes sicher erzeugen und beim Login verwenden
+- [x] Rollenbasierte 2FA-Pflicht durch Superadmins konfigurierbar machen
+- [x] Wiederherstellung und 2FA-Pflicht automatisiert testen

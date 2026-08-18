@@ -736,6 +736,17 @@ export const loginAttempts = mysqlTable("login_attempts", {
 export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
 export type SelectLoginAttempt = typeof loginAttempts.$inferSelect;
 
+// ─── Einmalige Wiederherstellungscodes für die Zwei-Faktor-Authentifizierung ──
+export const twoFactorRecoveryCodes = mysqlTable("two_factor_recovery_codes", {
+  id: int().autoincrement().notNull().primaryKey(),
+  userId: int("user_id").notNull(),
+  codeHash: varchar("code_hash", { length: 255 }).notNull(),
+  usedAt: timestamp("used_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+  index("idx_tfrc_user").on(table.userId),
+]);
+
 // ─── Neue Prüfer:innen – Badge-Tracking ──────────────────────────────────────
 export const examinerSeenNotifications = mysqlTable("examiner_seen_notifications", {
   id: int().autoincrement().notNull().primaryKey(),

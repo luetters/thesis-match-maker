@@ -759,6 +759,7 @@ function SystemConfigTab() {
     pdfDisclaimerDe: string;
     pdfDisclaimerEn: string;
     administrationEmail: string;
+    twoFactorRequiredRoles: Array<"student" | "examiner" | "second_examiner" | "pav" | "admin" | "dean" | "vice_dean" | "programme_director" | "superadmin">;
   };
   const [form, setForm] = useState<FormState | null>(null);
   const [saved, setSaved] = useState(false);
@@ -777,6 +778,7 @@ function SystemConfigTab() {
         pdfDisclaimerDe: (settings as any).pdfDisclaimerDe ?? "",
         pdfDisclaimerEn: (settings as any).pdfDisclaimerEn ?? "",
         administrationEmail: (settings as any).administrationEmail ?? "",
+        twoFactorRequiredRoles: ((settings as any).twoFactorRequiredRoles ?? []) as FormState["twoFactorRequiredRoles"],
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -852,6 +854,13 @@ function SystemConfigTab() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Deadline-Warnung (Tage vorher)</label>
           <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" value={form.thesisDeadlineWarningDays} onChange={(e) => setForm((f) => f ? { ...f, thesisDeadlineWarningDays: e.target.value } : f)} />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6 space-y-4">
+        <div><h3 className="font-semibold text-gray-900 text-base">Verpflichtende Zwei-Faktor-Authentifizierung</h3><p className="mt-1 text-xs text-gray-600">Ausgewählte Rollen müssen 2FA eingerichtet haben, bevor sie sich anmelden können. Aktivieren Sie eine Rolle erst, nachdem die betroffenen Personen die Einrichtung abgeschlossen haben.</p></div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {([['examiner','Erstprüfer:innen'],['second_examiner','Zweitprüfer:innen'],['admin','Verwaltung'],['dean','Dekanat'],['vice_dean','Prodekanat'],['programme_director','Studiengangsleitung'],['pav','PA-Vorsitz'],['superadmin','Superadmins']] as const).map(([role, label]) => <label key={role} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"><input type="checkbox" checked={form.twoFactorRequiredRoles.includes(role)} onChange={() => setForm((current) => current ? { ...current, twoFactorRequiredRoles: current.twoFactorRequiredRoles.includes(role) ? current.twoFactorRequiredRoles.filter((entry) => entry !== role) : [...current.twoFactorRequiredRoles, role] } : current)} />{label}</label>)}
         </div>
       </div>
 

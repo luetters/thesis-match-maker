@@ -20,6 +20,13 @@ export function createTwoFactorSetup(email: string) {
   return { secret: totp.secret.base32, otpauthUrl: totp.toString() };
 }
 
+export function generateRecoveryCodes(count = 10): string[] {
+  return Array.from({ length: count }, () => {
+    const raw = crypto.randomBytes(5).toString("hex").toUpperCase();
+    return `${raw.slice(0, 5)}-${raw.slice(5)}`;
+  });
+}
+
 export function encryptTwoFactorSecret(secret: string): string {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", encryptionKey(), iv);

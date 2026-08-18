@@ -168,9 +168,9 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             </div>
             {requiresTwoFactor && (
               <div className="mb-4 rounded-xl border border-[#76b900]/40 bg-[#76b900]/5 p-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Sicherheitscode aus Ihrer Authenticator-App</label>
-                <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))} onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()} placeholder="123456" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all" autoFocus />
-                <p className="mt-2 text-xs text-gray-600">Bitte geben Sie den sechsstelligen Code aus 2FAS oder einer kompatiblen Authenticator-App ein.</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Sicherheits- oder Wiederherstellungscode</label>
+                <input type="text" autoComplete="one-time-code" maxLength={11} value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value.toUpperCase().replace(/[^A-F0-9-]/g, "").slice(0, 11))} onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()} placeholder="123456 oder A1B2C-D3E4F" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all" autoFocus />
+                <p className="mt-2 text-xs text-gray-600">Geben Sie den sechsstelligen Code aus 2FAS oder einen einmaligen Wiederherstellungscode ein.</p>
               </div>
             )}
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}

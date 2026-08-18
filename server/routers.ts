@@ -5,7 +5,7 @@ import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
 import { getStudentConsentFlags } from "./studentConsent";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
-import { examinerTopics, users, thesisRequests, auditLog, userRoles } from "../drizzle/schema";
+import { examinerTopics, users, thesisRequests, auditLog, userRoles, twoFactorRecoveryCodes } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
   assignExaminerToThesis,
@@ -223,7 +223,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { parse as parseCookie } from "cookie";
 import QRCode from "qrcode";
-import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
+import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, generateRecoveryCodes, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
 import {
   createColloquium,
   getAllColloquiums,
@@ -594,8 +594,11 @@ export const appRouter = router({
         if (!result.valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const recoveryCodes = generateRecoveryCodes();
+        await db.delete(twoFactorRecoveryCodes).where(eq(twoFactorRecoveryCodes.userId, user.id));
+        await db.insert(twoFactorRecoveryCodes).values(await Promise.all(recoveryCodes.map(async (code) => ({ userId: user.id, codeHash: await bcrypt.hash(code, 12) }))));
         await db.update(users).set({ twoFactorEnabled: 1, twoFactorConfirmedAt: sql`NOW()`, twoFactorLastUsedStep: result.step }).where(eq(users.id, user.id));
-        return { success: true };
+        return { success: true, recoveryCodes };
       }),
     disableTwoFactor: protectedProcedure
       .input(z.object({ code: z.string().regex(/^\d{6}$/) }))
@@ -872,7 +875,7 @@ export const appRouter = router({
         return { success: true, autoApproved: isStudentAutoApprove };
       }),
     loginWithPassword: publicProcedure
-      .input(z.object({ email: z.string().email(), password: z.string().min(1), twoFactorCode: z.string().regex(/^\d{6}$/).optional() }))
+      .input(z.object({ email: z.string().email(), password: z.string().min(1), twoFactorCode: z.string().trim().min(6).max(16).optional() }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
         const ipAddr = ctx.req.ip;
@@ -890,19 +893,42 @@ export const appRouter = router({
           await logLoginAttempt({ email: input.email, success: false, failureReason: "Falsches Passwort", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
         }
+        const twoFactorSettings = await getSystemSettings();
+        const requiredRolesRaw = twoFactorSettings.find((setting) => setting.key === "twoFactorRequiredRoles")?.value ?? "[]";
+        const requiredRoles = (() => {
+          try {
+            const parsed = JSON.parse(requiredRolesRaw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })() as string[];
+        if (requiredRoles.includes(user.role ?? "") && !user.twoFactorEnabled) {
+          await logLoginAttempt({ email: input.email, success: false, failureReason: "Zwei-Faktor-Authentifizierung für Rolle erforderlich", ipAddress: ipAddr, userAgent: ua });
+          throw new TRPCError({ code: "FORBIDDEN", message: "Für Ihre Rolle ist die Zwei-Faktor-Authentifizierung erforderlich. Bitte wenden Sie sich an die Verwaltung der HTW Berlin, um die Einrichtung zu veranlassen." });
+        }
         if (user.twoFactorEnabled && isAdminAccount(user.role)) {
           if (!input.twoFactorCode) {
             return { success: false, requiresTwoFactor: true, role: user.role, roles: [] as AppRole[] };
           }
-          const twoFactorSecret = user.twoFactorSecret ? decryptTwoFactorSecret(user.twoFactorSecret) : null;
-          const result = twoFactorSecret ? verifyTwoFactorCode(twoFactorSecret, input.twoFactorCode) : { valid: false, step: 0 };
-          if (!result.valid || user.twoFactorLastUsedStep === result.step) {
-            await logLoginAttempt({ email: input.email, success: false, failureReason: "Ungültiger Zwei-Faktor-Code", ipAddress: ipAddr, userAgent: ua });
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig oder wurde bereits verwendet." });
-          }
           const db = await getDb();
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-          await db.update(users).set({ twoFactorLastUsedStep: result.step }).where(eq(users.id, user.id));
+          const normalizedCode = input.twoFactorCode.replace(/\s/g, "").toUpperCase();
+          const twoFactorSecret = user.twoFactorSecret ? decryptTwoFactorSecret(user.twoFactorSecret) : null;
+          const result = /^\d{6}$/.test(normalizedCode) && twoFactorSecret
+            ? verifyTwoFactorCode(twoFactorSecret, normalizedCode)
+            : { valid: false, step: 0 };
+          if (result.valid && user.twoFactorLastUsedStep !== result.step) {
+            await db.update(users).set({ twoFactorLastUsedStep: result.step }).where(eq(users.id, user.id));
+          } else {
+            const recoveryCodes = await db.select().from(twoFactorRecoveryCodes).where(and(eq(twoFactorRecoveryCodes.userId, user.id), isNull(twoFactorRecoveryCodes.usedAt)));
+            const matchingRecoveryCode = (await Promise.all(recoveryCodes.map(async (entry) => ({ entry, valid: await bcrypt.compare(normalizedCode, entry.codeHash) })))).find(({ valid }) => valid)?.entry;
+            if (!matchingRecoveryCode) {
+              await logLoginAttempt({ email: input.email, success: false, failureReason: "Ungültiger Zwei-Faktor- oder Wiederherstellungscode", ipAddress: ipAddr, userAgent: ua });
+              throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheits- oder Wiederherstellungscode ist ungültig oder wurde bereits verwendet." });
+            }
+            await db.update(twoFactorRecoveryCodes).set({ usedAt: sql`NOW()` }).where(eq(twoFactorRecoveryCodes.id, matchingRecoveryCode.id));
+          }
         }
         // Freischaltungs-Prüfung
         const roleStatus = (user as any).roleStatus ?? "approved";
@@ -2855,6 +2881,14 @@ export const appRouter = router({
         pdfDisclaimerDe: map["pdfDisclaimerDe"] ?? "Der Thesis Match Maker ist ein Hilfsmittel zur Organisation der Thesisbetreuung. Die Abstimmung erfolgt jedoch ausserhalb der offiziellen Prozesse der HTW Berlin. Aus der erfolgreichen Synchronisierung entsteht kein Anspruch auf eine Thesis im geplanten Semester. Hierzu ist eine Zulassung zur Thesis durch die Verwaltung Ihres Studiengangs erforderlich, die im Nachgang zu diesem Match erfolgt.",
         pdfDisclaimerEn: map["pdfDisclaimerEn"] ?? "The Thesis Match Maker is a tool designed to help organize your thesis supervision. Please note that any arrangements made here take place outside of HTW Berlin's official administrative processes. A successful match via the platform does not guarantee enrollment in your thesis for the planned semester. For this, official admission from your department's degree program administration is required, which must be requested after a match has been made.",
         administrationEmail: map["administrationEmail"] ?? "",
+        twoFactorRequiredRoles: (() => {
+          try {
+            const parsed = JSON.parse(map["twoFactorRequiredRoles"] ?? "[]");
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })(),
       };
     }),
     updateSettings: superadminProcedure
@@ -2870,10 +2904,13 @@ export const appRouter = router({
           pdfDisclaimerDe: z.string().max(2000).optional(),
           pdfDisclaimerEn: z.string().max(2000).optional(),
           administrationEmail: z.string().email().or(z.literal("")).optional(),
+          twoFactorRequiredRoles: z.array(z.enum(["student", "examiner", "second_examiner", "pav", "admin", "dean", "vice_dean", "programme_director", "superadmin"])).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const entries = Object.entries(input).filter(([, v]) => v !== undefined) as [string, string][];
+        const entries = Object.entries(input)
+          .filter(([, v]) => v !== undefined)
+          .map(([key, value]) => [key, key === "twoFactorRequiredRoles" ? JSON.stringify(value) : value] as [string, string]);
         for (const [key, value] of entries) {
           await upsertSystemSetting(key, value, ctx.user.id);
         }

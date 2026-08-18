@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTwoFactorSetup, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
+import { createTwoFactorSetup, generateRecoveryCodes, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
 import * as OTPAuth from "otpauth";
 
 describe("2FAS-kompatible TOTP-Helfer", () => {
@@ -19,5 +19,12 @@ describe("2FAS-kompatible TOTP-Helfer", () => {
     expect(isAdminAccount("admin")).toBe(true);
     expect(isAdminAccount("superadmin")).toBe(true);
     expect(isAdminAccount("examiner")).toBe(false);
+  });
+
+  it("erzeugt eindeutige Wiederherstellungscodes im lesbaren Format", () => {
+    const codes = generateRecoveryCodes();
+    expect(codes).toHaveLength(10);
+    expect(new Set(codes).size).toBe(10);
+    expect(codes.every((code) => /^[A-F0-9]{5}-[A-F0-9]{5}$/.test(code))).toBe(true);
   });
 });

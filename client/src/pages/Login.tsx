@@ -624,19 +624,17 @@ export default function Login() {
                     </div>
                     {loginStatus === "two_factor" && (
                       <div className="space-y-2 rounded-lg border border-[#76b900]/40 bg-[#76b900]/10 p-3">
-                        <Label className="text-white text-sm">Sicherheitscode aus Ihrer Authenticator-App</Label>
+                        <Label className="text-white text-sm">Sicherheits- oder Wiederherstellungscode</Label>
                         <Input
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={6}
-                          placeholder="123456"
+                          maxLength={11}
+                          placeholder="123456 oder A1B2C-D3E4F"
                           value={twoFactorCode}
-                          onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          onChange={(e) => setTwoFactorCode(e.target.value.toUpperCase().replace(/[^A-F0-9-]/g, "").slice(0, 11))}
                           autoComplete="one-time-code"
                           autoFocus
                           className="bg-white/5 border-white/20 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
                         />
-                        <p className="text-xs text-white/70">Bitte geben Sie den sechsstelligen Code aus 2FAS oder einer kompatiblen Authenticator-App ein.</p>
+                        <p className="text-xs text-white/70">Geben Sie den sechsstelligen Code aus 2FAS oder einen einmaligen Wiederherstellungscode ein.</p>
                       </div>
                     )}
                     {/* Passwort-Hinweis: nicht das HTW-Passwort */}
