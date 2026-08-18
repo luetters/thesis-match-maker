@@ -198,6 +198,7 @@ import {
   updateExaminerComment,
   deleteExaminerComment,
   searchExaminerComments,
+  setExaminerCommentCompletion,
   getTopicsByExaminer,
   getActiveTopicsForExaminer,
   getAllActiveTopics,
@@ -5736,9 +5737,9 @@ export const appRouter = router({
   examinerComments: router({
     /** Gibt alle eigenen Kommentare für einen Thesis-Antrag zurück. */
     list: protectedProcedure
-      .input(z.object({ thesisRequestId: z.number() }))
+      .input(z.object({ thesisRequestId: z.number(), includeCompleted: z.boolean().optional() }))
       .query(async ({ ctx, input }) => {
-        return getExaminerComments(input.thesisRequestId, ctx.user.id);
+        return getExaminerComments(input.thesisRequestId, ctx.user.id, input.includeCompleted);
       }),
 
     /** Durchsucht ausschließlich eigene private Notizen über alle Anfragen hinweg. */
@@ -5746,8 +5747,17 @@ export const appRouter = router({
       .input(z.object({
         search: z.string().trim().max(200).optional(),
         priority: z.enum(["normal", "important", "urgent"]).optional(),
+        includeCompleted: z.boolean().optional(),
       }))
       .query(async ({ ctx, input }) => searchExaminerComments({ examinerId: ctx.user.id, ...input })),
+
+    /** Setzt ausschließlich für eigene dringende Notizen den Erledigtstatus. */
+    setCompletion: protectedProcedure
+      .input(z.object({ id: z.number(), completed: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        await setExaminerCommentCompletion({ id: input.id, examinerId: ctx.user.id, completed: input.completed });
+        return { success: true };
+      }),
 
     /** Erstellt einen neuen Kommentar. */
     create: protectedProcedure

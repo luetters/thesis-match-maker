@@ -1750,3 +1750,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Datumseingabe und visuelle Überfälligkeitskennzeichnung im Prüfer-Dashboard ergänzen
 - [x] Fälligkeit in Suche sowie PDF- und CSV-Export aufnehmen
 - [x] Fälligkeitslogik automatisiert testen und veröffentlichen
+
+## Erledigt-Markierung für dringende Anfragenotizen
+- [x] Erledigtstatus für dringende private Notizen im Datenmodell ergänzen
+- [x] Checkbox zum Abschließen und Wiederöffnen einer dringenden Notiz ergänzen
+- [x] Erledigte Notizen aus der aktiven Ansicht ausblenden und optional sichtbar machen
+- [x] Erledigtstatus in Suche und Exporten ergänzen sowie automatisiert testen

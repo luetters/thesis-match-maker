@@ -738,6 +738,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [showConditionalDialog, setShowConditionalDialog] = useState(false);
   const [conditionalReason, setConditionalReason] = useState("");
   const [showDetails, setShowDetails] = useState(false);
+  const [showCompletedComments, setShowCompletedComments] = useState(false);
   const utils = trpc.useUtils();
   const { data: deadlineChanges = [] } = (trpc as any).deadlines.getChangesForRequest.useQuery({ thesisRequestId: req.id }, { enabled: Boolean(req.submissionDeadline) });
 
@@ -791,7 +792,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   }, []);
 
   const { data: comments, isLoading: commentsLoading } = trpc.examinerComments.list.useQuery(
-    { thesisRequestId: req.id },
+    { thesisRequestId: req.id, includeCompleted: showCompletedComments },
     { enabled: showDetails && Boolean(req.id) }
   );
   const createComment = trpc.examinerComments.create.useMutation({
@@ -814,6 +815,14 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   });
   const deleteComment = trpc.examinerComments.delete.useMutation({
     onSuccess: () => utils.examinerComments.list.invalidate({ thesisRequestId: req.id }),
+    onError: (err) => toast.error(err.message),
+  });
+  const setCommentCompletion = trpc.examinerComments.setCompletion.useMutation({
+    onSuccess: (_, variables) => {
+      utils.examinerComments.list.invalidate({ thesisRequestId: req.id, includeCompleted: showCompletedComments });
+      utils.examinerComments.search.invalidate();
+      toast.success(variables.completed ? "Dringende Notiz als erledigt markiert." : "Dringende Notiz wieder geöffnet.");
+    },
     onError: (err) => toast.error(err.message),
   });
 
@@ -1098,6 +1107,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 Meine Notizen
                 <span className="ml-1 text-xs font-normal text-amber-600 bg-amber-50 rounded px-1.5 py-0.5">nur für Sie sichtbar</span>
               </p>
+              <label className="mb-2 inline-flex cursor-pointer items-center gap-2 text-xs text-gray-500">
+                <input type="checkbox" checked={showCompletedComments} onChange={(event) => setShowCompletedComments(event.target.checked)} className="h-3.5 w-3.5 rounded border-gray-300 text-[#76B900] focus:ring-[#76B900]" />
+                Erledigte dringende Notizen anzeigen
+              </label>
               {commentsLoading ? (
                 <div className="text-xs text-gray-400 py-1">Wird geladen…</div>
               ) : comments && comments.length > 0 ? (
@@ -1159,6 +1172,12 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                               <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${c.priority === "urgent" ? "bg-red-100 text-red-700" : c.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>
                                 {c.priority === "urgent" ? "Dringend" : c.priority === "important" ? "Wichtig" : "Normal"}
                               </span>
+                              {c.priority === "urgent" && (
+                                <label className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-medium text-gray-600">
+                                  <input type="checkbox" checked={Boolean(c.completedAt)} disabled={setCommentCompletion.isPending} onChange={(event) => setCommentCompletion.mutate({ id: c.id, completed: event.target.checked })} className="h-3.5 w-3.5 rounded border-gray-300 text-[#76B900] focus:ring-[#76B900]" />
+                                  Erledigt
+                                </label>
+                              )}
                               <button
                                 onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); setEditingCommentPriority(c.priority ?? "normal"); setEditingCommentDueDate(c.dueAt ? c.dueAt.slice(0, 10) : ""); }}
                                 className="text-xs text-gray-400 hover:text-gray-600 px-2 py-0.5 rounded hover:bg-gray-200 transition-colors"
@@ -2155,15 +2174,18 @@ function PrivateNotesLibrary() {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState<"all" | "normal" | "important" | "urgent">("all");
+  const [showCompleted, setShowCompleted] = useState(false);
   const input = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(priority !== "all" ? { priority } : {}),
-  }), [search, priority]);
+    ...(showCompleted ? { includeCompleted: true } : {}),
+  }), [search, priority, showCompleted]);
   const { data: notes = [], isFetching } = trpc.examinerComments.search.useQuery(input, { enabled: isOpen });
   const exportNotes = (format: "csv" | "pdf") => {
     const params = new URLSearchParams();
     if (search.trim()) params.set("search", search.trim());
     if (priority !== "all") params.set("priority", priority);
+    if (showCompleted) params.set("includeCompleted", "1");
     const suffix = params.toString();
     window.open(`/api/export/my-notes.${format}${suffix ? `?${suffix}` : ""}`, "_blank", "noopener");
   };
@@ -2189,6 +2211,10 @@ function PrivateNotesLibrary() {
               <option value="important">Wichtig</option>
               <option value="urgent">Dringend</option>
             </select>
+            <label className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs text-gray-600">
+              <input type="checkbox" checked={showCompleted} onChange={(event) => setShowCompleted(event.target.checked)} className="h-3.5 w-3.5 rounded border-gray-300 text-[#76B900] focus:ring-[#76B900]" />
+              Erledigte anzeigen
+            </label>
             <button onClick={() => exportNotes("csv")} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">CSV herunterladen</button>
             <button onClick={() => exportNotes("pdf")} className="rounded-lg px-3 py-2 text-xs font-semibold text-white" style={{ backgroundColor: "#006937" }}>PDF herunterladen</button>
           </div>
@@ -2198,7 +2224,7 @@ function PrivateNotesLibrary() {
                 <article key={note.id} className={`rounded-xl border p-3 ${note.priority === "urgent" ? "border-red-200 bg-red-50" : note.priority === "important" ? "border-orange-200 bg-orange-50" : "border-amber-100 bg-white"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div><p className="text-xs font-semibold text-gray-800">#{note.thesisRequestId} · {note.thesisTitle}</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{note.content}</p></div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${note.priority === "urgent" ? "bg-red-100 text-red-700" : note.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>{note.priority === "urgent" ? "Dringend" : note.priority === "important" ? "Wichtig" : "Normal"}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-1"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${note.priority === "urgent" ? "bg-red-100 text-red-700" : note.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>{note.priority === "urgent" ? "Dringend" : note.priority === "important" ? "Wichtig" : "Normal"}</span>{note.completedAt && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">Erledigt</span>}</div>
                   </div>
                   <p className={`mt-2 text-[11px] ${note.dueAt && new Date(note.dueAt).getTime() < Date.now() ? "font-semibold text-red-700" : "text-gray-400"}`}>
                     {note.dueAt ? `${new Date(note.dueAt).getTime() < Date.now() ? "Fälligkeit überschritten" : "Fällig am"}: ${new Date(note.dueAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })} · ` : ""}

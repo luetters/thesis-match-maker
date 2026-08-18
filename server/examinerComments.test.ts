@@ -6,7 +6,7 @@ vi.mock("drizzle-orm/mysql2", () => ({
   drizzle: vi.fn(() => fakeDbHolder.db),
 }));
 
-import { _resetDbForTesting, createExaminerComment } from "./db";
+import { _resetDbForTesting, createExaminerComment, setExaminerCommentCompletion } from "./db";
 
 describe("createExaminerComment", () => {
   beforeEach(() => {
@@ -51,5 +51,27 @@ describe("createExaminerComment", () => {
     await createExaminerComment({ thesisRequestId: 44, examinerId: 8, content: "Rückmeldung einholen.", priority: "urgent", dueAt: "2026-09-01 23:59:59" });
 
     expect(valuesSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: "urgent", dueAt: "2026-09-01 23:59:59" }));
+  });
+});
+
+describe("setExaminerCommentCompletion", () => {
+  beforeEach(() => {
+    process.env.DATABASE_URL = "mysql://fake:fake@localhost/fake";
+    _resetDbForTesting();
+  });
+
+  it("markiert ausschließlich eine eigene dringende Notiz mit einem Erledigtzeitpunkt", async () => {
+    const limitSpy = vi.fn().mockResolvedValue([{ id: 81, examinerId: 8, priority: "urgent" }]);
+    const selectWhereSpy = vi.fn().mockReturnValue({ limit: limitSpy });
+    const selectFromSpy = vi.fn().mockReturnValue({ where: selectWhereSpy });
+    const setSpy = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) });
+    fakeDbHolder.db = {
+      select: vi.fn().mockReturnValue({ from: selectFromSpy }),
+      update: vi.fn().mockReturnValue({ set: setSpy }),
+    };
+
+    await setExaminerCommentCompletion({ id: 81, examinerId: 8, completed: true });
+
+    expect(setSpy).toHaveBeenCalledWith(expect.objectContaining({ completedAt: expect.any(String) }));
   });
 });

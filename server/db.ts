@@ -6571,7 +6571,7 @@ export async function revokeStudentRegistrationInvitation(params: {
 import { examinerComments } from "../drizzle/schema";
 
 /** Gibt alle Kommentare eines Prüfers für einen bestimmten Thesis-Antrag zurück. */
-export async function getExaminerComments(thesisRequestId: number, examinerId: number) {
+export async function getExaminerComments(thesisRequestId: number, examinerId: number, includeCompleted = false) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -6580,7 +6580,8 @@ export async function getExaminerComments(thesisRequestId: number, examinerId: n
     .where(
       and(
         eq(examinerComments.thesisRequestId, thesisRequestId),
-        eq(examinerComments.examinerId, examinerId)
+        eq(examinerComments.examinerId, examinerId),
+        ...(includeCompleted ? [] : [isNull(examinerComments.completedAt)])
       )
     )
     .orderBy(examinerComments.createdAt);
@@ -6635,11 +6636,28 @@ export async function updateExaminerComment(params: {
     .where(eq(examinerComments.id, params.id));
 }
 
+/** Markiert eine eigene dringende Notiz als erledigt oder stellt sie wieder her. */
+export async function setExaminerCommentCompletion(params: { id: number; examinerId: number; completed: boolean }): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const rows = await db
+    .select({ id: examinerComments.id, examinerId: examinerComments.examinerId, priority: examinerComments.priority })
+    .from(examinerComments)
+    .where(eq(examinerComments.id, params.id))
+    .limit(1);
+  if (!rows[0]) throw new Error("Kommentar nicht gefunden.");
+  if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
+  if (rows[0].priority !== "urgent") throw new Error("Nur dringende Notizen können als erledigt markiert werden.");
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(examinerComments).set({ completedAt: params.completed ? now : null, updatedAt: now }).where(eq(examinerComments.id, params.id));
+}
+
 /** Durchsucht ausschließlich die eigenen privaten Notizen und ergänzt den zugehörigen Anfragetitel. */
 export async function searchExaminerComments(params: {
   examinerId: number;
   search?: string;
   priority?: "normal" | "important" | "urgent";
+  includeCompleted?: boolean;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -6647,6 +6665,7 @@ export async function searchExaminerComments(params: {
   const term = params.search?.trim();
   if (term) filters.push(like(examinerComments.content, `%${term}%`));
   if (params.priority) filters.push(eq(examinerComments.priority, params.priority));
+  if (!params.includeCompleted) filters.push(isNull(examinerComments.completedAt));
   return db
     .select({
       id: examinerComments.id,
@@ -6655,6 +6674,7 @@ export async function searchExaminerComments(params: {
       content: examinerComments.content,
       priority: examinerComments.priority,
       dueAt: examinerComments.dueAt,
+      completedAt: examinerComments.completedAt,
       createdAt: examinerComments.createdAt,
       updatedAt: examinerComments.updatedAt,
     })
