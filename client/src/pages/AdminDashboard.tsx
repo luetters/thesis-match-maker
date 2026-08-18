@@ -1805,9 +1805,16 @@ function Overview() {
   const { data: requests } = trpc.thesis.all.useQuery();
   const { data: users } = trpc.admin.users.useQuery();
   const { data: logs } = trpc.auditLog.all.useQuery();
+  const { data: failedLogins } = trpc.admin.getLoginAttempts.useQuery({ onlyFailed: true, limit: 25 });
   const { data: pendingRoles, refetch: refetchPending } = trpc.roleApproval.getPending.useQuery();
   const { data: thesisStats } = trpc.admin.stats.useQuery();
   const utils = trpc.useUtils();
+  const { data: twoFactorStatus, refetch: refetchTwoFactor } = trpc.auth.twoFactorStatus.useQuery();
+  const [twoFactorSetup, setTwoFactorSetup] = useState<{ qrCodeDataUrl: string; manualKey: string } | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const beginTwoFactor = trpc.auth.beginTwoFactorSetup.useMutation({ onSuccess: setTwoFactorSetup, onError: (error) => toast.error(error.message) });
+  const confirmTwoFactor = trpc.auth.confirmTwoFactorSetup.useMutation({ onSuccess: () => { toast.success("Zwei-Faktor-Authentifizierung wurde aktiviert."); setTwoFactorSetup(null); setTwoFactorCode(""); refetchTwoFactor(); }, onError: (error) => toast.error(error.message) });
+  const disableTwoFactor = trpc.auth.disableTwoFactor.useMutation({ onSuccess: () => { toast.success("Zwei-Faktor-Authentifizierung wurde deaktiviert."); setTwoFactorCode(""); refetchTwoFactor(); }, onError: (error) => toast.error(error.message) });
 
   const approveMutation = trpc.roleApproval.approve.useMutation({
     onSuccess: () => { toast.success("Nutzer:in wurde freigeschaltet."); refetchPending(); utils.admin.users.invalidate(); },
@@ -1826,6 +1833,8 @@ function Overview() {
   const completed = requests?.filter((r) => r.status === "COMPLETED").length ?? 0;
   const rejected = requests?.filter((r) => r.status === "REJECTED").length ?? 0;
   const pendingRoleCount = (pendingRoles ?? []).filter(u => u.roleStatus === "pending").length;
+  const failedLoginCount = (failedLogins ?? []).length;
+  const recentFailedLoginCount = (failedLogins ?? []).filter((entry) => Date.now() - new Date(entry.createdAt).getTime() < 24 * 60 * 60 * 1000).length;
   const totalUsers = users?.length ?? 0;
   // Multi-Rollen: Nutzer zählen anhand user.role (Legacy-Feld, wird synchron gehalten)
   const studentCount = users?.filter(u => u.user.role === "student").length ?? 0;
@@ -1869,6 +1878,23 @@ function Overview() {
           </div>
         ))}
       </div>
+
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Sicherheitsübersicht">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div><h2 className="font-semibold text-amber-950">Sicherheitswarnungen</h2><p className="mt-1 text-sm text-amber-900">{recentFailedLoginCount} fehlgeschlagene Anmeldung{recentFailedLoginCount === 1 ? "" : "en"} in den letzten 24 Stunden.</p></div>
+            <span className="rounded-full bg-amber-200 px-3 py-1 text-sm font-bold text-amber-950">{failedLoginCount}</span>
+          </div>
+          <p className="mt-3 text-xs text-amber-800">Die letzten Fehlversuche finden Sie im Login-Protokoll. Wiederholte Anfragen werden serverseitig begrenzt.</p>
+        </div>
+        {twoFactorStatus?.eligible && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+          <h2 className="font-semibold text-blue-950">Zwei-Faktor-Authentifizierung</h2>
+          <p className="mt-1 text-sm text-blue-900">{twoFactorStatus.enabled ? "Für Ihr Administrationskonto aktiv." : "Schützen Sie Ihr Administrationskonto zusätzlich mit 2FAS oder einer kompatiblen Authenticator-App."}</p>
+          {!twoFactorStatus.enabled && !twoFactorSetup && <button onClick={() => beginTwoFactor.mutate()} disabled={beginTwoFactor.isPending} className="mt-3 rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">2FA einrichten</button>}
+          {twoFactorSetup && <div className="mt-3 rounded-xl bg-white p-3 text-sm text-gray-800"><img src={twoFactorSetup.qrCodeDataUrl} alt="QR-Code für 2FAS" className="h-36 w-36 rounded" /><p className="mt-2 break-all text-xs">Manueller Schlüssel: {twoFactorSetup.manualKey}</p><input value={twoFactorCode} onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Sechsstelliger Code" inputMode="numeric" className="mt-3 w-full rounded border p-2" /><button onClick={() => confirmTwoFactor.mutate({ code: twoFactorCode })} disabled={twoFactorCode.length !== 6 || confirmTwoFactor.isPending} className="mt-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Aktivierung bestätigen</button></div>}
+          {twoFactorStatus.enabled && <div className="mt-3 flex gap-2"><input value={twoFactorCode} onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Code zum Deaktivieren" inputMode="numeric" className="rounded border p-2 text-sm" /><button onClick={() => disableTwoFactor.mutate({ code: twoFactorCode })} disabled={twoFactorCode.length !== 6 || disableTwoFactor.isPending} className="rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50">Deaktivieren</button></div>}
+        </div>}
+      </section>
 
       <section className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm" aria-labelledby="admin-responsibilities-title">
         <div className="flex items-start gap-3">

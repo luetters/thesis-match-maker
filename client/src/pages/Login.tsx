@@ -177,8 +177,9 @@ export default function Login() {
   const [loginPassword, setLoginPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(savedEmail !== "");
   const [showLoginPw, setShowLoginPw] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [resetSent, setResetSent] = useState(false);
-  const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | "not_found" | null>(null);
+  const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | "not_found" | "two_factor" | null>(null);
   const [showFaq, setShowFaq] = useState(false);
 
   // Registrierungs-State
@@ -238,6 +239,10 @@ export default function Login() {
 
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
+      if ((data as any).requiresTwoFactor) {
+        setLoginStatus("two_factor");
+        return;
+      }
       setLoginStatus(null);
       // Multi-Rollen: Routing nach Priorität (roles[] hat Vorrang vor role)
       const roles: string[] = (data as any).roles?.length ? (data as any).roles : [data.role];
@@ -323,7 +328,7 @@ export default function Login() {
     } else {
       localStorage.removeItem(REMEMBER_KEY);
     }
-    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
+    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword, ...(twoFactorCode ? { twoFactorCode } : {}) });
   }
 
   function startSamlLogin() {
@@ -617,6 +622,23 @@ export default function Login() {
                         {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {loginStatus === "two_factor" && (
+                      <div className="space-y-2 rounded-lg border border-[#76b900]/40 bg-[#76b900]/10 p-3">
+                        <Label className="text-white text-sm">Sicherheitscode aus Ihrer Authenticator-App</Label>
+                        <Input
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          placeholder="123456"
+                          value={twoFactorCode}
+                          onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          autoComplete="one-time-code"
+                          autoFocus
+                          className="bg-white/5 border-white/20 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
+                        />
+                        <p className="text-xs text-white/70">Bitte geben Sie den sechsstelligen Code aus 2FAS oder einer kompatiblen Authenticator-App ein.</p>
+                      </div>
+                    )}
                     {/* Passwort-Hinweis: nicht das HTW-Passwort */}
                     <div
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs mt-1"

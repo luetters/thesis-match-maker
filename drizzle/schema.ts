@@ -400,6 +400,11 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	passwordHash: varchar({ length: 255 }),
+	// Optionale TOTP-Zwei-Faktor-Authentifizierung für Administrationskonten.
+	twoFactorSecret: text("two_factor_secret"),
+	twoFactorEnabled: tinyint("two_factor_enabled").default(0).notNull(),
+	twoFactorConfirmedAt: timestamp("two_factor_confirmed_at", { mode: "string" }),
+	twoFactorLastUsedStep: int("two_factor_last_used_step"),
 	// Optionale Föderationszuordnung für die SAML-2.0-Anmeldung.
 	// Das lokale Passwort bleibt unabhängig davon weiterhin verfügbar.
 	samlSubject: varchar("saml_subject", { length: 512 }),

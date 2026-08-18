@@ -222,6 +222,8 @@ import { SAML_SETTING_KEYS, getSamlConfigurationIssues, isSamlConfigurationReady
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { parse as parseCookie } from "cookie";
+import QRCode from "qrcode";
+import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
 import {
   createColloquium,
   getAllColloquiums,
@@ -569,6 +571,43 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    twoFactorStatus: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user || !isAdminAccount(user.role)) return { eligible: false, enabled: false };
+      return { eligible: true, enabled: Boolean(user.twoFactorEnabled), confirmedAt: user.twoFactorConfirmedAt ?? null };
+    }),
+    beginTwoFactorSetup: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user || !isAdminAccount(user.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Zwei-Faktor-Authentifizierung ist nur für Administrationskonten verfügbar." });
+      const setup = createTwoFactorSetup(user.email ?? user.openId);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.update(users).set({ twoFactorSecret: encryptTwoFactorSecret(setup.secret), twoFactorEnabled: 0, twoFactorConfirmedAt: null, twoFactorLastUsedStep: null }).where(eq(users.id, user.id));
+      return { qrCodeDataUrl: await QRCode.toDataURL(setup.otpauthUrl), manualKey: setup.secret };
+    }),
+    confirmTwoFactorSetup: protectedProcedure
+      .input(z.object({ code: z.string().regex(/^\d{6}$/) }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user || !isAdminAccount(user.role) || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Es liegt keine offene 2FA-Einrichtung vor." });
+        const result = verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code);
+        if (!result.valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.update(users).set({ twoFactorEnabled: 1, twoFactorConfirmedAt: sql`NOW()`, twoFactorLastUsedStep: result.step }).where(eq(users.id, user.id));
+        return { success: true };
+      }),
+    disableTwoFactor: protectedProcedure
+      .input(z.object({ code: z.string().regex(/^\d{6}$/) }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user || !isAdminAccount(user.role) || !user.twoFactorEnabled || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Die Zwei-Faktor-Authentifizierung ist nicht aktiv." });
+        if (!verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code).valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.update(users).set({ twoFactorSecret: null, twoFactorEnabled: 0, twoFactorConfirmedAt: null, twoFactorLastUsedStep: null }).where(eq(users.id, user.id));
+        return { success: true };
+      }),
     changePassword: protectedProcedure
       .input(z.object({
         currentPassword: z.string().min(1),
@@ -833,7 +872,7 @@ export const appRouter = router({
         return { success: true, autoApproved: isStudentAutoApprove };
       }),
     loginWithPassword: publicProcedure
-      .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+      .input(z.object({ email: z.string().email(), password: z.string().min(1), twoFactorCode: z.string().regex(/^\d{6}$/).optional() }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
         const ipAddr = ctx.req.ip;
@@ -850,6 +889,20 @@ export const appRouter = router({
         if (!valid) {
           await logLoginAttempt({ email: input.email, success: false, failureReason: "Falsches Passwort", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({ code: "UNAUTHORIZED", message: "E-Mail oder Passwort ungültig." });
+        }
+        if (user.twoFactorEnabled && isAdminAccount(user.role)) {
+          if (!input.twoFactorCode) {
+            return { success: false, requiresTwoFactor: true, role: user.role, roles: [] as AppRole[] };
+          }
+          const twoFactorSecret = user.twoFactorSecret ? decryptTwoFactorSecret(user.twoFactorSecret) : null;
+          const result = twoFactorSecret ? verifyTwoFactorCode(twoFactorSecret, input.twoFactorCode) : { valid: false, step: 0 };
+          if (!result.valid || user.twoFactorLastUsedStep === result.step) {
+            await logLoginAttempt({ email: input.email, success: false, failureReason: "Ungültiger Zwei-Faktor-Code", ipAddress: ipAddr, userAgent: ua });
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig oder wurde bereits verwendet." });
+          }
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+          await db.update(users).set({ twoFactorLastUsedStep: result.step }).where(eq(users.id, user.id));
         }
         // Freischaltungs-Prüfung
         const roleStatus = (user as any).roleStatus ?? "approved";

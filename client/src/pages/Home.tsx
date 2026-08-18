@@ -27,6 +27,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   const [selectedRole, setSelectedRole] = useState<LoginRole | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [, navigate] = useLocation();
@@ -36,6 +38,10 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   });
   const loginWithPassword = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
+      if ((data as any).requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        return;
+      }
       onClose();
       if (data.role === "student") navigate("/student");
       else if (data.role === "examiner" || data.role === "second_examiner") navigate("/examiner");
@@ -54,7 +60,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     if (!email.includes("@")) { setError(t.landing.loginModal.invalidEmail); return; }
     if (!password) { setError(t.landing.loginModal.missingPassword); return; }
     setError("");
-    loginWithPassword.mutate({ email, password });
+    loginWithPassword.mutate({ email, password, ...(twoFactorCode ? { twoFactorCode } : {}) });
   };
 
   const selectedRoleOption = loginRoles.find((r) => r.id === selectedRole);
@@ -160,6 +166,13 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all"
               />
             </div>
+            {requiresTwoFactor && (
+              <div className="mb-4 rounded-xl border border-[#76b900]/40 bg-[#76b900]/5 p-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Sicherheitscode aus Ihrer Authenticator-App</label>
+                <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))} onKeyDown={(e) => e.key === "Enter" && handlePasswordLogin()} placeholder="123456" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 transition-all" autoFocus />
+                <p className="mt-2 text-xs text-gray-600">Bitte geben Sie den sechsstelligen Code aus 2FAS oder einer kompatiblen Authenticator-App ein.</p>
+              </div>
+            )}
             {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
             {resetSent && (
               <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5 text-sm text-primary mb-2">

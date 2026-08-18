@@ -1693,3 +1693,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Sicherheitsheader sowie Schutz gegen Anmelde- und Anfrageüberlastung ergänzt
 - [x] Berechtigungs-, Eingabe- und Dokumentzugriffsgrenzen gezielt gehärtet
 - [x] Sicherheitsmaßnahmen automatisiert getestet
+
+## Sicherheitsübersicht und Zwei-Faktor-Authentifizierung
+- [x] Sicherheitsereignisse, Admin-Dashboard und TOTP-Integrationsoptionen geprüft
+- [x] Sicherheitsübersicht für fehlgeschlagene Anmeldungen und aktuelle Warnungen integriert
+- [x] Optionale TOTP-basierte Zwei-Faktor-Authentifizierung für Administrationskonten implementiert
+- [x] Sicherheitsübersicht und Zwei-Faktor-Authentifizierung automatisiert getestet
