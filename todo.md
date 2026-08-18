@@ -1780,3 +1780,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Backup-Konfiguration: Intervalle für automatische System-Backups über den Scheduler
 - [x] Migrationsassistent: Interaktiver 7-Schritte-Assistent im Dashboard
 - [x] Tests und TypeScript-Prüfung: 0 Fehler, 10 relevante Tests bestanden
+
+## Bereitstellungsleitfaden für IONOS und Hetzner
+- [x] Offizielle Anforderungen der Anbieter und Portalvoraussetzungen prüfen
+- [x] Schritt-für-Schritt-Anleitung für beide Anbieter erstellen
+- [x] Leitfaden im Projekt sichern und zur Nutzung bereitstellen
