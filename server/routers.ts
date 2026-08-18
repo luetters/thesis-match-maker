@@ -74,6 +74,7 @@ import {
   getAllThesisRequestsForCsv,
   getAllThesisRequestsForDean,
   getAllUsersWithRoles,
+  getUsersMissingRequiredTwoFactor,
   setUserRole,
   resetExaminerOnboarding,
   getAllPavUsersWithProgrammes,
@@ -2916,6 +2917,20 @@ export const appRouter = router({
         }
         return { success: true };
       }),
+
+    /** Konten mit verpflichtender, aber noch nicht eingerichteter Zwei-Faktor-Authentifizierung. */
+    getTwoFactorEnrollmentGaps: superadminProcedure.query(async () => {
+      const settings = await getSystemSettings();
+      const rawRoles = settings.find((setting) => setting.key === "twoFactorRequiredRoles")?.value ?? "[]";
+      let requiredRoles: string[] = [];
+      try {
+        const parsed = JSON.parse(rawRoles);
+        requiredRoles = Array.isArray(parsed) ? parsed.filter((role): role is string => typeof role === "string") : [];
+      } catch {
+        requiredRoles = [];
+      }
+      return getUsersMissingRequiredTwoFactor(requiredRoles);
+    }),
 
     /** Alle Nutzer:innen mit Rollen (SuperAdmin) */
     listAllUsers: superadminProcedure.query(async () => {

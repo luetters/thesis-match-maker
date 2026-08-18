@@ -1679,6 +1679,23 @@ export async function getAllUsersWithRoles() {
     .orderBy(desc(users.createdAt));
 }
 
+/** Konten, deren primäre Rolle verpflichtende 2FA erfordert, die aber noch nicht aktiviert ist. */
+export async function getUsersMissingRequiredTwoFactor(requiredRoles: string[]) {
+  const db = await getDb();
+  if (!db || requiredRoles.length === 0) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(and(inArray(users.role, requiredRoles as any), eq(users.twoFactorEnabled, 0)))
+    .orderBy(users.name);
+}
+
 /** Rolle eines Nutzers setzen (SuperAdmin) */
 export async function setUserRole(
   userId: number,

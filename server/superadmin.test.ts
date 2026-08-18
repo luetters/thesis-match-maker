@@ -109,6 +109,9 @@ vi.mock("./db", () => ({
   getSystemSettings: vi.fn().mockResolvedValue([]),
   getSystemSetting: vi.fn().mockResolvedValue(null),
   upsertSystemSetting: vi.fn().mockResolvedValue(undefined),
+  getUsersMissingRequiredTwoFactor: vi.fn().mockResolvedValue([
+    { id: 17, name: "Dr. Beispiel", email: "beispiel@htw-berlin.de", role: "examiner", createdAt: new Date() },
+  ]),
   getAllUsersWithProfiles: vi.fn().mockResolvedValue([]),
   deleteUserByAdmin: vi.fn().mockResolvedValue(undefined),
   createExaminerByAdmin: vi.fn().mockResolvedValue({ id: 10 }),
@@ -333,5 +336,18 @@ describe("superadmin.updateUserStatus", () => {
     const result = await caller.superadmin.updateUserStatus({ userId: 1, isActive: false });
     // updateUserStatus gibt boolean zurück
     expect(result).toBe(true);
+  });
+});
+
+describe("superadmin.getTwoFactorEnrollmentGaps", () => {
+  it("zeigt nur die Konten an, deren verpflichtende 2FA noch aussteht", async () => {
+    const { getSystemSettings, getUsersMissingRequiredTwoFactor } = await import("./db");
+    vi.mocked(getSystemSettings).mockResolvedValueOnce([{ key: "twoFactorRequiredRoles", value: JSON.stringify(["examiner"]), updatedById: 1, updatedAt: new Date() } as any]);
+    const context = createSuperadminContext();
+    context.user = { ...context.user!, role: "superadmin" };
+    const caller = appRouter.createCaller(context);
+    const result = await caller.superadmin.getTwoFactorEnrollmentGaps();
+    expect(getUsersMissingRequiredTwoFactor).toHaveBeenCalledWith(["examiner"]);
+    expect(result).toEqual(expect.arrayContaining([expect.objectContaining({ id: 17, role: "examiner" })]));
   });
 });

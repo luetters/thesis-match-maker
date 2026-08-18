@@ -744,6 +744,8 @@ function SystemStatsTab() {
 function SystemConfigTab() {
   const utils = trpc.useUtils();
   const { data: settings, isLoading } = trpc.superadmin.getSettings.useQuery();
+  const { data: twoFactorGaps, isLoading: twoFactorGapsLoading } = trpc.superadmin.getTwoFactorEnrollmentGaps.useQuery();
+  const twoFactorRoleLabels: Record<string, string> = { examiner: "Erstprüfer:in", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", dean: "Dekanat", vice_dean: "Prodekanat", programme_director: "Studiengangsleitung", pav: "PA-Vorsitz", superadmin: "Superadmin" };
   const updateSettings = trpc.superadmin.updateSettings.useMutation({
     onSuccess: () => utils.superadmin.getSettings.invalidate(),
   });
@@ -862,6 +864,11 @@ function SystemConfigTab() {
         <div className="grid gap-2 sm:grid-cols-2">
           {([['examiner','Erstprüfer:innen'],['second_examiner','Zweitprüfer:innen'],['admin','Verwaltung'],['dean','Dekanat'],['vice_dean','Prodekanat'],['programme_director','Studiengangsleitung'],['pav','PA-Vorsitz'],['superadmin','Superadmins']] as const).map(([role, label]) => <label key={role} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700"><input type="checkbox" checked={form.twoFactorRequiredRoles.includes(role)} onChange={() => setForm((current) => current ? { ...current, twoFactorRequiredRoles: current.twoFactorRequiredRoles.includes(role) ? current.twoFactorRequiredRoles.filter((entry) => entry !== role) : [...current.twoFactorRequiredRoles, role] } : current)} />{label}</label>)}
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-6">
+        <div className="flex items-start justify-between gap-4"><div><h3 className="font-semibold text-gray-900 text-base">Ausstehende verpflichtende 2FA-Einrichtungen</h3><p className="mt-1 text-xs text-gray-600">Diese Personen haben eine Rolle mit verpflichtender Zwei-Faktor-Authentifizierung, die Einrichtung aber noch nicht abgeschlossen.</p></div><span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900">{twoFactorGaps?.length ?? 0}</span></div>
+        {twoFactorGapsLoading ? <p className="mt-4 text-sm text-gray-500">Liste wird geladen …</p> : twoFactorGaps?.length ? <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="border-b border-gray-200 text-xs text-gray-500"><tr><th className="px-3 py-2 font-medium">Name</th><th className="px-3 py-2 font-medium">E-Mail</th><th className="px-3 py-2 font-medium">Rolle</th><th className="px-3 py-2 font-medium">Status</th></tr></thead><tbody>{twoFactorGaps.map((user) => <tr key={user.id} className="border-b border-gray-100 last:border-0"><td className="px-3 py-3 font-medium text-gray-900">{user.name ?? "Ohne Namen"}</td><td className="px-3 py-3 text-gray-600">{user.email}</td><td className="px-3 py-3 text-gray-600">{twoFactorRoleLabels[user.role ?? ""] ?? user.role}</td><td className="px-3 py-3"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">Einrichtung ausstehend</span></td></tr>)}</tbody></table></div> : <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-3 text-sm text-emerald-800">Für die aktuell ausgewählten Rollen stehen keine verpflichtenden 2FA-Einrichtungen aus.</p>}
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
