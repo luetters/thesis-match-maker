@@ -1732,4 +1732,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Täglichen, idempotenten Hintergrundprozess für überfällige 2FA-Einrichtungen einrichten
 - [x] Erinnerung nur einmal je überfälliger Rollenpflicht versenden und protokollieren
 - [x] E-Mail in Deutsch und Englisch mit sicherem Link zur 2FA-Einrichtung versenden
-- [ ] Automatisierung testen, veröffentlichen und aktivieren
+- [x] Automatisierung testen, veröffentlichen und aktivieren
