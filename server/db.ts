@@ -6592,6 +6592,7 @@ export async function createExaminerComment(params: {
   examinerId: number;
   content: string;
   priority?: "normal" | "important" | "urgent";
+  dueAt?: string | null;
 }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -6600,6 +6601,7 @@ export async function createExaminerComment(params: {
     examinerId: params.examinerId,
     content: params.content,
     priority: params.priority ?? "normal",
+    dueAt: params.priority === "urgent" ? params.dueAt ?? null : null,
   });
   return (result[0] as any).insertId as number;
 }
@@ -6610,6 +6612,7 @@ export async function updateExaminerComment(params: {
   examinerId: number;
   content: string;
   priority?: "normal" | "important" | "urgent";
+  dueAt?: string | null;
 }): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -6623,7 +6626,12 @@ export async function updateExaminerComment(params: {
   if (rows[0].examinerId !== params.examinerId) throw new Error("Keine Berechtigung.");
   await db
     .update(examinerComments)
-    .set({ content: params.content, updatedAt: now, ...(params.priority ? { priority: params.priority } : {}) })
+    .set({
+      content: params.content,
+      updatedAt: now,
+      ...(params.priority ? { priority: params.priority } : {}),
+      ...(params.priority ? { dueAt: params.priority === "urgent" ? params.dueAt ?? null : null } : {}),
+    })
     .where(eq(examinerComments.id, params.id));
 }
 
@@ -6646,6 +6654,7 @@ export async function searchExaminerComments(params: {
       thesisTitle: thesisRequests.title,
       content: examinerComments.content,
       priority: examinerComments.priority,
+      dueAt: examinerComments.dueAt,
       createdAt: examinerComments.createdAt,
       updatedAt: examinerComments.updatedAt,
     })

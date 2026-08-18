@@ -31,6 +31,7 @@ describe("createExaminerComment", () => {
       examinerId: 8,
       content: "Rückfrage im nächsten Termin klären.",
       priority: "normal",
+      dueAt: null,
     });
   });
 
@@ -41,5 +42,14 @@ describe("createExaminerComment", () => {
     await createExaminerComment({ thesisRequestId: 43, examinerId: 8, content: "Frist prüfen.", priority: "important" });
 
     expect(valuesSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: "important" }));
+  });
+
+  it("speichert ein Fälligkeitsdatum ausschließlich für dringende Notizen", async () => {
+    const valuesSpy = vi.fn().mockResolvedValue([{ insertId: 75 }]);
+    fakeDbHolder.db = { insert: vi.fn().mockReturnValue({ values: valuesSpy }) };
+
+    await createExaminerComment({ thesisRequestId: 44, examinerId: 8, content: "Rückmeldung einholen.", priority: "urgent", dueAt: "2026-09-01 23:59:59" });
+
+    expect(valuesSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: "urgent", dueAt: "2026-09-01 23:59:59" }));
   });
 });

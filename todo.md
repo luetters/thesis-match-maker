@@ -1744,3 +1744,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Prioritäts-Tag mit farblicher Hervorhebung für wichtige Notizen ergänzen
 - [x] Autorisierte CSV- und PDF-Exporte eigener Anfragenotizen bereitstellen
 - [x] Such-, Prioritäts- und Exportfunktionen automatisiert testen und veröffentlichen
+
+## Fälligkeitsdatum für dringende Anfragenotizen
+- [x] Fälligkeitsdatum für dringende private Notizen im Datenmodell ergänzen
+- [x] Datumseingabe und visuelle Überfälligkeitskennzeichnung im Prüfer-Dashboard ergänzen
+- [x] Fälligkeit in Suche sowie PDF- und CSV-Export aufnehmen
+- [x] Fälligkeitslogik automatisiert testen und veröffentlichen

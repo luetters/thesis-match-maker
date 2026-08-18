@@ -5755,6 +5755,7 @@ export const appRouter = router({
         thesisRequestId: z.number(),
         content: z.string().min(1).max(4000),
         priority: z.enum(["normal", "important", "urgent"]).default("normal"),
+        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         const id = await createExaminerComment({
@@ -5762,6 +5763,7 @@ export const appRouter = router({
           examinerId: ctx.user.id,
           content: input.content,
           priority: input.priority,
+          dueAt: input.priority === "urgent" && input.dueDate ? `${input.dueDate} 23:59:59` : null,
         });
         return { id };
       }),
@@ -5772,6 +5774,7 @@ export const appRouter = router({
         id: z.number(),
         content: z.string().min(1).max(4000),
         priority: z.enum(["normal", "important", "urgent"]).optional(),
+        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         await updateExaminerComment({
@@ -5779,6 +5782,7 @@ export const appRouter = router({
           examinerId: ctx.user.id,
           content: input.content,
           priority: input.priority,
+          dueAt: input.priority === "urgent" && input.dueDate ? `${input.dueDate} 23:59:59` : null,
         });
         return { success: true };
       }),

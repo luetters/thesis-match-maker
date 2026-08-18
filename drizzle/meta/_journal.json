@@ -589,6 +589,13 @@
       "when": 1787041809447,
       "tag": "0083_warm_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "5",
+      "when": 1787043232391,
+      "tag": "0084_thick_master_chief",
+      "breakpoints": true
     }
   ]
 }

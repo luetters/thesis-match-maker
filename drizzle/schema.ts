@@ -661,6 +661,7 @@ export const examinerComments = mysqlTable("examiner_comments", {
   examinerId: int("examiner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   priority: mysqlEnum("priority", ["normal", "important", "urgent"]).default("normal").notNull(),
+  dueAt: datetime("due_at", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

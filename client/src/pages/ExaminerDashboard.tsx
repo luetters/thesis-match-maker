@@ -720,9 +720,11 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [newCommentPriority, setNewCommentPriority] = useState<"normal" | "important" | "urgent">("normal");
+  const [newCommentDueDate, setNewCommentDueDate] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [editingCommentPriority, setEditingCommentPriority] = useState<"normal" | "important" | "urgent">("normal");
+  const [editingCommentDueDate, setEditingCommentDueDate] = useState("");
   const newCommentRef = useRef<HTMLTextAreaElement>(null);
   const editCommentRef = useRef<HTMLTextAreaElement>(null);
   const [showSecondExaminerEmailDialog, setShowSecondExaminerEmailDialog] = useState(false);
@@ -796,6 +798,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
     onSuccess: () => {
       setNewComment("");
       setNewCommentPriority("normal");
+      setNewCommentDueDate("");
       utils.examinerComments.list.invalidate({ thesisRequestId: req.id });
       toast.success("Notiz wurde gespeichert.");
     },
@@ -1121,8 +1124,9 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                               <option value="important">Wichtig</option>
                               <option value="urgent">Dringend</option>
                             </select>
+                            {editingCommentPriority === "urgent" && <input type="date" value={editingCommentDueDate} onChange={(event) => setEditingCommentDueDate(event.target.value)} className="px-2 py-1 text-xs border border-red-200 rounded-lg bg-white text-gray-700" aria-label="Fälligkeitsdatum" />}
                             <button
-                              onClick={() => updateComment.mutate({ id: c.id, content: editingContent, priority: editingCommentPriority })}
+                              onClick={() => updateComment.mutate({ id: c.id, content: editingContent, priority: editingCommentPriority, dueDate: editingCommentPriority === "urgent" ? editingCommentDueDate || null : null })}
                               disabled={updateComment.isPending || !editingContent.trim()}
                               className="px-3 py-1 text-xs font-semibold text-white rounded-lg disabled:opacity-50"
                               style={{ backgroundColor: "#76B900" }}
@@ -1130,7 +1134,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                               Speichern
                             </button>
                             <button
-                              onClick={() => { setEditingCommentId(null); setEditingContent(""); setEditingCommentPriority("normal"); }}
+                              onClick={() => { setEditingCommentId(null); setEditingContent(""); setEditingCommentPriority("normal"); setEditingCommentDueDate(""); }}
                               className="px-3 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
                             >
                               Abbrechen
@@ -1140,6 +1144,12 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                       ) : (
                         <>
                           <MarkdownNote content={c.content} />
+                          {c.priority === "urgent" && c.dueAt && (
+                            <p className={`mt-2 text-xs font-semibold ${new Date(c.dueAt).getTime() < Date.now() ? "text-red-700" : "text-red-600"}`}>
+                              {new Date(c.dueAt).getTime() < Date.now() ? "Fälligkeit überschritten: " : "Fällig am: "}
+                              {new Date(c.dueAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+                            </p>
+                          )}
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-xs text-gray-400">
                               {new Date(c.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -1150,7 +1160,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                                 {c.priority === "urgent" ? "Dringend" : c.priority === "important" ? "Wichtig" : "Normal"}
                               </span>
                               <button
-                                onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); setEditingCommentPriority(c.priority ?? "normal"); }}
+                                onClick={() => { setEditingCommentId(c.id); setEditingContent(c.content); setEditingCommentPriority(c.priority ?? "normal"); setEditingCommentDueDate(c.dueAt ? c.dueAt.slice(0, 10) : ""); }}
                                 className="text-xs text-gray-400 hover:text-gray-600 px-2 py-0.5 rounded hover:bg-gray-200 transition-colors"
                               >
                                 Bearbeiten
@@ -1188,13 +1198,18 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   className="w-full text-sm border border-amber-200 rounded-b-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300/60 bg-amber-50/50"
                 />
                 <div className="flex items-center gap-2">
-                  <select value={newCommentPriority} onChange={(event) => setNewCommentPriority(event.target.value as "normal" | "important" | "urgent")} className="px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg bg-white text-gray-700">
+                  <select value={newCommentPriority} onChange={(event) => { const priority = event.target.value as "normal" | "important" | "urgent"; setNewCommentPriority(priority); if (priority !== "urgent") setNewCommentDueDate(""); }} className="px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg bg-white text-gray-700">
                     <option value="normal">Priorität: Normal</option>
                     <option value="important">Priorität: Wichtig</option>
                     <option value="urgent">Priorität: Dringend</option>
                   </select>
+                  {newCommentPriority === "urgent" && <>
+                    <input type="date" value={newCommentDueDate} onChange={(event) => setNewCommentDueDate(event.target.value)} className="px-2.5 py-1.5 text-xs border border-red-200 rounded-lg bg-white text-gray-700" aria-label="Fälligkeitsdatum" />
+                    <button type="button" onClick={() => setNewCommentDueDate(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10))} className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-red-200 text-red-700 bg-white">+1 Tag</button>
+                    <button type="button" onClick={() => setNewCommentDueDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))} className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-red-200 text-red-700 bg-white">+7 Tage</button>
+                  </>}
                   <button
-                    onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment.trim(), priority: newCommentPriority })}
+                    onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment.trim(), priority: newCommentPriority, dueDate: newCommentPriority === "urgent" ? newCommentDueDate || null : null })}
                     disabled={createComment.isPending || !newComment.trim()}
                     className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity"
                     style={{ backgroundColor: "#76B900" }}
@@ -2185,7 +2200,10 @@ function PrivateNotesLibrary() {
                     <div><p className="text-xs font-semibold text-gray-800">#{note.thesisRequestId} · {note.thesisTitle}</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{note.content}</p></div>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${note.priority === "urgent" ? "bg-red-100 text-red-700" : note.priority === "important" ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>{note.priority === "urgent" ? "Dringend" : note.priority === "important" ? "Wichtig" : "Normal"}</span>
                   </div>
-                  <p className="mt-2 text-[11px] text-gray-400">{new Date(note.createdAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</p>
+                  <p className={`mt-2 text-[11px] ${note.dueAt && new Date(note.dueAt).getTime() < Date.now() ? "font-semibold text-red-700" : "text-gray-400"}`}>
+                    {note.dueAt ? `${new Date(note.dueAt).getTime() < Date.now() ? "Fälligkeit überschritten" : "Fällig am"}: ${new Date(note.dueAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })} · ` : ""}
+                    {new Date(note.createdAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
                 </article>
               ))}
             </div>

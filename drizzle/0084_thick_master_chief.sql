@@ -1,0 +1,1 @@
+ALTER TABLE `examiner_comments` ADD `due_at` datetime;

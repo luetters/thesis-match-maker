@@ -1088,11 +1088,12 @@ async function exportMyNotesCsv(req: Request, res: Response) {
   if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
   const notes = await searchExaminerComments({ examinerId: user.id, ...getNoteExportFilters(req) });
   const rows = [
-    ["Anfrage-ID", "Thema", "Priorität", "Notiz", "Erstellt am", "Zuletzt bearbeitet"],
+    ["Anfrage-ID", "Thema", "Priorität", "Fällig am", "Notiz", "Erstellt am", "Zuletzt bearbeitet"],
     ...notes.map((note) => [
       note.thesisRequestId,
       note.thesisTitle,
       note.priority,
+      note.dueAt ? new Date(note.dueAt).toLocaleDateString("de-DE") : "",
       note.content,
       new Date(note.createdAt).toLocaleString("de-DE"),
       new Date(note.updatedAt).toLocaleString("de-DE"),
@@ -1121,7 +1122,7 @@ async function exportMyNotesPdf(req: Request, res: Response) {
   for (const note of notes) {
     doc.font("Helvetica").fontSize(9);
     const bodyHeight = doc.heightOfString(note.content, { width: width - 20 });
-    if (y + bodyHeight + 72 > doc.page.height - 55) {
+    if (y + bodyHeight + 86 > doc.page.height - 55) {
       doc.addPage();
       drawHeader(doc, "Private Anfragenotizen", subtitle);
       y = 82;
@@ -1130,7 +1131,13 @@ async function exportMyNotesPdf(req: Request, res: Response) {
     y = doc.y + 2;
     doc.fillColor(priorityColors[note.priority] ?? GRAY).font("Helvetica-Bold").fontSize(8).text(priorityLabels[note.priority] ?? "Normal", margin, y);
     doc.fillColor(GRAY).font("Helvetica").fontSize(8).text(new Date(note.createdAt).toLocaleString("de-DE"), margin + 90, y, { width: width - 90 });
-    y = doc.y + 4;
+    y = doc.y + 2;
+    if (note.dueAt) {
+      doc.fillColor(priorityColors[note.priority] ?? GRAY).font("Helvetica-Bold").fontSize(8).text(`Fällig am: ${new Date(note.dueAt).toLocaleDateString("de-DE")}`, margin, y, { width });
+      y = doc.y + 4;
+    } else {
+      y += 4;
+    }
     doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(note.content, margin, y, { width });
     y = doc.y + 14;
   }
