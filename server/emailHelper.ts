@@ -133,7 +133,7 @@ function buildEmailHtml({
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="width: 40px; height: 40px; text-align: center; vertical-align: middle;">
-                    <img src="https://thesismatch.manus.space/manus-storage/thesis-logo-512_6fcdaa04.png" alt="Logo" width="40" height="40" style="display: block; border-radius: 8px;" />
+                    <img src="${process.env.SITE_URL || 'https://thesis.htw-berlin.com'}/manus-storage/thesis-logo-512_6fcdaa04.png" alt="Logo" width="40" height="40" style="display: block; border-radius: 8px;" />
                   </td>
                   <td style="padding-left: 12px;">
                     <div style="color: #ffffff; font-weight: 700; font-size: 16px;">Thesis Match</div>

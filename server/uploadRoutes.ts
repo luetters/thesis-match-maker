@@ -7,7 +7,8 @@ import { generateThesisPdf } from "./thesisPdf";
 import { hasCompleteCommission } from "./thesisRegistrationDocument";
 import crypto from "crypto";
 import { generateDeadlineIcs, createIcsEvent } from "./icsHelper";
-import { storagePut } from "./storage";
+import { storagePut, getStorageMode, localReadFile, s3ReadFile } from "./storageLocal";
+import { lookup as mimeLookup } from "mime-types";
 import { COOKIE_NAME, buildFullName } from "@shared/const";
 
 /** Authentifiziert einen Request anhand des Session-Cookies ohne upsertUser-Seiteneffekte */
@@ -312,25 +313,41 @@ export function registerUploadRoutes(app: Express) {
         res.set("Cache-Control", "private, no-store");
       }
     }
-    const forgeApiUrl = process.env.BUILT_IN_FORGE_API_URL;
-    const forgeApiKey = process.env.BUILT_IN_FORGE_API_KEY;
-    if (!forgeApiUrl || !forgeApiKey) { res.status(500).send("Not configured"); return; }
+    const mode = getStorageMode();
     try {
-      const forgeUrl = new URL("v1/storage/presign/get", forgeApiUrl.replace(/\/+$/, "") + "/");
-      forgeUrl.searchParams.set("path", key);
-      const forgeResp = await fetch(forgeUrl.toString(), {
-        headers: { Authorization: `Bearer ${forgeApiKey}` },
-      });
-      if (!forgeResp.ok) { res.status(502).send("Storage backend error"); return; }
-      const { url } = (await forgeResp.json()) as { url: string };
-      if (!url) { res.status(502).send("Empty URL"); return; }
-      const imgResp = await fetch(url);
-      if (!imgResp.ok) { res.status(imgResp.status).send("Upstream error"); return; }
-      const contentType = imgResp.headers.get("content-type") ?? "application/octet-stream";
-      res.set("Content-Type", contentType);
-      if (!isPrivate) res.set("Cache-Control", "public, max-age=3600");
-      const buf = await imgResp.arrayBuffer();
-      res.send(Buffer.from(buf));
+      if (mode === "local") {
+        const { data, exists } = localReadFile(key);
+        if (!exists) { res.status(404).send("Not found"); return; }
+        const ct = mimeLookup(key) || "application/octet-stream";
+        res.set("Content-Type", ct);
+        if (!isPrivate) res.set("Cache-Control", "public, max-age=3600");
+        res.send(data);
+      } else if (mode === "s3") {
+        const { data, exists } = await s3ReadFile(key);
+        if (!exists) { res.status(404).send("Not found"); return; }
+        const ct = mimeLookup(key) || "application/octet-stream";
+        res.set("Content-Type", ct);
+        if (!isPrivate) res.set("Cache-Control", "public, max-age=3600");
+        res.send(data);
+      } else {
+        // Forge-Modus (Bestand)
+        const forgeApiUrl = process.env.BUILT_IN_FORGE_API_URL;
+        const forgeApiKey = process.env.BUILT_IN_FORGE_API_KEY;
+        if (!forgeApiUrl || !forgeApiKey) { res.status(500).send("Not configured"); return; }
+        const forgeUrl = new URL("v1/storage/presign/get", forgeApiUrl.replace(/\/+$/, "") + "/");
+        forgeUrl.searchParams.set("path", key);
+        const forgeResp = await fetch(forgeUrl.toString(), { headers: { Authorization: `Bearer ${forgeApiKey}` } });
+        if (!forgeResp.ok) { res.status(502).send("Storage backend error"); return; }
+        const { url } = (await forgeResp.json()) as { url: string };
+        if (!url) { res.status(502).send("Empty URL"); return; }
+        const imgResp = await fetch(url);
+        if (!imgResp.ok) { res.status(imgResp.status).send("Upstream error"); return; }
+        const contentType = imgResp.headers.get("content-type") ?? "application/octet-stream";
+        res.set("Content-Type", contentType);
+        if (!isPrivate) res.set("Cache-Control", "public, max-age=3600");
+        const buf = await imgResp.arrayBuffer();
+        res.send(Buffer.from(buf));
+      }
     } catch (err) {
       console.error("[StorageProxy/api] failed:", err);
       res.status(502).send("Storage proxy error");

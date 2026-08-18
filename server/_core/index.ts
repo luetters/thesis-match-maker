@@ -18,6 +18,7 @@ import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import { maintenanceMiddleware } from "../maintenanceMiddleware";
+import { startScheduler } from "../scheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -102,12 +103,24 @@ async function startServer() {
   // den Heartbeat authentifiziert und wird nie aus dem Request-Body gelesen.
   app.post("/api/scheduled/colloquium-scheduling-reminders", async (req, res) => {
     try {
-      const cronUser = await sdk.authenticateRequest(req);
-      if (!cronUser.isCron || !cronUser.taskUid) {
-        return res.status(403).json({ error: "cron-only" });
+      // Eigenständiger Modus: CRON_SECRET-Header prüfen
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret && req.headers["x-cron-secret"] === cronSecret) {
+        // Authentifiziert über lokalen Cron-Schlüssel
+        const result = await processColloquiumSchedulingReminders("local-cron");
+        return res.json(result);
       }
-      const result = await processColloquiumSchedulingReminders(cronUser.taskUid);
-      return res.json(result);
+      // Manus Heartbeat: SDK-Authentifizierung
+      try {
+        const cronUser = await sdk.authenticateRequest(req);
+        if (!cronUser.isCron || !cronUser.taskUid) {
+          return res.status(403).json({ error: "cron-only" });
+        }
+        const result = await processColloquiumSchedulingReminders(cronUser.taskUid);
+        return res.json(result);
+      } catch {
+        return res.status(403).json({ error: "Nicht autorisiert." });
+      }
     } catch (error) {
       console.error("[ColloquiumSchedulingHeartbeat]", error);
       return res.status(500).json({ error: "Die geplante Verarbeitung konnte nicht abgeschlossen werden." });
@@ -116,11 +129,21 @@ async function startServer() {
   // Heartbeat: tägliche, einmalige Erinnerung bei abgelaufener 2FA-Einrichtungsfrist.
   app.post("/api/scheduled/two-factor-overdue-reminders", async (req, res) => {
     try {
-      const cronUser = await sdk.authenticateRequest(req);
-      if (!cronUser.isCron || !cronUser.taskUid) {
-        return res.status(403).json({ error: "cron-only" });
+      // Eigenständiger Modus: CRON_SECRET-Header prüfen
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret && req.headers["x-cron-secret"] === cronSecret) {
+        return res.json(await processOverdueTwoFactorReminders("local-cron"));
       }
-      return res.json(await processOverdueTwoFactorReminders(cronUser.taskUid));
+      // Manus Heartbeat: SDK-Authentifizierung
+      try {
+        const cronUser = await sdk.authenticateRequest(req);
+        if (!cronUser.isCron || !cronUser.taskUid) {
+          return res.status(403).json({ error: "cron-only" });
+        }
+        return res.json(await processOverdueTwoFactorReminders(cronUser.taskUid));
+      } catch {
+        return res.status(403).json({ error: "Nicht autorisiert." });
+      }
     } catch (error) {
       console.error("[TwoFactorReminderHeartbeat]", error);
       return res.status(500).json({ error: "Die geplante 2FA-Erinnerung konnte nicht abgeschlossen werden." });
@@ -158,6 +181,8 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Eigenständigen Scheduler starten (nur wenn SCHEDULER_ENABLED=true)
+    startScheduler(port);
   });
 }
 

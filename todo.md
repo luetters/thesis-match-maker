@@ -1756,3 +1756,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Checkbox zum Abschließen und Wiederöffnen einer dringenden Notiz ergänzen
 - [x] Erledigte Notizen aus der aktiven Ansicht ausblenden und optional sichtbar machen
 - [x] Erledigtstatus in Suche und Exporten ergänzen sowie automatisiert testen
+
+## IONOS-Migration vorbereiten
+- [x] Dateispeicher-Adapter: lokales Dateisystem + optionaler IONOS S3-Modus (server/storageLocal.ts)
+- [x] Hintergrundjobs: Manus Heartbeat durch node-cron im selben Prozess ersetzen (server/scheduler.ts)
+- [x] Statische Assets: E-Mail-Logo-URLs auf konfigurierbare SITE_URL umgestellt
+- [x] OAuth-Fallback: Sitzungsverwaltung bleibt eigenständig (JWT + Passwort + optional SAML)
+- [x] Docker-Konfiguration: deploy/Dockerfile, deploy/docker-compose.yml
+- [x] Umgebungsvariablen: deploy/env.example.md mit allen erforderlichen Werten
+- [x] Migrationsdokumentation: docs/IONOS_Migrationsleitfaden.md
+- [x] Tests und TypeScript-Prüfung: 0 Fehler, 20 relevante Tests bestanden

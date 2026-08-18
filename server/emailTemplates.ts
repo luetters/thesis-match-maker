@@ -7,7 +7,7 @@
 export type Lang = "de" | "en";
 
 const SITE_URL_BASE = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
-const LOGO_URL = `${SITE_URL_BASE}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
+const LOGO_URL = `${process.env.SITE_URL || SITE_URL_BASE}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
 
 const FOOTER_NOTE_DE = "Dies ist eine automatisch generierte E-Mail vom Thesis Match Maker der HTW Berlin.";
 const FOOTER_NOTE_EN = "This is an automatically generated email from the Thesis Match Maker of HTW Berlin.";

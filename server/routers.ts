@@ -249,7 +249,7 @@ import {
   setPollReminderTaskUid,
   submitColloquiumSchedulingAvailability,
 } from "./colloquiumScheduling";
-import { storagePut } from "./storage";
+import { storagePut } from "./storageLocal";
 import { sendExaminerCTAEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, defenseEligibilityEmail, directAssignmentEmail, defaultExaminerTemplate, buildExaminerReminderEmail, type Lang } from "./emailTemplates";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -5647,7 +5647,7 @@ export const appRouter = router({
           name: ctx.user.name,
         });
         const registerUrl = `${input.origin}/register?inviteToken=${token}`;
-        const logoUrl = "https://storage.manus.space/public/manus-webdev-static/thesis-match-logo-1746007561.png";
+        const logoUrl = `${process.env.SITE_URL || 'https://thesis.htw-berlin.com'}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
         const subject = `Einladung zur Registrierung / Invitation to register – HTW Berlin Thesis Match Maker`;
         const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
