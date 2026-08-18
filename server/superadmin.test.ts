@@ -342,12 +342,12 @@ describe("superadmin.updateUserStatus", () => {
 describe("superadmin.getTwoFactorEnrollmentGaps", () => {
   it("zeigt nur die Konten an, deren verpflichtende 2FA noch aussteht", async () => {
     const { getSystemSettings, getUsersMissingRequiredTwoFactor } = await import("./db");
-    vi.mocked(getSystemSettings).mockResolvedValueOnce([{ key: "twoFactorRequiredRoles", value: JSON.stringify(["examiner"]), updatedById: 1, updatedAt: new Date() } as any]);
+    vi.mocked(getSystemSettings).mockResolvedValueOnce([{ key: "twoFactorRequiredRoles", value: JSON.stringify(["examiner"]), updatedById: 1, updatedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString() } as any]);
     const context = createSuperadminContext();
     context.user = { ...context.user!, role: "superadmin" };
     const caller = appRouter.createCaller(context);
     const result = await caller.superadmin.getTwoFactorEnrollmentGaps();
     expect(getUsersMissingRequiredTwoFactor).toHaveBeenCalledWith(["examiner"]);
-    expect(result).toEqual(expect.arrayContaining([expect.objectContaining({ id: 17, role: "examiner" })]));
+    expect(result).toEqual(expect.arrayContaining([expect.objectContaining({ id: 17, role: "examiner", twoFactorOverdue: true })]));
   });
 });

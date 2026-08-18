@@ -2921,7 +2921,8 @@ export const appRouter = router({
     /** Konten mit verpflichtender, aber noch nicht eingerichteter Zwei-Faktor-Authentifizierung. */
     getTwoFactorEnrollmentGaps: superadminProcedure.query(async () => {
       const settings = await getSystemSettings();
-      const rawRoles = settings.find((setting) => setting.key === "twoFactorRequiredRoles")?.value ?? "[]";
+      const requiredRolesSetting = settings.find((setting) => setting.key === "twoFactorRequiredRoles");
+      const rawRoles = requiredRolesSetting?.value ?? "[]";
       let requiredRoles: string[] = [];
       try {
         const parsed = JSON.parse(rawRoles);
@@ -2929,7 +2930,16 @@ export const appRouter = router({
       } catch {
         requiredRoles = [];
       }
-      return getUsersMissingRequiredTwoFactor(requiredRoles);
+      const activationDate = requiredRolesSetting?.updatedAt ? new Date(requiredRolesSetting.updatedAt) : new Date();
+      const deadline = new Date(activationDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const overdue = Date.now() > deadline.getTime();
+      const users = await getUsersMissingRequiredTwoFactor(requiredRoles);
+      return users.map((user) => ({
+        ...user,
+        twoFactorRequirementActivatedAt: activationDate.toISOString(),
+        twoFactorDeadline: deadline.toISOString(),
+        twoFactorOverdue: overdue,
+      }));
     }),
 
     /** Alle Nutzer:innen mit Rollen (SuperAdmin) */

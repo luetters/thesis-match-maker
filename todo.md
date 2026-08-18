@@ -1710,3 +1710,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Berechtigte Serverabfrage für Personen mit verpflichtender, noch nicht aktivierter 2FA ergänzen
 - [x] Liste mit Name, E-Mail und Rolle im Superadmin-Dashboard integrieren
 - [x] Automatisierte Tests sowie TypeScript-Prüfung durchführen
+
+## Warnung bei überfälliger verpflichtender 2FA
+- [x] Konfigurierbare Frist und Überfälligkeitslogik für ausstehende 2FA-Einrichtungen ergänzen
+- [x] Überfällige Konten in der Superadmin-Liste farblich und mit Warnsymbol hervorheben
+- [x] Automatisierte Tests sowie TypeScript-Prüfung durchführen
+- [x] Globale 30-Tage-Frist ab Aktivierung der Rollenpflicht umsetzen
