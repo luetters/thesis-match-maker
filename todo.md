@@ -1733,3 +1733,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Erinnerung nur einmal je überfälliger Rollenpflicht versenden und protokollieren
 - [x] E-Mail in Deutsch und Englisch mit sicherem Link zur 2FA-Einrichtung versenden
 - [x] Automatisierung testen, veröffentlichen und aktivieren
+
+## Fehlerbehebung für Anfragenotizen
+- [x] Notizformular, Serverprozedur und Datenmodell auf den Speicherfehler prüfen
+- [x] Dauerhaftes Speichern und datierte Anzeige von Notizen korrigieren
+- [x] Notizspeicherung automatisiert testen und veröffentlichen

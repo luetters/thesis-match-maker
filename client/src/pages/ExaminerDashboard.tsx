@@ -718,7 +718,6 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [sendEmailAfter, setSendEmailAfter] = useState(true);
-  const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
@@ -789,12 +788,13 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
   const { data: comments, isLoading: commentsLoading } = trpc.examinerComments.list.useQuery(
     { thesisRequestId: req.id },
-    { enabled: showComments }
+    { enabled: showDetails && Boolean(req.id) }
   );
   const createComment = trpc.examinerComments.create.useMutation({
     onSuccess: () => {
       setNewComment("");
       utils.examinerComments.list.invalidate({ thesisRequestId: req.id });
+      toast.success("Notiz wurde gespeichert.");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -1177,7 +1177,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                   className="w-full text-sm border border-amber-200 rounded-b-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300/60 bg-amber-50/50"
                 />
                 <button
-                  onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment })}
+                  onClick={() => createComment.mutate({ thesisRequestId: req.id, content: newComment.trim() })}
                   disabled={createComment.isPending || !newComment.trim()}
                   className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity"
                   style={{ backgroundColor: "#76B900" }}
