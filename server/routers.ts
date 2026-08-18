@@ -3242,6 +3242,64 @@ export const appRouter = router({
         }
         return { success: true, note: "Änderungen werden nach einem Neustart des Servers wirksam (Umgebungsvariablen haben Vorrang vor DB-Einstellungen)." };
       }),
+
+    /** S3-Verbindungstest mit den eingegebenen Zugangsdaten */
+    testS3Connection: superadminProcedure
+      .input(z.object({
+        endpoint: z.string().min(1),
+        bucket: z.string().min(1),
+        region: z.string().default("de"),
+        accessKey: z.string().min(1),
+        secretKey: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { S3Client, HeadBucketCommand } = await import("@aws-sdk/client-s3");
+          const client = new S3Client({
+            endpoint: input.endpoint.startsWith("http") ? input.endpoint : `https://${input.endpoint}`,
+            region: input.region,
+            credentials: { accessKeyId: input.accessKey, secretAccessKey: input.secretKey },
+            forcePathStyle: true,
+          });
+          await client.send(new HeadBucketCommand({ Bucket: input.bucket }));
+          return { success: true, message: `Verbindung zu Bucket „${input.bucket}" erfolgreich hergestellt.` };
+        } catch (err: any) {
+          const msg = err?.message ?? "Unbekannter Fehler";
+          const code = err?.$metadata?.httpStatusCode;
+          if (code === 403) return { success: false, message: "Zugriff verweigert – bitte Access Key und Secret Key prüfen." };
+          if (code === 404) return { success: false, message: `Bucket „${input.bucket}" nicht gefunden.` };
+          return { success: false, message: `Verbindung fehlgeschlagen: ${msg}` };
+        }
+      }),
+
+    /** Backup-Konfiguration lesen und speichern */
+    getBackupConfig: superadminProcedure.query(async () => {
+      const settings = await getSystemSettings();
+      const map: Record<string, string> = {};
+      for (const r of settings) map[r.key] = r.value;
+      return {
+        backupEnabled: map["backupEnabled"] === "true",
+        backupInterval: map["backupInterval"] || "daily",
+        backupTime: map["backupTime"] || "03:00",
+        backupRetentionDays: parseInt(map["backupRetentionDays"] || "30", 10),
+        lastBackup: map["lastBackupAt"] || null,
+      };
+    }),
+
+    updateBackupConfig: superadminProcedure
+      .input(z.object({
+        backupEnabled: z.boolean(),
+        backupInterval: z.enum(["hourly", "daily", "weekly"]),
+        backupTime: z.string().regex(/^\d{2}:\d{2}$/).default("03:00"),
+        backupRetentionDays: z.number().int().min(1).max(365).default(30),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await upsertSystemSetting("backupEnabled", String(input.backupEnabled), ctx.user.id);
+        await upsertSystemSetting("backupInterval", input.backupInterval, ctx.user.id);
+        await upsertSystemSetting("backupTime", input.backupTime, ctx.user.id);
+        await upsertSystemSetting("backupRetentionDays", String(input.backupRetentionDays), ctx.user.id);
+        return { success: true, note: "Backup-Konfiguration gespeichert. Änderungen werden beim nächsten Scheduler-Durchlauf wirksam." };
+      }),
   }),
   // --- System: SMTP-Verbindungstest ---
   system2: router({

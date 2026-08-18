@@ -1774,3 +1774,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Export-Funktion: statische Assets und Datenbank als ZIP herunterladen
 - [x] Superadmin-Oberfläche: Konfiguration, Status und Export in einem Tab zusammenfassen
 - [x] Tests und TypeScript-Prüfung: 0 Fehler, 10 relevante Tests bestanden
+
+## Infrastruktur-Erweiterungen
+- [x] S3-Verbindungstest: Button zum Prüfen der eingegebenen Zugangsdaten (IONOS + Hetzner)
+- [x] Backup-Konfiguration: Intervalle für automatische System-Backups über den Scheduler
+- [x] Migrationsassistent: Interaktiver 7-Schritte-Assistent im Dashboard
+- [x] Tests und TypeScript-Prüfung: 0 Fehler, 10 relevante Tests bestanden

@@ -23,6 +23,22 @@ function InfrastructureTab() {
     },
     onError: (err) => toast.error(err.message),
   });
+  const testS3 = trpc.superadmin.testS3Connection.useMutation({
+    onSuccess: (data) => {
+      if (data.success) toast.success(data.message);
+      else toast.error(data.message);
+      setS3TestResult(data);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const backupConfig = trpc.superadmin.getBackupConfig.useQuery();
+  const updateBackup = trpc.superadmin.updateBackupConfig.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.note || "Backup-Konfiguration gespeichert.");
+      backupConfig.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
   const [configForm, setConfigForm] = useState({
     siteUrl: "",
     emailLogoUrl: "",
@@ -33,6 +49,15 @@ function InfrastructureTab() {
     s3SecretKey: "",
   });
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [s3TestResult, setS3TestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [backupForm, setBackupForm] = useState({
+    backupEnabled: false,
+    backupInterval: "daily" as "hourly" | "daily" | "weekly",
+    backupTime: "03:00",
+    backupRetentionDays: 30,
+  });
+  const [backupLoaded, setBackupLoaded] = useState(false);
+  const [migrationStep, setMigrationStep] = useState(0);
 
   useEffect(() => {
     if (infraStatus.data && !configLoaded) {
@@ -49,6 +74,18 @@ function InfrastructureTab() {
       setConfigLoaded(true);
     }
   }, [infraStatus.data, configLoaded]);
+
+  useEffect(() => {
+    if (backupConfig.data && !backupLoaded) {
+      setBackupForm({
+        backupEnabled: backupConfig.data.backupEnabled,
+        backupInterval: backupConfig.data.backupInterval as "hourly" | "daily" | "weekly",
+        backupTime: backupConfig.data.backupTime,
+        backupRetentionDays: backupConfig.data.backupRetentionDays,
+      });
+      setBackupLoaded(true);
+    }
+  }, [backupConfig.data, backupLoaded]);
 
   if (infraStatus.isLoading) return <div className="text-center py-8 text-gray-500">Lade Infrastruktur-Status…</div>;
 
@@ -133,19 +170,235 @@ function InfrastructureTab() {
             <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="/manus-storage/ThesisMatchMaker.jpg" value={configForm.emailLogoUrl} onChange={(e) => setConfigForm(f => ({ ...f, emailLogoUrl: e.target.value }))} />
           </div>
         </div>
+        <div className="flex gap-3 mt-4">
+          <button
+            className="px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
+            disabled={updateConfig.isPending}
+            onClick={() => {
+              const payload: Record<string, string> = {};
+              for (const [k, v] of Object.entries(configForm)) {
+                if (v) payload[k] = v;
+              }
+              updateConfig.mutate(payload as any);
+            }}
+          >
+            {updateConfig.isPending ? "Wird gespeichert…" : "Konfiguration speichern"}
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            disabled={testS3.isPending || !configForm.s3Endpoint || !configForm.s3Bucket || !configForm.s3AccessKey || !configForm.s3SecretKey}
+            onClick={() => {
+              setS3TestResult(null);
+              testS3.mutate({
+                endpoint: configForm.s3Endpoint,
+                bucket: configForm.s3Bucket,
+                region: configForm.s3Region || "de",
+                accessKey: configForm.s3AccessKey,
+                secretKey: configForm.s3SecretKey,
+              });
+            }}
+          >
+            {testS3.isPending ? "Teste…" : "🔌 Verbindung testen"}
+          </button>
+        </div>
+        {s3TestResult && (
+          <div className={`mt-3 p-3 rounded-lg text-sm ${s3TestResult.success ? "bg-green-50 border border-green-200 text-green-800" : "bg-red-50 border border-red-200 text-red-800"}`}>
+            {s3TestResult.success ? "✅" : "❌"} {s3TestResult.message}
+          </div>
+        )}
+      </div>
+
+      {/* Backup-Konfiguration */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 text-base mb-2">Automatische Backups</h3>
+        <p className="text-sm text-gray-500 mb-4">Konfigurieren Sie die Intervalle für automatische System-Backups. Backups werden über den Scheduler ausgeführt und erfordern einen konfigurierten S3-Speicher.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${backupForm.backupEnabled ? "bg-green-600" : "bg-gray-300"}`}
+                onClick={() => setBackupForm(f => ({ ...f, backupEnabled: !f.backupEnabled }))}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${backupForm.backupEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+              <span className="text-sm text-gray-600">{backupForm.backupEnabled ? "Aktiviert" : "Deaktiviert"}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Intervall</label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" value={backupForm.backupInterval} onChange={(e) => setBackupForm(f => ({ ...f, backupInterval: e.target.value as any }))}>
+              <option value="hourly">Stündlich</option>
+              <option value="daily">Täglich</option>
+              <option value="weekly">Wöchentlich</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit (UTC)</label>
+            <input type="time" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" value={backupForm.backupTime} onChange={(e) => setBackupForm(f => ({ ...f, backupTime: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Aufbewahrung (Tage)</label>
+            <input type="number" min={1} max={365} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" value={backupForm.backupRetentionDays} onChange={(e) => setBackupForm(f => ({ ...f, backupRetentionDays: parseInt(e.target.value) || 30 }))} />
+          </div>
+        </div>
+        {backupConfig.data?.lastBackup && (
+          <p className="text-xs text-gray-500 mt-3">Letztes Backup: {new Date(backupConfig.data.lastBackup).toLocaleString("de-DE")}</p>
+        )}
         <button
           className="mt-4 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-          disabled={updateConfig.isPending}
-          onClick={() => {
-            const payload: Record<string, string> = {};
-            for (const [k, v] of Object.entries(configForm)) {
-              if (v) payload[k] = v;
-            }
-            updateConfig.mutate(payload as any);
-          }}
+          disabled={updateBackup.isPending}
+          onClick={() => updateBackup.mutate(backupForm)}
         >
-          {updateConfig.isPending ? "Wird gespeichert…" : "Konfiguration speichern"}
+          {updateBackup.isPending ? "Wird gespeichert…" : "Backup-Konfiguration speichern"}
         </button>
+      </div>
+
+      {/* Migrationsassistent */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 text-base mb-2">Migrationsassistent</h3>
+        <p className="text-sm text-gray-500 mb-4">Schritt-für-Schritt-Anleitung für den Umzug auf einen eigenen Server (IONOS, Hetzner oder andere).</p>
+        {(() => {
+          const steps = [
+            {
+              title: "1. Server vorbereiten",
+              description: "Richten Sie einen Linux-Server (Ubuntu 22.04+) mit Docker und Docker Compose ein.",
+              details: [
+                "Mindestanforderungen: 2 vCPU, 4 GB RAM, 40 GB SSD",
+                "Docker und Docker Compose installieren: apt install docker.io docker-compose-plugin",
+                "Domain (z. B. thesis.htw-berlin.com) auf die neue Server-IP umleiten",
+                "SSL-Zertifikat vorbereiten (Let's Encrypt empfohlen)",
+              ],
+              check: "Docker-Version prüfen: docker --version",
+            },
+            {
+              title: "2. S3-Speicher einrichten",
+              description: "Erstellen Sie einen S3-kompatiblen Object Storage bei IONOS oder Hetzner.",
+              details: [
+                "IONOS: Cloud Panel → Object Storage → Bucket erstellen",
+                "Hetzner: Cloud Console → Object Storage → Bucket erstellen",
+                "Access Key und Secret Key generieren",
+                "Testen Sie die Verbindung oben im Abschnitt 'Speicher-Konfiguration'",
+              ],
+              check: "Verbindungstest oben durchführen",
+            },
+            {
+              title: "3. Datenbank migrieren",
+              description: "Exportieren Sie die aktuelle Datenbank und importieren Sie sie auf dem neuen Server.",
+              details: [
+                "Aktuellen Dump erstellen: mysqldump über die Datenbankverwaltung",
+                "MySQL 8.0+ auf dem Zielserver installieren oder als Docker-Container starten",
+                "Dump importieren: mysql -u root -p thesis_match < dump.sql",
+                "DATABASE_URL in der .env-Datei anpassen",
+              ],
+              check: "Tabellen prüfen: mysql -e 'SHOW TABLES' thesis_match",
+            },
+            {
+              title: "4. Migrations-ZIP herunterladen",
+              description: "Laden Sie alle Projektdateien, Konfigurationen und Assets herunter.",
+              details: [
+                "Klicken Sie unten auf 'Migrations-ZIP herunterladen'",
+                "ZIP auf dem Zielserver entpacken",
+                "deploy/docker-compose.yml und deploy/Dockerfile prüfen",
+                ".env-Datei aus deploy/env.example.md erstellen und ausfüllen",
+              ],
+              check: "Dateien prüfen: ls -la deploy/ drizzle/ docs/",
+            },
+            {
+              title: "5. Umgebungsvariablen konfigurieren",
+              description: "Erstellen Sie die .env-Datei mit allen erforderlichen Werten.",
+              details: [
+                "DATABASE_URL: mysql://user:pass@host:3306/thesis_match",
+                "JWT_SECRET: Zufälliger 64-Zeichen-String (openssl rand -hex 32)",
+                "SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS: E-Mail-Server",
+                "S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY: Speicher",
+                "SITE_URL: Öffentliche URL des Portals",
+                "SCHEDULER_ENABLED=true: Hintergrundjobs aktivieren",
+                "CRON_SECRET: Zufälliger String für Scheduler-Authentifizierung",
+              ],
+              check: "Variablen prüfen: cat .env | grep -v SECRET",
+            },
+            {
+              title: "6. Container starten und testen",
+              description: "Starten Sie die Anwendung mit Docker Compose und prüfen Sie die Funktionalität.",
+              details: [
+                "docker compose up -d --build",
+                "Logs prüfen: docker compose logs -f app",
+                "Portal im Browser öffnen und Anmeldung testen",
+                "E-Mail-Versand testen (Admin → SMTP-Test)",
+                "Speicher testen (Profilbild hochladen)",
+              ],
+              check: "docker compose ps -- alle Container sollten 'running' zeigen",
+            },
+            {
+              title: "7. DNS und SSL umstellen",
+              description: "Leiten Sie die Domain auf den neuen Server um und aktivieren Sie HTTPS.",
+              details: [
+                "DNS A-Record auf die neue Server-IP ändern",
+                "Let's Encrypt mit Certbot: certbot --nginx -d thesis.htw-berlin.com",
+                "Nginx als Reverse Proxy konfigurieren (Port 3000 → 443)",
+                "HSTS-Header aktivieren",
+              ],
+              check: "curl -I https://thesis.htw-berlin.com – Status 200 erwartet",
+            },
+          ];
+          return (
+            <div>
+              {/* Fortschrittsleiste */}
+              <div className="flex items-center gap-1 mb-6">
+                {steps.map((_, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    <button
+                      onClick={() => setMigrationStep(i)}
+                      className={`w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center transition-all ${
+                        i < migrationStep ? "bg-green-600 text-white" :
+                        i === migrationStep ? "bg-blue-600 text-white ring-2 ring-blue-300" :
+                        "bg-gray-200 text-gray-500"
+                      }`}
+                    >
+                      {i < migrationStep ? "✓" : i + 1}
+                    </button>
+                    {i < steps.length - 1 && <div className={`w-6 h-0.5 ${i < migrationStep ? "bg-green-400" : "bg-gray-200"}`} />}
+                  </div>
+                ))}
+              </div>
+              {/* Aktueller Schritt */}
+              <div className="border border-blue-200 bg-blue-50 rounded-lg p-5">
+                <h4 className="font-semibold text-gray-900 text-sm mb-1">{steps[migrationStep].title}</h4>
+                <p className="text-sm text-gray-700 mb-3">{steps[migrationStep].description}</p>
+                <ul className="space-y-1 mb-3">
+                  {steps[migrationStep].details.map((d, i) => (
+                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                      <span className="text-blue-500 mt-0.5">•</span> {d}
+                    </li>
+                  ))}
+                </ul>
+                <div className="bg-gray-800 text-green-400 rounded-lg p-3 text-xs font-mono">
+                  $ {steps[migrationStep].check}
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-30"
+                    disabled={migrationStep === 0}
+                    onClick={() => setMigrationStep(s => s - 1)}
+                  >
+                    ← Zurück
+                  </button>
+                  <button
+                    className="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30"
+                    disabled={migrationStep === steps.length - 1}
+                    onClick={() => setMigrationStep(s => s + 1)}
+                  >
+                    Weiter →
+                  </button>
+                  {migrationStep === steps.length - 1 && (
+                    <span className="text-sm text-green-700 font-medium flex items-center gap-1">✅ Migration abgeschlossen</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Migrations-Export */}
