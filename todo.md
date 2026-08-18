@@ -1727,3 +1727,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Unsichere HTML-Darstellung der Biografien durch sichere Textdarstellung ersetzen
 - [x] Private Dokumente aus öffentlichen Storage-Abrufwegen herauslösen und autorisiert ausliefern
 - [x] Sicherheitsregressionen automatisiert testen und die Änderung veröffentlichen
+
+## Automatische Erinnerung bei überfälliger verpflichtender 2FA
+- [x] Täglichen, idempotenten Hintergrundprozess für überfällige 2FA-Einrichtungen einrichten
+- [x] Erinnerung nur einmal je überfälliger Rollenpflicht versenden und protokollieren
+- [x] E-Mail in Deutsch und Englisch mit sicherem Link zur 2FA-Einrichtung versenden
+- [ ] Automatisierung testen, veröffentlichen und aktivieren

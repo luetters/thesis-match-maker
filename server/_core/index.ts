@@ -13,6 +13,7 @@ import { registerMagicLinkRoutes } from "../magicLinkRoutes";
 import { registerSamlAuthRoutes } from "../samlAuthRoutes";
 import { appRouter } from "../routers";
 import { processColloquiumSchedulingReminders } from "../colloquiumScheduling";
+import { processOverdueTwoFactorReminders } from "../twoFactorReminder";
 import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
@@ -110,6 +111,19 @@ async function startServer() {
     } catch (error) {
       console.error("[ColloquiumSchedulingHeartbeat]", error);
       return res.status(500).json({ error: "Die geplante Verarbeitung konnte nicht abgeschlossen werden." });
+    }
+  });
+  // Heartbeat: tägliche, einmalige Erinnerung bei abgelaufener 2FA-Einrichtungsfrist.
+  app.post("/api/scheduled/two-factor-overdue-reminders", async (req, res) => {
+    try {
+      const cronUser = await sdk.authenticateRequest(req);
+      if (!cronUser.isCron || !cronUser.taskUid) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+      return res.json(await processOverdueTwoFactorReminders(cronUser.taskUid));
+    } catch (error) {
+      console.error("[TwoFactorReminderHeartbeat]", error);
+      return res.status(500).json({ error: "Die geplante 2FA-Erinnerung konnte nicht abgeschlossen werden." });
     }
   });
   // Wartungsmodus-Middleware (vor tRPC und statischen Dateien)

@@ -747,6 +747,18 @@ export const twoFactorRecoveryCodes = mysqlTable("two_factor_recovery_codes", {
   index("idx_tfrc_user").on(table.userId),
 ]);
 
+// ─── Protokoll automatisch versendeter 2FA-Erinnerungen ───────────────────────
+// Eine Erinnerung wird je Person und Konfigurationsstand der Rollenpflicht nur einmal versendet.
+export const twoFactorReminderEmails = mysqlTable("two_factor_reminder_emails", {
+  id: int().autoincrement().notNull().primaryKey(),
+  userId: int("user_id").notNull(),
+  requirementUpdatedAt: timestamp("requirement_updated_at", { mode: "string" }).notNull(),
+  sentAt: timestamp("sent_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+  index("idx_tfre_user").on(table.userId),
+  uniqueIndex("uq_tfre_user_requirement").on(table.userId, table.requirementUpdatedAt),
+]);
+
 // ─── Neue Prüfer:innen – Badge-Tracking ──────────────────────────────────────
 export const examinerSeenNotifications = mysqlTable("examiner_seen_notifications", {
   id: int().autoincrement().notNull().primaryKey(),

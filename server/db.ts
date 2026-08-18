@@ -1696,6 +1696,7 @@ export async function getUsersMissingRequiredTwoFactor(requiredRoles: string[]) 
       email: users.email,
       role: users.role,
       createdAt: users.createdAt,
+      preferredLanguage: users.preferredLanguage,
     })
     .from(users)
     .where(and(inArray(users.role, requiredRoles as any), eq(users.twoFactorEnabled, 0)))
