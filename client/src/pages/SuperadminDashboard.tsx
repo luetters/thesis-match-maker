@@ -12,6 +12,159 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getRoleBadge } from "@shared/const";
 import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
+
+// ─── Infrastruktur-Tab ──────────────────────────────────────────────────────
+function InfrastructureTab() {
+  const infraStatus = trpc.superadmin.getInfrastructureStatus.useQuery();
+  const updateConfig = trpc.superadmin.updateInfrastructureConfig.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.note || "Konfiguration gespeichert.");
+      infraStatus.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const [configForm, setConfigForm] = useState({
+    siteUrl: "",
+    emailLogoUrl: "",
+    s3Endpoint: "",
+    s3Bucket: "",
+    s3Region: "",
+    s3AccessKey: "",
+    s3SecretKey: "",
+  });
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  useEffect(() => {
+    if (infraStatus.data && !configLoaded) {
+      const c = infraStatus.data.config;
+      setConfigForm({
+        siteUrl: c.siteUrl || "",
+        emailLogoUrl: c.emailLogoUrl || "",
+        s3Endpoint: c.s3Endpoint || "",
+        s3Bucket: c.s3Bucket || "",
+        s3Region: c.s3Region || "",
+        s3AccessKey: "",
+        s3SecretKey: "",
+      });
+      setConfigLoaded(true);
+    }
+  }, [infraStatus.data, configLoaded]);
+
+  if (infraStatus.isLoading) return <div className="text-center py-8 text-gray-500">Lade Infrastruktur-Status…</div>;
+
+  const data = infraStatus.data;
+  const providerLabels: Record<string, string> = { forge: "Manus Forge", ionos: "IONOS S3", hetzner: "Hetzner Storage Box", local: "Lokales Dateisystem" };
+
+  return (
+    <div className="space-y-6">
+      {/* Status-Dashboard */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 text-base mb-4">Status-Dashboard</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Speicher-Status */}
+          <div className={`p-4 rounded-lg border ${data?.storage.healthy ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`w-3 h-3 rounded-full ${data?.storage.healthy ? "bg-green-500" : "bg-red-500"}`}></span>
+              <span className="font-medium text-gray-900">Dateispeicher</span>
+            </div>
+            <p className="text-sm text-gray-600">Modus: <strong>{data?.storage.mode}</strong></p>
+            <p className="text-sm text-gray-600">Anbieter: <strong>{providerLabels[data?.config.storageProvider || "local"]}</strong></p>
+            <p className="text-sm text-gray-600">{data?.storage.message}</p>
+            {data?.storage.bucket && <p className="text-sm text-gray-500">Bucket: {data.storage.bucket}</p>}
+            {data?.storage.endpoint && <p className="text-sm text-gray-500">Endpunkt: {data.storage.endpoint}</p>}
+          </div>
+          {/* Scheduler-Status */}
+          <div className={`p-4 rounded-lg border ${data?.scheduler.enabled ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`w-3 h-3 rounded-full ${data?.scheduler.enabled ? "bg-green-500" : "bg-yellow-500"}`}></span>
+              <span className="font-medium text-gray-900">Hintergrund-Scheduler</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {data?.scheduler.enabled ? `Aktiv (${data.scheduler.jobCount} Jobs)` : "Deaktiviert (Manus Heartbeat wird verwendet)"}
+            </p>
+            {data?.scheduler.jobs.map((job) => (
+              <div key={job.name} className="mt-2 text-xs text-gray-500 border-t border-gray-200 pt-2">
+                <p className="font-medium">{job.name}</p>
+                <p>Zeitplan: {job.schedule} UTC</p>
+                {job.lastExecution && (
+                  <p>Letzte Ausführung: {new Date(job.lastExecution.lastRun!).toLocaleString("de-DE")} – Status: {job.lastExecution.lastStatus ?? "Fehler"}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* S3-Konfiguration */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 text-base mb-2">Speicher-Konfiguration (S3)</h3>
+        <p className="text-sm text-gray-500 mb-4">Unterstützte Anbieter: IONOS Object Storage, Hetzner Storage Box. Umgebungsvariablen haben Vorrang vor diesen Einstellungen.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">S3-Endpunkt</label>
+            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="https://s3.eu-central-1.ionoscloud.com" value={configForm.s3Endpoint} onChange={(e) => setConfigForm(f => ({ ...f, s3Endpoint: e.target.value }))} />
+            <p className="text-xs text-gray-400 mt-1">IONOS: s3.eu-central-1.ionoscloud.com | Hetzner: fsn1.your-objectstorage.com</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bucket-Name</label>
+            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="thesis-match-storage" value={configForm.s3Bucket} onChange={(e) => setConfigForm(f => ({ ...f, s3Bucket: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="de" value={configForm.s3Region} onChange={(e) => setConfigForm(f => ({ ...f, s3Region: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Access Key</label>
+            <input type="password" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="••••••••" value={configForm.s3AccessKey} onChange={(e) => setConfigForm(f => ({ ...f, s3AccessKey: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
+            <input type="password" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="••••••••" value={configForm.s3SecretKey} onChange={(e) => setConfigForm(f => ({ ...f, s3SecretKey: e.target.value }))} />
+          </div>
+        </div>
+        <h4 className="font-medium text-gray-900 text-sm mt-6 mb-2">Allgemeine Einstellungen</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Site-URL</label>
+            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="https://thesis.htw-berlin.com" value={configForm.siteUrl} onChange={(e) => setConfigForm(f => ({ ...f, siteUrl: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail-Logo-URL</label>
+            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="/manus-storage/ThesisMatchMaker.jpg" value={configForm.emailLogoUrl} onChange={(e) => setConfigForm(f => ({ ...f, emailLogoUrl: e.target.value }))} />
+          </div>
+        </div>
+        <button
+          className="mt-4 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
+          disabled={updateConfig.isPending}
+          onClick={() => {
+            const payload: Record<string, string> = {};
+            for (const [k, v] of Object.entries(configForm)) {
+              if (v) payload[k] = v;
+            }
+            updateConfig.mutate(payload as any);
+          }}
+        >
+          {updateConfig.isPending ? "Wird gespeichert…" : "Konfiguration speichern"}
+        </button>
+      </div>
+
+      {/* Migrations-Export */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 text-base mb-2">Migrations-Export</h3>
+        <p className="text-sm text-gray-500 mb-4">Laden Sie alle statischen Assets, das Datenbankschema, die Docker-Konfiguration und die Migrationsdokumentation als ZIP-Datei herunter.</p>
+        <a
+          href="/api/admin/export/migration"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          download
+        >
+          <span>📦</span> Migrations-ZIP herunterladen
+        </a>
+        <p className="text-xs text-gray-400 mt-2">Enthält: Storage-Assets, Drizzle-Migrationen, Dockerfile, docker-compose.yml, Migrationsleitfaden.</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -1011,6 +1164,7 @@ export default function SuperadminDashboard() {
     { id: "saml", label: "SAML 2.0", icon: "🔐" },
     { id: "email_templates", label: t.superadmin.tabs.emailTemplates, icon: "✉️" },
     { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
+    { id: "infrastructure", label: "Infrastruktur", icon: "🖥️" },
   ];
 
   useEffect(() => {
@@ -1067,6 +1221,7 @@ export default function SuperadminDashboard() {
       {activeTab === "saml" && <SamlConfigurationTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "admin_management" && <AdminManagementTab />}
+      {activeTab === "infrastructure" && <InfrastructureTab />}
     </ThesisDashboardLayout>
   );
 }

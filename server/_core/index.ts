@@ -19,6 +19,7 @@ import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import { maintenanceMiddleware } from "../maintenanceMiddleware";
 import { startScheduler } from "../scheduler";
+import { registerMigrationExportRoutes } from "../migrationExport";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -93,6 +94,7 @@ async function startServer() {
     "/api/trpc/auth.register",
   ], authenticationLimiter);
   registerStorageProxy(app);
+  registerMigrationExportRoutes(app);
   registerOAuthRoutes(app);
   registerUploadRoutes(app);
   registerExportRoutes(app);

@@ -1766,3 +1766,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Umgebungsvariablen: deploy/env.example.md mit allen erforderlichen Werten
 - [x] Migrationsdokumentation: docs/IONOS_Migrationsleitfaden.md
 - [x] Tests und TypeScript-Prüfung: 0 Fehler, 20 relevante Tests bestanden
+
+## Infrastruktur-Verwaltung im Superadmin-Bereich
+- [x] Hetzner S3 Storage Box als zusätzliche Option im Speicher-Adapter ergänzen
+- [x] Superadmin-Prozeduren: S3-Konfiguration, Logo-URLs lesen und speichern
+- [x] Status-Dashboard: Speicherverbindung und Scheduler-Ausführung visuell überwachen
+- [x] Export-Funktion: statische Assets und Datenbank als ZIP herunterladen
+- [x] Superadmin-Oberfläche: Konfiguration, Status und Export in einem Tab zusammenfassen
+- [x] Tests und TypeScript-Prüfung: 0 Fehler, 10 relevante Tests bestanden

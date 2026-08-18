@@ -8,6 +8,13 @@
  *
  * Die öffentliche API (storagePut, storageGet, storageGetSignedUrl) bleibt identisch.
  */
+/**
+ * Unterstützte S3-Anbieter (IONOS und Hetzner verwenden dasselbe S3-Protokoll):
+ *   - IONOS: S3_ENDPOINT=https://s3.eu-central-1.ionoscloud.com
+ *   - Hetzner: S3_ENDPOINT=https://fsn1.your-objectstorage.com (oder nbg1/hel1)
+ *
+ * Der Adapter erkennt den Anbieter anhand des Endpunkts für die Statusanzeige.
+ */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname } from "path";
@@ -240,4 +247,53 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
 
 export function getStorageMode(): StorageMode {
   return mode;
+}
+
+/** Gibt den erkannten S3-Anbieter zurück (für die Admin-Statusanzeige). */
+export function getStorageProvider(): "forge" | "ionos" | "hetzner" | "local" {
+  if (mode === "forge") return "forge";
+  if (mode === "local") return "local";
+  const endpoint = (process.env.S3_ENDPOINT ?? "").toLowerCase();
+  if (endpoint.includes("ionos")) return "ionos";
+  if (endpoint.includes("hetzner") || endpoint.includes("your-objectstorage")) return "hetzner";
+  return "ionos"; // Fallback für unbekannte S3-Endpunkte
+}
+
+/** Prüft die S3-Verbindung und gibt den Status zurück. */
+export async function checkStorageHealth(): Promise<{
+  mode: StorageMode;
+  provider: string;
+  healthy: boolean;
+  message: string;
+  bucket?: string;
+  endpoint?: string;
+}> {
+  const provider = getStorageProvider();
+  if (mode === "local") {
+    const dir = getLocalDir();
+    const exists = existsSync(dir);
+    return { mode, provider, healthy: exists, message: exists ? `Verzeichnis: ${dir}` : `Verzeichnis nicht vorhanden: ${dir}` };
+  }
+  if (mode === "forge") {
+    const { forgeUrl, forgeKey } = getForgeConfig();
+    try {
+      const resp = await fetch(new URL("v1/storage/presign/get?path=__health_check__", forgeUrl + "/"), {
+        headers: { Authorization: `Bearer ${forgeKey}` },
+      });
+      return { mode, provider, healthy: resp.status < 500, message: `Forge API: ${resp.status}`, endpoint: forgeUrl };
+    } catch (err: any) {
+      return { mode, provider, healthy: false, message: err.message ?? "Verbindung fehlgeschlagen" };
+    }
+  }
+  // S3-Modus (IONOS oder Hetzner)
+  try {
+    const { HeadBucketCommand } = await import("@aws-sdk/client-s3");
+    const client = await getS3Client();
+    const cfg = getS3Config();
+    await client.send(new HeadBucketCommand({ Bucket: cfg.bucket }));
+    return { mode, provider, healthy: true, message: "Verbindung erfolgreich", bucket: cfg.bucket, endpoint: cfg.endpoint };
+  } catch (err: any) {
+    const cfg = getS3Config();
+    return { mode, provider, healthy: false, message: err.message ?? "Verbindung fehlgeschlagen", bucket: cfg.bucket, endpoint: cfg.endpoint };
+  }
 }

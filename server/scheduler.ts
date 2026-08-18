@@ -12,6 +12,16 @@
 
 import * as cron from "node-cron";
 
+/** Letzte Ausführungsergebnisse für die Status-Abfrage im Admin-Dashboard */
+export interface JobExecution {
+  name: string;
+  lastRun: string | null;
+  lastStatus: number | null;
+  lastResult: string | null;
+}
+
+const jobExecutions: Map<string, JobExecution> = new Map();
+
 export interface ScheduledJob {
   name: string;
   /** Standard 5-Feld-Cron (min hour dom mon dow) */
@@ -70,8 +80,20 @@ export function startScheduler(port: number): void {
         });
         const body = await resp.text().catch(() => "");
         console.log(`[Scheduler] Job "${job.name}" abgeschlossen: ${resp.status} ${body.slice(0, 200)}`);
+        jobExecutions.set(job.name, {
+          name: job.name,
+          lastRun: new Date().toISOString(),
+          lastStatus: resp.status,
+          lastResult: body.slice(0, 500),
+        });
       } catch (err) {
         console.error(`[Scheduler] Job "${job.name}" fehlgeschlagen:`, err);
+        jobExecutions.set(job.name, {
+          name: job.name,
+          lastRun: new Date().toISOString(),
+          lastStatus: null,
+          lastResult: err instanceof Error ? err.message : "Unbekannter Fehler",
+        });
       }
     }, { timezone: "UTC" });
 
@@ -86,4 +108,25 @@ export function stopScheduler(): void {
     console.log(`[Scheduler] Job "${name}" gestoppt.`);
   }
   registeredJobs.clear();
+}
+
+/** Gibt den aktuellen Status aller registrierten Jobs zurück. */
+export function getSchedulerStatus(): {
+  enabled: boolean;
+  jobCount: number;
+  jobs: Array<ScheduledJob & { lastExecution: JobExecution | null }>;
+} {
+  const enabled = process.env.SCHEDULER_ENABLED === "true";
+  const jobDefs: ScheduledJob[] = [
+    { name: "colloquium-scheduling-reminders", schedule: "0 8 * * *", path: "/api/scheduled/colloquium-scheduling-reminders", method: "POST" },
+    { name: "two-factor-overdue-reminders", schedule: "0 8 * * *", path: "/api/scheduled/two-factor-overdue-reminders", method: "POST" },
+  ];
+  return {
+    enabled,
+    jobCount: registeredJobs.size,
+    jobs: jobDefs.map(j => ({
+      ...j,
+      lastExecution: jobExecutions.get(j.name) ?? null,
+    })),
+  };
 }

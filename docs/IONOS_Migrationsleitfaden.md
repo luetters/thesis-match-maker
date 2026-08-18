@@ -203,3 +203,27 @@ docker compose logs -f db
 | OAuth Callback | Entfällt (Passwort-Login + optional SAML) | `server/_core/oauth.ts` (inaktiv) |
 | Manus CDN (Asset-URLs) | Lokale Auslieferung über `/manus-storage/` | `server/_core/storageProxy.ts` |
 
+---
+
+## Hetzner-Server als Alternative
+
+Das Portal unterstützt neben IONOS auch **Hetzner Cloud** und **Hetzner Storage Box** (S3-kompatibel). Die Einrichtung ist identisch; lediglich der S3-Endpunkt unterscheidet sich:
+
+| Anbieter | S3-Endpunkt | Region |
+|---|---|---|
+| IONOS | `https://s3.eu-central-1.ionoscloud.com` | `de` |
+| Hetzner (Falkenstein) | `https://fsn1.your-objectstorage.com` | `fsn1` |
+| Hetzner (Nürnberg) | `https://nbg1.your-objectstorage.com` | `nbg1` |
+| Hetzner (Helsinki) | `https://hel1.your-objectstorage.com` | `hel1` |
+
+Setzen Sie in der `.env`-Datei den passenden Endpunkt:
+
+```env
+S3_ENDPOINT=https://fsn1.your-objectstorage.com
+S3_BUCKET=thesis-match
+S3_REGION=fsn1
+S3_ACCESS_KEY=<Ihr Hetzner S3 Access Key>
+S3_SECRET_KEY=<Ihr Hetzner S3 Secret Key>
+```
+
+Alternativ können Sie die S3-Zugangsdaten direkt im **Superadmin-Dashboard → Infrastruktur** konfigurieren.

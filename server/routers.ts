@@ -249,7 +249,8 @@ import {
   setPollReminderTaskUid,
   submitColloquiumSchedulingAvailability,
 } from "./colloquiumScheduling";
-import { storagePut } from "./storageLocal";
+import { storagePut, checkStorageHealth, getStorageMode, getStorageProvider } from "./storageLocal";
+import { getSchedulerStatus } from "./scheduler";
 import { sendExaminerCTAEmail, sendEmail, sendPavProgrammeAssignmentEmail } from "./emailHelper";
 import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, defenseEligibilityEmail, directAssignmentEmail, defaultExaminerTemplate, buildExaminerReminderEmail, type Lang } from "./emailTemplates";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -3197,6 +3198,49 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins koennen Nutzer-Status aendern" });
         }
         return await updateUserStatus(input.userId, input.isActive, ctx.user.id);
+      }),
+
+    /** Infrastruktur-Status: Speicher, Scheduler, Konfiguration */
+    getInfrastructureStatus: superadminProcedure.query(async () => {
+      const storageHealth = await checkStorageHealth();
+      const schedulerStatus = getSchedulerStatus();
+      const settings = await getSystemSettings();
+      const map: Record<string, string> = {};
+      for (const r of settings) map[r.key] = r.value;
+      return {
+        storage: storageHealth,
+        scheduler: schedulerStatus,
+        config: {
+          siteUrl: process.env.SITE_URL || map["siteUrl"] || "",
+          emailLogoUrl: map["emailLogoUrl"] || "",
+          s3Endpoint: process.env.S3_ENDPOINT || map["s3Endpoint"] || "",
+          s3Bucket: process.env.S3_BUCKET || map["s3Bucket"] || "",
+          s3Region: process.env.S3_REGION || map["s3Region"] || "",
+          storageMode: getStorageMode(),
+          storageProvider: getStorageProvider(),
+        },
+      };
+    }),
+
+    /** Infrastruktur-Konfiguration aktualisieren (S3, Logo-URL, Site-URL) */
+    updateInfrastructureConfig: superadminProcedure
+      .input(z.object({
+        siteUrl: z.string().max(512).optional(),
+        emailLogoUrl: z.string().max(512).optional(),
+        s3Endpoint: z.string().max(512).optional(),
+        s3Bucket: z.string().max(128).optional(),
+        s3Region: z.string().max(32).optional(),
+        s3AccessKey: z.string().max(256).optional(),
+        s3SecretKey: z.string().max(256).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const entries = Object.entries(input)
+          .filter(([, v]) => v !== undefined && v !== "")
+          .map(([key, value]) => [key, value] as [string, string]);
+        for (const [key, value] of entries) {
+          await upsertSystemSetting(key, value, ctx.user.id);
+        }
+        return { success: true, note: "Änderungen werden nach einem Neustart des Servers wirksam (Umgebungsvariablen haben Vorrang vor DB-Einstellungen)." };
       }),
   }),
   // --- System: SMTP-Verbindungstest ---
