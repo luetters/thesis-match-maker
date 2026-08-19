@@ -37,6 +37,42 @@ function appendHashSuffix(relKey: string): string {
 
 type StorageMode = "forge" | "s3" | "local";
 
+export type StorageDiagnostic = {
+  code: string;
+  title: string;
+  detail: string;
+  action: string;
+  statusCode?: number;
+};
+
+function redactDiagnosticText(value: unknown): string {
+  const raw = String(value ?? "Unbekannter Fehler");
+  const secrets = [process.env.S3_SECRET_KEY, process.env.S3_ACCESS_KEY, process.env.BUILT_IN_FORGE_API_KEY]
+    .filter((secret): secret is string => Boolean(secret));
+  const redacted = secrets.reduce((text, secret) => text.split(secret).join("[geschützt]"), raw);
+  return redacted
+    .replace(/(authorization|secret|access[_ -]?key|token)\s*[=:]\s*[^\s,;]+/gi, "$1=[geschützt]")
+    .slice(0, 600);
+}
+
+export function createSafeStorageDiagnostics(error: unknown): StorageDiagnostic[] {
+  const record = (error ?? {}) as { name?: string; code?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+  const statusCode = record.$metadata?.httpStatusCode;
+  const errorCode = record.code ?? record.name ?? "S3_CONNECTION_FAILED";
+  const detail = redactDiagnosticText(record.message ?? errorCode);
+
+  if (statusCode === 401 || statusCode === 403 || /accessdenied|invalidaccesskey|signature/i.test(`${errorCode} ${detail}`)) {
+    return [{ code: String(errorCode), title: "Zugriff auf den S3-Speicher verweigert", detail, statusCode, action: "Prüfen Sie Access Key, Secret Key, Bucket-Name sowie die Berechtigung für HeadBucket und Object-Zugriffe. Der Bucket muss privat bleiben." }];
+  }
+  if (/timeout|timedout|enotfound|econnrefused|network|socket/i.test(`${errorCode} ${detail}`)) {
+    return [{ code: String(errorCode), title: "S3-Endpunkt nicht erreichbar", detail, statusCode, action: "Prüfen Sie S3-Endpunkt, DNS-Auflösung, ausgehende HTTPS-Verbindungen und die Netzwerk- oder Firewall-Regeln des Servers." }];
+  }
+  if (statusCode === 404 || /nosuchbucket|not.?found/i.test(`${errorCode} ${detail}`)) {
+    return [{ code: String(errorCode), title: "S3-Bucket nicht gefunden", detail, statusCode, action: "Prüfen Sie den Bucket-Namen und stellen Sie sicher, dass der Bucket in der gewählten IONOS- oder Hetzner-Region existiert." }];
+  }
+  return [{ code: String(errorCode), title: "S3-Verbindung fehlgeschlagen", detail, statusCode, action: "Prüfen Sie Endpunkt, Region, Bucket und Zugangsdaten. Nutzen Sie die detaillierte Fehlermeldung für die Abstimmung mit IONOS oder Hetzner." }];
+}
+
 function detectMode(): StorageMode {
   if (process.env.BUILT_IN_FORGE_API_URL && process.env.BUILT_IN_FORGE_API_KEY) {
     return "forge";
@@ -267,12 +303,24 @@ export async function checkStorageHealth(): Promise<{
   message: string;
   bucket?: string;
   endpoint?: string;
+  diagnostics: StorageDiagnostic[];
 }> {
   const provider = getStorageProvider();
   if (mode === "local") {
     const dir = getLocalDir();
     const exists = existsSync(dir);
-    return { mode, provider, healthy: exists, message: exists ? `Verzeichnis: ${dir}` : `Verzeichnis nicht vorhanden: ${dir}` };
+    return {
+      mode,
+      provider,
+      healthy: exists,
+      message: exists ? `Verzeichnis: ${dir}` : `Verzeichnis nicht vorhanden: ${dir}`,
+      diagnostics: [{
+        code: exists ? "LOCAL_STORAGE_OK" : "LOCAL_STORAGE_MISSING",
+        title: exists ? "Lokaler Speicher erreichbar" : "Lokales Speicherverzeichnis fehlt",
+        detail: exists ? "Das lokale Speicherverzeichnis wurde geprüft." : "Das konfigurierte lokale Speicherverzeichnis konnte nicht gefunden werden.",
+        action: exists ? "Keine Aktion erforderlich." : "Prüfen Sie STORAGE_LOCAL_DIR sowie die Schreibrechte des Anwendungsprozesses.",
+      }],
+    };
   }
   if (mode === "forge") {
     const { forgeUrl, forgeKey } = getForgeConfig();
@@ -280,9 +328,24 @@ export async function checkStorageHealth(): Promise<{
       const resp = await fetch(new URL("v1/storage/presign/get?path=__health_check__", forgeUrl + "/"), {
         headers: { Authorization: `Bearer ${forgeKey}` },
       });
-      return { mode, provider, healthy: resp.status < 500, message: `Forge API: ${resp.status}`, endpoint: forgeUrl };
+      const healthy = resp.status < 500;
+      return {
+        mode,
+        provider,
+        healthy,
+        message: `Forge API: ${resp.status}`,
+        endpoint: forgeUrl,
+        diagnostics: [{
+          code: `FORGE_HTTP_${resp.status}`,
+          title: healthy ? "Forge-Speicher erreichbar" : "Forge-Speicher nicht erreichbar",
+          detail: `Die Speicher-API antwortete mit HTTP ${resp.status}.`,
+          statusCode: resp.status,
+          action: healthy ? "Keine Aktion erforderlich." : "Prüfen Sie die Forge-Umgebungsvariablen und die Netzwerkkonnektivität.",
+        }],
+      };
     } catch (err: any) {
-      return { mode, provider, healthy: false, message: err.message ?? "Verbindung fehlgeschlagen" };
+      const diagnostics = createSafeStorageDiagnostics(err);
+      return { mode, provider, healthy: false, message: diagnostics[0]?.title ?? "Verbindung fehlgeschlagen", diagnostics };
     }
   }
   // S3-Modus (IONOS oder Hetzner)
@@ -291,9 +354,18 @@ export async function checkStorageHealth(): Promise<{
     const client = await getS3Client();
     const cfg = getS3Config();
     await client.send(new HeadBucketCommand({ Bucket: cfg.bucket }));
-    return { mode, provider, healthy: true, message: "Verbindung erfolgreich", bucket: cfg.bucket, endpoint: cfg.endpoint };
+    return {
+      mode,
+      provider,
+      healthy: true,
+      message: "Verbindung erfolgreich",
+      bucket: cfg.bucket,
+      endpoint: cfg.endpoint,
+      diagnostics: [{ code: "S3_HEAD_BUCKET_OK", title: "S3-Bucket erreichbar", detail: "Die Berechtigung zum Prüfen des konfigurierten Buckets wurde bestätigt.", action: "Keine Aktion erforderlich." }],
+    };
   } catch (err: any) {
     const cfg = getS3Config();
-    return { mode, provider, healthy: false, message: err.message ?? "Verbindung fehlgeschlagen", bucket: cfg.bucket, endpoint: cfg.endpoint };
+    const diagnostics = createSafeStorageDiagnostics(err);
+    return { mode, provider, healthy: false, message: diagnostics[0]?.title ?? "Verbindung fehlgeschlagen", bucket: cfg.bucket, endpoint: cfg.endpoint, diagnostics };
   }
 }

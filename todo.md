@@ -1795,3 +1795,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Bestehenden S3-Verbindungstest im Hilfe-Bereich wiederverwenden
 - [x] Ergebnis für IONOS und Hetzner verständlich anzeigen
 - [x] Funktion automatisiert testen und veröffentlichen
+
+## Diagnoseansicht für fehlgeschlagene S3-Tests
+- [x] Geheimnisfreie technische Diagnoseinformationen serverseitig aufbereiten
+- [x] Detaillierte Protokollansicht mit konkreten Fehlerbehebungshinweisen integrieren
+- [x] Geheimnisfreiheit und Fehlerszenarien automatisiert testen

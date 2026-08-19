@@ -2658,6 +2658,7 @@ export const appRouter = router({
         mode: status.mode,
         provider: status.provider,
         message: status.message,
+        diagnostics: status.diagnostics,
       };
     }),
   }),

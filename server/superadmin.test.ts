@@ -195,6 +195,7 @@ vi.mock("./storageLocal", async (importOriginal) => {
       provider: "hetzner",
       healthy: true,
       message: "S3-Bucket erreichbar",
+      diagnostics: [{ code: "S3_HEAD_BUCKET_OK", title: "S3-Bucket erreichbar", detail: "Test erfolgreich", action: "Keine Aktion erforderlich." }],
     }),
   };
 });
@@ -316,6 +317,7 @@ describe("admin.testConfiguredStorage", () => {
       mode: "s3",
       provider: "hetzner",
       message: "S3-Bucket erreichbar",
+      diagnostics: [{ code: "S3_HEAD_BUCKET_OK", title: "S3-Bucket erreichbar", detail: "Test erfolgreich", action: "Keine Aktion erforderlich." }],
     });
   });
 });

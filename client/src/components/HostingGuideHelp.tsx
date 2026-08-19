@@ -2,10 +2,10 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 
 export function HostingGuideHelp() {
-  const [storageResult, setStorageResult] = useState<{ success: boolean; mode: string; provider: string; message: string } | null>(null);
+  const [storageResult, setStorageResult] = useState<{ success: boolean; mode: string; provider: string; message: string; diagnostics: Array<{ code: string; title: string; detail: string; action: string; statusCode?: number }> } | null>(null);
   const testStorage = trpc.admin.testConfiguredStorage.useMutation({
     onSuccess: (result) => setStorageResult(result),
-    onError: (error) => setStorageResult({ success: false, mode: "–", provider: "–", message: error.message }),
+    onError: (error) => setStorageResult({ success: false, mode: "–", provider: "–", message: error.message, diagnostics: [{ code: "REQUEST_FAILED", title: "Test konnte nicht ausgeführt werden", detail: error.message, action: "Prüfen Sie Ihre Anmeldung und versuchen Sie den Test erneut." }] }),
   });
   const sections = [
     ["Server und Sicherheit", "Ubuntu 24.04 LTS bereitstellen, SSH-Schlüssel verwenden sowie nur SSH aus bekannten Netzen und HTTP/HTTPS in der Firewall freigeben."],
@@ -44,6 +44,21 @@ export function HostingGuideHelp() {
             <p className="font-semibold">{storageResult.success ? "Verbindung erfolgreich" : "Verbindung fehlgeschlagen"}</p>
             <p className="mt-1">Anbieter: {storageResult.provider} · Modus: {storageResult.mode}</p>
             <p className="mt-1">{storageResult.message}</p>
+            {!storageResult.success && (
+              <details className="mt-3 rounded-md bg-white/70 border border-current/20 p-3">
+                <summary className="cursor-pointer font-semibold">Technische Diagnose und Fehlerbehebung anzeigen</summary>
+                <div className="mt-3 space-y-3">
+                  {storageResult.diagnostics.map((diagnostic) => (
+                    <div key={`${diagnostic.code}-${diagnostic.title}`} className="border-l-2 border-current/40 pl-3">
+                      <p className="font-semibold">{diagnostic.title}</p>
+                      <p className="mt-1 text-xs font-mono break-words">Code: {diagnostic.code}{diagnostic.statusCode ? ` · HTTP ${diagnostic.statusCode}` : ""}</p>
+                      <p className="mt-1">Fehlerdetail: {diagnostic.detail}</p>
+                      <p className="mt-1 font-medium">Empfohlene Maßnahme: {diagnostic.action}</p>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         )}
       </section>
