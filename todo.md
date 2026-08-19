@@ -1790,3 +1790,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Geschützten PDF-Export des Leitfadens für Administration und Superadmin ergänzen
 - [x] Leitfaden direkt lesbar im Hilfe-Bereich des Admin-Dashboards integrieren
 - [x] PDF-Download, Berechtigungen und Oberfläche automatisiert testen
+
+## Direkter S3-Test im Hilfe-Bereich
+- [x] Bestehenden S3-Verbindungstest im Hilfe-Bereich wiederverwenden
+- [x] Ergebnis für IONOS und Hetzner verständlich anzeigen
+- [x] Funktion automatisiert testen und veröffentlichen

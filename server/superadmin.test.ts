@@ -186,6 +186,19 @@ vi.mock("./_core/notification", () => ({
   notifyOwner: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock("./storageLocal", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./storageLocal")>();
+  return {
+    ...actual,
+    checkStorageHealth: vi.fn().mockResolvedValue({
+      mode: "s3",
+      provider: "hetzner",
+      healthy: true,
+      message: "S3-Bucket erreichbar",
+    }),
+  };
+});
+
 // --- Hilfsfunktionen ----------------------------------------------------------
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -290,6 +303,19 @@ describe("superadmin.getUserStatistics", () => {
       total: expect.any(Number),
       student: expect.any(Number),
       examiner: expect.any(Number),
+    });
+  });
+});
+
+describe("admin.testConfiguredStorage", () => {
+  it("gibt Verwaltungsmitarbeiter:innen einen geheimnisfreien Speicherstatus zurück", async () => {
+    const caller = appRouter.createCaller(createAdminContext());
+    const result = await caller.admin.testConfiguredStorage();
+    expect(result).toEqual({
+      success: true,
+      mode: "s3",
+      provider: "hetzner",
+      message: "S3-Bucket erreichbar",
     });
   });
 });

@@ -2649,6 +2649,17 @@ export const appRouter = router({
         });
         return { success: true, sentTo: sent };
       }),
+
+    /** Prüft die bereits konfigurierte Speicherverbindung ohne Zugangsdaten offenzulegen. */
+    testConfiguredStorage: adminProcedure.mutation(async () => {
+      const status = await checkStorageHealth();
+      return {
+        success: status.healthy,
+        mode: status.mode,
+        provider: status.provider,
+        message: status.message,
+      };
+    }),
   }),
   // --- Onboarding: Rolle nach erstem Login setzen ---
   onboarding: router({
