@@ -2181,6 +2181,8 @@ export async function listExaminers(filters?: { isActive?: boolean }) {
 
   return rows.map((r) => ({
     ...r,
+    bio: r.bio ? sanitizeBiographyText(r.bio) : null,
+    researchFocus: r.researchFocus ? sanitizeBiographyText(r.researchFocus) : null,
     activeSupervisions: activeCountMap.get(r.userId ?? 0) ?? 0,
   }));
 }
@@ -2201,8 +2203,8 @@ export async function updateExaminerProfileByAdmin(
   const update: Record<string, unknown> = { updatedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') };
   if (data.title !== undefined) update.title = data.title;
   if (data.department !== undefined) update.department = data.department;
-  if (data.bio !== undefined) update.bio = data.bio;
-  if (data.researchFocus !== undefined) update.researchFocus = data.researchFocus;
+  if (data.bio !== undefined) update.bio = sanitizeBiographyText(data.bio);
+  if (data.researchFocus !== undefined) update.researchFocus = sanitizeBiographyText(data.researchFocus);
   if (data.maxSupervisions !== undefined) update.maxSupervisions = data.maxSupervisions;
   
   await db.update(examinerProfiles)
@@ -4695,8 +4697,8 @@ export async function getProfile(userId: number) {
         if (ep) {
           try { examinerLanguages = ep.languages ? (typeof ep.languages === 'string' ? JSON.parse(ep.languages) : ep.languages as string[]) : []; } catch { examinerLanguages = []; }
           try { examinerKeywords = ep.tags ? (typeof ep.tags === 'string' ? JSON.parse(ep.tags) : ep.tags as string[]) : []; } catch { examinerKeywords = []; }
-          examinerBio = ep.bio ?? null;
-          examinerResearchFocus = ep.researchFocus ?? null;
+          examinerBio = ep.bio ? sanitizeBiographyText(ep.bio) : null;
+          examinerResearchFocus = ep.researchFocus ? sanitizeBiographyText(ep.researchFocus) : null;
         }
         const progRows = await db.select({ programmeId: examinerProgrammes.programmeId })
           .from(examinerProgrammes).where(eq(examinerProgrammes.examinerId, userId));
@@ -4728,7 +4730,7 @@ export async function getProfile(userId: number) {
       roleStatus: user.roleStatus as string,
       avatarUrl: user.avatarUrl as string | null,
       avatarKey: user.avatarKey as string | null,
-      bio: user.bio as string | null,
+      bio: user.bio ? sanitizeBiographyText(user.bio as string) : null,
       phone: user.phone as string | null,
       department: user.department as string | null,
       programmeId: (user.programmeId as number | null) ?? null,
@@ -4760,8 +4762,8 @@ export async function getProfile(userId: number) {
       examinerLanguages: isExaminerRole ? examinerLanguages : null,
       examinerKeywords: isExaminerRole ? examinerKeywords : null,
       examinerProgrammeIds: isExaminerRole ? examinerProgrammeIds : null,
-      examinerBio: isExaminerRole ? examinerBio : null,
-      examinerResearchFocus: isExaminerRole ? examinerResearchFocus : null,
+    examinerBio: isExaminerRole ? examinerBio : null,
+    examinerResearchFocus: isExaminerRole ? examinerResearchFocus : null,
       allowedDepartments: isExaminerRole ? allowedDepartments : null,
       primaryDepartment: isExaminerRole ? primaryDepartment : null,
       // Verwaltungszuständigkeiten: schreibgeschützt aus der Superadmin-Zuweisung.
@@ -7233,6 +7235,7 @@ export async function getExaminersWithAvailability(targetSemester?: string) {
     const effectiveMaxSecond = cap?.adminMaxSecond ?? cap?.maxSecond ?? null;
     return {
       ...e,
+      bio: e.bio ? sanitizeBiographyText(e.bio) : null,
       activeFirstSupervisions: activeFirst,
       activeSecondSupervisions: activeSecond,
       semesterMaxFirst: effectiveMaxFirst,

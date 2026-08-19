@@ -386,6 +386,16 @@ describe("updateProfile", () => {
     expect(setArg.bio).toBe("Sichere Biografie");
   });
 
+  it("überführt Altbestand mit Rich-Text-Auszeichnung beim Speichern in lesbaren Klartext", async () => {
+    const { fakeDb, setSpy } = makeUpdateDb();
+    fakeDbHolder.db = fakeDb;
+
+    await updateProfile(10, { bio: "<p>Erste Zeile</p><p>Zweite Zeile</p>" });
+
+    const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.bio).toBe("Erste Zeile\n\nZweite Zeile");
+  });
+
   it("setzt name automatisch aus firstName + lastName zusammen", async () => {
     const curRows = [{ firstName: "Alt", lastName: "Name", academicTitle: null }];
     const { fakeDb, setSpy } = makeUpdateDb(curRows);

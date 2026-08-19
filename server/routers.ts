@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
 import { getStudentConsentFlags } from "./studentConsent";
+import { sanitizeBiographyText } from "./biographySanitization";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 import { examinerTopics, users, thesisRequests, auditLog, userRoles, twoFactorRecoveryCodes } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -1624,7 +1625,8 @@ export const appRouter = router({
         }
         // Nur öffentliche Felder zurückgeben
         // Für Prüfer:innen: bio, phone, languages und tags aus examiner_profiles lesen
-        const examinerBio = isExaminerRole ? (examinerProfile?.bio ?? user.bio) : user.bio;
+        const storedBio = isExaminerRole ? (examinerProfile?.bio ?? user.bio) : user.bio;
+        const examinerBio = storedBio ? sanitizeBiographyText(storedBio) : null;
         // Telefonnummer nur für andere Prüfer:innen und Admins sichtbar – NICHT für Studierende
         const viewerRole = ctx.user?.role ?? null;
         const viewerMaySeePh = viewerRole === "examiner" || viewerRole === "second_examiner"
@@ -1659,7 +1661,7 @@ export const appRouter = router({
           // Prüfer:in-spezifische Felder
           academicTitle: examinerProfile?.title ?? null,
           officeHours: examinerProfile?.officeHours ?? null,
-          researchFocus: examinerProfile?.researchFocus ?? null,
+          researchFocus: examinerProfile?.researchFocus ? sanitizeBiographyText(examinerProfile.researchFocus) : null,
           researchTags: examinerTags.length > 0 ? examinerTags.join(", ") : null,
           tags: examinerTags,
           languages: examinerLanguages,

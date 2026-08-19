@@ -1820,3 +1820,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] FAQ-Widget mit kuratierten häufigen oder besonders gut bewerteten Fragen auf der Startseite ergänzen
 - [x] Verwaltungsworkflow zum Beantworten eingereichter Fragen und Veröffentlichen als FAQ ergänzen
 - [x] Neue Funktionen automatisiert testen und veröffentlichen
+
+## Lesbare und sichere formatierte Profilbiografien
+- [x] Bereits gespeicherte HTML-Auszeichnung sicher in lesbaren Text überführen
+- [x] Absätze und Links ohne aktive HTML-Ausführung verständlich darstellen
+- [x] XSS-Schutz und Rückwärtskompatibilität automatisiert testen und veröffentlichen
