@@ -1842,3 +1842,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Autorisierten PDF- und CSV-Export ausschließlich eigener Betreuungsfälle ergänzen
 - [x] Downloadoberfläche im Prüfer:innen-Dashboard integrieren
 - [x] Zugriffsschutz und Berichtsinhalt automatisiert testen
+
+## Filterbare Berichtsvorschau für Prüfer:innen
+- [x] Semester-Dropdown und Filter „nur aktive Arbeiten“ für den Bericht ergänzen
+- [x] Sortierung der Berichtsvorschau nach Abgabedatum ergänzen
+- [x] Tabellarische Vorschau vor PDF- und CSV-Downloads im Prüfer:innen-Dashboard integrieren
+- [x] Exportendpunkte mit identischen Filter- und Sortierparametern erweitern
+- [x] Filtergleichheit, Vorschau und Export automatisiert testen

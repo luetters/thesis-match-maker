@@ -122,18 +122,44 @@ function csvValue(value: string | number | null | undefined): string {
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
+type ExaminerReportOptions = { semester?: string; activeOnly: boolean; deadlineSort: "asc" | "desc" };
+
+function getExaminerReportOptions(req: Request): ExaminerReportOptions {
+  const semester = typeof req.query.semester === "string" && req.query.semester.length <= 32 ? req.query.semester : undefined;
+  return {
+    semester,
+    activeOnly: req.query.activeOnly === "true",
+    deadlineSort: req.query.deadlineSort === "desc" ? "desc" : "asc",
+  };
+}
+
+export function filterExaminerReportCases(cases: Array<any>, options: ExaminerReportOptions): Array<any> {
+  const terminalStatuses = new Set(["REJECTED", "WITHDRAWN", "CANCELLED", "ARCHIVED", "COMPLETED"]);
+  const filtered = cases
+    .filter((request) => !options.semester || request.targetSemester === options.semester)
+    .filter((request) => !options.activeOnly || !terminalStatuses.has(request.status));
+  return [...filtered].sort((left, right) => {
+    const leftTime = left.submissionDeadline ? new Date(left.submissionDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+    const rightTime = right.submissionDeadline ? new Date(right.submissionDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+    const comparison = leftTime - rightTime;
+    return options.deadlineSort === "asc" ? comparison : -comparison;
+  });
+}
+
 async function exportMyStudentsReportPdf(req: Request, res: Response) {
   const user = await getUserFromRequest(req);
   if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
   const roles = await getUserRoles(user.id);
   if (!canExportOwnExaminerReport(user, roles)) return res.status(403).json({ error: "Nur Prüfer:innen dürfen eigene Betreuungsberichte herunterladen." });
 
-  const cases: Array<any> = await getThesisRequestsByExaminer(user.id);
+  const options = getExaminerReportOptions(req);
+  const cases = filterExaminerReportCases(await getThesisRequestsByExaminer(user.id), options);
   const doc = new PDFDocument({ size: "A4", layout: "landscape", margins: { top: 80, bottom: 50, left: 40, right: 40 }, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-  drawHeader(doc, "Bericht betreute Studierende", `${cases.length} eigene Betreuungsfälle · Stand: ${formatDate(new Date())}`);
+  const reportScope = [options.semester ? `Semester ${options.semester}` : "Alle Semester", options.activeOnly ? "nur aktive Arbeiten" : null].filter(Boolean).join(" · ");
+  drawHeader(doc, "Bericht betreute Studierende", `${cases.length} eigene Betreuungsfälle · ${reportScope} · Stand: ${formatDate(new Date())}`);
   doc.fillColor(GRAY).font("Helvetica").fontSize(8).text("Der Bericht enthält ausschließlich Studierende und Anfragen, bei denen Sie als Erst- oder Zweitprüfer:in zugeordnet oder angefragt sind.", 40, 70, { width: doc.page.width - 80 });
   const columns = [
     { label: "Studierende:r", width: 120 },
@@ -197,7 +223,8 @@ async function exportMyStudentsReportCsv(req: Request, res: Response) {
   const roles = await getUserRoles(user.id);
   if (!canExportOwnExaminerReport(user, roles)) return res.status(403).json({ error: "Nur Prüfer:innen dürfen eigene Betreuungsberichte herunterladen." });
 
-  const cases: Array<any> = await getThesisRequestsByExaminer(user.id);
+  const options = getExaminerReportOptions(req);
+  const cases = filterExaminerReportCases(await getThesisRequestsByExaminer(user.id), options);
   const header = ["Studierende:r", "Studiengang", "Thema", "Eigene Rolle", "Status", "Geplantes Abgabedatum", "Zielsemester", "Eingereicht am"];
   const rows = cases.map((request) => [
     request.studentName ?? "",
