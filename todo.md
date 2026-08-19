@@ -1836,3 +1836,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] 2FAS-Einrichtung, Wiederherstellungscodes und Deaktivierung in die Profileinstellungen integrieren
 - [x] Selbst aktivierte 2FA beim Passwort-Login verbindlich durchsetzen
 - [x] Berechtigungen, Wiederherstellung und Anmeldefluss automatisiert testen
+
+## Berichtsdownload für Prüfer:innen
+- [x] Berichtsumfang für eigene betreute Studierende und Anfragen datensparsam definieren
+- [x] Autorisierten PDF- und CSV-Export ausschließlich eigener Betreuungsfälle ergänzen
+- [x] Downloadoberfläche im Prüfer:innen-Dashboard integrieren
+- [x] Zugriffsschutz und Berichtsinhalt automatisiert testen

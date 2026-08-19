@@ -34,4 +34,12 @@ describe("PDF-Exportrouten", () => {
     registerExportRoutes(app as any);
     expect(paths).toContain("/api/export/examiner-quick-guide.pdf");
   });
+
+  it("registriert geschützte PDF- und CSV-Berichte für eigene Betreuungsfälle", () => {
+    const paths: string[] = [];
+    const app = { get(path: string) { paths.push(path); } };
+    registerExportRoutes(app as any);
+    expect(paths).toContain("/api/export/my-students-report.pdf");
+    expect(paths).toContain("/api/export/my-students-report.csv");
+  });
 });

@@ -24,6 +24,7 @@ import {
   getProfile,
   getUserRoles,
   searchExaminerComments,
+  getThesisRequestsByExaminer,
 } from "./db";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
@@ -101,6 +102,117 @@ async function exportExaminerQuickGuidePdf(_req: Request, res: Response) {
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Kompaktleitfaden-Prueferinnen-und-Pruefer.pdf"');
   res.send(pdf);
+}
+
+function canExportOwnExaminerReport(user: { role?: string | null }, roles: string[]) {
+  return [user.role, ...roles].some((role) => role === "examiner" || role === "second_examiner");
+}
+
+function examinerReportRole(request: { examinerId?: number | null; secondExaminerId?: number | null; wantedExaminerId?: number | null; wantedSecondExaminerId?: number | null }, examinerId: number) {
+  if (request.examinerId === examinerId) return "Erstgutachten";
+  if (request.secondExaminerId === examinerId) return "Zweitgutachten";
+  if (request.wantedExaminerId === examinerId) return "Erstgutachten angefragt";
+  return "Zweitgutachten angefragt";
+}
+
+function csvValue(value: string | number | null | undefined): string {
+  const text = String(value ?? "");
+  // Schutz vor Formelinterpretation beim Öffnen in Tabellenkalkulationen.
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+async function exportMyStudentsReportPdf(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const roles = await getUserRoles(user.id);
+  if (!canExportOwnExaminerReport(user, roles)) return res.status(403).json({ error: "Nur Prüfer:innen dürfen eigene Betreuungsberichte herunterladen." });
+
+  const cases: Array<any> = await getThesisRequestsByExaminer(user.id);
+  const doc = new PDFDocument({ size: "A4", layout: "landscape", margins: { top: 80, bottom: 50, left: 40, right: 40 }, bufferPages: true });
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+  drawHeader(doc, "Bericht betreute Studierende", `${cases.length} eigene Betreuungsfälle · Stand: ${formatDate(new Date())}`);
+  doc.fillColor(GRAY).font("Helvetica").fontSize(8).text("Der Bericht enthält ausschließlich Studierende und Anfragen, bei denen Sie als Erst- oder Zweitprüfer:in zugeordnet oder angefragt sind.", 40, 70, { width: doc.page.width - 80 });
+  const columns = [
+    { label: "Studierende:r", width: 120 },
+    { label: "Studiengang", width: 100 },
+    { label: "Thema", width: 215 },
+    { label: "Eigene Rolle", width: 105 },
+    { label: "Status", width: 110 },
+    { label: "Abgabe", width: 70 },
+  ];
+  const headerY = 96;
+  const rowHeight = 28;
+  const drawTableHeader = (y: number) => {
+    let x = 40;
+    for (const column of columns) {
+      drawCell(doc, x, y, column.width, 20, column.label, { bold: true, bgColor: HTW_GREEN, fillColor: "#ffffff" });
+      x += column.width;
+    }
+  };
+  let y = headerY;
+  drawTableHeader(y);
+  y += 20;
+  for (const request of cases) {
+    if (y + rowHeight > doc.page.height - 55) {
+      doc.addPage();
+      drawHeader(doc, "Bericht betreute Studierende", "Fortsetzung");
+      y = 80;
+      drawTableHeader(y);
+      y += 20;
+    }
+    const values = [
+      request.studentName ?? "–",
+      request.programmeAbbreviation ?? request.programmeName ?? "–",
+      request.title || "Thema wird noch festgelegt",
+      examinerReportRole(request, user.id),
+      getStatusBadge(request.status).label,
+      formatDate(request.submissionDeadline),
+    ];
+    let x = 40;
+    values.forEach((value, index) => {
+      drawCell(doc, x, y, columns[index].width, rowHeight, value, { bgColor: y % (rowHeight * 2) === 0 ? "#f9fafb" : "#ffffff" });
+      x += columns[index].width;
+    });
+    y += rowHeight;
+  }
+  if (!cases.length) doc.fillColor(GRAY).font("Helvetica").fontSize(10).text("Es liegen derzeit keine eigenen Betreuungsfälle vor.", 40, y + 18);
+  const pageRange = doc.bufferedPageRange();
+  for (let page = 0; page < pageRange.count; page += 1) {
+    doc.switchToPage(page);
+    drawFooter(doc, page + 1, pageRange.count);
+  }
+  doc.end();
+  await new Promise<void>((resolve, reject) => { doc.on("end", resolve); doc.on("error", reject); });
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Bericht-betreute-Studierende.pdf"');
+  res.send(Buffer.concat(chunks));
+}
+
+async function exportMyStudentsReportCsv(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const roles = await getUserRoles(user.id);
+  if (!canExportOwnExaminerReport(user, roles)) return res.status(403).json({ error: "Nur Prüfer:innen dürfen eigene Betreuungsberichte herunterladen." });
+
+  const cases: Array<any> = await getThesisRequestsByExaminer(user.id);
+  const header = ["Studierende:r", "Studiengang", "Thema", "Eigene Rolle", "Status", "Geplantes Abgabedatum", "Zielsemester", "Eingereicht am"];
+  const rows = cases.map((request) => [
+    request.studentName ?? "",
+    request.programmeAbbreviation ?? request.programmeName ?? "",
+    request.title || "Thema wird noch festgelegt",
+    examinerReportRole(request, user.id),
+    getStatusBadge(request.status).label,
+    formatDate(request.submissionDeadline),
+    request.targetSemester ?? "",
+    formatDate(request.createdAt),
+  ]);
+  const csv = [header, ...rows].map((row) => row.map(csvValue).join(";")).join("\r\n");
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Bericht-betreute-Studierende.csv"');
+  res.send(`\uFEFF${csv}`);
 }
 
 function formatDate(d: Date | string | null | undefined): string {
@@ -1189,6 +1301,8 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/saml-integration-guide.pdf", exportSamlIntegrationGuidePdf);
   app.get("/api/export/hosting-deployment-guide.pdf", exportHostingDeploymentGuidePdf);
   app.get("/api/export/examiner-quick-guide.pdf", exportExaminerQuickGuidePdf);
+  app.get("/api/export/my-students-report.pdf", exportMyStudentsReportPdf);
+  app.get("/api/export/my-students-report.csv", exportMyStudentsReportCsv);
   app.get("/api/export/my-notes.csv", exportMyNotesCsv);
   app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
 }
