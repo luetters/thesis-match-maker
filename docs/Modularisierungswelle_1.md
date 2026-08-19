@@ -15,10 +15,14 @@ Die erste Welle zerlegt ausschließlich fachlich geschlossene Bereiche mit stabi
 | Notizbibliothek | `client/src/components/examiner/PrivateNotesLibrary.tsx` | Suche und Export persönlicher Notizen |
 | Login-Protokoll | `client/src/components/admin/LoginAttemptsView.tsx` | Filter, Kennzahlen und Tabelle der Anmeldeversuche |
 | Prüfer:innenzuweisung | `client/src/components/admin/AssignExaminerModal.tsx` | Direkte Zuordnung einer Erst- oder Zweitprüferin bzw. eines Erst- oder Zweitprüfers |
+| Fristen und Abschlussakte | `server/db/deadlines.ts` | Friständerungen, Fristenregeln, Verteidigungsdatum und Fallabschluss |
+| Kolloquien | `server/db/colloquiums.ts` | Anlegen, Abfragen, Statusänderungen und Beteiligungslisten |
+| Fristenrouter | `server/routers/deadlineProcedures.ts` | Typstabile PAV- und Verwaltungsverfahren für Frist, Verteidigung, Fallabschluss und Historie |
+| Prüfer:innenkolloquien | `client/src/components/examiner/MyColloquiums.tsx` | Anzeige und ICS-Download ausschließlich eigener Kolloquien |
 
 ## Aktueller Effekt
 
-Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten Welle liegt jedoch nun in **sieben eigenständig testbaren Modulen**. Die zugehörigen Tests für FAQ, Notizen und Exporte bleiben grün.
+Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten und zweiten Welle liegt jedoch nun in **elf eigenständig testbaren Modulen**. Die zugehörigen Tests für FAQ, Notizen, Fristen, Kolloquien und Exporte bleiben grün.
 
 ## Nächste Wellen
 

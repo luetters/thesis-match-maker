@@ -1861,6 +1861,6 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Private Notizbibliothek und Login-Protokoll aus großen Dashboards in fachliche Teilkomponenten zerlegen
 - [x] Fachrouter für private Notizen und FAQ aus `routers.ts` extrahieren und zentral zusammensetzen
 - [x] Regressionstests, TypeScript-Prüfung und Moduldokumentation der ersten Welle abschließen
-- [ ] Nächste Welle: Thesis-Lebenszyklus, Fristen und Kolloquien in Daten- und Routermodule auslagern
-- [ ] Nächste Welle: Betreuungsstatus, Anfragen und Berichte des Prüfer:innen-Dashboards auslagern
-- [ ] Nächste Welle: Anfragen, Audit, Nutzerverwaltung und Statistik der Verwaltungs-Dashboards weiter auslagern
+- [x] Zweite Welle: Fristen und Kolloquien in Datenmodule sowie Fristenverfahren in einen Fachrouter auslagern
+- [x] Zweite Welle: Notizbibliothek, Kolloquiumsansicht und Berichtsbereich des Prüfer:innen-Dashboards fachlich abgrenzen
+- [x] Zweite Welle: Login-Protokoll und Prüfer:innenzuweisung des Verwaltungs-Dashboards weiter auslagern

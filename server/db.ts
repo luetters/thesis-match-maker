@@ -24,8 +24,7 @@ import {
   savedFilters,
   examinerSemesterCapacities,
   userRoles,
-	deadlineChanges,
-	programmeSemesterDeadlines,
+	colloquiums,
 	examinerTopics,
 	loginAttempts,
 	faqFeedback,
@@ -41,7 +40,6 @@ import { buildSecondExaminerConfirmedEmail, buildSecondExaminerRejectedEmail, bu
 import { formatConsentForExport } from "./studentConsent";
 import { canManageDepartment, isAdminDepartment, type AdminDepartment } from "./adminDepartmentScope";
 import { buildCrossDepartmentSupervisionOverview, buildCrossDepartmentSupervisionTimeSeries } from "../shared/crossDepartmentSupervision";
-import { resolveProgrammeSemesterDeadline, type ProgrammeSemesterDeadlineRule } from "../shared/programmeSemesterDeadline";
 import { sanitizeBiographyText } from "./biographySanitization";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1127,69 +1125,6 @@ export async function updateExaminerPhoto(userId: number, photoUrl: string, phot
   } else {
     await db.insert(examinerProfiles).values({ userId, photoUrl, photoKey });
   }
-}
-
-// --- Kolloquien ---------------------------------------------------------------
-
-import { colloquiums, InsertColloquium } from "../drizzle/schema";
-
-export async function createColloquium(data: InsertColloquium): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  const [result] = await db.insert(colloquiums).values(data);
-  return (result as { insertId: number }).insertId;
-}
-
-export async function getColloquiumsByThesis(thesisRequestId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(colloquiums).where(eq(colloquiums.thesisRequestId, thesisRequestId));
-}
-
-export async function getAllColloquiums() {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(colloquiums).orderBy(colloquiums.scheduledAt);
-}
-
-export async function updateColloquiumStatus(
-  id: number,
-  status: "SCHEDULED" | "CANCELLED" | "COMPLETED"
-): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  await db.update(colloquiums).set({ status }).where(eq(colloquiums.id, id));
-}
-
-export async function deleteColloquium(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  await db.delete(colloquiums).where(eq(colloquiums.id, id));
-}
-
-export async function getColloquiumsByExaminer(examinerId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  // Kolloquien über Thesis-Anfragen des Prüfers
-  const theses = await getThesisRequestsByExaminer(examinerId);
-  if (theses.length === 0) return [];
-  // Map von thesisRequestId → secondExaminerId für Frontend-Filterung
-  const thesisMap = new Map<number, number | null>();
-  for (const t of theses as any[]) thesisMap.set(t.id as number, t.secondExaminerId ?? null);
-  const all = await getAllColloquiums();
-  return all
-    .filter((c) => thesisMap.has(c.thesisRequestId))
-    .map((c) => ({ ...c, thesisSecondExaminerId: thesisMap.get(c.thesisRequestId) ?? null }));
-}
-
-export async function getColloquiumsByStudent(studentId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  const theses = await getThesisRequestsByStudent(studentId);
-  if (theses.length === 0) return [];
-  const thesisIds = theses.map((t) => t.id);
-  const all = await getAllColloquiums();
-  return all.filter((c) => thesisIds.includes(c.thesisRequestId));
 }
 
 // ─── Statistics ──────────────────────────────────────────────────────────────
@@ -5909,174 +5844,6 @@ export async function setAdmission(
     admissionNote: note ?? null,
     submissionDeadline,
   }).where(eq(thesisRequests.id, thesisRequestId));
-}
-
-/** Abgabefrist verlängern – Protokolleintrag in deadline_changes */
-export async function extendDeadline(
-  thesisRequestId: number,
-  actorId: number,
-  newDeadline: string,
-  reason: string,
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  // Altes Datum lesen
-  const [thesis] = await db.select({ submissionDeadline: thesisRequests.submissionDeadline })
-    .from(thesisRequests).where(eq(thesisRequests.id, thesisRequestId)).limit(1);
-  const previousDeadline = thesis?.submissionDeadline ?? null;
-  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-  // Neues Datum setzen
-  await db.update(thesisRequests).set({ submissionDeadline: newDeadline })
-    .where(eq(thesisRequests.id, thesisRequestId));
-  // Protokolleintrag
-  await db.insert(deadlineChanges).values({
-    thesisRequestId,
-    previousDeadline: previousDeadline ?? undefined,
-    newDeadline,
-    reason,
-    changedBy: actorId,
-    changedAt: now,
-  });
-}
-
-/** Verteidigungsdatum eintragen */
-export async function setDefenseDate(
-  thesisRequestId: number,
-  actorId: number,
-  defenseDate: string,
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-  await db.update(thesisRequests).set({
-    defenseDate,
-    defenseDateSetAt: now,
-    defenseDateSetBy: actorId,
-  }).where(eq(thesisRequests.id, thesisRequestId));
-}
-
-/** Akte vollständig übermitteln (Status: case_closed) */
-export async function closeCase(
-  thesisRequestId: number,
-  actorId: number,
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-  await db.update(thesisRequests).set({
-    officialRegistrationStatus: "case_closed",
-    caseClosedAt: now,
-    caseClosedBy: actorId,
-  }).where(eq(thesisRequests.id, thesisRequestId));
-}
-
-/** Abgabefrist-Änderungsprotokoll für einen Antrag abrufen */
-export async function getDeadlineChanges(thesisRequestId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  const changedByUser = aliasedTable(users, "changed_by_user");
-  return db
-    .select({
-      id: deadlineChanges.id,
-      previousDeadline: deadlineChanges.previousDeadline,
-      newDeadline: deadlineChanges.newDeadline,
-      reason: deadlineChanges.reason,
-      changedAt: deadlineChanges.changedAt,
-      changedByName: changedByUser.name,
-    })
-    .from(deadlineChanges)
-    .leftJoin(changedByUser, eq(deadlineChanges.changedBy, changedByUser.id))
-    .where(eq(deadlineChanges.thesisRequestId, thesisRequestId))
-    .orderBy(desc(deadlineChanges.changedAt));
-}
-
-/** Liefert die fachliche Zuordnung einer Thesis für fristbezogene Verwaltungsrechte. */
-export async function getThesisDeadlineScope(thesisRequestId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  const student = aliasedTable(users, "deadline_scope_student");
-  const [row] = await db
-    .select({
-      thesisRequestId: thesisRequests.id,
-      studentId: thesisRequests.studentId,
-      programmeId: student.programmeId,
-      department: programmes.fachbereich,
-      targetSemester: thesisRequests.targetSemester,
-      submissionDeadline: thesisRequests.submissionDeadline,
-    })
-    .from(thesisRequests)
-    .innerJoin(student, eq(thesisRequests.studentId, student.id))
-    .leftJoin(programmes, eq(student.programmeId, programmes.id))
-    .where(eq(thesisRequests.id, thesisRequestId))
-    .limit(1);
-  return row ?? null;
-}
-
-/** Regeltermine, optional auf einen Fachbereich eingeschränkt. */
-export async function getProgrammeSemesterDeadlines(scopeDepartment?: string | null) {
-  const db = await getDb();
-  if (!db) return [];
-  const rows = await db
-    .select({
-      id: programmeSemesterDeadlines.id,
-      department: programmeSemesterDeadlines.department,
-      programmeId: programmeSemesterDeadlines.programmeId,
-      semester: programmeSemesterDeadlines.semester,
-      registrationDeadline: programmeSemesterDeadlines.registrationDeadline,
-      submissionDeadline: programmeSemesterDeadlines.submissionDeadline,
-      updatedAt: programmeSemesterDeadlines.updatedAt,
-      programmeName: programmes.name,
-      programmeAbbreviation: programmes.abbreviation,
-    })
-    .from(programmeSemesterDeadlines)
-    .leftJoin(programmes, eq(programmeSemesterDeadlines.programmeId, programmes.id))
-    .where(scopeDepartment ? eq(programmeSemesterDeadlines.department, scopeDepartment) : undefined)
-    .orderBy(desc(programmeSemesterDeadlines.semester), programmeSemesterDeadlines.department);
-  return rows;
-}
-
-/** Legt eine Regel an oder aktualisiert sie; Studiengang = null bedeutet Fachbereichsstandard. */
-export async function upsertProgrammeSemesterDeadline(input: {
-  department: string;
-  programmeId: number | null;
-  semester: string;
-  registrationDeadline: string;
-  submissionDeadline: string;
-  updatedBy: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Datenbank nicht verfügbar");
-  const programmeCondition = input.programmeId === null
-    ? isNull(programmeSemesterDeadlines.programmeId)
-    : eq(programmeSemesterDeadlines.programmeId, input.programmeId);
-  const [existing] = await db.select({ id: programmeSemesterDeadlines.id })
-    .from(programmeSemesterDeadlines)
-    .where(and(
-      eq(programmeSemesterDeadlines.department, input.department),
-      eq(programmeSemesterDeadlines.semester, input.semester),
-      programmeCondition,
-    ))
-    .limit(1);
-  const values = {
-    department: input.department,
-    programmeId: input.programmeId,
-    semester: input.semester,
-    registrationDeadline: input.registrationDeadline,
-    submissionDeadline: input.submissionDeadline,
-    updatedBy: input.updatedBy,
-  };
-  if (existing) {
-    await db.update(programmeSemesterDeadlines).set(values).where(eq(programmeSemesterDeadlines.id, existing.id));
-    return { id: existing.id, created: false };
-  }
-  const [inserted] = await db.insert(programmeSemesterDeadlines).values(values);
-  return { id: inserted.insertId, created: true };
-}
-
-/** Ermittelt die studiengangsspezifische Regel, sonst den Fachbereichsstandard. */
-export async function getEffectiveProgrammeSemesterDeadline(input: { department: string; programmeId?: number | null; semester: string }) {
-  const rules = await getProgrammeSemesterDeadlines(input.department) as ProgrammeSemesterDeadlineRule[];
-  return resolveProgrammeSemesterDeadline(rules, input);
 }
 
 // ─── Phase: Examiner/PAV-initiierter Antrag ──────────────────────────────────

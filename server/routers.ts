@@ -170,13 +170,6 @@ import {
   getRegisteredTheses,
   setOfficialRegistration,
   setAdmission,
-  extendDeadline,
-  setDefenseDate,
-  closeCase,
-  getDeadlineChanges,
-  getThesisDeadlineScope,
-  getProgrammeSemesterDeadlines,
-  upsertProgrammeSemesterDeadline,
   createExaminerInitiatedDraft,
   getDraftByInviteToken,
   confirmStudentDraft,
@@ -217,6 +210,9 @@ import {
 } from "./db";
 import { examinerCommentsRouter } from "./routers/examinerCommentsRouter";
 import { faqRouter } from "./routers/faqRouter";
+import { createPavDeadlineProcedures } from "./routers/deadlineProcedures";
+import { closeCase, extendDeadline, getDeadlineChanges, getProgrammeSemesterDeadlines, getThesisDeadlineScope, setDefenseDate, upsertProgrammeSemesterDeadline } from "./db/deadlines";
+import { createColloquium, deleteColloquium, getAllColloquiums, getColloquiumsByExaminer, getColloquiumsByStudent, getColloquiumsByThesis, updateColloquiumStatus } from "./db/colloquiums";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import { SAML_SETTING_KEYS, getSamlConfigurationIssues, isSamlConfigurationReady, parseSamlConfiguration } from "./samlAuth";
 import bcrypt from "bcryptjs";
@@ -224,15 +220,6 @@ import { SignJWT } from "jose";
 import { parse as parseCookie } from "cookie";
 import QRCode from "qrcode";
 import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, generateRecoveryCodes, verifyTwoFactorCode } from "./twoFactorAuth";
-import {
-  createColloquium,
-  getAllColloquiums,
-  getColloquiumsByThesis,
-  getColloquiumsByExaminer,
-  getColloquiumsByStudent,
-  updateColloquiumStatus,
-  deleteColloquium,
-} from "./db";
 import { createIcsEvent } from "./icsHelper";
 import { createHeartbeatJob } from "./_core/heartbeat";
 import {
@@ -312,7 +299,7 @@ const superadminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-const pavProcedure = protectedProcedure.use(({ ctx, next }) => {
+export const pavProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!userHasRole(ctx.user, "pav") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur PAV haben Zugriff." });
   }
@@ -3376,6 +3363,7 @@ export const appRouter = router({
 
   // ─── PAV Router ────────────────────────────────────────────────────────────
   pav: router({
+    ...createPavDeadlineProcedures(pavProcedure, createAuditLogEntry),
     /** Unzugeteilte Studierende (kein Erst-/Zweitprüfer:in) */
     getUnassignedStudents: pavProcedure.query(async () => {
       return getUnassignedStudents();
@@ -3674,6 +3662,7 @@ export const appRouter = router({
 
   // ─── Verwaltungsworkflow: Anmeldung & Zulassung ──────────────────────────
   adminWorkflow: router({
+    ...createPavDeadlineProcedures(pavProcedure, createAuditLogEntry),
     /** Alle offiziell angemeldeten/zugelassenen Arbeiten */
     getRegisteredTheses: pavProcedure.query(async () => {
       return getRegisteredTheses();
@@ -3713,64 +3702,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    /** Abgabefrist verlängern */
-    extendDeadline: pavProcedure
-      .input(z.object({
-        thesisRequestId: z.number().int().positive(),
-        newDeadline: z.string(),
-        reason: z.string().min(1),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        await extendDeadline(input.thesisRequestId, ctx.user.id, input.newDeadline, input.reason);
-        await createAuditLogEntry({
-          thesisRequestId: input.thesisRequestId,
-          actorId: ctx.user.id,
-          actorRole: ctx.user.role,
-          action: "STATUS_CHANGED",
-          metadata: { action: "deadline_extended", newDeadline: input.newDeadline, reason: input.reason },
-        });
-        return { success: true };
-      }),
-
-    /** Verteidigungsdatum eintragen */
-    setDefenseDate: pavProcedure
-      .input(z.object({
-        thesisRequestId: z.number().int().positive(),
-        defenseDate: z.string(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        await setDefenseDate(input.thesisRequestId, ctx.user.id, input.defenseDate);
-        await createAuditLogEntry({
-          thesisRequestId: input.thesisRequestId,
-          actorId: ctx.user.id,
-          actorRole: ctx.user.role,
-          action: "STATUS_CHANGED",
-          metadata: { action: "defense_date_set", defenseDate: input.defenseDate },
-        });
-        return { success: true };
-      }),
-
-    /** Akte vollständig übermitteln */
-    closeCase: pavProcedure
-      .input(z.object({ thesisRequestId: z.number().int().positive() }))
-      .mutation(async ({ input, ctx }) => {
-        await closeCase(input.thesisRequestId, ctx.user.id);
-        await createAuditLogEntry({
-          thesisRequestId: input.thesisRequestId,
-          actorId: ctx.user.id,
-          actorRole: ctx.user.role,
-          action: "STATUS_CHANGED",
-          metadata: { officialStatus: "case_closed", note: "Akte vollständig übermittelt" },
-        });
-        return { success: true };
-      }),
-
-    /** Abgabefrist-Änderungsprotokoll abrufen */
-    getDeadlineChanges: pavProcedure
-      .input(z.object({ thesisRequestId: z.number().int().positive() }))
-      .query(async ({ input }) => {
-        return getDeadlineChanges(input.thesisRequestId);
-      }),
   }),
 
   // ─── E-Mail-Vorlagen (Superadmin) ─────────────────────────────────────────
