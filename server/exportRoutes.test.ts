@@ -27,4 +27,11 @@ describe("PDF-Exportrouten", () => {
     registerExportRoutes(app as any);
     expect(paths).toContain("/api/export/hosting-deployment-guide.pdf");
   });
+
+  it("registriert den öffentlichen kompakten Prüfer:innenleitfaden", () => {
+    const paths: string[] = [];
+    const app = { get(path: string) { paths.push(path); } };
+    registerExportRoutes(app as any);
+    expect(paths).toContain("/api/export/examiner-quick-guide.pdf");
+  });
 });

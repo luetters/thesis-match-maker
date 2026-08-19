@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 
 type Audience = "general" | "student" | "firstExaminer" | "secondExaminer" | "admin";
-type FaqItem = { question: string; answer: string };
+type FaqItem = { question: string; answer: string; faqKey?: string };
 
 export const FAQ_DE: Record<Audience, FaqItem[]> = {
   general: [
@@ -100,14 +100,23 @@ export default function Faq() {
     try { return JSON.parse(localStorage.getItem("thesis-match-faq-ratings") ?? "{}"); } catch { return {}; }
   });
   const de = lang === "de";
-  const content = de ? FAQ_DE : FAQ_EN;
+  const published = trpc.faq.published.useQuery({ language: de ? "de" : "en" });
+  const content = useMemo(() => {
+    const base = de ? FAQ_DE : FAQ_EN;
+    const merged = Object.fromEntries(Object.entries(base).map(([key, items]) => [key, [...items]])) as Record<Audience, FaqItem[]>;
+    for (const item of published.data ?? []) {
+      const audience = item.audience as Audience;
+      if (audience in merged && item.answer && item.faqKey) merged[audience].unshift({ question: item.question, answer: item.answer, faqKey: item.faqKey });
+    }
+    return merged;
+  }, [de, published.data]);
   const submitFeedback = trpc.faq.submitFeedback.useMutation({
     onSuccess: () => { setFeedbackMessage(""); setFeedbackSubmitted(true); },
   });
   const rateAnswer = trpc.faq.rateAnswer.useMutation();
   const visibleItems = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
-    const allItems = AUDIENCES.flatMap(({ id }) => content[id].map((item, index) => ({ ...item, audience: id, index })));
+    const allItems = AUDIENCES.flatMap(({ id }) => content[id].map((item, index) => ({ ...item, audience: id, faqKey: item.faqKey ?? `${id}:${index}` })));
     if (!term) return allItems.filter((item) => item.audience === audience);
     return allItems.filter((item) => `${item.question} ${item.answer}`.toLocaleLowerCase().includes(term));
   }, [audience, content, search]);
@@ -164,7 +173,7 @@ export default function Faq() {
             <div>
               <div className="mb-5 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-slate-900 text-white"><FileQuestion className="h-5 w-5" /></div><div><p className="text-sm text-slate-500">{search ? (de ? "Suchergebnisse" : "Search results") : (de ? AUDIENCES.find((entry) => entry.id === audience)?.de : AUDIENCES.find((entry) => entry.id === audience)?.en)}</p><h2 className="text-2xl font-bold">{visibleItems.length} {de ? "Antworten" : "answers"}</h2></div></div>
               {visibleItems.length ? <div className="space-y-3">{visibleItems.map((item) => {
-                const faqKey = `${item.audience}:${item.index}`;
+                const faqKey = item.faqKey;
                 const wasRated = faqKey in ratedAnswers;
                 return <details key={faqKey} className="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 open:ring-[#b9e279]"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-slate-800"><span>{item.question}</span><ChevronDown className="h-5 w-5 shrink-0 text-[#679900] transition group-open:rotate-180" /></summary><div className="mt-4 border-t border-slate-100 pt-4"><p className="leading-relaxed text-slate-600">{item.answer}</p><div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4"><span className="mr-1 text-xs font-semibold text-slate-500">{wasRated ? copy.thanks : copy.helpful}</span><button disabled={wasRated} onClick={(event) => { event.preventDefault(); submitAnswerRating(faqKey, true); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:border-[#9ed458] hover:bg-[#f4fbe9] disabled:cursor-default disabled:opacity-60"><ThumbsUp className="h-3.5 w-3.5" />{copy.yes}</button><button disabled={wasRated} onClick={(event) => { event.preventDefault(); submitAnswerRating(faqKey, false); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:border-amber-300 hover:bg-amber-50 disabled:cursor-default disabled:opacity-60"><ThumbsDown className="h-3.5 w-3.5" />{copy.no}</button></div></div></details>;
               })}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600"><p className="font-semibold">{copy.noResults}</p><p className="mt-2 text-sm">{copy.contact}</p></div>}

@@ -610,6 +610,13 @@
       "when": 1787116950776,
       "tag": "0086_flippant_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "5",
+      "when": 1787118368259,
+      "tag": "0087_smiling_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

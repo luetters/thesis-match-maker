@@ -308,7 +308,10 @@ export const faqFeedback = mysqlTable("faq_feedback", {
 	message: text().notNull(),
 	audience: varchar({ length: 32 }).notNull(),
 	language: varchar({ length: 2 }).notNull(),
-	status: mysqlEnum("status", ["NEW", "REVIEWED", "ARCHIVED"]).default("NEW").notNull(),
+	answer: text(),
+	publishedFaqKey: varchar("published_faq_key", { length: 64 }),
+	publishedAt: timestamp("published_at", { mode: "string" }),
+	status: mysqlEnum("status", ["NEW", "REVIEWED", "PUBLISHED", "ARCHIVED"]).default("NEW").notNull(),
 	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_faq_feedback_status_created").on(table.status, table.createdAt),

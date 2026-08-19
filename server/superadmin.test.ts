@@ -112,6 +112,9 @@ vi.mock("./db", () => ({
   submitFaqFeedback: vi.fn().mockResolvedValue({ success: true }),
   recordFaqRating: vi.fn().mockResolvedValue({ helpfulCount: 1, notHelpfulCount: 0 }),
   getFaqFeedbackOverview: vi.fn().mockResolvedValue({ newCount: 1, feedback: [{ id: 1, message: "Wie wird die Freischaltung erklärt?", audience: "student", language: "de", status: "NEW", createdAt: new Date() }], ratings: [] }),
+  answerAndPublishFaqFeedback: vi.fn().mockResolvedValue({ success: true, publishedFaqKey: "community:1" }),
+  getPublishedFaqFeedback: vi.fn().mockResolvedValue([{ id: 1, question: "Wie wird die Freischaltung erklärt?", answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", audience: "student", faqKey: "community:1" }]),
+  getTopFaqRatings: vi.fn().mockResolvedValue([{ faqKey: "student:0", helpfulCount: 4, notHelpfulCount: 1 }]),
   getUsersMissingRequiredTwoFactor: vi.fn().mockResolvedValue([
     { id: 17, name: "Dr. Beispiel", email: "beispiel@htw-berlin.de", role: "examiner", createdAt: new Date() },
   ]),
@@ -402,5 +405,21 @@ describe("faq", () => {
     await expect(adminCaller.faq.adminOverview()).resolves.toMatchObject({ newCount: 1 });
     const publicCaller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
     await expect(publicCaller.faq.adminOverview()).rejects.toThrow();
+  });
+
+  it("veröffentlicht eine beantwortete Frage nur für berechtigte Verwaltungskonten", async () => {
+    const adminCaller = appRouter.createCaller(createAdminContext());
+    const result = await adminCaller.faq.answerAndPublish({ id: 1, answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", publish: true });
+    const { answerAndPublishFaqFeedback } = await import("./db");
+    expect(result).toEqual({ success: true, publishedFaqKey: "community:1" });
+    expect(answerAndPublishFaqFeedback).toHaveBeenCalledWith({ id: 1, answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", publish: true });
+    const publicCaller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
+    await expect(publicCaller.faq.answerAndPublish({ id: 1, answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", publish: true })).rejects.toThrow();
+  });
+
+  it("stellt veröffentlichte Community-FAQs und aggregierte Bewertungsdaten öffentlich bereit", async () => {
+    const caller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
+    await expect(caller.faq.published({ language: "de" })).resolves.toHaveLength(1);
+    await expect(caller.faq.topRated()).resolves.toHaveLength(1);
   });
 });

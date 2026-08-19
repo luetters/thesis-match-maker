@@ -1813,3 +1813,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Hilfreich-/Nicht-hilfreich-Bewertung je FAQ-Antwort speichern und gegen Mehrfachabgaben schützen
 - [x] Verwaltungsansicht für offene Fragen und Antwortbewertungen ergänzen
 - [x] Interaktive FAQ-Funktionen automatisiert testen und veröffentlichen
+
+## Leitfaden, Einstiegsvideo und FAQ-Redaktion
+- [x] Kompakten PDF-Leitfaden für Erst- und Zweitprüfer:innen mit sicherem Download erstellen
+- [x] Kurzes Einführungsvideo für Studierende, Prüfer:innen und Verwaltung erstellen und auf der Startseite integrieren
+- [x] FAQ-Widget mit kuratierten häufigen oder besonders gut bewerteten Fragen auf der Startseite ergänzen
+- [x] Verwaltungsworkflow zum Beantworten eingereichter Fragen und Veröffentlichen als FAQ ergänzen
+- [x] Neue Funktionen automatisiert testen und veröffentlichen

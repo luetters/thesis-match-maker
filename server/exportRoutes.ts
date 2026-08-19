@@ -29,6 +29,7 @@ import { buildFullName, getStatusBadge } from "@shared/const";
 import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
 import { buildSamlIntegrationGuidePdf } from "./samlGuidePdf";
 import { buildHostingDeploymentGuidePdf } from "./hostingGuidePdf";
+import { buildExaminerQuickGuidePdf } from "./examinerQuickGuidePdf";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -92,6 +93,13 @@ async function exportHostingDeploymentGuidePdf(req: Request, res: Response) {
   const pdf = await buildHostingDeploymentGuidePdf();
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Bereitstellungsleitfaden_IONOS_Hetzner.pdf"');
+  res.send(pdf);
+}
+
+async function exportExaminerQuickGuidePdf(_req: Request, res: Response) {
+  const pdf = await buildExaminerQuickGuidePdf();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Kompaktleitfaden-Prueferinnen-und-Pruefer.pdf"');
   res.send(pdf);
 }
 
@@ -1180,6 +1188,7 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/thesis/:id/history.pdf", exportThesisHistoryPdf);
   app.get("/api/export/saml-integration-guide.pdf", exportSamlIntegrationGuidePdf);
   app.get("/api/export/hosting-deployment-guide.pdf", exportHostingDeploymentGuidePdf);
+  app.get("/api/export/examiner-quick-guide.pdf", exportExaminerQuickGuidePdf);
   app.get("/api/export/my-notes.csv", exportMyNotesCsv);
   app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
 }

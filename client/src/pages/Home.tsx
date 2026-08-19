@@ -7,6 +7,8 @@ import { getStatusBadge } from "@shared/const";
 import { getNextLandingBackgroundVideoIndex, LANDING_BACKGROUND_VIDEOS, LANDING_HERO_MEDIA } from "@shared/landingHeroMedia";
 import { buildLandingPortalMetrics } from "@shared/landingPortalHighlights";
 import { getHighContrastPreference, HIGH_CONTRAST_STORAGE_KEY, toggleHighContrastPreference } from "@shared/homeAccessibility";
+import { LandingOnboarding } from "@/components/LandingOnboarding";
+import { LandingFaqWidget } from "@/components/LandingFaqWidget";
 
 // ─── Status Badge ───────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -729,6 +731,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <LandingOnboarding />
+
+      <LandingFaqWidget />
 
       {/* ─── Ablauf ──────────────────────────────────────────────────────── */}
       <section ref={processSectionRef} className="relative z-10 py-20" style={{ backgroundColor: "#f0f8f0" }}>

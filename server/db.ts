@@ -1401,6 +1401,41 @@ export async function getFaqFeedbackOverview() {
   return { newCount: Number(countRow?.count ?? 0), feedback, ratings };
 }
 
+export async function answerAndPublishFaqFeedback(input: { id: number; answer: string; publish: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const answer = sanitizeBiographyText(input.answer).trim().slice(0, 1600);
+  if (answer.length < 15) throw new Error("Bitte formulieren Sie die Antwort etwas ausführlicher.");
+  const [feedback] = await db.select().from(faqFeedback).where(eq(faqFeedback.id, input.id)).limit(1);
+  if (!feedback) throw new Error("Die FAQ-Rückmeldung wurde nicht gefunden.");
+  const publishedFaqKey = input.publish ? `community:${feedback.id}` : null;
+  await db.update(faqFeedback).set({
+    answer,
+    status: input.publish ? "PUBLISHED" : "REVIEWED",
+    publishedFaqKey,
+    publishedAt: input.publish ? sql`CURRENT_TIMESTAMP` : null,
+  }).where(eq(faqFeedback.id, input.id));
+  return { success: true, publishedFaqKey };
+}
+
+export async function getPublishedFaqFeedback(language: "de" | "en") {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: faqFeedback.id,
+    question: faqFeedback.message,
+    answer: faqFeedback.answer,
+    audience: faqFeedback.audience,
+    faqKey: faqFeedback.publishedFaqKey,
+  }).from(faqFeedback).where(and(eq(faqFeedback.status, "PUBLISHED"), eq(faqFeedback.language, language))).orderBy(desc(faqFeedback.publishedAt));
+}
+
+export async function getTopFaqRatings(limit = 5) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(faqRatingTotals).orderBy(desc(sql`${faqRatingTotals.helpfulCount} + ${faqRatingTotals.notHelpfulCount}`), desc(faqRatingTotals.updatedAt)).limit(limit);
+}
+
 // ─── Password Reset Tokens ────────────────────────────────────────────────────
 
 export async function createPasswordResetToken(userId: number, token: string, expiresAt: Date): Promise<void> {
