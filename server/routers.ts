@@ -50,12 +50,6 @@ import {
   setUserPasswordHash,
 	getSystemSettings,
 	upsertSystemSetting,
-	submitFaqFeedback,
-	recordFaqRating,
-	getFaqFeedbackOverview,
-	answerAndPublishFaqFeedback,
-	getPublishedFaqFeedback,
-	getTopFaqRatings,
   createPasswordResetToken,
   getPasswordResetToken,
   markPasswordResetTokenUsed,
@@ -200,12 +194,6 @@ import {
   markStudentRegistrationInvitationUsed,
   getExaminerRegistrationInvitations,
   revokeStudentRegistrationInvitation,
-  getExaminerComments,
-  createExaminerComment,
-  updateExaminerComment,
-  deleteExaminerComment,
-  searchExaminerComments,
-  setExaminerCommentCompletion,
   getTopicsByExaminer,
   getActiveTopicsForExaminer,
   getAllActiveTopics,
@@ -227,6 +215,8 @@ import {
   NOTIFICATION_TYPES,
   type NotificationTypeKey,
 } from "./db";
+import { examinerCommentsRouter } from "./routers/examinerCommentsRouter";
+import { faqRouter } from "./routers/faqRouter";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
 import { SAML_SETTING_KEYS, getSamlConfigurationIssues, isSamlConfigurationReady, parseSamlConfiguration } from "./samlAuth";
 import bcrypt from "bcryptjs";
@@ -493,26 +483,7 @@ export const appRouter = router({
     getPortalHighlights: publicProcedure.query(async () => getPublicPortalHighlights()),
   }),
 
-  faq: router({
-    submitFeedback: publicProcedure
-      .input(z.object({
-        message: z.string().min(15).max(800),
-        audience: z.enum(["general", "student", "firstExaminer", "secondExaminer", "admin"]),
-        language: z.enum(["de", "en"]),
-      }))
-      .mutation(async ({ input }) => submitFaqFeedback(input)),
-    rateAnswer: publicProcedure
-      .input(z.object({ faqKey: z.string().regex(/^(general|student|firstExaminer|secondExaminer|admin|community):\d+$/), helpful: z.boolean() }))
-      .mutation(async ({ input }) => recordFaqRating(input)),
-    published: publicProcedure
-      .input(z.object({ language: z.enum(["de", "en"]) }))
-      .query(async ({ input }) => getPublishedFaqFeedback(input.language)),
-    topRated: publicProcedure.query(async () => getTopFaqRatings()),
-    adminOverview: adminProcedure.query(async () => getFaqFeedbackOverview()),
-    answerAndPublish: adminProcedure
-      .input(z.object({ id: z.number().int().positive(), answer: z.string().min(15).max(1600), publish: z.boolean() }))
-      .mutation(async ({ input }) => answerAndPublishFaqFeedback(input)),
-  }),
+  faq: faqRouter,
 
   saml: router({
     status: publicProcedure.query(async () => {
@@ -5876,78 +5847,7 @@ export const appRouter = router({
 
   }),
 
-  // ─── Examiner Comments ────────────────────────────────────────────────────────
-  examinerComments: router({
-    /** Gibt alle eigenen Kommentare für einen Thesis-Antrag zurück. */
-    list: protectedProcedure
-      .input(z.object({ thesisRequestId: z.number(), includeCompleted: z.boolean().optional() }))
-      .query(async ({ ctx, input }) => {
-        return getExaminerComments(input.thesisRequestId, ctx.user.id, input.includeCompleted);
-      }),
-
-    /** Durchsucht ausschließlich eigene private Notizen über alle Anfragen hinweg. */
-    search: protectedProcedure
-      .input(z.object({
-        search: z.string().trim().max(200).optional(),
-        priority: z.enum(["normal", "important", "urgent"]).optional(),
-        includeCompleted: z.boolean().optional(),
-      }))
-      .query(async ({ ctx, input }) => searchExaminerComments({ examinerId: ctx.user.id, ...input })),
-
-    /** Setzt ausschließlich für eigene dringende Notizen den Erledigtstatus. */
-    setCompletion: protectedProcedure
-      .input(z.object({ id: z.number(), completed: z.boolean() }))
-      .mutation(async ({ ctx, input }) => {
-        await setExaminerCommentCompletion({ id: input.id, examinerId: ctx.user.id, completed: input.completed });
-        return { success: true };
-      }),
-
-    /** Erstellt einen neuen Kommentar. */
-    create: protectedProcedure
-      .input(z.object({
-        thesisRequestId: z.number(),
-        content: z.string().min(1).max(4000),
-        priority: z.enum(["normal", "important", "urgent"]).default("normal"),
-        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const id = await createExaminerComment({
-          thesisRequestId: input.thesisRequestId,
-          examinerId: ctx.user.id,
-          content: input.content,
-          priority: input.priority,
-          dueAt: input.priority === "urgent" && input.dueDate ? `${input.dueDate} 23:59:59` : null,
-        });
-        return { id };
-      }),
-
-    /** Aktualisiert einen bestehenden Kommentar (nur Ersteller). */
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        content: z.string().min(1).max(4000),
-        priority: z.enum(["normal", "important", "urgent"]).optional(),
-        dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await updateExaminerComment({
-          id: input.id,
-          examinerId: ctx.user.id,
-          content: input.content,
-          priority: input.priority,
-          dueAt: input.priority === "urgent" && input.dueDate ? `${input.dueDate} 23:59:59` : null,
-        });
-        return { success: true };
-      }),
-
-    /** Löscht einen Kommentar (nur Ersteller). */
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        await deleteExaminerComment({ id: input.id, examinerId: ctx.user.id });
-        return { success: true };
-      }),
-  }),
+  examinerComments: examinerCommentsRouter,
 
   // --- E-Mail-Benachrichtigungs-Einstellungen ---
   notificationSettings: router({

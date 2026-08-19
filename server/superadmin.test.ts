@@ -179,7 +179,16 @@ vi.mock("./emailHelper", () => ({
   sendReminderEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("./jwtHelper", () => ({
+vi.mock("./db/faq", () => ({
+  submitFaqFeedback: vi.fn().mockResolvedValue({ success: true }),
+  recordFaqRating: vi.fn().mockResolvedValue({ helpfulCount: 1, notHelpfulCount: 0 }),
+  getFaqFeedbackOverview: vi.fn().mockResolvedValue({ newCount: 1, feedback: [{ id: 1, message: "Wie wird die Freischaltung erklärt?", audience: "student", language: "de", status: "NEW", createdAt: new Date() }], ratings: [] }),
+  answerAndPublishFaqFeedback: vi.fn().mockResolvedValue({ success: true, publishedFaqKey: "community:1" }),
+  getPublishedFaqFeedback: vi.fn().mockResolvedValue([{ id: 1, question: "Wie wird die Freischaltung erklärt?", answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", audience: "student", faqKey: "community:1" }]),
+  getTopFaqRatings: vi.fn().mockResolvedValue([{ faqKey: "student:0", helpfulCount: 4, notHelpfulCount: 1 }]),
+}));
+
+vi.mock("./twoFactorAuth", () => ({
   signExaminerActionToken: vi.fn().mockResolvedValue("mock-jwt-token"),
   verifyExaminerActionToken: vi.fn().mockResolvedValue({
     thesisRequestId: 1,
@@ -409,7 +418,7 @@ describe("faq", () => {
   it("speichert eine anonymisierte fehlende Frage ohne Nutzerkennung", async () => {
     const caller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
     const result = await caller.faq.submitFeedback({ message: "Wie funktioniert die Freischaltung im Detail?", audience: "student", language: "de" });
-    const { submitFaqFeedback } = await import("./db");
+    const { submitFaqFeedback } = await import("./db/faq");
     expect(result).toEqual({ success: true });
     expect(submitFaqFeedback).toHaveBeenCalledWith({ message: "Wie funktioniert die Freischaltung im Detail?", audience: "student", language: "de" });
   });
@@ -429,7 +438,7 @@ describe("faq", () => {
   it("veröffentlicht eine beantwortete Frage nur für berechtigte Verwaltungskonten", async () => {
     const adminCaller = appRouter.createCaller(createAdminContext());
     const result = await adminCaller.faq.answerAndPublish({ id: 1, answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", publish: true });
-    const { answerAndPublishFaqFeedback } = await import("./db");
+    const { answerAndPublishFaqFeedback } = await import("./db/faq");
     expect(result).toEqual({ success: true, publishedFaqKey: "community:1" });
     expect(answerAndPublishFaqFeedback).toHaveBeenCalledWith({ id: 1, answer: "Die Verwaltung prüft die Registrierung vor dem Zugang.", publish: true });
     const publicCaller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);

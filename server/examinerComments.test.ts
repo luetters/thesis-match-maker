@@ -6,7 +6,8 @@ vi.mock("drizzle-orm/mysql2", () => ({
   drizzle: vi.fn(() => fakeDbHolder.db),
 }));
 
-import { _resetDbForTesting, createExaminerComment, setExaminerCommentCompletion } from "./db";
+import { _resetDbForTesting } from "./db";
+import { createExaminerComment, setExaminerCommentCompletion } from "./db/examinerComments";
 
 describe("createExaminerComment", () => {
   beforeEach(() => {

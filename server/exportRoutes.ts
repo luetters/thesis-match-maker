@@ -23,9 +23,9 @@ import {
   getUserByOpenId,
   getProfile,
   getUserRoles,
-  searchExaminerComments,
   getThesisRequestsByExaminer,
 } from "./db";
+import { searchExaminerComments } from "./db/examinerComments";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
 import { buildSamlIntegrationGuidePdf } from "./samlGuidePdf";

@@ -1854,3 +1854,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Module, Datenzugriff, Schnittstellen und Betriebsabhängigkeiten inventarisieren
 - [x] Sicherheits-, Skalierungs-, Wartbarkeits- und Betriebsrisiken bewerten
 - [x] Zielarchitektur und priorisierte Verbesserungsroadmap dokumentieren
+
+## Schrittweise Modularisierung
+- [x] Risikoarme erste Extraktionswelle und stabile Modulgrenzen festlegen
+- [x] Private Prüfer:innennotizen und FAQ-Datenzugriffe aus `db.ts` in Fachmodule auslagern
+- [x] Private Notizbibliothek und Login-Protokoll aus großen Dashboards in fachliche Teilkomponenten zerlegen
+- [x] Fachrouter für private Notizen und FAQ aus `routers.ts` extrahieren und zentral zusammensetzen
+- [x] Regressionstests, TypeScript-Prüfung und Moduldokumentation der ersten Welle abschließen
+- [ ] Nächste Welle: Thesis-Lebenszyklus, Fristen und Kolloquien in Daten- und Routermodule auslagern
+- [ ] Nächste Welle: Betreuungsstatus, Anfragen und Berichte des Prüfer:innen-Dashboards auslagern
+- [ ] Nächste Welle: Anfragen, Audit, Nutzerverwaltung und Statistik der Verwaltungs-Dashboards weiter auslagern
