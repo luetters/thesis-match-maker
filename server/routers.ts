@@ -47,8 +47,11 @@ import {
   getPublicPortalHighlights,
   getUserByEmail,
   setUserPasswordHash,
-  getSystemSettings,
-  upsertSystemSetting,
+	getSystemSettings,
+	upsertSystemSetting,
+	submitFaqFeedback,
+	recordFaqRating,
+	getFaqFeedbackOverview,
   createPasswordResetToken,
   getPasswordResetToken,
   markPasswordResetTokenUsed,
@@ -484,6 +487,20 @@ export const appRouter = router({
 
   landing: router({
     getPortalHighlights: publicProcedure.query(async () => getPublicPortalHighlights()),
+  }),
+
+  faq: router({
+    submitFeedback: publicProcedure
+      .input(z.object({
+        message: z.string().min(15).max(800),
+        audience: z.enum(["general", "student", "firstExaminer", "secondExaminer", "admin"]),
+        language: z.enum(["de", "en"]),
+      }))
+      .mutation(async ({ input }) => submitFaqFeedback(input)),
+    rateAnswer: publicProcedure
+      .input(z.object({ faqKey: z.string().regex(/^(general|student|firstExaminer|secondExaminer|admin):\d+$/), helpful: z.boolean() }))
+      .mutation(async ({ input }) => recordFaqRating(input)),
+    adminOverview: adminProcedure.query(async () => getFaqFeedbackOverview()),
   }),
 
   saml: router({

@@ -6,6 +6,7 @@ import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
 import { DeadlineManagementTab } from "@/components/DeadlineManagementTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { HostingGuideHelp } from "@/components/HostingGuideHelp";
+import { FaqFeedbackAdminPanel } from "@/components/FaqFeedbackAdminPanel";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -2756,7 +2757,7 @@ export default function AdminDashboard() {
       {activeTab === "deadlines" && <DeadlineManagementTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "login_attempts" && <LoginAttemptsView />}
-      {activeTab === "help" && <HostingGuideHelp />}
+      {activeTab === "help" && <><HostingGuideHelp /><FaqFeedbackAdminPanel /></>}
     </ThesisDashboardLayout>
   );
 }

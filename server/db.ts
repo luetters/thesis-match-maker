@@ -27,8 +27,10 @@ import {
 	deadlineChanges,
 	programmeSemesterDeadlines,
 	examinerTopics,
-  loginAttempts,
-  examinerSeenNotifications,
+	loginAttempts,
+	faqFeedback,
+	faqRatingTotals,
+	examinerSeenNotifications,
   passwordResetTokens,
   InsertPasswordResetToken,
   notificationPreferences,
@@ -1357,7 +1359,46 @@ export async function upsertSystemSetting(key: string, value: string, updatedByI
   } else {
     await db.insert(systemSettings).values({ key, value, updatedById: updatedById ?? null } as InsertSystemSetting);
   }
-  return getSystemSetting(key);
+	return getSystemSetting(key);
+}
+
+// ─── FAQ-Rückmeldungen ----------------------------------------------------------
+// Es werden weder Nutzerkennungen noch Kontaktdaten gespeichert. Die Texte werden
+// wie Profilbiografien auf sicheren Klartext reduziert.
+export async function submitFaqFeedback(input: { message: string; audience: string; language: "de" | "en" }) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const message = sanitizeBiographyText(input.message).trim().slice(0, 800);
+  if (message.length < 15) throw new Error("Bitte formulieren Sie Ihre Frage etwas genauer.");
+  await db.insert(faqFeedback).values({ message, audience: input.audience, language: input.language });
+  return { success: true };
+}
+
+export async function recordFaqRating(input: { faqKey: string; helpful: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.insert(faqRatingTotals).values({
+    faqKey: input.faqKey,
+    helpfulCount: input.helpful ? 1 : 0,
+    notHelpfulCount: input.helpful ? 0 : 1,
+  }).onDuplicateKeyUpdate({
+    set: {
+      helpfulCount: input.helpful ? sql`${faqRatingTotals.helpfulCount} + 1` : sql`${faqRatingTotals.helpfulCount}`,
+      notHelpfulCount: input.helpful ? sql`${faqRatingTotals.notHelpfulCount}` : sql`${faqRatingTotals.notHelpfulCount} + 1`,
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    },
+  });
+  const [rating] = await db.select().from(faqRatingTotals).where(eq(faqRatingTotals.faqKey, input.faqKey)).limit(1);
+  return { helpfulCount: rating?.helpfulCount ?? 0, notHelpfulCount: rating?.notHelpfulCount ?? 0 };
+}
+
+export async function getFaqFeedbackOverview() {
+  const db = await getDb();
+  if (!db) return { newCount: 0, feedback: [], ratings: [] };
+  const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(faqFeedback).where(eq(faqFeedback.status, "NEW"));
+  const feedback = await db.select().from(faqFeedback).orderBy(desc(faqFeedback.createdAt)).limit(50);
+  const ratings = await db.select().from(faqRatingTotals).orderBy(desc(faqRatingTotals.updatedAt));
+  return { newCount: Number(countRow?.count ?? 0), feedback, ratings };
 }
 
 // ─── Password Reset Tokens ────────────────────────────────────────────────────

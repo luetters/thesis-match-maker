@@ -301,6 +301,29 @@ export const systemSettings = mysqlTable("system_settings", {
 	index("key").on(table.key),
 ]);
 
+// ─── FAQ: ausschließlich fachliche Rückmeldungen und aggregierte Bewertungen ──
+// Die Tabellen speichern bewusst weder Nutzer-ID, E-Mail-Adresse noch IP-Adresse.
+export const faqFeedback = mysqlTable("faq_feedback", {
+	id: int().autoincrement().notNull().primaryKey(),
+	message: text().notNull(),
+	audience: varchar({ length: 32 }).notNull(),
+	language: varchar({ length: 2 }).notNull(),
+	status: mysqlEnum("status", ["NEW", "REVIEWED", "ARCHIVED"]).default("NEW").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_faq_feedback_status_created").on(table.status, table.createdAt),
+]);
+
+export const faqRatingTotals = mysqlTable("faq_rating_totals", {
+	id: int().autoincrement().notNull().primaryKey(),
+	faqKey: varchar("faq_key", { length: 64 }).notNull(),
+	helpfulCount: int("helpful_count").default(0).notNull(),
+	notHelpfulCount: int("not_helpful_count").default(0).notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_faq_rating_key").on(table.faqKey),
+]);
+
 export const thesisRequests = mysqlTable("thesis_requests", {
 	id: int().autoincrement().notNull(),
 	studentId: int().notNull(),

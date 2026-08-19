@@ -1806,3 +1806,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Öffentliche, durchsuchbare FAQ-Seite mit Rollenfiltern und klarer Navigation integrieren
 - [x] Vertrauensbildende Hinweise zu Datenschutz, Freiwilligkeit, Testphase und Feedback ergänzen
 - [x] FAQ-Navigation und Darstellung automatisiert prüfen und veröffentlichen
+
+## Interaktive FAQ-Weiterentwicklung
+- [x] Datenschutzfreundliches Feedback-Formular für fehlende Fragen mit Zuständigkeitsbereich ergänzen
+- [x] Rollenbezogene „Neu hier?“-Einstiege mit den wichtigsten ersten Schritten integrieren
+- [x] Hilfreich-/Nicht-hilfreich-Bewertung je FAQ-Antwort speichern und gegen Mehrfachabgaben schützen
+- [x] Verwaltungsansicht für offene Fragen und Antwortbewertungen ergänzen
+- [x] Interaktive FAQ-Funktionen automatisiert testen und veröffentlichen

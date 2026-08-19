@@ -109,6 +109,9 @@ vi.mock("./db", () => ({
   getSystemSettings: vi.fn().mockResolvedValue([]),
   getSystemSetting: vi.fn().mockResolvedValue(null),
   upsertSystemSetting: vi.fn().mockResolvedValue(undefined),
+  submitFaqFeedback: vi.fn().mockResolvedValue({ success: true }),
+  recordFaqRating: vi.fn().mockResolvedValue({ helpfulCount: 1, notHelpfulCount: 0 }),
+  getFaqFeedbackOverview: vi.fn().mockResolvedValue({ newCount: 1, feedback: [{ id: 1, message: "Wie wird die Freischaltung erklärt?", audience: "student", language: "de", status: "NEW", createdAt: new Date() }], ratings: [] }),
   getUsersMissingRequiredTwoFactor: vi.fn().mockResolvedValue([
     { id: 17, name: "Dr. Beispiel", email: "beispiel@htw-berlin.de", role: "examiner", createdAt: new Date() },
   ]),
@@ -377,5 +380,27 @@ describe("superadmin.getTwoFactorEnrollmentGaps", () => {
     const result = await caller.superadmin.getTwoFactorEnrollmentGaps();
     expect(getUsersMissingRequiredTwoFactor).toHaveBeenCalledWith(["examiner"]);
     expect(result).toEqual(expect.arrayContaining([expect.objectContaining({ id: 17, role: "examiner", twoFactorOverdue: true })]));
+  });
+});
+
+describe("faq", () => {
+  it("speichert eine anonymisierte fehlende Frage ohne Nutzerkennung", async () => {
+    const caller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
+    const result = await caller.faq.submitFeedback({ message: "Wie funktioniert die Freischaltung im Detail?", audience: "student", language: "de" });
+    const { submitFaqFeedback } = await import("./db");
+    expect(result).toEqual({ success: true });
+    expect(submitFaqFeedback).toHaveBeenCalledWith({ message: "Wie funktioniert die Freischaltung im Detail?", audience: "student", language: "de" });
+  });
+
+  it("lehnt zu kurze Rückmeldungen vor dem Speichern ab", async () => {
+    const caller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
+    await expect(caller.faq.submitFeedback({ message: "Zu kurz", audience: "student", language: "de" })).rejects.toThrow();
+  });
+
+  it("erlaubt die Bewertungsübersicht ausschließlich der Verwaltung", async () => {
+    const adminCaller = appRouter.createCaller(createAdminContext());
+    await expect(adminCaller.faq.adminOverview()).resolves.toMatchObject({ newCount: 1 });
+    const publicCaller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);
+    await expect(publicCaller.faq.adminOverview()).rejects.toThrow();
   });
 });
