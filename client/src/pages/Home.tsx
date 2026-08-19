@@ -864,6 +864,7 @@ export default function Home() {
           <div className="border-t border-white/10 pt-6 flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-white/40">{t.landing.footer.copyright}</p>
             <div className="flex gap-6">
+              <button onClick={() => navigate("/faq")} className="text-xs text-white/70 hover:text-white transition-colors">FAQ &amp; Hilfe</button>
               {[t.landing.footer.imprint, t.landing.footer.privacy, t.landing.footer.accessibility].map((l) => (
                 <button key={l} className="text-xs text-white/40 hover:text-white/70 transition-colors">
                   {l}

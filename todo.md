@@ -1800,3 +1800,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Geheimnisfreie technische Diagnoseinformationen serverseitig aufbereiten
 - [x] Detaillierte Protokollansicht mit konkreten Fehlerbehebungshinweisen integrieren
 - [x] Geheimnisfreiheit und Fehlerszenarien automatisiert testen
+
+## FAQ und Akzeptanzförderung
+- [x] FAQ-Inhalte für allgemeine Fragen sowie Studierende, Erstprüfer:innen, Zweitprüfer:innen und Verwaltung strukturieren
+- [x] Öffentliche, durchsuchbare FAQ-Seite mit Rollenfiltern und klarer Navigation integrieren
+- [x] Vertrauensbildende Hinweise zu Datenschutz, Freiwilligkeit, Testphase und Feedback ergänzen
+- [x] FAQ-Navigation und Darstellung automatisiert prüfen und veröffentlichen
