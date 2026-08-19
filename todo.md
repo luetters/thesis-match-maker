@@ -1785,3 +1785,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Offizielle Anforderungen der Anbieter und Portalvoraussetzungen prüfen
 - [x] Schritt-für-Schritt-Anleitung für beide Anbieter erstellen
 - [x] Leitfaden im Projekt sichern und zur Nutzung bereitstellen
+
+## Hilfe-Bereich und PDF für den Bereitstellungsleitfaden
+- [x] Geschützten PDF-Export des Leitfadens für Administration und Superadmin ergänzen
+- [x] Leitfaden direkt lesbar im Hilfe-Bereich des Admin-Dashboards integrieren
+- [x] PDF-Download, Berechtigungen und Oberfläche automatisiert testen

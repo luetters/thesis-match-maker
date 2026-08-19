@@ -5,6 +5,7 @@ import RoleApprovalTab from "@/components/RoleApprovalTab";
 import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
 import { DeadlineManagementTab } from "@/components/DeadlineManagementTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
+import { HostingGuideHelp } from "@/components/HostingGuideHelp";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -46,6 +47,7 @@ function useNavItems(pendingCount = 0, isSuperadmin = false) {
     { href: "/admin/colloquiums", label: t.admin.colloquiums, icon: IconCalendar },
     { href: "/admin/email-templates", label: "E-Mail-Vorlagen", icon: Icons.list },
     { href: "/admin/login-attempts", label: "Login-Protokoll", icon: Icons.log },
+    { href: "/admin/help", label: "Hilfe & Bereitstellung", icon: Icons.log },
   ];
 }
 
@@ -2693,7 +2695,7 @@ function LoginAttemptsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "deadlines" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "deadlines" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts" | "help">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
   const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
@@ -2722,6 +2724,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/settings") setActiveTab("settings");
       else if (item.href === "/admin/deadlines") setActiveTab("deadlines");
       else if (item.href === "/admin/email-templates") setActiveTab("email_templates");
+      else if (item.href === "/admin/help") setActiveTab("help");
       else if (item.href === "/admin/login-attempts") setActiveTab("login_attempts");
     },
   }));
@@ -2753,6 +2756,7 @@ export default function AdminDashboard() {
       {activeTab === "deadlines" && <DeadlineManagementTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "login_attempts" && <LoginAttemptsView />}
+      {activeTab === "help" && <HostingGuideHelp />}
     </ThesisDashboardLayout>
   );
 }

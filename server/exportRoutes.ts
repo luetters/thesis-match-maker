@@ -28,6 +28,7 @@ import {
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { getThesisHistoryPdfCopy } from "@shared/thesisHistoryPdfLocale";
 import { buildSamlIntegrationGuidePdf } from "./samlGuidePdf";
+import { buildHostingDeploymentGuidePdf } from "./hostingGuidePdf";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,6 +80,18 @@ async function exportSamlIntegrationGuidePdf(req: Request, res: Response) {
   const pdf = await buildSamlIntegrationGuidePdf();
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_SAML2_Integrationsleitfaden.pdf"');
+  res.send(pdf);
+}
+
+async function exportHostingDeploymentGuidePdf(req: Request, res: Response) {
+  const user = await getUserFromRequest(req);
+  if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+  const roles = await getUserRoles(user.id);
+  const allowed = user.role === "admin" || user.role === "superadmin" || roles.includes("admin") || roles.includes("superadmin");
+  if (!allowed) return res.status(403).json({ error: "Nur Verwaltungs- und Superadmin-Konten dürfen den Bereitstellungsleitfaden herunterladen." });
+  const pdf = await buildHostingDeploymentGuidePdf();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Bereitstellungsleitfaden_IONOS_Hetzner.pdf"');
   res.send(pdf);
 }
 
@@ -1166,6 +1179,7 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/thesis/:id/summary.pdf", exportThesisSummaryPdf);
   app.get("/api/export/thesis/:id/history.pdf", exportThesisHistoryPdf);
   app.get("/api/export/saml-integration-guide.pdf", exportSamlIntegrationGuidePdf);
+  app.get("/api/export/hosting-deployment-guide.pdf", exportHostingDeploymentGuidePdf);
   app.get("/api/export/my-notes.csv", exportMyNotesCsv);
   app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
 }

@@ -20,4 +20,11 @@ describe("PDF-Exportrouten", () => {
     expect(paths).toContain("/api/export/my-notes.csv");
     expect(paths).toContain("/api/export/my-notes.pdf");
   });
+
+  it("registriert den geschützten PDF-Export des Bereitstellungsleitfadens", () => {
+    const paths: string[] = [];
+    const app = { get(path: string) { paths.push(path); } };
+    registerExportRoutes(app as any);
+    expect(paths).toContain("/api/export/hosting-deployment-guide.pdf");
+  });
 });
