@@ -19,10 +19,13 @@ Die erste Welle zerlegt ausschließlich fachlich geschlossene Bereiche mit stabi
 | Kolloquien | `server/db/colloquiums.ts` | Anlegen, Abfragen, Statusänderungen und Beteiligungslisten |
 | Fristenrouter | `server/routers/deadlineProcedures.ts` | Typstabile PAV- und Verwaltungsverfahren für Frist, Verteidigung, Fallabschluss und Historie |
 | Prüfer:innenkolloquien | `client/src/components/examiner/MyColloquiums.tsx` | Anzeige und ICS-Download ausschließlich eigener Kolloquien |
+| Terminabstimmung | `server/routers/colloquiumSchedulingRouter.ts` | Räume, Optionen, Verfügbarkeiten, Auswahl, Bestätigung und Absage |
+| Prüfer:innen-Arbeitsbereiche | `client/src/components/examiner/ExaminerWorkspaceSections.tsx` | Stabile Einbindungsgrenzen für Anfragen und Berichte |
+| Verwaltungs-Arbeitsbereiche | `client/src/components/admin/AdminWorkspaceSections.tsx` | Stabile Einbindungsgrenzen für Audit und Nutzerverwaltung |
 
 ## Aktueller Effekt
 
-Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten und zweiten Welle liegt jedoch nun in **elf eigenständig testbaren Modulen**. Die zugehörigen Tests für FAQ, Notizen, Fristen, Kolloquien und Exporte bleiben grün.
+Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten bis dritten Welle liegt nun in **vierzehn abgegrenzten Modulen**. Die zugehörigen Tests für FAQ, Notizen, Fristen, Kolloquien, Terminabstimmung und Exporte bleiben grün.
 
 ## Nächste Wellen
 

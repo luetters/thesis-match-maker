@@ -22,6 +22,7 @@ import { DocComments } from "@/components/DocComments";
 import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
 import { PrivateNotesLibrary } from "@/components/examiner/PrivateNotesLibrary";
 import { MyColloquiums } from "@/components/examiner/MyColloquiums";
+import { ExaminerReportsSection, ExaminerRequestsSection } from "@/components/examiner/ExaminerWorkspaceSections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -4975,10 +4976,10 @@ export default function ExaminerDashboard() {
   return (
     <ThesisDashboardLayout navItems={currentNavItems} title={titles[activeTab] ?? "Prüfer:innen Dashboard"}>
       {activeTab === "overview" && <Overview />}
-      {activeTab === "requests" && <RequestsView />}
+      {activeTab === "requests" && <ExaminerRequestsSection><RequestsView /></ExaminerRequestsSection>}
       {activeTab === "colloquiums" && <MyColloquiums />}
       {activeTab === "scheduling" && <ColloquiumSchedulingPanel mode="examiner" />}
-      {activeTab === "history" && <ExaminerStatusHistory />}
+      {activeTab === "history" && <ExaminerReportsSection><ExaminerStatusHistory /></ExaminerReportsSection>}
       {activeTab === "profile" && <Profile embedded={true} />}
       {activeTab === "capacities" && <SupervisionCapacities />}
       {activeTab === "topics" && <ExaminerTopicsManager />}

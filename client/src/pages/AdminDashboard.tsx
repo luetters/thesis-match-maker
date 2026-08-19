@@ -9,6 +9,7 @@ import { HostingGuideHelp } from "@/components/HostingGuideHelp";
 import { FaqFeedbackAdminPanel } from "@/components/FaqFeedbackAdminPanel";
 import { LoginAttemptsView } from "@/components/admin/LoginAttemptsView";
 import { AssignExaminerModal } from "@/components/admin/AssignExaminerModal";
+import { AdminAuditSection, AdminUserManagementSection } from "@/components/admin/AdminWorkspaceSections";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -2471,8 +2472,8 @@ export default function AdminDashboard() {
       {activeTab === "saml" && hasRole("superadmin") && <SamlConfigurationTab />}
       {activeTab === "overview" && <Overview />}
       {activeTab === "requests" && <AllRequests userFilter={selectedUserFilter} onClearUserFilter={() => setSelectedUserFilter(null)} highlightId={highlightRequestId} onHighlightClear={() => setHighlightRequestId(null)} />}
-      {activeTab === "audit" && <AuditLogView onNavigateToRequest={(id) => { setHighlightRequestId(id); setActiveTab("requests"); }} />}
-      {activeTab === "users" && <UserManagement onNavigateToRequests={(userId, userName) => { setSelectedUserFilter({ userId, userName }); setActiveTab("requests"); }} />}
+      {activeTab === "audit" && <AdminAuditSection><AuditLogView onNavigateToRequest={(id) => { setHighlightRequestId(id); setActiveTab("requests"); }} /></AdminAuditSection>}
+      {activeTab === "users" && <AdminUserManagementSection><UserManagement onNavigateToRequests={(userId, userName) => { setSelectedUserFilter({ userId, userName }); setActiveTab("requests"); }} /></AdminUserManagementSection>}
       {activeTab === "stats" && <StatisticsView />}
       {activeTab === "settings" && <SettingsView />}
       {activeTab === "deadlines" && <DeadlineManagementTab />}

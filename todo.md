@@ -1864,3 +1864,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zweite Welle: Fristen und Kolloquien in Datenmodule sowie Fristenverfahren in einen Fachrouter auslagern
 - [x] Zweite Welle: Notizbibliothek, Kolloquiumsansicht und Berichtsbereich des Prüfer:innen-Dashboards fachlich abgrenzen
 - [x] Zweite Welle: Login-Protokoll und Prüfer:innenzuweisung des Verwaltungs-Dashboards weiter auslagern
+
+## Dritte Modularisierungswelle
+- [x] Terminabstimmung als eigenständigen Kolloquiums-Fachrouter extrahieren
+- [x] Anfragen- und Berichtsansicht des Prüfer:innen-Dashboards in Fachkomponenten zerlegen
+- [x] Audit- und Nutzerverwaltung im Verwaltungs-Dashboard in Fachkomponenten zerlegen
+- [x] Fachmodule mit Typ- und Regressionstests dokumentieren und veröffentlichen

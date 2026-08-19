@@ -211,6 +211,7 @@ import {
 import { examinerCommentsRouter } from "./routers/examinerCommentsRouter";
 import { faqRouter } from "./routers/faqRouter";
 import { createPavDeadlineProcedures } from "./routers/deadlineProcedures";
+import { colloquiumSchedulingRouter } from "./routers/colloquiumSchedulingRouter";
 import { closeCase, extendDeadline, getDeadlineChanges, getProgrammeSemesterDeadlines, getThesisDeadlineScope, setDefenseDate, upsertProgrammeSemesterDeadline } from "./db/deadlines";
 import { createColloquium, deleteColloquium, getAllColloquiums, getColloquiumsByExaminer, getColloquiumsByStudent, getColloquiumsByThesis, updateColloquiumStatus } from "./db/colloquiums";
 import { signExaminerActionToken, verifyExaminerActionToken } from "./jwtHelper";
@@ -2739,12 +2740,13 @@ export const appRouter = router({
     myExaminerColloquiums: anyExaminerProcedure.query(async ({ ctx }) => {
       return getColloquiumsByExaminer(ctx.user.id);
     }),
-    scheduling: router({
-      /** Alle eigenen laufenden und vergangenen Terminabstimmungen laden. */
+    scheduling: colloquiumSchedulingRouter,
+    /* Vorherige, nun ausgelagerte Implementierung der Terminabstimmung.
+      /** Alle eigenen laufenden und vergangenen Terminabstimmungen laden. * /
       myPolls: protectedProcedure.query(async ({ ctx }) => {
         return getMyColloquiumSchedulingPolls(ctx.user.id);
       }),
-      /** Detailansicht einschließlich Beteiligten, Optionen und Verfügbarkeiten. */
+      /** Detailansicht einschließlich Beteiligten, Optionen und Verfügbarkeiten. * /
       byId: protectedProcedure
         .input(z.object({ pollId: z.number().int().positive() }))
         .query(async ({ ctx, input }) => {
@@ -2754,7 +2756,7 @@ export const appRouter = router({
             throw new TRPCError({ code: "FORBIDDEN", message: error instanceof Error ? error.message : "Zugriff nicht erlaubt" });
           }
         }),
-      /** Konflikte werden vor dem Start sichtbar; die finale Prüfung bleibt serverseitig verpflichtend. */
+      /** Konflikte werden vor dem Start sichtbar; die finale Prüfung bleibt serverseitig verpflichtend. * /
       roomConflicts: anyExaminerProcedure
         .input(z.object({
           room: z.string().trim().max(256).optional(),
@@ -2764,7 +2766,7 @@ export const appRouter = router({
         .query(async ({ input }) => {
           return findColloquiumRoomConflicts(input);
         }),
-      /** Nur die zugeordnete Erstprüferin bzw. der Erstprüfer kann eine Runde starten. */
+      /** Nur die zugeordnete Erstprüferin bzw. der Erstprüfer kann eine Runde starten. * /
       create: anyExaminerProcedure
         .input(z.object({
           thesisRequestId: z.number().int().positive(),
@@ -2865,7 +2867,7 @@ export const appRouter = router({
             throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Abstimmung konnte nicht abgesagt werden" });
           }
         }),
-    }),
+    }), */
   }),
   // --- Superadmin: Systemkonfiguration ---
   superadmin: router({
