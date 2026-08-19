@@ -1849,3 +1849,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Tabellarische Vorschau vor PDF- und CSV-Downloads im Prüfer:innen-Dashboard integrieren
 - [x] Exportendpunkte mit identischen Filter- und Sortierparametern erweitern
 - [x] Filtergleichheit, Vorschau und Export automatisiert testen
+
+## Kritische Architekturprüfung
+- [x] Module, Datenzugriff, Schnittstellen und Betriebsabhängigkeiten inventarisieren
+- [x] Sicherheits-, Skalierungs-, Wartbarkeits- und Betriebsrisiken bewerten
+- [x] Zielarchitektur und priorisierte Verbesserungsroadmap dokumentieren
