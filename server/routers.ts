@@ -233,7 +233,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { parse as parseCookie } from "cookie";
 import QRCode from "qrcode";
-import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, generateRecoveryCodes, isAdminAccount, verifyTwoFactorCode } from "./twoFactorAuth";
+import { createTwoFactorSetup, decryptTwoFactorSecret, encryptTwoFactorSecret, generateRecoveryCodes, verifyTwoFactorCode } from "./twoFactorAuth";
 import {
   createColloquium,
   getAllColloquiums,
@@ -605,12 +605,12 @@ export const appRouter = router({
     }),
     twoFactorStatus: protectedProcedure.query(async ({ ctx }) => {
       const user = await getUserById(ctx.user.id);
-      if (!user || !isAdminAccount(user.role)) return { eligible: false, enabled: false };
+      if (!user) return { eligible: false, enabled: false };
       return { eligible: true, enabled: Boolean(user.twoFactorEnabled), confirmedAt: user.twoFactorConfirmedAt ?? null };
     }),
     beginTwoFactorSetup: protectedProcedure.mutation(async ({ ctx }) => {
       const user = await getUserById(ctx.user.id);
-      if (!user || !isAdminAccount(user.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Zwei-Faktor-Authentifizierung ist nur für Administrationskonten verfügbar." });
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Ihr Nutzerkonto wurde nicht gefunden." });
       const setup = createTwoFactorSetup(user.email ?? user.openId);
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -621,7 +621,7 @@ export const appRouter = router({
       .input(z.object({ code: z.string().regex(/^\d{6}$/) }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserById(ctx.user.id);
-        if (!user || !isAdminAccount(user.role) || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Es liegt keine offene 2FA-Einrichtung vor." });
+        if (!user || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Es liegt keine offene 2FA-Einrichtung vor." });
         const result = verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code);
         if (!result.valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
         const db = await getDb();
@@ -636,7 +636,7 @@ export const appRouter = router({
       .input(z.object({ code: z.string().regex(/^\d{6}$/) }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserById(ctx.user.id);
-        if (!user || !isAdminAccount(user.role) || !user.twoFactorEnabled || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Die Zwei-Faktor-Authentifizierung ist nicht aktiv." });
+        if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) throw new TRPCError({ code: "BAD_REQUEST", message: "Die Zwei-Faktor-Authentifizierung ist nicht aktiv." });
         if (!verifyTwoFactorCode(decryptTwoFactorSecret(user.twoFactorSecret), input.code).valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Der Sicherheitscode ist ungültig." });
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -939,7 +939,7 @@ export const appRouter = router({
           await logLoginAttempt({ email: input.email, success: false, failureReason: "Zwei-Faktor-Authentifizierung für Rolle erforderlich", ipAddress: ipAddr, userAgent: ua });
           throw new TRPCError({ code: "FORBIDDEN", message: "Für Ihre Rolle ist die Zwei-Faktor-Authentifizierung erforderlich. Bitte wenden Sie sich an die Verwaltung der HTW Berlin, um die Einrichtung zu veranlassen." });
         }
-        if (user.twoFactorEnabled && isAdminAccount(user.role)) {
+        if (user.twoFactorEnabled) {
           if (!input.twoFactorCode) {
             return { success: false, requiresTwoFactor: true, role: user.role, roles: [] as AppRole[] };
           }

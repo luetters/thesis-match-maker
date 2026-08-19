@@ -1830,3 +1830,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Betroffene Nutzer- und Prüfer:innenbiografien datensparsam prüfen
 - [x] HTML-Auszeichnungen und Steuerzeichen idempotent in lesbaren Klartext überführen
 - [x] Aktualisierte Datensätze und Bereinigungsergebnis nachvollziehbar prüfen
+
+## Nutzereigene 2FAS-Einrichtung im Profil
+- [x] Bestehende 2FA-Prozeduren für alle angemeldeten Nutzer:innen freigeben
+- [x] 2FAS-Einrichtung, Wiederherstellungscodes und Deaktivierung in die Profileinstellungen integrieren
+- [x] Selbst aktivierte 2FA beim Passwort-Login verbindlich durchsetzen
+- [x] Berechtigungen, Wiederherstellung und Anmeldefluss automatisiert testen

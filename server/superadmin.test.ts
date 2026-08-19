@@ -386,6 +386,25 @@ describe("superadmin.getTwoFactorEnrollmentGaps", () => {
   });
 });
 
+describe("auth.twoFactorStatus", () => {
+  it("stellt die persönliche 2FAS-Einrichtung auch Studierenden bereit", async () => {
+    const { getUserById } = await import("./db");
+    vi.mocked(getUserById).mockResolvedValueOnce({
+      id: 7,
+      name: "Max Muster",
+      email: "max@student.htw-berlin.de",
+      role: "student",
+      twoFactorEnabled: 0,
+      twoFactorConfirmedAt: null,
+    } as any);
+    const context = createAdminContext();
+    context.user = { ...context.user!, id: 7, role: "student", email: "max@student.htw-berlin.de" };
+    const caller = appRouter.createCaller(context);
+
+    await expect(caller.auth.twoFactorStatus()).resolves.toEqual({ eligible: true, enabled: false, confirmedAt: null });
+  });
+});
+
 describe("faq", () => {
   it("speichert eine anonymisierte fehlende Frage ohne Nutzerkennung", async () => {
     const caller = appRouter.createCaller({ ...createAdminContext(), user: null } as TrpcContext);

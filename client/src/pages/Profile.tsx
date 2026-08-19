@@ -11,6 +11,7 @@ import { Link, useLocation } from "wouter";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { ExaminerProgrammeSelector } from "@/components/ProgrammeSelector";
 import { CommissionPreferences } from "@/components/CommissionPreferences";
+import { TwoFactorProfilePanel } from "@/components/TwoFactorProfilePanel";
 import { hasExaminerProfileCapabilities } from "@shared/profileCapabilities";
 import { getAdminScopeBadgeLabel, shouldShowAdminScope } from "@shared/adminProfilePresentation";
 import { buildFullName } from "@shared/const";
@@ -1257,6 +1258,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             </div>
           </div>
         </div>
+
+        <TwoFactorProfilePanel />
 
         {/* ── Online-Präsenz (nur für Nicht-Prüfer:innen, da Prüfer:innen einen eigenen Links-Block haben) ── */}
         {!isExaminer && <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
