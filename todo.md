@@ -1870,3 +1870,16 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Anfragen- und Berichtsansicht des Prüfer:innen-Dashboards in Fachkomponenten zerlegen
 - [x] Audit- und Nutzerverwaltung im Verwaltungs-Dashboard in Fachkomponenten zerlegen
 - [x] Fachmodule mit Typ- und Regressionstests dokumentieren und veröffentlichen
+
+## Aktuelle Fehlerbehebung: Zusagen, Zweitgutachter:innen, Profil und Registrierung
+- [x] Rotes Sidebar-Badge für ausstehende Zusagen im Prüfer:innenbereich mit aktueller Anzahl ergänzen
+- [x] Zweitgutachter:innen Thema, Exposé und freigegebene Studentendokumente sichtbar und downloadbar machen
+- [x] Erinnerungsaktion für externe Zweitgutachter:innen ausschließlich für Erstgutachter:innen und berechtigte Verwaltung zulassen
+- [x] Profilfelder beim Verlassen des Feldes automatisch speichern, ohne parallele oder veraltete Mutationen auszulösen
+- [x] Sichtbarkeit der ausstehenden Anmeldung von Regine Buchheim im Freischaltungsworkflow nachvollziehbar sicherstellen
+- [x] Vitest-Regressionstests für Badge-Daten, Dokumentzugriff, Erinnerungs-RBAC und Profil-Autosave ergänzen und ausführen
+- [x] TypeScript, Entwicklungsserver und relevante Benutzerflüsse prüfen und Checkpoint speichern
+
+## Diagnosehinweis: Regine Buchheim
+- [x] Nutzerkonto gefunden: Regine Buchheim, regine.buchheim@htw-berlin.de, requestedRole=examiner, roleStatus=pending, angelegt am 19.08.2026 um 17:46 Uhr
+- [x] Ursache: Fachbereichsfilter blendete fachbereichsübergreifende Prüfer:innen- und Verwaltungsanfragen aus; diese Rollen sind nun sichtbar, Schreibrechte bleiben serverseitig geschützt

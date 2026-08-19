@@ -1708,6 +1708,7 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview() {
+  const { hasRole } = useAuth();
   const { data: requests } = trpc.thesis.all.useQuery();
   const { data: users } = trpc.admin.users.useQuery();
   const { data: logs } = trpc.auditLog.all.useQuery();
@@ -1975,7 +1976,8 @@ function Overview() {
                   <div className="flex gap-1.5 shrink-0">
                     <button
                       onClick={() => approveMutation.mutate({ userId: u.id })}
-                      disabled={approveMutation.isPending}
+                      disabled={approveMutation.isPending || (u.requestedRole === "admin" && !hasRole("superadmin"))}
+                      title={u.requestedRole === "admin" && !hasRole("superadmin") ? "Verwaltungsrollen können nur durch einen Superadmin freigeschaltet werden." : undefined}
                       className="text-xs px-2.5 py-1 rounded-lg bg-[#76b900] text-white font-medium hover:bg-[#5a8c00] transition-colors disabled:opacity-50"
                     >
                       Freischalten
@@ -1985,7 +1987,8 @@ function Overview() {
                         const reason = window.prompt("Begründung (optional):") ?? undefined;
                         rejectMutation.mutate({ userId: u.id, reason });
                       }}
-                      disabled={rejectMutation.isPending}
+                      disabled={rejectMutation.isPending || (u.requestedRole === "admin" && !hasRole("superadmin"))}
+                      title={u.requestedRole === "admin" && !hasRole("superadmin") ? "Verwaltungsrollen können nur durch einen Superadmin abgelehnt werden." : undefined}
                       className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition-colors border border-red-200 disabled:opacity-50"
                     >
                       Ablehnen

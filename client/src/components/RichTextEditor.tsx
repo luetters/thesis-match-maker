@@ -9,6 +9,7 @@ import { useEffect, useCallback } from "react";
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
+  onBlur?: () => void;
   className?: string;
   placeholder?: string;
 }
@@ -50,7 +51,7 @@ function Divider() {
   return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
 }
 
-export function RichTextEditor({ value, onChange, className, placeholder }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, onBlur, className, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -274,7 +275,11 @@ export function RichTextEditor({ value, onChange, className, placeholder }: Rich
       </div>
 
       {/* Editor-Bereich */}
-      <EditorContent editor={editor} />
+      <div onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onBlur?.();
+      }}>
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }

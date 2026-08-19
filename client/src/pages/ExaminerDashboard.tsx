@@ -705,7 +705,7 @@ function ConditionalReasonBox({ requestId, reason, conditionalAt, onUpdated }: {
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposéUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; submissionDeadline?: string | null; defenseEligibility?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposeUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; submissionDeadline?: string | null; defenseEligibility?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -938,6 +938,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
   const isPendingSecond = req.status === "PENDING_SECOND_EXAMINER" && (req as any).wantedSecondExaminerId === user?.id;
   const isAcceptedSecond = req.status === "SECOND_EXAMINER_ACCEPTED" && (req as any).secondExaminerId === user?.id;
+  const isAssignedExaminer = user?.id !== undefined && (
+    (req as any).examinerId === user.id || (req as any).secondExaminerId === user.id
+  );
+  const hasCompleteCommission = Boolean((req as any).examinerId && (req as any).secondExaminerId);
   // Ist der eingeloggte Nutzer der Zweitgutachter dieser Anfrage?
   const iAmSecondExaminer = user?.id !== undefined && (
     (req as any).secondExaminerId === user.id ||
@@ -946,7 +950,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
 
   const { data: condDocs } = (trpc.examinerEmailTemplates as any).getConditionalDocuments?.useQuery?.(
     { thesisRequestId: req.id },
-    { enabled: isConditional }
+    { enabled: isAssignedExaminer || iAmSecondExaminer }
   );
 
   return (
@@ -1290,7 +1294,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           })()}
         </div>
       )}
-      {req.exposéUrl && (
+      {req.exposeUrl && (
         <div className="flex gap-2 mb-3">
           <button
             onClick={() => setShowPdfPreview(true)}
@@ -1304,7 +1308,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             Exposé anzeigen
           </button>
           <a
-            href={req.exposéUrl}
+            href={req.exposeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -1316,8 +1320,31 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
           </a>
         </div>
       )}
-      {showPdfPreview && req.exposéUrl && (
-        <PdfPreviewModal url={req.exposéUrl} onClose={() => setShowPdfPreview(false)} />
+      {showPdfPreview && req.exposeUrl && (
+        <PdfPreviewModal url={req.exposeUrl} onClose={() => setShowPdfPreview(false)} />
+      )}
+
+      {isAssignedExaminer && hasCompleteCommission && (
+        <div className="mb-3 rounded-xl border border-[#76B900]/30 bg-[#76B900]/5 p-3">
+          <p className="text-xs font-semibold text-[#4a7200] uppercase tracking-wide">Offizielles Anmeldedokument</p>
+          <p className="mt-1 text-xs text-gray-600">Das QR-geschützte Dokument der vollständigen Kommission steht Ihnen als zugewiesenem Gutachter zur Verfügung.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <a
+              href={`/api/thesis/${req.id}/registration.pdf?preview=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#76B900] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#5a8c00]"
+            >
+              Dokument ansehen
+            </a>
+            <a
+              href={`/api/thesis/${req.id}/registration.pdf`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#76B900]/40 bg-white px-3 py-1.5 text-xs font-semibold text-[#4a7200] hover:bg-[#f1f8e9]"
+            >
+              Herunterladen
+            </a>
+          </div>
+        </div>
       )}
 
       <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
@@ -1338,7 +1365,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 </svg>
                 Zweitgutachter:in: {req.secondExaminerName} – <strong>Zugesagt</strong>
               </span>
-              {req.secondExaminerEmail && (
+              {!iAmSecondExaminer && req.secondExaminerEmail && (
                 <button
                   onClick={() => {
                     const recipientName = req.secondExaminerName ?? "Zweitgutachter:in";
@@ -1374,7 +1401,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 </svg>
                 Zweitgutachter:in: {req.wantedSecondExaminerName} – <strong>Angefragt</strong>
               </span>
-              {req.wantedSecondExaminerEmail && (
+              {!iAmSecondExaminer && req.wantedSecondExaminerEmail && (
                 <button
                   onClick={() => {
                     const recipientName = req.wantedSecondExaminerName ?? "Zweitgutachter:in";
@@ -1607,7 +1634,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
         />
       )}
 
-      {(isPending || isConditional) && (
+      {(isPending || isConditional || isAssignedExaminer || iAmSecondExaminer) && (
         <div className="space-y-3">
           {/* Vorbehalt-Hinweis wenn Status CONDITIONAL_ACCEPTANCE */}
           {isConditional && (
@@ -1619,7 +1646,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             />
           )}
           {/* Eingereichte Dokumente der Studierenden */}
-          {isConditional && condDocs && condDocs.length > 0 && (
+          {(isAssignedExaminer || iAmSecondExaminer) && condDocs && condDocs.length > 0 && (
             <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
               <p className="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -4915,6 +4942,9 @@ export default function ExaminerDashboard() {
   // Neue Prüfer:innen Badge
   const { data: newExaminersData, refetch: refetchNewCount } = trpc.newExaminers.getCount.useQuery(undefined, { refetchInterval: 60_000 });
   const newExaminersCount = newExaminersData?.count ?? 0;
+  const { data: pendingRequestsCount = 0 } = trpc.examiner.getPendingCount.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
   const markNewExaminersSeen = trpc.newExaminers.markAsSeen.useMutation({
     onSuccess: () => refetchNewCount(),
   });
@@ -4944,7 +4974,11 @@ export default function ExaminerDashboard() {
   const navItems = useNavItems();
   const currentNavItems = navItems.map((item) => ({
     ...item,
-    badge: item.href === "/examiner/new-examiners" ? (newExaminersCount > 0 ? newExaminersCount : undefined) : undefined,
+    badge: item.href === "/examiner/requests"
+      ? (pendingRequestsCount > 0 ? pendingRequestsCount : undefined)
+      : item.href === "/examiner/new-examiners"
+      ? (newExaminersCount > 0 ? newExaminersCount : undefined)
+      : undefined,
     onClick: () => {
       if (item.href === "/examiner") setActiveTab("overview");
       else if (item.href === "/examiner/requests") setActiveTab("requests");

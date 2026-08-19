@@ -37,6 +37,7 @@ import {
   getThesisRequestsByStudent,
   getUnreadCount,
   getUserById,
+  getUserByEmail,
   markAllNotificationsRead,
   markNotificationRead,
   notifyThesisParticipants,
@@ -46,7 +47,7 @@ import {
   upsertExaminerProfile,
   getThesisStats,
   getPublicPortalHighlights,
-  getUserByEmail,
+  getExaminerPendingRequestCount,
   setUserPasswordHash,
 	getSystemSettings,
 	upsertSystemSetting,
@@ -138,6 +139,7 @@ import {
   selectUserRole,
   getPendingRoleUsers,
   getPendingRoleUsersForAdmin,
+  canContactSecondExaminer,
   canAdminManageUser,
   getAdminDepartment,
   assignAdminDepartment,
@@ -1753,6 +1755,10 @@ export const appRouter = router({
       return getExaminerPendingRequests(ctx.user.id);
     }),
 
+    getPendingCount: anyExaminerProcedure.query(async ({ ctx }) => {
+      return getExaminerPendingRequestCount(ctx.user.id);
+    }),
+
     getAcceptedRequests: anyExaminerProcedure.query(async ({ ctx }) => {
       const { getExaminerAcceptedRequests } = await import("./db");
       return getExaminerAcceptedRequests(ctx.user.id);
@@ -2741,133 +2747,6 @@ export const appRouter = router({
       return getColloquiumsByExaminer(ctx.user.id);
     }),
     scheduling: colloquiumSchedulingRouter,
-    /* Vorherige, nun ausgelagerte Implementierung der Terminabstimmung.
-      /** Alle eigenen laufenden und vergangenen Terminabstimmungen laden. * /
-      myPolls: protectedProcedure.query(async ({ ctx }) => {
-        return getMyColloquiumSchedulingPolls(ctx.user.id);
-      }),
-      /** Detailansicht einschließlich Beteiligten, Optionen und Verfügbarkeiten. * /
-      byId: protectedProcedure
-        .input(z.object({ pollId: z.number().int().positive() }))
-        .query(async ({ ctx, input }) => {
-          try {
-            return await getColloquiumSchedulingPollForUser(input.pollId, ctx.user.id, ctx.user.role);
-          } catch (error) {
-            throw new TRPCError({ code: "FORBIDDEN", message: error instanceof Error ? error.message : "Zugriff nicht erlaubt" });
-          }
-        }),
-      /** Konflikte werden vor dem Start sichtbar; die finale Prüfung bleibt serverseitig verpflichtend. * /
-      roomConflicts: anyExaminerProcedure
-        .input(z.object({
-          room: z.string().trim().max(256).optional(),
-          location: z.string().trim().max(512).optional(),
-          slots: z.array(z.object({ startsAt: z.number().int().positive(), endsAt: z.number().int().positive() })).max(10),
-        }))
-        .query(async ({ input }) => {
-          return findColloquiumRoomConflicts(input);
-        }),
-      /** Nur die zugeordnete Erstprüferin bzw. der Erstprüfer kann eine Runde starten. * /
-      create: anyExaminerProcedure
-        .input(z.object({
-          thesisRequestId: z.number().int().positive(),
-          responseDeadline: z.number().int().positive(),
-          durationMinutes: z.number().int().min(30).max(180),
-          location: z.string().trim().max(512).optional(),
-          room: z.string().trim().max(256).optional(),
-          onlineLink: z.union([z.string().trim().url().max(1024), z.literal("")]).optional(),
-          slots: z.array(z.object({
-            startsAt: z.number().int().positive(),
-            endsAt: z.number().int().positive(),
-          }).refine((slot) => slot.endsAt > slot.startsAt, { message: "Das Zeitfenster muss nach dem Start enden." })).min(3).max(10),
-        }))
-        .mutation(async ({ ctx, input }) => {
-          try {
-            const { pollId } = await createColloquiumSchedulingPoll({
-              ...input,
-              createdById: ctx.user.id,
-              onlineLink: input.onlineLink || null,
-            });
-            // Der Job läuft täglich um 08:00 UTC und versendet idempotent Erinnerungen
-            // drei bzw. einen Tag vor der individuellen Abstimmungsfrist.
-            const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
-            const job = await createHeartbeatJob({
-              name: `colloquium-scheduling-poll-${pollId}`,
-              cron: "0 0 8 * * *",
-              path: "/api/scheduled/colloquium-scheduling-reminders",
-              payload: {},
-              description: `Automatische E-Mail-Erinnerungen für Kolloquiums-Terminabstimmung ${pollId}`,
-            }, sessionToken);
-            await setPollReminderTaskUid(pollId, job.taskUid);
-            await createAuditLogEntry({
-              thesisRequestId: input.thesisRequestId,
-              actorId: ctx.user.id,
-              actorRole: ctx.user.role,
-              action: "COLLOQUIUM_SCHEDULING_OPENED",
-              metadata: { pollId, responseDeadline: input.responseDeadline, slotCount: input.slots.length, hasOnlineLink: Boolean(input.onlineLink), room: input.room ?? null },
-            });
-            return { pollId, nextReminderRun: job.nextExecutionAt ?? null };
-          } catch (error) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Terminabstimmung konnte nicht gestartet werden" });
-          }
-        }),
-      respond: protectedProcedure
-        .input(z.object({
-          pollId: z.number().int().positive(),
-          responses: z.array(z.object({ slotId: z.number().int().positive(), availability: z.enum(["YES", "MAYBE", "NO"]) })).min(1),
-        }))
-        .mutation(async ({ ctx, input }) => {
-          try {
-            const result = await submitColloquiumSchedulingAvailability({ ...input, userId: ctx.user.id, role: ctx.user.role });
-            const poll = await getColloquiumSchedulingPollForUser(input.pollId, ctx.user.id, ctx.user.role);
-            await createAuditLogEntry({ thesisRequestId: poll.thesis.id, actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_SCHEDULING_AVAILABILITY_SET", metadata: { pollId: input.pollId, hasMatch: result.hasMatch } });
-            return result;
-          } catch (error) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Verfügbarkeit konnte nicht gespeichert werden" });
-          }
-        }),
-      selectSlot: anyExaminerProcedure
-        .input(z.object({ pollId: z.number().int().positive(), slotId: z.number().int().positive() }))
-        .mutation(async ({ ctx, input }) => {
-          try {
-            await selectColloquiumSchedulingSlot({ ...input, userId: ctx.user.id, role: ctx.user.role });
-            const poll = await getColloquiumSchedulingPollForUser(input.pollId, ctx.user.id, ctx.user.role);
-            await createAuditLogEntry({ thesisRequestId: poll.thesis.id, actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_SCHEDULING_SLOT_SELECTED", metadata: { pollId: input.pollId, slotId: input.slotId } });
-            return { success: true };
-          } catch (error) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Termin konnte nicht vorgeschlagen werden" });
-          }
-        }),
-      confirm: protectedProcedure
-        .input(z.object({ pollId: z.number().int().positive(), confirmed: z.boolean(), reason: z.string().trim().max(1000).optional() }))
-        .mutation(async ({ ctx, input }) => {
-          try {
-            const result = await confirmColloquiumSchedulingSlot({ ...input, userId: ctx.user.id, role: ctx.user.role });
-            const poll = await getColloquiumSchedulingPollForUser(input.pollId, ctx.user.id, ctx.user.role);
-            await createAuditLogEntry({
-              thesisRequestId: poll.thesis.id,
-              actorId: ctx.user.id,
-              actorRole: ctx.user.role,
-              action: input.confirmed ? (result.finalized ? "COLLOQUIUM_SCHEDULING_CONFIRMED" : "COLLOQUIUM_SCHEDULING_CONFIRMATION_GIVEN") : "COLLOQUIUM_SCHEDULING_CONFIRMATION_DECLINED",
-              metadata: { pollId: input.pollId, finalized: result.finalized, reason: input.reason ?? null },
-            });
-            return result;
-          } catch (error) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Bestätigung konnte nicht gespeichert werden" });
-          }
-        }),
-      cancel: anyExaminerProcedure
-        .input(z.object({ pollId: z.number().int().positive(), reason: z.string().trim().max(1000).optional() }))
-        .mutation(async ({ ctx, input }) => {
-          try {
-            await cancelColloquiumSchedulingPoll(input.pollId, ctx.user.id, ctx.user.role, input.reason);
-            const poll = await getColloquiumSchedulingPollForUser(input.pollId, ctx.user.id, ctx.user.role);
-            await createAuditLogEntry({ thesisRequestId: poll.thesis.id, actorId: ctx.user.id, actorRole: ctx.user.role, action: "COLLOQUIUM_SCHEDULING_CANCELLED", reason: input.reason ?? null, metadata: { pollId: input.pollId } });
-            return { success: true };
-          } catch (error) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Abstimmung konnte nicht abgesagt werden" });
-          }
-        }),
-    }), */
   }),
   // --- Superadmin: Systemkonfiguration ---
   superadmin: router({
@@ -5069,12 +4948,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const req = await getThesisRequestById(input.thesisRequestId);
         if (!req) throw new TRPCError({ code: "NOT_FOUND" });
-        // Erstgutachter:in, Zweitgutachter:in oder Admin darf diese Funktion nutzen
-        const isFirstExaminer = req.examinerId === ctx.user.id || (req as any).wantedExaminerId === ctx.user.id;
-        const isSecondExaminerUser = (req as any).secondExaminerId === ctx.user.id || (req as any).wantedSecondExaminerId === ctx.user.id;
-        const isAdminUser = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
-        if (!isFirstExaminer && !isSecondExaminerUser && !isAdminUser)
-          throw new TRPCError({ code: "FORBIDDEN", message: "Nur beteiligte Gutachter:innen können diese Funktion nutzen." });
+        // Nur Erstgutachter:innen und berechtigte Verwaltung dürfen eine
+        // ausstehende Zweitgutachter:innen-Einladung kontaktieren. Eine
+        // Zweitgutachter:in darf diesen Erinnerungsweg nicht nutzen.
+        if (!canContactSecondExaminer({ request: req, userId: ctx.user.id, userRole: ctx.user.role }))
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Erstgutachter:innen oder berechtigte Verwaltung dürfen Zweitgutachter:innen erinnern." });
         const sent = await sendEmail({
           to: input.recipientEmail,
           subject: input.subject,
@@ -5085,7 +4963,7 @@ export const appRouter = router({
           thesisRequestId: input.thesisRequestId,
           actorId: ctx.user.id,
           action: "FIRST_EXAMINER_CONTACTED_SECOND",
-          reason: `Erstgutachter:in hat Zweitgutachter:in (${input.recipientEmail}) kontaktiert.`,
+          reason: `Erstgutachter:in oder berechtigte Verwaltung hat Zweitgutachter:in (${input.recipientEmail}) kontaktiert.`,
         });
         return { success: true, sentTo: input.recipientEmail };
       }),
@@ -5327,7 +5205,7 @@ export const appRouter = router({
         if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
         // Zugriff: Studierende der Thesis, zugewiesene Prüfer:innen, Admin
         const isStudent = existing.studentId === ctx.user.id;
-        const isExaminer = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id;
+        const isExaminer = existing.examinerId === ctx.user.id || existing.secondExaminerId === ctx.user.id || (existing as any).wantedSecondExaminerId === ctx.user.id || (existing as any).wantedExaminerId === ctx.user.id;
         const isAdmin = ctx.user.role === "admin" || ctx.user.role === "superadmin" || ctx.user.role === "pav";
         if (!isStudent && !isExaminer && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         const db = await (await import("./db")).getDb();

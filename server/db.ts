@@ -444,6 +444,8 @@ export async function getThesisRequestsByExaminer(examinerId: number) {
       language: thesisRequests.language,
       degreeType: thesisRequests.degreeType,
       exposeUrl: thesisRequests.exposeUrl,
+      exposeKey: thesisRequests.exposeKey,
+      registrationDocumentSentAt: thesisRequests.registrationDocumentSentAt,
       rejectionReason: thesisRequests.rejectionReason,
       createdAt: thesisRequests.createdAt,
       examinerId: thesisRequests.examinerId,
@@ -2504,6 +2506,28 @@ export async function getExaminerPendingRequests(examinerId: number) {
   }));
 }
 
+/** Liefert ausschließlich die Anzahl der Anfragen, die der aktuelle Prüfer noch beantworten muss. */
+export async function getExaminerPendingRequestCount(examinerId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(thesisRequests)
+    .where(
+      or(
+        and(
+          eq(thesisRequests.wantedExaminerId, examinerId),
+          eq(thesisRequests.status, "PENDING_FIRST_EXAMINER")
+        ),
+        and(
+          eq(thesisRequests.wantedSecondExaminerId, examinerId),
+          eq(thesisRequests.status, "PENDING_SECOND_EXAMINER")
+        )
+      )
+    );
+  return Number(rows[0]?.count ?? 0);
+}
+
 export async function getExaminerAcceptedRequests(examinerId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -4306,10 +4330,37 @@ export async function canAdminManageUser(adminUserId: number, targetUserId: numb
   return canManageDepartment(adminDepartment, targetRows[0]?.department);
 }
 
-/** Filtert ausstehende Registrierungen auf den Fachbereich der Verwaltungsmitarbeiter:in. */
+/**
+ * Wendet die Sichtbarkeitsregel der Verwaltungsübersicht deterministisch an.
+ * Studierende bleiben auf den eigenen Fachbereich begrenzt. Ausstehende
+ * Prüfer:innen- und Verwaltungsrollen bleiben sichtbar, damit neue
+ * Registrierungen nicht aus dem System verschwinden; die Schreibrechte werden
+ * weiterhin separat durch den Rollenfreigabe-Router geschützt.
+ */
+export function filterPendingRoleUsersForAdmin<
+  T extends { requestedRole?: string | null; department?: string | null }
+>(pending: T[], adminDepartment: AdminDepartment | null): T[] {
+  return pending.filter((user) => user.requestedRole !== "student" || canManageDepartment(adminDepartment, user.department));
+}
+
 export async function getPendingRoleUsersForAdmin(adminUserId: number) {
   const [department, pending] = await Promise.all([getAdminDepartment(adminUserId), getPendingRoleUsers()]);
-  return pending.filter((user) => canManageDepartment(department, user.department));
+  return filterPendingRoleUsersForAdmin(pending, department);
+}
+
+/** Prüft, wer eine ausstehende Zweitgutachter:innen-Einladung kontaktieren darf. */
+export function canContactSecondExaminer({
+  request,
+  userId,
+  userRole,
+}: {
+  request: { examinerId?: number | null; wantedExaminerId?: number | null };
+  userId: number;
+  userRole: string;
+}): boolean {
+  const isFirstExaminer = request.examinerId === userId || request.wantedExaminerId === userId;
+  const isAuthorisedAdministration = ["admin", "superadmin", "pav"].includes(userRole);
+  return isFirstExaminer || isAuthorisedAdministration;
 }
 
 /** Bestätigt die Rolle eines Nutzers */

@@ -89,10 +89,10 @@ function FieldView({ label, value, notSpecified }: { label: string; value: strin
 }
 
 function FieldInput({
-  label, value, onChange, placeholder, type = "text",
+  label, value, onChange, onBlur, placeholder, type = "text",
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string;
+  onBlur?: () => void; placeholder?: string; type?: string;
 }) {
   return (
     <div>
@@ -101,6 +101,7 @@ function FieldInput({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all"
       />
@@ -110,9 +111,9 @@ function FieldInput({
 
 // ─── URL-Eingabe mit Echtzeit-Validierung ─────────────────────────────────────
 function UrlInput({
-  label, value, onChange, placeholder, errorMsg,
+  label, value, onChange, onBlur, placeholder, errorMsg,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; errorMsg: string;
+  label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; placeholder?: string; errorMsg: string;
 }) {
   const [touched, setTouched] = useState(false);
   const isValid = isValidUrl(value);
@@ -126,7 +127,7 @@ function UrlInput({
           type="url"
           value={value}
           onChange={(e) => { onChange(e.target.value); setTouched(true); }}
-          onBlur={() => setTouched(true)}
+          onBlur={() => { setTouched(true); onBlur?.(); }}
           placeholder={placeholder ?? "https://…"}
           className={`w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all pr-9 ${
             showError
@@ -164,9 +165,9 @@ function UrlInput({
 
 // ─── Tag-Liste-Komponente ─────────────────────────────────────────────────────
 function TagInput({
-  label, tags, onChange, placeholder, hint,
+  label, tags, onChange, onBlur, placeholder, hint,
 }: {
-  label: string; tags: string[]; onChange: (tags: string[]) => void; placeholder?: string; hint?: string;
+  label: string; tags: string[]; onChange: (tags: string[]) => void; onBlur?: () => void; placeholder?: string; hint?: string;
 }) {
   const [input, setInput] = useState("");
   const addTag = useCallback(() => {
@@ -192,7 +193,7 @@ function TagInput({
             </button>
           </span>
         ))}
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onBlur={addTag}
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onBlur={() => { addTag(); onBlur?.(); }}
           placeholder={tags.length === 0 ? placeholder : undefined}
           className="flex-1 min-w-[120px] text-sm outline-none bg-transparent" />
       </div>
@@ -545,11 +546,21 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const urlFields = ["website", "linkedIn", "researchGate", "htwProfileUrl", "miscLink", "bookingUrl"] as const;
   const hasUrlErrors = urlFields.some((field) => form[field].length > 0 && !isValidUrl(form[field]));
 
-  const updateMutation = trpc.profile.update.useMutation({
+    const updateMutation = trpc.profile.update.useMutation({
     onSuccess: () => { toast.success(p.profileSaved); setEditMode(false); setBioDirtySnapshot(null); refetch(); },
     onError: (e) => toast.error(e.message),
   });
-
+  const autoSaveMutation = trpc.profile.update.useMutation({
+    onSuccess: () => { utils.profile.get.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const autoSaveField = useCallback((patch: Record<string, unknown>) => {
+    if (!editMode || Object.keys(patch).length === 0) return;
+    if (Object.keys(patch).some((key) => urlFields.includes(key as (typeof urlFields)[number])) && hasUrlErrors) {
+      return;
+    }
+    autoSaveMutation.mutate(patch as any);
+  }, [autoSaveMutation, editMode, hasUrlErrors, urlFields]);
   const deleteAvatarMutation = trpc.profile.deleteAvatar.useMutation({
     onSuccess: () => {
       setAvatarPreview(null);
@@ -1092,8 +1103,8 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           <div className="space-y-4">
             {editMode ? (
               <div className="grid grid-cols-2 gap-4">
-                <FieldInput label="Vorname" value={form.firstName} onChange={(v) => setForm((f) => ({ ...f, firstName: v }))} placeholder="Maria" />
-                <FieldInput label="Nachname" value={form.lastName} onChange={(v) => setForm((f) => ({ ...f, lastName: v }))} placeholder="Muster" />
+                <FieldInput label="Vorname" value={form.firstName} onChange={(v) => setForm((f) => ({ ...f, firstName: v }))} onBlur={() => autoSaveField({ firstName: form.firstName })} placeholder="Maria" />
+                <FieldInput label="Nachname" value={form.lastName} onChange={(v) => setForm((f) => ({ ...f, lastName: v }))} onBlur={() => autoSaveField({ lastName: form.lastName })} placeholder="Muster" />
               </div>
             ) : (
               <FieldView label={p.fieldFullName} value={fullName || profile.name} notSpecified={p.notSpecified} />
@@ -1108,7 +1119,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             </div>
             {editMode ? (
-              <FieldInput label={p.fieldSecondEmail} value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} placeholder={p.fieldSecondEmailPlaceholder} type="email" />
+              <FieldInput label={p.fieldSecondEmail} value={form.secondEmail} onChange={(v) => setForm((f) => ({ ...f, secondEmail: v }))} onBlur={() => autoSaveField({ secondEmail: form.secondEmail })} placeholder={p.fieldSecondEmailPlaceholder} type="email" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldSecondEmail}</label>
@@ -1125,7 +1136,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
             {editMode ? (
-              <FieldInput label={p.fieldPhone} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} placeholder={p.fieldPhonePlaceholder} type="tel" />
+              <FieldInput label={p.fieldPhone} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} onBlur={() => autoSaveField({ phone: form.phone })} placeholder={p.fieldPhonePlaceholder} type="tel" />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldPhone}</label>
@@ -1159,7 +1170,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setForm((f) => ({ ...f, preferredLanguage: "de" }))}
+                    onClick={() => { setForm((f) => ({ ...f, preferredLanguage: "de" })); autoSaveField({ preferredLanguage: "de" }); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                       form.preferredLanguage === "de"
                         ? "border-[#76b900] bg-[#f6ffe0] text-[#4a7a00]"
@@ -1170,7 +1181,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setForm((f) => ({ ...f, preferredLanguage: "en" }))}
+                    onClick={() => { setForm((f) => ({ ...f, preferredLanguage: "en" })); autoSaveField({ preferredLanguage: "en" }); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
                       form.preferredLanguage === "en"
                         ? "border-[#76b900] bg-[#f6ffe0] text-[#4a7a00]"
@@ -1201,7 +1212,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                     const allowed: string[] = (form as any).allowedDepartments ?? [];
                     const newAllowed = allowed.includes(val) ? allowed : (val ? [...allowed, val] : allowed);
                     setForm((f) => ({ ...f, department: val, allowedDepartments: newAllowed } as any));
-                  }} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white mb-2">
+                  }} onBlur={() => autoSaveField({ department: form.department, allowedDepartments: (form as any).allowedDepartments ?? [], primaryDepartment: form.department })} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#76b900]/30 focus:border-[#76b900] transition-all bg-white mb-2">
                     <option value="">{p.fieldDepartmentPlaceholder}</option>
                     {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
@@ -1216,6 +1227,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                           onClick={() => {
                             const next = isSelected ? allowed.filter((x) => x !== d.value) : [...allowed, d.value];
                             setForm((f) => ({ ...f, allowedDepartments: next } as any));
+                            autoSaveField({ allowedDepartments: next, primaryDepartment: form.department });
                           }}
                           className={`px-3 py-1 rounded-full text-xs font-semibold border-2 transition-all ${
                             isPrimary ? "border-[#76b900] bg-[#76b900] text-white cursor-default"
@@ -1269,7 +1281,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {editMode ? (
-              <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} onBlur={() => autoSaveField({ website: form.website })} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
@@ -1283,7 +1295,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
             {editMode ? (
-              <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} onBlur={() => autoSaveField({ linkedIn: form.linkedIn })} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
@@ -1297,7 +1309,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
             {editMode ? (
-              <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} onBlur={() => autoSaveField({ researchGate: form.researchGate })} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
@@ -1311,7 +1323,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
             {!isStudent && (editMode ? (
-              <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} onBlur={() => autoSaveField({ htwProfileUrl: form.htwProfileUrl })} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
@@ -1325,7 +1337,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             ))}
             {editMode ? (
-              <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} onBlur={() => autoSaveField({ miscLink: form.miscLink })} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
@@ -1339,7 +1351,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
             {!isStudent && (editMode ? (
-              <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
+              <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} onBlur={() => autoSaveField({ bookingUrl: form.bookingUrl })} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
             ) : (
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
@@ -1641,13 +1653,13 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {editMode
-                ? <FieldInput label={p.fieldMatrikelNr} value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} placeholder={p.fieldMatrikelNrPlaceholder} />
+                ? <FieldInput label={p.fieldMatrikelNr} value={form.matrikelNr} onChange={(v) => setForm((f) => ({ ...f, matrikelNr: v }))} onBlur={() => autoSaveField({ matrikelNr: form.matrikelNr })} placeholder={p.fieldMatrikelNrPlaceholder} />
                 : <FieldView label={p.fieldMatrikelNr} value={profile.matrikelNr} notSpecified={p.notSpecified} />}
               {editMode
-                ? <FieldInput label={p.fieldEnrollmentSemester} value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} placeholder={p.fieldEnrollmentSemesterPlaceholder} />
+                ? <FieldInput label={p.fieldEnrollmentSemester} value={form.enrollmentSemester} onChange={(v) => setForm((f) => ({ ...f, enrollmentSemester: v }))} onBlur={() => autoSaveField({ enrollmentSemester: form.enrollmentSemester })} placeholder={p.fieldEnrollmentSemesterPlaceholder} />
                 : <FieldView label={p.fieldEnrollmentSemester} value={profile.enrollmentSemester} notSpecified={p.notSpecified} />}
               {editMode
-                ? <FieldInput label={p.fieldTargetSemester} value={form.targetSemester} onChange={(v) => setForm((f) => ({ ...f, targetSemester: v }))} placeholder={p.fieldTargetSemesterPlaceholder} />
+                ? <FieldInput label={p.fieldTargetSemester} value={form.targetSemester} onChange={(v) => setForm((f) => ({ ...f, targetSemester: v }))} onBlur={() => autoSaveField({ targetSemester: form.targetSemester })} placeholder={p.fieldTargetSemesterPlaceholder} />
                 : <FieldView label={p.fieldTargetSemester} value={profile.targetSemester} notSpecified={p.notSpecified} />}
             </div>
           </div>
@@ -1662,14 +1674,14 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {editMode
-                ? <FieldInput label={p.fieldAcademicTitle} value={form.academicTitle} onChange={(v) => setForm((f) => ({ ...f, academicTitle: v }))} placeholder={p.fieldAcademicTitlePlaceholder} />
+                ? <FieldInput label={p.fieldAcademicTitle} value={form.academicTitle} onChange={(v) => setForm((f) => ({ ...f, academicTitle: v }))} onBlur={() => autoSaveField({ academicTitle: form.academicTitle })} placeholder={p.fieldAcademicTitlePlaceholder} />
                 : <FieldView label={p.fieldAcademicTitle} value={profile.academicTitle} notSpecified={p.notSpecified} />}
               {editMode
-                ? <FieldInput label={p.fieldOfficeRoom} value={form.officeRoom} onChange={(v) => setForm((f) => ({ ...f, officeRoom: v }))} placeholder={p.fieldOfficeRoomPlaceholder} />
+                ? <FieldInput label={p.fieldOfficeRoom} value={form.officeRoom} onChange={(v) => setForm((f) => ({ ...f, officeRoom: v }))} onBlur={() => autoSaveField({ officeRoom: form.officeRoom })} placeholder={p.fieldOfficeRoomPlaceholder} />
                 : <FieldView label={p.fieldOfficeRoom} value={profile.officeRoom} notSpecified={p.notSpecified} />}
               <div className="sm:col-span-2">
                 {editMode
-                  ? <FieldInput label={p.fieldOfficeHours} value={form.officeHours} onChange={(v) => setForm((f) => ({ ...f, officeHours: v }))} placeholder={p.fieldOfficeHoursPlaceholder} />
+                  ? <FieldInput label={p.fieldOfficeHours} value={form.officeHours} onChange={(v) => setForm((f) => ({ ...f, officeHours: v }))} onBlur={() => autoSaveField({ officeHours: form.officeHours })} placeholder={p.fieldOfficeHoursPlaceholder} />
                   : <FieldView label={p.fieldOfficeHours} value={profile.officeHours} notSpecified={p.notSpecified} />}
               </div>
             </div>
@@ -1726,7 +1738,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {linksEditMode ? (
-                <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldWebsite} value={form.website} onChange={(v) => setForm((f) => ({ ...f, website: v }))} onBlur={() => autoSaveField({ website: form.website })} placeholder={p.fieldWebsitePlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldWebsite}</label>
@@ -1740,7 +1752,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 </div>
               )}
               {linksEditMode ? (
-                <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldBookingUrl} value={form.bookingUrl} onChange={(v) => setForm((f) => ({ ...f, bookingUrl: v }))} onBlur={() => autoSaveField({ bookingUrl: form.bookingUrl })} placeholder={p.fieldBookingUrlPlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldBookingUrl}</label>
@@ -1754,7 +1766,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 </div>
               )}
               {linksEditMode ? (
-                <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldLinkedIn} value={form.linkedIn} onChange={(v) => setForm((f) => ({ ...f, linkedIn: v }))} onBlur={() => autoSaveField({ linkedIn: form.linkedIn })} placeholder={p.fieldLinkedInPlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldLinkedIn}</label>
@@ -1768,7 +1780,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 </div>
               )}
               {linksEditMode ? (
-                <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldResearchGate} value={form.researchGate} onChange={(v) => setForm((f) => ({ ...f, researchGate: v }))} onBlur={() => autoSaveField({ researchGate: form.researchGate })} placeholder={p.fieldResearchGatePlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldResearchGate}</label>
@@ -1782,7 +1794,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 </div>
               )}
               {linksEditMode ? (
-                <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldHtwProfile} value={form.htwProfileUrl} onChange={(v) => setForm((f) => ({ ...f, htwProfileUrl: v }))} onBlur={() => autoSaveField({ htwProfileUrl: form.htwProfileUrl })} placeholder={p.fieldHtwProfilePlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldHtwProfile}</label>
@@ -1796,7 +1808,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                 </div>
               )}
               {linksEditMode ? (
-                <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
+                <UrlInput label={p.fieldMiscLink} value={form.miscLink} onChange={(v) => setForm((f) => ({ ...f, miscLink: v }))} onBlur={() => autoSaveField({ miscLink: form.miscLink })} placeholder={p.fieldMiscLinkPlaceholder} errorMsg={p.urlInvalid} />
               ) : (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{p.fieldMiscLink}</label>
@@ -1856,6 +1868,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   <RichTextEditor
                     value={form.examinerBio}
                     onChange={(html) => setForm((f) => ({ ...f, examinerBio: html }))}
+                  onBlur={() => autoSaveField({ examinerBio: form.examinerBio })}
                   />
                 ) : (
                   (profile as any).examinerBio
@@ -1876,6 +1889,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   <RichTextEditor
                     value={form.examinerResearchFocus}
                     onChange={(html) => setForm((f) => ({ ...f, examinerResearchFocus: html }))}
+                  onBlur={() => autoSaveField({ examinerResearchFocus: form.examinerResearchFocus })}
                   />
                 ) : (
                   (profile as any).examinerResearchFocus
@@ -1894,6 +1908,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                     label={lang === 'de' ? 'Schlagworte (Interessen / Themen)' : 'Keywords (Interests / Topics)'}
                     tags={examinerKeywords}
                     onChange={setExaminerKeywords}
+                    onBlur={() => autoSaveField({ examinerKeywords })}
                     placeholder={lang === 'de' ? 'Schlagwort eingeben und Enter drücken…' : 'Enter keyword and press Enter…'}
                     hint={lang === 'de' ? 'Themen, die Sie bei Abschlussarbeiten betreuen möchten' : 'Topics you are willing to supervise in theses'}
                   />
@@ -1918,7 +1933,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
               {/* ── Forschungs-Tags ── */}
               <div>
                 {editMode ? (
-                  <TagInput label={p.fieldResearchTags} tags={researchTagList} onChange={setResearchTagList} placeholder={p.fieldResearchTagsPlaceholder} hint={p.fieldResearchTagsHint} />
+                  <TagInput label={p.fieldResearchTags} tags={researchTagList} onChange={setResearchTagList} onBlur={() => autoSaveField({ researchTags: researchTagList.join(", ") })} placeholder={p.fieldResearchTagsPlaceholder} hint={p.fieldResearchTagsHint} />
                 ) : (
                   <div>
                     <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">{p.fieldResearchTags}</label>
@@ -1946,8 +1961,11 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                           type="checkbox"
                           checked={examinerLanguages.includes(lang_)}
                           onChange={(e) => {
-                            if (e.target.checked) setExaminerLanguages(prev => [...prev, lang_]);
-                            else setExaminerLanguages(prev => prev.filter(l => l !== lang_));
+                            const next = e.target.checked
+                              ? Array.from(new Set([...examinerLanguages, lang_]))
+                              : examinerLanguages.filter(l => l !== lang_);
+                            setExaminerLanguages(next);
+                            autoSaveField({ examinerLanguages: next });
                           }}
                           className="w-4 h-4 rounded border-gray-300 accent-[#2563eb]"
                         />

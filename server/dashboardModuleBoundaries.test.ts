@@ -19,3 +19,28 @@ describe("Dashboard-Modulgrenzen", () => {
     expect(dashboard).toContain("<AdminUserManagementSection>");
   });
 });
+
+
+describe("Gemeldete Prüfer:innen- und Profilregressionen", () => {
+  it("zeigt ausstehende Zusagen als rotes Badge im linken Menü an", () => {
+    const dashboard = readFileSync(projectFile("client", "src", "pages", "ExaminerDashboard.tsx"), "utf8");
+    const layout = readFileSync(projectFile("client", "src", "components", "ThesisDashboardLayout.tsx"), "utf8");
+    expect(dashboard).toContain("pendingRequestsCount");
+    expect(dashboard).toContain('item.href === "/examiner/requests"');
+    expect(layout).toContain("bg-red-500");
+  });
+
+  it("verknüpft das Exposé mit der Backend-Spalte exposeUrl und den Kommissionsdokumenten", () => {
+    const dashboard = readFileSync(projectFile("client", "src", "pages", "ExaminerDashboard.tsx"), "utf8");
+    const db = readFileSync(projectFile("server", "db.ts"), "utf8");
+    expect(dashboard).toContain("req.exposeUrl");
+    expect(dashboard).toContain("isAssignedExaminer && hasCompleteCommission");
+    expect(db).toContain("exposeUrl: thesisRequests.exposeUrl");
+  });
+
+  it("verdrahtet Profilfelder mit feldweisem OnBlur-Autosave", () => {
+    const profile = readFileSync(projectFile("client", "src", "pages", "Profile.tsx"), "utf8");
+    expect(profile).toContain("const autoSaveField");
+    expect(profile).toContain("onBlur={() => autoSaveField");
+  });
+});
