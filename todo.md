@@ -1825,3 +1825,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Bereits gespeicherte HTML-Auszeichnung sicher in lesbaren Text überführen
 - [x] Absätze und Links ohne aktive HTML-Ausführung verständlich darstellen
 - [x] XSS-Schutz und Rückwärtskompatibilität automatisiert testen und veröffentlichen
+
+## Einmalige Bereinigung bestehender Profilbiografien
+- [x] Betroffene Nutzer- und Prüfer:innenbiografien datensparsam prüfen
+- [x] HTML-Auszeichnungen und Steuerzeichen idempotent in lesbaren Klartext überführen
+- [x] Aktualisierte Datensätze und Bereinigungsergebnis nachvollziehbar prüfen
