@@ -30,6 +30,7 @@ import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
+type Department = "FB1" | "FB2" | "FB3" | "FB4" | "FB5";
 
 // ─── FAQ-Modal ────────────────────────────────────────────────────────────────
 const faqItems = (lang: string) => lang === "de" ? [
@@ -226,7 +227,8 @@ export default function Login() {
 
   // Studiengang-Auswahl bei Registrierung (nur Studierende)
   const [regDegreeType, setRegDegreeType] = useState<"bachelor" | "master">("bachelor");
-  const [regFachbereich, setRegFachbereich] = useState("FB3");
+  const [regFachbereich, setRegFachbereich] = useState<Department>("FB3");
+  const [regExaminerDepartment, setRegExaminerDepartment] = useState<Department | "">("");
   const [regProgrammeId, setRegProgrammeId] = useState<number | null>(null);
   const programmesQuery = trpc.programmes.list.useQuery(undefined, { enabled: step === "register" && selectedRole === "student" });
 
@@ -346,6 +348,10 @@ export default function Login() {
       toast.error(L.selectProgrammeRequired);
       return;
     }
+    if (selectedRole === "examiner" && !regExaminerDepartment) {
+      toast.error(lang === "de" ? "Bitte wählen Sie Ihren Fachbereich aus." : "Please select your department.");
+      return;
+    }
     if (regPassword !== regPasswordConfirm) {
       toast.error(L.passwordMismatch);
       return;
@@ -377,7 +383,7 @@ export default function Login() {
       role: selectedRole ?? "student",
       matrikelNr: regMatrikelNr.trim() || undefined,
       programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
-      department: (selectedRole === "student") ? regFachbereich : undefined,
+      department: selectedRole === "student" ? regFachbereich : selectedRole === "examiner" ? regExaminerDepartment || undefined : undefined,
       thesisType: (selectedRole === "student") ? regDegreeType : undefined,
       plagiarismConsent: selectedRole === "student" ? regPlagiarismConsent : false,
       aiReviewConsent: selectedRole === "student" ? regAiReviewConsent : false,
@@ -400,6 +406,7 @@ export default function Login() {
     setRegPassword("");
     setRegPlagiarismConsent(false);
     setRegAiReviewConsent(false);
+    setRegExaminerDepartment("");
     setRegPasswordConfirm("");
     setResetSent(false);
     setRegistered(false);
@@ -1071,7 +1078,7 @@ export default function Login() {
                           {/* Fachbereich */}
                           <select
                             value={regFachbereich}
-                            onChange={(e) => { setRegFachbereich(e.target.value); setRegProgrammeId(null); }}
+                            onChange={(e) => { setRegFachbereich(e.target.value as Department); setRegProgrammeId(null); }}
                             className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white/80 focus:outline-none focus:border-[#76b900]"
                           >
                             {departmentOptions.map((department) => (
@@ -1123,6 +1130,40 @@ export default function Login() {
                           </label>
                         </div>
                       </>
+                    )}
+                    {selectedRole === "examiner" && (
+                      <div className="rounded-xl border border-blue-400/30 bg-blue-400/10 p-4">
+                        <Label htmlFor="examiner-registration-department" className="text-white/80 text-sm">
+                          {lang === "de" ? "Eigener Fachbereich" : "Your department"} <span className="text-red-400">*</span>
+                        </Label>
+                        <p className="mt-1 text-xs text-white/50">
+                          {lang === "de"
+                            ? "Als interne Erstprüfer:in gehören Sie einem Fachbereich der HTW Berlin an."
+                            : "As an internal first examiner, you belong to an HTW Berlin department."}
+                        </p>
+                        <select
+                          id="examiner-registration-department"
+                          value={regExaminerDepartment}
+                          onChange={(event) => setRegExaminerDepartment(event.target.value as Department | "")}
+                          required
+                          className="mt-3 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-[#76b900]"
+                        >
+                          <option value="" className="bg-gray-900">{lang === "de" ? "Bitte auswählen" : "Please select"}</option>
+                          {departmentOptions.map((department) => (
+                            <option key={department} value={department} className="bg-gray-900">{L.departmentNames[department]}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {selectedRole === "second_examiner" && (
+                      <div className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-sm text-cyan-50">
+                        <p className="font-semibold">{lang === "de" ? "Externe Zweitgutachter:in" : "External Second Examiner"}</p>
+                        <p className="mt-1 text-xs text-cyan-100/75">
+                          {lang === "de"
+                            ? "Diese Rolle ist für externe Personen vorgesehen. Sie ermöglicht ausschließlich Zweitprüfungen; ein Fachbereich und eine HTW-Berlin-E-Mail-Adresse sind nicht erforderlich."
+                            : "This role is intended for external people. It permits second examinations only; an HTW Berlin department and email address are not required."}
+                        </p>
+                      </div>
                     )}
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-3">
@@ -1277,7 +1318,8 @@ export default function Login() {
                         !regPassword ||
                         !regPasswordConfirm ||
                         ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) ||
-                        ((selectedRole ?? "student") === "student" && !regProgrammeId)
+                        ((selectedRole ?? "student") === "student" && !regProgrammeId) ||
+                        (selectedRole === "examiner" && !regExaminerDepartment)
                       }
                       className="w-full font-semibold h-11"
                       style={{ background: "#3b82f6", color: "white" }}

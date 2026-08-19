@@ -136,6 +136,7 @@ import {
   getUserDetails,
   getUserActivityLog,
   updateUserStatus,
+  getExaminerRegistrationMonitoring,
   selectUserRole,
   getPendingRoleUsers,
   getPendingRoleUsersForAdmin,
@@ -684,7 +685,7 @@ export const appRouter = router({
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           matrikelNr: z.string().optional(),
           programmeId: z.number().int().positive().optional(),
-	          department: z.string().optional(),
+	          department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
 	          thesisType: z.enum(["bachelor", "master"]).optional(),
 	          plagiarismConsent: z.boolean().optional().default(false),
 	          aiReviewConsent: z.boolean().optional().default(false),
@@ -700,6 +701,9 @@ export const appRouter = router({
         // Studiengang ist Pflicht für Studierende
         if (input.role === "student" && !input.programmeId) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Studierende müssen einen Studiengang auswählen." });
+        }
+        if (input.role === "examiner" && !input.department) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Erstprüfer:innen müssen einen Fachbereich auswählen." });
         }
         // E-Mail-Domain-Validierung bei Registrierung
         const emailLowerReg = input.email.toLowerCase();
@@ -3040,6 +3044,15 @@ export const appRouter = router({
         return await getUserStatistics();
       }),
 
+    getExaminerRegistrationMonitoring: protectedProcedure
+      .query(async ({ ctx }) => {
+        const status = await getSuperadminStatus(ctx.user.id);
+        if (!status.isSuperadmin) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können das Prüfer:innenmonitoring anzeigen" });
+        }
+        return await getExaminerRegistrationMonitoring();
+      }),
+
     searchUsers: protectedProcedure
       .input(z.object({ query: z.string(), role: z.string().optional(), limit: z.number().int().optional(), offset: z.number().int().optional() }))
       .query(async ({ ctx, input }) => {
@@ -4642,7 +4655,7 @@ export const appRouter = router({
     // Nutzer wählt Rolle nach Magic-Link-Login
     selectRole: protectedProcedure
       .input(z.object({
-        requestedRole: z.enum(["student", "examiner", "admin"]),
+        requestedRole: z.enum(["student", "examiner", "second_examiner", "admin"]),
         department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {

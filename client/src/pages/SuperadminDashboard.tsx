@@ -1010,6 +1010,7 @@ const STATUS_LABELS_MAP: Record<string, string> = {
 function SystemStatsTab() {
   const { data: users } = trpc.admin.users.useQuery();
   const { data: stats } = trpc.admin.stats.useQuery();
+  const registrationMonitoring = trpc.superadmin.getExaminerRegistrationMonitoring.useQuery();
 
   const roleCount = useMemo(() => {
     if (!users) return {};
@@ -1036,6 +1037,9 @@ function SystemStatsTab() {
     }));
   }, [stats]);
 
+  const registrationByDepartment = registrationMonitoring.data?.registrationsByDepartment ?? [];
+  const incompleteLegacyFirstExaminers = registrationMonitoring.data?.incompleteLegacyFirstExaminers ?? [];
+
   const statCards = [
     { label: "Nutzer:innen gesamt", value: users?.length ?? 0, icon: "\u{1F465}" },
     { label: "Superadmins", value: roleCount["superadmin"] ?? 0, icon: "\u{1F511}" },
@@ -1058,6 +1062,24 @@ function SystemStatsTab() {
           </div>
         ))}
       </div>
+
+      {incompleteLegacyFirstExaminers.length > 0 && (
+        <section className="rounded-2xl border border-amber-300 bg-amber-50 p-5" role="alert" aria-live="polite">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200 font-bold text-amber-900">!</div>
+            <div>
+              <h3 className="font-semibold text-amber-950">Unvollständige Altfälle bei Erstprüfer:innen</h3>
+              <p className="mt-1 text-sm text-amber-900">
+                {incompleteLegacyFirstExaminers.length} freigeschaltete Erstprüfer:in{incompleteLegacyFirstExaminers.length === 1 ? "" : "nen"} haben keinen Fachbereich. Bitte ergänzen Sie die Zuordnung in der Nutzerverwaltung, damit Zuständigkeiten eindeutig bleiben.
+              </p>
+              <p className="mt-2 text-xs text-amber-800">
+                {incompleteLegacyFirstExaminers.slice(0, 5).map((person) => person.name || person.email || `Nutzer:in #${person.id}`).join(" · ")}
+                {incompleteLegacyFirstExaminers.length > 5 ? " …" : ""}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Charts-Reihe */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1115,6 +1137,35 @@ function SystemStatsTab() {
           </div>
         )}
       </div>
+
+      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mb-4">
+          <h3 className="font-semibold text-gray-900">Neue Prüfer:innenanmeldungen nach Fachbereich</h3>
+          <p className="mt-1 text-sm text-gray-500">Ausstehende Erstprüfer:innenanmeldungen werden nach dem gewählten Fachbereich angezeigt. Externe Zweitgutachter:innen erscheinen getrennt.</p>
+        </div>
+        {registrationMonitoring.isLoading ? (
+          <p className="py-10 text-center text-sm text-gray-500">Prüfer:innenanmeldungen werden geladen …</p>
+        ) : registrationByDepartment.length > 0 ? (
+          <>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={registrationByDepartment} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="department" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="firstExaminerCount" name="Interne Erstprüfer:innen" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="externalSecondExaminerCount" name="Externe Zweitgutachter:innen" fill="#0891b2" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-600">
+              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-blue-600" />Interne Erstprüfer:innen</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-cyan-600" />Externe Zweitgutachter:innen</span>
+            </div>
+          </>
+        ) : (
+          <p className="py-10 text-center text-sm text-gray-500">Derzeit liegen keine neuen Prüfer:innenanmeldungen vor.</p>
+        )}
+      </section>
 
       {stats?.byDepartment && stats.byDepartment.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

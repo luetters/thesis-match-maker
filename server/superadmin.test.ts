@@ -46,6 +46,13 @@ vi.mock("./db", () => ({
     vice_dean: 0,
     superadmin: 0,
   }),
+  getExaminerRegistrationMonitoring: vi.fn().mockResolvedValue({
+    registrationsByDepartment: [
+      { department: "FB3", firstExaminerCount: 2, externalSecondExaminerCount: 0, total: 2 },
+      { department: "Extern", firstExaminerCount: 0, externalSecondExaminerCount: 1, total: 1 },
+    ],
+    incompleteLegacyFirstExaminers: [{ id: 17, name: "Dr. Altfall", email: "altfall@htw-berlin.de", createdAt: new Date() }],
+  }),
   searchUsers: vi.fn().mockResolvedValue({
     users: [
       {
@@ -320,6 +327,23 @@ describe("superadmin.getUserStatistics", () => {
       student: expect.any(Number),
       examiner: expect.any(Number),
     });
+  });
+});
+
+describe("superadmin.getExaminerRegistrationMonitoring", () => {
+  it("liefert Superadmins Fachbereichsverteilung und fachbereichslose Altfälle", async () => {
+    const caller = appRouter.createCaller(createSuperadminContext());
+    const result = await caller.superadmin.getExaminerRegistrationMonitoring();
+
+    expect(result.registrationsByDepartment).toContainEqual(expect.objectContaining({ department: "FB3", firstExaminerCount: 2 }));
+    expect(result.incompleteLegacyFirstExaminers).toContainEqual(expect.objectContaining({ id: 17 }));
+  });
+
+  it("verweigert das Monitoring für Nicht-Superadmins", async () => {
+    const { getSuperadminStatus } = await import("./db");
+    vi.mocked(getSuperadminStatus).mockResolvedValueOnce({ isSuperadmin: false, currentRole: "admin" });
+    const caller = appRouter.createCaller(createAdminContext());
+    await expect(caller.superadmin.getExaminerRegistrationMonitoring()).rejects.toThrow();
   });
 });
 

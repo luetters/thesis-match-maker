@@ -1890,3 +1890,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fachbereich in ausstehender Rollenfreigabe und Prüfer:innenprofil verifizieren
 - [x] Deutsche und englische Registrierungstexte sowie Vitest-Regressionen ergänzen
 - [x] TypeScript, Laufzeit und Registrierungsvorgang prüfen und Checkpoint speichern
+
+## Externe Zweitgutachter:innen und Fachbereichsmonitoring
+- [x] Separate Registrierungsauswahl und Kennzeichnung für externe Zweitgutachter:innen ergänzen
+- [x] Superadmin-Warnung für bestehende ausstehende Prüfer:innenfälle ohne Fachbereich bereitstellen
+- [x] Fachbereichsdiagramm für neue Prüfer:innenanmeldungen im Superadmin-Dashboard integrieren
+- [x] Rollen-, Altfälle- und Dashboard-Regressionstests ergänzen und ausführen
+- [x] TypeScript, Laufzeit und Berechtigungsschutz prüfen und Checkpoint speichern

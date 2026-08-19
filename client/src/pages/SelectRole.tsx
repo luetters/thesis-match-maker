@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 type RoleOption = {
-  id: "student" | "examiner" | "admin";
+  id: "student" | "examiner" | "second_examiner" | "admin";
   label: string;
   description: string;
   icon: React.ReactNode;
@@ -24,10 +24,17 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
   {
     id: "examiner",
-    label: "Erstprüfer:in",
+    label: "Erstprüfer:in (intern)",
     description: "Ich betreue Abschlussarbeiten als Erstprüfer:in; das Zweitprüfungsrecht ist eingeschlossen.",
     icon: <BookOpen className="w-8 h-8" />,
     color: "text-blue-600",
+  },
+  {
+    id: "second_examiner",
+    label: "Externe Zweitgutachter:in",
+    description: "Ich übernehme ausschließlich externe Zweitprüfungen und erhalte keine Erstprüfer-Berechtigung.",
+    icon: <BookOpen className="w-8 h-8" />,
+    color: "text-cyan-600",
   },
   {
     id: "admin",
@@ -40,7 +47,7 @@ const ROLE_OPTIONS: RoleOption[] = [
 
 export default function SelectRole() {
   const [, navigate] = useLocation();
-  const [selected, setSelected] = useState<"student" | "examiner" | "admin" | null>(null);
+  const [selected, setSelected] = useState<"student" | "examiner" | "second_examiner" | "admin" | null>(null);
   const [examinerDepartment, setExaminerDepartment] = useState<"FB1" | "FB2" | "FB3" | "FB4" | "FB5" | null>(null);
   const utils = trpc.useUtils();
 

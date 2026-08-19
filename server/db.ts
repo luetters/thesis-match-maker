@@ -4354,6 +4354,64 @@ export async function getPendingRoleUsersForAdmin(adminUserId: number) {
   return filterPendingRoleUsersForAdmin(pending, department);
 }
 
+/**
+ * Liefert das datensparsame Superadmin-Monitoring für neue Prüfer:innenanfragen
+ * und bereits freigeschaltete Altfälle ohne Fachbereich. Externe
+ * Zweitgutachter:innen werden separat ausgewiesen, weil für sie bewusst keine
+ * interne Fachbereichszuordnung verlangt wird.
+ */
+export async function getExaminerRegistrationMonitoring() {
+  const db = await getDb();
+  if (!db) {
+    return {
+      registrationsByDepartment: [] as { department: string; firstExaminerCount: number; externalSecondExaminerCount: number; total: number }[],
+      incompleteLegacyFirstExaminers: [] as { id: number; name: string | null; email: string | null; createdAt: unknown }[],
+    };
+  }
+
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      requestedRole: users.requestedRole,
+      roleStatus: users.roleStatus,
+      department: users.department,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(or(
+      inArray(users.requestedRole, ["examiner", "second_examiner"] as any),
+      inArray(users.role, ["examiner", "second_examiner"] as any),
+    ))
+    .orderBy(desc(users.createdAt));
+
+  const pendingRegistrations = rows.filter((row) =>
+    row.roleStatus === "pending" && (row.requestedRole === "examiner" || row.requestedRole === "second_examiner")
+  );
+  const grouped = new Map<string, { department: string; firstExaminerCount: number; externalSecondExaminerCount: number; total: number }>();
+  for (const registration of pendingRegistrations) {
+    const department = registration.requestedRole === "second_examiner"
+      ? "Extern"
+      : registration.department ?? "Ohne Fachbereich";
+    const current = grouped.get(department) ?? { department, firstExaminerCount: 0, externalSecondExaminerCount: 0, total: 0 };
+    if (registration.requestedRole === "examiner") current.firstExaminerCount += 1;
+    if (registration.requestedRole === "second_examiner") current.externalSecondExaminerCount += 1;
+    current.total += 1;
+    grouped.set(department, current);
+  }
+
+  const incompleteLegacyFirstExaminers = rows
+    .filter((row) => row.role === "examiner" && row.roleStatus === "approved" && !row.department)
+    .map((row) => ({ id: row.id, name: row.name, email: row.email, createdAt: row.createdAt }));
+
+  return {
+    registrationsByDepartment: Array.from(grouped.values()).sort((a, b) => a.department.localeCompare(b.department, "de")),
+    incompleteLegacyFirstExaminers,
+  };
+}
+
 /** Prüft, wer eine ausstehende Zweitgutachter:innen-Einladung kontaktieren darf. */
 export function canContactSecondExaminer({
   request,
