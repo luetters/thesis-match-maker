@@ -229,6 +229,7 @@ export default function Login() {
   const [regDegreeType, setRegDegreeType] = useState<"bachelor" | "master">("bachelor");
   const [regFachbereich, setRegFachbereich] = useState<Department>("FB3");
   const [regExaminerDepartment, setRegExaminerDepartment] = useState<Department | "">("");
+  const [regAcademicTitle, setRegAcademicTitle] = useState("");
   const [regProgrammeId, setRegProgrammeId] = useState<number | null>(null);
   const programmesQuery = trpc.programmes.list.useQuery(undefined, { enabled: step === "register" && selectedRole === "student" });
 
@@ -381,6 +382,7 @@ export default function Login() {
       email: regEmail.trim(),
       password: regPassword,
       role: selectedRole ?? "student",
+      academicTitle: regAcademicTitle || undefined,
       matrikelNr: regMatrikelNr.trim() || undefined,
       programmeId: (selectedRole === "student" && regProgrammeId) ? regProgrammeId : undefined,
       department: selectedRole === "student" ? regFachbereich : selectedRole === "examiner" ? regExaminerDepartment || undefined : undefined,
@@ -407,6 +409,7 @@ export default function Login() {
     setRegPlagiarismConsent(false);
     setRegAiReviewConsent(false);
     setRegExaminerDepartment("");
+    setRegAcademicTitle("");
     setRegPasswordConfirm("");
     setResetSent(false);
     setRegistered(false);
@@ -1163,6 +1166,25 @@ export default function Login() {
                             ? "Diese Rolle ist für externe Personen vorgesehen. Sie ermöglicht ausschließlich Zweitprüfungen; ein Fachbereich und eine HTW-Berlin-E-Mail-Adresse sind nicht erforderlich."
                             : "This role is intended for external people. It permits second examinations only; an HTW Berlin department and email address are not required."}
                         </p>
+                      </div>
+                    )}
+                    {(selectedRole === "examiner" || selectedRole === "second_examiner") && (
+                      <div className="space-y-2">
+                        <Label htmlFor="academic-title" className="text-white/70 text-sm">
+                          {lang === "de" ? "Akademischer Titel" : "Academic title"}
+                        </Label>
+                        <select
+                          id="academic-title"
+                          value={regAcademicTitle}
+                          onChange={(event) => setRegAcademicTitle(event.target.value)}
+                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-[#76b900]"
+                        >
+                          <option value="" className="bg-gray-900">{lang === "de" ? "Ohne akademischen Titel" : "No academic title"}</option>
+                          <option value="Prof." className="bg-gray-900">Prof.</option>
+                          <option value="Prof. Dr." className="bg-gray-900">Prof. Dr.</option>
+                          <option value="Dr." className="bg-gray-900">Dr.</option>
+                          <option value="Dr.-Ing." className="bg-gray-900">Dr.-Ing.</option>
+                        </select>
                       </div>
                     )}
                     <div className="space-y-2">

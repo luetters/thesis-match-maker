@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +89,7 @@ function UserCard({
   const requestedLabel = ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–";
   const requestedBadge = getRoleBadge(user.requestedRole ?? "");
   const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
-  const canActOnUser = canApproveAdministrative || user.requestedRole === "student";
+  const canActOnUser = canApproveAdministrative || user.requestedRole === "student" || (user.requestedRole === "examiner" && Boolean(user.department));
 
   return (
     <Card className="border border-gray-200 shadow-none">
@@ -111,17 +111,21 @@ function UserCard({
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-0.5 truncate">{user.email}</p>
+            <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-sm font-medium text-slate-700">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              <span className="shrink-0 text-slate-500">E-Mail:</span>
+              <span className="truncate">{user.email ?? "nicht angegeben"}</span>
+            </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {user.department ? (
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
                   <Building2 className="h-3.5 w-3.5 text-blue-600" />
                   Fachbereich {user.department}
                 </span>
-              ) : user.requestedRole === "student" ? (
+              ) : user.requestedRole === "student" || user.requestedRole === "examiner" ? (
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Fachbereich nicht angegeben
+                  Fachbereich nicht angegeben{user.requestedRole === "examiner" ? " · Freigabe nur durch Superadmin" : ""}
                 </span>
               ) : null}
               {(user.programmeAbbreviation || user.programmeName) && (
@@ -224,7 +228,7 @@ function GroupSection({
         <span className="text-xs font-medium text-white bg-amber-500 rounded-full px-2 py-0.5 leading-none">
           {users.length}
         </span>
-        {users.length > 1 && !users.some((user) => user.requestedRole === "admin") && (canApproveAdministrative || users.every((user) => user.requestedRole === "student")) && (
+        {users.length > 1 && !users.some((user) => user.requestedRole === "admin") && (canApproveAdministrative || users.every((user) => user.requestedRole === "student" || (user.requestedRole === "examiner" && Boolean(user.department)))) && (
           <Button
             size="sm"
             variant="outline"
@@ -564,7 +568,7 @@ export default function RoleApprovalTab({
         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
         <p>
           Bei jeder neuen Registrierung erhalten Sie automatisch eine E-Mail-Benachrichtigung.
-          {canApproveAll ? <> Als Superadmin können Sie alle Anfragen bearbeiten und Fachbereichsrechte zuweisen.</> : <> Sie können ausschließlich <strong>Studierende Ihres zugeordneten Fachbereichs</strong> freischalten oder ablehnen.</>}
+          {canApproveAll ? <> Als Superadmin können Sie alle Anfragen bearbeiten und Fachbereichsrechte zuweisen.</> : <> Sie können <strong>Studierende sowie interne Erstprüfer:innen Ihres zugeordneten Fachbereichs</strong> freischalten oder ablehnen.</>}
           Die gewünschte Rolle kann vor der Freischaltung über das Stift-Symbol angepasst werden.
           Nach der Freischaltung wird die Person per E-Mail informiert.
         </p>

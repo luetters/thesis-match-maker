@@ -1897,3 +1897,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fachbereichsdiagramm für neue Prüfer:innenanmeldungen im Superadmin-Dashboard integrieren
 - [x] Rollen-, Altfälle- und Dashboard-Regressionstests ergänzen und ausführen
 - [x] TypeScript, Laufzeit und Berechtigungsschutz prüfen und Checkpoint speichern
+
+## Erstprüfer:innenregistrierung und fachbereichsbezogene Freigabe
+- [x] Akademischen Titel bei der Erstprüfer:innenregistrierung ergänzen und speichern
+- [x] Fachbereichsauswahl für Erstprüfer:innen im Passwort-Registrierungsweg verifizieren und eindeutig darstellen
+- [x] Verwaltung die Freigabe von Erstprüfer:innen des eigenen Fachbereichs erlauben
+- [x] Freigabeliste um deutlich sichtbare Fachbereichs- und E-Mail-Angaben erweitern
+- [x] Registrierungs-, Rollen- und Freigabelogik mit Vitest absichern
+- [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern

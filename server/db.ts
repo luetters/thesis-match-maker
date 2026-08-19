@@ -4338,15 +4338,20 @@ export async function canAdminManageUser(adminUserId: number, targetUserId: numb
 
 /**
  * Wendet die Sichtbarkeitsregel der Verwaltungsübersicht deterministisch an.
- * Studierende bleiben auf den eigenen Fachbereich begrenzt. Ausstehende
- * Prüfer:innen- und Verwaltungsrollen bleiben sichtbar, damit neue
- * Registrierungen nicht aus dem System verschwinden; die Schreibrechte werden
- * weiterhin separat durch den Rollenfreigabe-Router geschützt.
+ * Studierende und interne Erstprüfer:innen bleiben auf den eigenen Fachbereich
+ * begrenzt. Fachbereichslose externe Zweitgutachter:innen und Verwaltungsrollen
+ * bleiben sichtbar, aber nur Superadmins dürfen sie freischalten.
  */
 export function filterPendingRoleUsersForAdmin<
   T extends { requestedRole?: string | null; department?: string | null }
 >(pending: T[], adminDepartment: AdminDepartment | null): T[] {
-  return pending.filter((user) => user.requestedRole !== "student" || canManageDepartment(adminDepartment, user.department));
+  return pending.filter((user) => {
+    const role = user.requestedRole;
+    if (role === "student" || role === "examiner") {
+      return canManageDepartment(adminDepartment, user.department);
+    }
+    return true;
+  });
 }
 
 export async function getPendingRoleUsersForAdmin(adminUserId: number) {

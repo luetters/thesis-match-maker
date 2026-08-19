@@ -19,4 +19,21 @@ describe("Fachbereichspflicht für Erstgutachter:innen", () => {
     expect(router).toContain('input.requestedRole === "examiner" && !input.department');
     expect(db).toContain('requestedRole === "examiner" && !department');
   });
+
+  it("erfasst akademische Titel bereits bei der Passwort-Registrierung und übergibt sie serverseitig", () => {
+    const login = readFileSync(projectFile("client", "src", "pages", "Login.tsx"), "utf8");
+    const router = readFileSync(projectFile("server", "routers.ts"), "utf8");
+    expect(login).toContain('id="academic-title"');
+    expect(login).toContain('option value="Prof. Dr."');
+    expect(login).toContain('academicTitle: regAcademicTitle || undefined');
+    expect(router).toContain('academicTitle: z.string().trim().max(64).optional()');
+    expect(router).toContain('input.academicTitle');
+  });
+
+  it("weist Freigabekarten eindeutig mit E-Mail und Fachbereich aus", () => {
+    const approvalTab = readFileSync(projectFile("client", "src", "components", "RoleApprovalTab.tsx"), "utf8");
+    expect(approvalTab).toContain("E-Mail:");
+    expect(approvalTab).toContain("Fachbereich nicht angegeben");
+    expect(approvalTab).toContain('user.requestedRole === "examiner" && Boolean(user.department)');
+  });
 });
