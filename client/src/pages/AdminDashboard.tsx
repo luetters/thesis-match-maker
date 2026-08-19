@@ -8,6 +8,7 @@ import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { HostingGuideHelp } from "@/components/HostingGuideHelp";
 import { FaqFeedbackAdminPanel } from "@/components/FaqFeedbackAdminPanel";
 import { LoginAttemptsView } from "@/components/admin/LoginAttemptsView";
+import { AssignExaminerModal } from "@/components/admin/AssignExaminerModal";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -51,106 +52,6 @@ function useNavItems(pendingCount = 0, isSuperadmin = false) {
     { href: "/admin/login-attempts", label: "Login-Protokoll", icon: Icons.log },
     { href: "/admin/help", label: "Hilfe & Bereitstellung", icon: Icons.log },
   ];
-}
-
-// ─── Assign Examiner Modal ────────────────────────────────────────────────────
-function AssignExaminerModal({
-  thesisId,
-  thesisTitle,
-  onClose,
-}: {
-  thesisId: number;
-  thesisTitle: string;
-  onClose: () => void;
-}) {
-  const { data: examiners } = trpc.examiner.list.useQuery();
-  const [selectedExaminer, setSelectedExaminer] = useState<number | null>(null);
-  const [slot, setSlot] = useState<"first" | "second">("first");
-  const utils = trpc.useUtils();
-
-  const assignMutation = trpc.thesis.assignExaminer.useMutation({
-    onSuccess: () => {
-      toast.success("Prüfer:in erfolgreich zugewiesen!");
-      utils.thesis.all.invalidate();
-      onClose();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold text-gray-900 mb-1">Prüfer:in zuweisen</h3>
-        <p className="text-sm text-gray-500 mb-5 truncate">{thesisTitle}</p>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Slot</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(["first", "second"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setSlot(s)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${
-                  slot === s ? "border-transparent text-white" : "border-gray-200 text-gray-600"
-                }`}
-                style={slot === s ? { backgroundColor: "#76B900" } : undefined}
-              >
-                {s === "first" ? "Erstprüfer:in" : "Zweitprüfer:in"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-5">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Prüfer:in auswählen</label>
-          <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 rounded-xl p-2">
-            {examiners?.map(({ user, profile }) => (
-              <button
-                key={user.id}
-                onClick={() => setSelectedExaminer(user.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                  selectedExaminer === user.id ? "text-white" : "hover:bg-gray-50"
-                }`}
-                style={selectedExaminer === user.id ? { backgroundColor: "#76B900" } : undefined}
-              >
-                <UserAvatar name={buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name })} email={user.email} avatarUrl={user.avatarUrl} size="md" />
-                <div className="min-w-0">
-                  <div className={`text-sm font-medium truncate ${selectedExaminer === user.id ? "text-white" : "text-gray-900"}`}>
-                    {buildFullName({ firstName: (user as any).firstName, lastName: (user as any).lastName, academicTitle: (user as any).academicTitle ?? profile?.title, name: user.name })}
-                  </div>
-                  {profile?.department && (
-                    <div className={`text-xs truncate ${selectedExaminer === user.id ? "text-white/70" : "text-gray-500"}`}>
-                      {profile.department}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-            {!examiners?.length && (
-              <p className="text-sm text-gray-500 text-center py-4">Keine Prüfer:innen gefunden.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              if (!selectedExaminer) { toast.error("Bitte Prüfer:in auswählen"); return; }
-              assignMutation.mutate({ thesisId, examinerId: selectedExaminer, slot });
-            }}
-            disabled={assignMutation.isPending || !selectedExaminer}
-            className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: "#76B900" }}
-          >
-            {assignMutation.isPending ? "Wird zugewiesen..." : "Zuweisen"}
-          </button>
-          <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition-colors">
-            Abbrechen
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Deadline Modal ──────────────────────────────────────────────────────────

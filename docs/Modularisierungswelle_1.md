@@ -14,10 +14,11 @@ Die erste Welle zerlegt ausschließlich fachlich geschlossene Bereiche mit stabi
 | FAQ-API | `server/routers/faqRouter.ts` | Öffentliche Rückmeldung sowie geschützte Verwaltung |
 | Notizbibliothek | `client/src/components/examiner/PrivateNotesLibrary.tsx` | Suche und Export persönlicher Notizen |
 | Login-Protokoll | `client/src/components/admin/LoginAttemptsView.tsx` | Filter, Kennzahlen und Tabelle der Anmeldeversuche |
+| Prüfer:innenzuweisung | `client/src/components/admin/AssignExaminerModal.tsx` | Direkte Zuordnung einer Erst- oder Zweitprüferin bzw. eines Erst- oder Zweitprüfers |
 
 ## Aktueller Effekt
 
-Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten Welle liegt jedoch nun in **sechs eigenständig testbaren Modulen**. Die zugehörigen Tests für FAQ, Notizen und Exporte bleiben grün.
+Die zentralen Dateien behalten die API-Zusammensetzung und gemeinsame Infrastruktur. Fachlogik der ersten Welle liegt jedoch nun in **sieben eigenständig testbaren Modulen**. Die zugehörigen Tests für FAQ, Notizen und Exporte bleiben grün.
 
 ## Nächste Wellen
 
