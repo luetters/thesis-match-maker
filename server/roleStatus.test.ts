@@ -186,10 +186,31 @@ describe("selectUserRole", () => {
     const { fakeDb, setSpy } = makeUpdateDb();
     fakeDbHolder.db = fakeDb;
 
-    await selectUserRole(5, "examiner");
+    await selectUserRole(5, "examiner", "FB3");
 
     const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(setArg.requestedRole).toBe("examiner");
+  });
+
+  it("lehnt Erstgutachter:innen ohne Fachbereich ab, ohne einen Datenbank-Write auszuführen", async () => {
+    const { fakeDb, updateSpy } = makeUpdateDb();
+    fakeDbHolder.db = fakeDb;
+
+    const result = await selectUserRole(5, "examiner");
+
+    expect(result).toBe(false);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it("speichert den gewählten Fachbereich mit der Erstgutachter:innenanfrage", async () => {
+    const { fakeDb, setSpy } = makeUpdateDb();
+    fakeDbHolder.db = fakeDb;
+
+    const result = await selectUserRole(5, "examiner", "FB4");
+
+    expect(result).toBe(true);
+    const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(setArg.department).toBe("FB4");
   });
 
   it("setzt roleStatus immer auf 'pending'", async () => {
@@ -206,7 +227,7 @@ describe("selectUserRole", () => {
     const { fakeDb, setSpy } = makeUpdateDb();
     fakeDbHolder.db = fakeDb;
 
-    await selectUserRole(5, "examiner");
+    await selectUserRole(5, "examiner", "FB3");
 
     const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(setArg.role).toBe("user");
@@ -219,7 +240,7 @@ describe("selectUserRole", () => {
       const { fakeDb, setSpy } = makeUpdateDb();
       fakeDbHolder.db = fakeDb;
 
-      const result = await selectUserRole(1, role);
+      const result = await selectUserRole(1, role, role === "examiner" ? "FB3" : undefined);
       expect(result).toBe(true);
       const setArg = setSpy.mock.calls[0]?.[0] as Record<string, unknown>;
       expect(setArg.requestedRole).toBe(role);

@@ -1883,3 +1883,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## Diagnosehinweis: Regine Buchheim
 - [x] Nutzerkonto gefunden: Regine Buchheim, regine.buchheim@htw-berlin.de, requestedRole=examiner, roleStatus=pending, angelegt am 19.08.2026 um 17:46 Uhr
 - [x] Ursache: Fachbereichsfilter blendete fachbereichsübergreifende Prüfer:innen- und Verwaltungsanfragen aus; diese Rollen sind nun sichtbar, Schreibrechte bleiben serverseitig geschützt
+
+## Verpflichtende Fachbereichsauswahl für Erstgutachter:innen
+- [x] Registrierungsformular für Erstgutachter:innen um verpflichtende Fachbereichsauswahl ergänzen
+- [x] Serverseitige Eingabevalidierung für Erstgutachter:innen ohne Fachbereich ergänzen
+- [x] Fachbereich in ausstehender Rollenfreigabe und Prüfer:innenprofil verifizieren
+- [x] Deutsche und englische Registrierungstexte sowie Vitest-Regressionen ergänzen
+- [x] TypeScript, Laufzeit und Registrierungsvorgang prüfen und Checkpoint speichern

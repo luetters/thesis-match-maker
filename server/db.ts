@@ -4220,13 +4220,19 @@ export async function updateUserStatus(
 
 // ─── Rollen-Bestätigungsworkflow ─────────────────────────────────────────────
 
-/** Nutzer wählt eine Rolle nach Magic-Link-Login (setzt roleStatus auf 'pending') */
-export async function selectUserRole(userId: number, requestedRole: string) {
+/** Nutzer:in wählt eine Rolle und beantragt die Freischaltung. */
+export async function selectUserRole(userId: number, requestedRole: string, department?: AdminDepartment) {
   const db = await getDb();
   if (!db) return false;
   try {
+    if (requestedRole === "examiner" && !department) return false;
     await db.update(users)
-      .set({ requestedRole: requestedRole as any, roleStatus: "pending", role: "user" })
+      .set({
+        requestedRole: requestedRole as any,
+        roleStatus: "pending",
+        role: "user",
+        ...(requestedRole === "examiner" ? { department } : {}),
+      })
       .where(eq(users.id, userId));
     return true;
   } catch (error) {

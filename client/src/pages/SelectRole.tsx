@@ -24,8 +24,8 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
   {
     id: "examiner",
-    label: "Prüfer:in",
-    description: "Ich betreue Abschlussarbeiten als Erst- oder Zweitprüfer:in.",
+    label: "Erstprüfer:in",
+    description: "Ich betreue Abschlussarbeiten als Erstprüfer:in; das Zweitprüfungsrecht ist eingeschlossen.",
     icon: <BookOpen className="w-8 h-8" />,
     color: "text-blue-600",
   },
@@ -41,6 +41,7 @@ const ROLE_OPTIONS: RoleOption[] = [
 export default function SelectRole() {
   const [, navigate] = useLocation();
   const [selected, setSelected] = useState<"student" | "examiner" | "admin" | null>(null);
+  const [examinerDepartment, setExaminerDepartment] = useState<"FB1" | "FB2" | "FB3" | "FB4" | "FB5" | null>(null);
   const utils = trpc.useUtils();
 
   const selectRole = trpc.roleApproval.selectRole.useMutation({
@@ -56,6 +57,14 @@ export default function SelectRole() {
 
   const handleSubmit = () => {
     if (!selected) return;
+    if (selected === "examiner") {
+      if (!examinerDepartment) {
+        toast.error("Bitte wählen Sie Ihren Fachbereich aus.");
+        return;
+      }
+      selectRole.mutate({ requestedRole: selected, department: examinerDepartment });
+      return;
+    }
     selectRole.mutate({ requestedRole: selected });
   };
 
@@ -120,6 +129,31 @@ export default function SelectRole() {
             ))}
           </div>
 
+          {selected === "examiner" && (
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
+              <label htmlFor="examiner-department" className="mb-1.5 block text-sm font-semibold text-blue-950">
+                Eigener Fachbereich <span className="text-red-600">*</span>
+              </label>
+              <p className="mb-3 text-sm text-blue-800">
+                Bitte wählen Sie den Fachbereich, dem Sie als Erstprüfer:in angehören. Die Angabe ist für die Zuständigkeit bei der Freischaltung erforderlich.
+              </p>
+              <select
+                id="examiner-department"
+                value={examinerDepartment ?? ""}
+                onChange={(event) => setExaminerDepartment((event.target.value || null) as "FB1" | "FB2" | "FB3" | "FB4" | "FB5" | null)}
+                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-gray-900 outline-none ring-offset-2 focus:ring-2 focus:ring-[#76B900]"
+                aria-required="true"
+              >
+                <option value="">Bitte auswählen</option>
+                <option value="FB1">FB1</option>
+                <option value="FB2">FB2</option>
+                <option value="FB3">FB3</option>
+                <option value="FB4">FB4</option>
+                <option value="FB5">FB5</option>
+              </select>
+            </div>
+          )}
+
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
             <strong>Hinweis:</strong> Ihre Rollenanfrage muss von der Verwaltung (für Studierende) oder dem Superadmin
             (für alle Rollen) bestätigt werden. Bis zur Bestätigung haben Sie eingeschränkten Zugriff.
@@ -127,7 +161,7 @@ export default function SelectRole() {
 
           <Button
             className="w-full bg-[#76B900] hover:bg-[var(--primary)] text-white py-3 text-base font-semibold"
-            disabled={!selected || selectRole.isPending}
+            disabled={!selected || (selected === "examiner" && !examinerDepartment) || selectRole.isPending}
             onClick={handleSubmit}
           >
             {selectRole.isPending ? (

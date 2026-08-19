@@ -4643,9 +4643,13 @@ export const appRouter = router({
     selectRole: protectedProcedure
       .input(z.object({
         requestedRole: z.enum(["student", "examiner", "admin"]),
+        department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const ok = await selectUserRole(ctx.user.id, input.requestedRole);
+        if (input.requestedRole === "examiner" && !input.department) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Für Erstprüfer:innen ist die Angabe eines Fachbereichs erforderlich." });
+        }
+        const ok = await selectUserRole(ctx.user.id, input.requestedRole, input.department);
         if (!ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Rolle konnte nicht gespeichert werden." });
         return { success: true };
       }),
