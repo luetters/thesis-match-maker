@@ -23,4 +23,26 @@ describe("Freigabeliste: Altfälle und Suche", () => {
     expect(component).toContain("Nach Name oder E-Mail suchen");
     expect(component).toContain("Keine passenden Registrierungen");
   });
+
+  it("unterstützt kombinierbare Rollen- und Fachbereichsfilter sowie die Datumssortierung", () => {
+    const component = readFileSync(projectFile("client", "src", "components", "RoleApprovalTab.tsx"), "utf8");
+
+    expect(component).toContain("Freigaben filtern und sortieren");
+    expect(component).toContain("roleFilter");
+    expect(component).toContain("departmentFilter");
+    expect(component).toContain("sortOrder");
+    expect(component).toContain("Neueste zuerst");
+    expect(component).toContain("Älteste zuerst");
+    expect(component).toContain("Nicht zugeordnet");
+  });
+
+  it("kennzeichnet über eine Woche offene Anträge und zeigt eine datensparsame Prüfer:innenvorschau", () => {
+    const component = readFileSync(projectFile("client", "src", "components", "RoleApprovalTab.tsx"), "utf8");
+
+    expect(component).toContain("WEEK_IN_MS");
+    expect(component).toContain("Seit {openDays} Tagen offen");
+    expect(component).toContain("Profilvorschau für die Freigabe");
+    expect(component).toContain("Extern · keine interne Fachbereichszuordnung");
+    expect(component).toContain("Weitere Profilangaben werden erst nach der regulären Berechtigungsprüfung");
+  });
 });

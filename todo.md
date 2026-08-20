@@ -1914,12 +1914,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
 
 ## Filter, Prüfer:innenvorschau und Anmeldedatum in der Freigabeliste
-- [ ] Kombinierbare Rollen- und Fachbereichsfilter für offene Registrierungen ergänzen
-- [ ] Sortierung nach Anmeldedatum in beide Richtungen bereitstellen
-- [ ] Anträge mit mehr als sieben Tagen Wartezeit farblich und mit Dauer hervorheben
-- [ ] Direkte Profilvorschau für Erst- und Zweitgutachter:innen in der Freigabeliste integrieren
-- [ ] Filter-, Sortier-, Überfälligkeits- und Profilvorschau-Regressionen mit Vitest ergänzen
-- [ ] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
+- [x] Kombinierbare Rollen- und Fachbereichsfilter für offene Registrierungen ergänzen
+- [x] Sortierung nach Anmeldedatum in beide Richtungen bereitstellen
+- [x] Anträge mit mehr als sieben Tagen Wartezeit farblich und mit Dauer hervorheben
+- [x] Direkte Profilvorschau für Erst- und Zweitgutachter:innen in der Freigabeliste integrieren
+- [x] Filter-, Sortier-, Überfälligkeits- und Profilvorschau-Regressionen mit Vitest ergänzen
+- [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
 
 ## Prozessvideo Thesis Matching
 - [x] Kurzes Prozessvideo für die studentische Themenfindung, Auswahl der Erstbetreuung und den weiteren Thesis-Matching-Ablauf erstellen

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck, Mail, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck, Mail, Search, Eye, ArrowUpDown, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,9 @@ type PendingUser = {
   department?: string | null;
   matrikelNr?: string | null;
   thesisType?: string | null;
+  targetSemester?: string | null;
+  staffId?: string | null;
+  phone?: string | null;
   programmeName?: string | null;
   programmeAbbreviation?: string | null;
 };
@@ -58,7 +61,22 @@ type PendingUser = {
 type RejectDialogState = { open: boolean; user: PendingUser | null; reason: string };
 type EditRoleDialogState = { open: boolean; user: PendingUser | null; selectedRole: string };
 type ApproveAllDialogState = { open: boolean; users: PendingUser[]; groupTitle: string };
+type ProfilePreviewState = { open: boolean; user: PendingUser | null };
 const ADMIN_DEPARTMENTS = ["FB1", "FB2", "FB3", "FB4", "FB5"] as const;
+const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+
+function getRegisteredAtMs(user: PendingUser) {
+  const timestamp = new Date(user.createdAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getOpenDays(user: PendingUser) {
+  return Math.max(0, Math.floor((Date.now() - getRegisteredAtMs(user)) / (24 * 60 * 60 * 1000)));
+}
+
+function isExaminerRequest(user: PendingUser) {
+  return user.requestedRole === "examiner" || user.requestedRole === "second_examiner";
+}
 
 // ── Einzelne Nutzer-Karte ─────────────────────────────────────────────────────
 function UserCard({
@@ -66,17 +84,21 @@ function UserCard({
   onApprove,
   onReject,
   onEditRole,
+  onViewProfile,
   approvePending,
   rejectPending,
   canApproveAdministrative,
+  isOverdue,
 }: {
   user: PendingUser;
   onApprove: (user: PendingUser, adminDepartment?: string) => void;
   onReject: (u: PendingUser) => void;
   onEditRole: (u: PendingUser) => void;
+  onViewProfile: (u: PendingUser) => void;
   approvePending: boolean;
   rejectPending: boolean;
   canApproveAdministrative: boolean;
+  isOverdue: boolean;
 }) {
   const [adminDepartment, setAdminDepartment] = useState<(typeof ADMIN_DEPARTMENTS)[number]>("FB3");
   const [examinerDepartment, setExaminerDepartment] = useState<(typeof ADMIN_DEPARTMENTS)[number]>("FB3");
@@ -98,11 +120,12 @@ function UserCard({
   const requestedLabel = ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–";
   const requestedBadge = getRoleBadge(user.requestedRole ?? "");
   const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
+  const openDays = getOpenDays(user);
   const canActOnUser = canApproveAdministrative || user.requestedRole === "student" || (user.requestedRole === "examiner" && Boolean(user.department));
   const hasMissingExaminerDepartment = user.requestedRole === "examiner" && !user.department;
 
   return (
-    <Card className="border border-gray-200 shadow-none">
+    <Card className={`border shadow-none ${isOverdue ? "border-amber-300 bg-amber-50/50" : "border-gray-200"}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           {/* Nutzer-Info */}
@@ -154,11 +177,28 @@ function UserCard({
               {user.matrikelNr && (
                 <span>Matr.-Nr.: {user.matrikelNr}</span>
               )}
+              {isOverdue && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
+                  <AlertCircle className="h-3 w-3" />
+                  Seit {openDays} Tagen offen
+                </span>
+              )}
             </div>
           </div>
 
           {/* Aktions-Buttons */}
           <div className="flex items-center gap-2 shrink-0">
+            {isExaminerRequest(user) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50"
+                onClick={() => onViewProfile(user)}
+              >
+                <Eye className="h-4 w-4" />
+                Profil
+              </Button>
+            )}
             {hasMissingExaminerDepartment && (
               <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs">
                 {canApproveAdministrative ? (
@@ -235,11 +275,13 @@ function GroupSection({
   onApprove,
   onReject,
   onEditRole,
+  onViewProfile,
   onApproveAll,
   approvePending,
   rejectPending,
   accentColor,
   canApproveAdministrative,
+  isOverdue,
 }: {
   title: string;
   icon: React.ReactNode;
@@ -247,11 +289,13 @@ function GroupSection({
   onApprove: (user: PendingUser, adminDepartment?: string) => void;
   onReject: (u: PendingUser) => void;
   onEditRole: (u: PendingUser) => void;
+  onViewProfile: (u: PendingUser) => void;
   onApproveAll: (users: PendingUser[]) => void;
   approvePending: boolean;
   rejectPending: boolean;
   accentColor: string;
   canApproveAdministrative: boolean;
+  isOverdue: (u: PendingUser) => boolean;
 }) {
   if (users.length === 0) return null;
   return (
@@ -285,9 +329,11 @@ function GroupSection({
             onApprove={onApprove}
             onReject={onReject}
             onEditRole={onEditRole}
+            onViewProfile={onViewProfile}
             approvePending={approvePending}
             rejectPending={rejectPending}
             canApproveAdministrative={canApproveAdministrative}
+            isOverdue={isOverdue(user)}
           />
         ))}
       </div>
@@ -345,6 +391,10 @@ export default function RoleApprovalTab({
     groupTitle: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [profilePreview, setProfilePreview] = useState<ProfilePreviewState>({ open: false, user: null });
 
   const pendingQuery = trpc.roleApproval.getPending.useQuery(undefined, {
     refetchInterval: 30000,
@@ -398,11 +448,19 @@ export default function RoleApprovalTab({
   });
 
   const searchValue = searchTerm.trim().toLocaleLowerCase("de-DE");
-  const pending = (pendingQuery.data ?? []).filter((user) => {
-    if (!searchValue) return true;
-    const name = buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name }) ?? "";
-    return `${name} ${user.email ?? ""}`.toLocaleLowerCase("de-DE").includes(searchValue);
-  });
+  const pending = useMemo(() => [...(pendingQuery.data ?? [])]
+    .filter((user) => {
+      const role = user.requestedRole ?? user.role ?? "";
+      const name = buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name }) ?? "";
+      const matchesSearch = !searchValue || `${name} ${user.email ?? ""}`.toLocaleLowerCase("de-DE").includes(searchValue);
+      const matchesRole = roleFilter === "all" || role === roleFilter;
+      const matchesDepartment = departmentFilter === "all"
+        || (departmentFilter === "unassigned" ? !user.department : user.department === departmentFilter);
+      return matchesSearch && matchesRole && matchesDepartment;
+    })
+    .sort((left, right) => sortOrder === "newest"
+      ? getRegisteredAtMs(right) - getRegisteredAtMs(left)
+      : getRegisteredAtMs(left) - getRegisteredAtMs(right)), [pendingQuery.data, searchValue, roleFilter, departmentFilter, sortOrder]);
 
   // Gruppen aufteilen nach requestedRole
   const VERWALTUNG_ROLES = ["admin", "pav", "dean", "vice_dean", "superadmin", "programme_director"];
@@ -459,6 +517,10 @@ export default function RoleApprovalTab({
     });
   };
 
+  const handleProfilePreviewOpen = (user: PendingUser) => {
+    setProfilePreview({ open: true, user });
+  };
+
   const handleEditRoleConfirm = () => {
     if (!editRoleDialog.user || !editRoleDialog.selectedRole) return;
     updateRoleMutation.mutate({
@@ -490,15 +552,41 @@ export default function RoleApprovalTab({
         </Button>
       </div>
 
-      <div className="relative max-w-xl">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <input
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="Nach Name oder E-Mail suchen"
-          aria-label="Offene Registrierungen nach Name oder E-Mail durchsuchen"
-          className="h-10 w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20"
-        />
+      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Filter className="h-4 w-4 text-[#5a8c00]" />
+          Freigaben filtern und sortieren
+          <span className="ml-auto text-xs font-medium text-slate-500">{pending.length} von {(pendingQuery.data ?? []).length} Einträgen</span>
+        </div>
+        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(220px,1fr)_160px_160px_180px]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Nach Name oder E-Mail suchen"
+              aria-label="Offene Registrierungen nach Name oder E-Mail durchsuchen"
+              className="h-10 w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20"
+            />
+          </div>
+          <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="Freigabeliste nach Rolle filtern" className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20">
+            <option value="all">Alle Rollen</option>
+            {ALL_ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}
+          </select>
+          <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)} aria-label="Freigabeliste nach Fachbereich filtern" className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20">
+            <option value="all">Alle Fachbereiche</option>
+            {ADMIN_DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+            <option value="unassigned">Nicht zugeordnet</option>
+          </select>
+          <div className="relative">
+            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as "newest" | "oldest")} aria-label="Freigabeliste nach Anmeldedatum sortieren" className="h-10 w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20">
+              <option value="newest">Neueste zuerst</option>
+              <option value="oldest">Älteste zuerst</option>
+            </select>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-amber-800"><AlertCircle className="mr-1 inline h-3.5 w-3.5" />Anträge mit mehr als sieben Tagen Wartezeit sind amberfarben hervorgehoben.</p>
       </div>
 
       {/* Leer-Zustand */}
@@ -537,10 +625,12 @@ export default function RoleApprovalTab({
                   onApprove={handleApprove}
                   onReject={handleRejectOpen}
                   onEditRole={handleEditRoleOpen}
+                  onViewProfile={handleProfilePreviewOpen}
                   onApproveAll={(u) => handleApproveAllOpen(u, `${department} · Studierende`)}
                   approvePending={anyPending}
                   rejectPending={rejectMutation.isPending}
                   canApproveAdministrative={canApproveAll}
+                  isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
                 />
               ))}
               <GroupSection
@@ -551,10 +641,12 @@ export default function RoleApprovalTab({
                 onApprove={handleApprove}
                 onReject={handleRejectOpen}
                 onEditRole={handleEditRoleOpen}
+                onViewProfile={handleProfilePreviewOpen}
                 onApproveAll={(u) => handleApproveAllOpen(u, "Zentrale Rollenfreigaben")}
                 approvePending={anyPending}
                 rejectPending={rejectMutation.isPending}
                 canApproveAdministrative={canApproveAll}
+                isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
               />
             </>
           ) : <>
@@ -566,10 +658,12 @@ export default function RoleApprovalTab({
               onApprove={handleApprove}
               onReject={handleRejectOpen}
               onEditRole={handleEditRoleOpen}
+              onViewProfile={handleProfilePreviewOpen}
               onApproveAll={(u) => handleApproveAllOpen(u, "Verwaltung")}
               approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
               canApproveAdministrative={canApproveAll}
+              isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
             />
             <GroupSection
               title="Studierende"
@@ -579,10 +673,12 @@ export default function RoleApprovalTab({
               onApprove={handleApprove}
               onReject={handleRejectOpen}
               onEditRole={handleEditRoleOpen}
+              onViewProfile={handleProfilePreviewOpen}
               onApproveAll={(u) => handleApproveAllOpen(u, "Studierende")}
               approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
               canApproveAdministrative={canApproveAll}
+              isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
             />
             <GroupSection
               title="Prüfer:innen"
@@ -592,10 +688,12 @@ export default function RoleApprovalTab({
               onApprove={handleApprove}
               onReject={handleRejectOpen}
               onEditRole={handleEditRoleOpen}
+              onViewProfile={handleProfilePreviewOpen}
               onApproveAll={(u) => handleApproveAllOpen(u, "Prüfer:innen")}
               approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
               canApproveAdministrative={canApproveAll}
+              isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
             />
             {groupSonstige.length > 0 && (
             <GroupSection
@@ -606,10 +704,12 @@ export default function RoleApprovalTab({
               onApprove={handleApprove}
               onReject={handleRejectOpen}
               onEditRole={handleEditRoleOpen}
+              onViewProfile={handleProfilePreviewOpen}
               onApproveAll={(u) => handleApproveAllOpen(u, "Sonstige")}
               approvePending={anyPending}
               rejectPending={rejectMutation.isPending}
               canApproveAdministrative={canApproveAll}
+              isOverdue={(user) => Date.now() - getRegisteredAtMs(user) > WEEK_IN_MS}
             />
             )}
           </>}
@@ -626,6 +726,44 @@ export default function RoleApprovalTab({
           Nach der Freischaltung wird die Person per E-Mail informiert.
         </p>
       </div>
+
+      <Dialog
+        open={profilePreview.open}
+        onOpenChange={(open) => setProfilePreview((state) => ({ ...state, open, user: open ? state.user : null }))}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Profilvorschau für die Freigabe</DialogTitle>
+          </DialogHeader>
+          {profilePreview.user && (() => {
+            const user = profilePreview.user;
+            const displayName = buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name }) || user.email || `Nutzer:in #${user.id}`;
+            const isExternalSecondExaminer = user.requestedRole === "second_examiner" && !user.department;
+            return (
+              <div className="space-y-4 py-1">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#003B5C] text-white"><BookOpen className="h-5 w-5" /></div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{displayName}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{ROLE_LABELS[user.requestedRole ?? ""] ?? user.requestedRole ?? "–"}</p>
+                    </div>
+                  </div>
+                </div>
+                <dl className="grid grid-cols-[132px_1fr] gap-x-3 gap-y-3 text-sm">
+                  <dt className="font-medium text-slate-500">E-Mail</dt><dd className="break-all text-slate-900">{user.email ?? "Nicht angegeben"}</dd>
+                  <dt className="font-medium text-slate-500">Fachbereich</dt><dd className="text-slate-900">{user.department ? `Fachbereich ${user.department}` : isExternalSecondExaminer ? "Extern · keine interne Fachbereichszuordnung" : "Nicht angegeben"}</dd>
+                  <dt className="font-medium text-slate-500">Telefon</dt><dd className="text-slate-900">{user.phone ?? "Nicht angegeben"}</dd>
+                  <dt className="font-medium text-slate-500">Angemeldet am</dt><dd className="text-slate-900">{new Date(user.createdAt).toLocaleDateString("de-DE", { dateStyle: "long" })}</dd>
+                  <dt className="font-medium text-slate-500">Status</dt><dd className="text-slate-900">Wartet auf Freigabe</dd>
+                </dl>
+                <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800">Die Vorschau zeigt nur Daten, die zur Identifikation und fachbereichsbezogenen Freigabe erforderlich sind. Weitere Profilangaben werden erst nach der regulären Berechtigungsprüfung im Portal geöffnet.</p>
+              </div>
+            );
+          })()}
+          <DialogFooter><Button variant="outline" onClick={() => setProfilePreview({ open: false, user: null })}>Schließen</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Alle freischalten – Bestätigungs-Dialog */}
       <Dialog
