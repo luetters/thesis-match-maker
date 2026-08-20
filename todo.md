@@ -1943,3 +1943,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Reale Testabläufe für Studierende, Erstprüfer:innen und Verwaltung beschreiben
 - [x] Support, Feedback, Datenschutz und Auswertung der Pilotphase festlegen
 - [x] Abnahmekriterien und Übergang in den Regelbetrieb dokumentieren
+
+## Konzept: Abschlussstatus und datensparsame Löschung
+- [x] Aufbewahrungs- und Löschregeln für verteidigte Abschlussarbeiten mit Prüfungsverwaltung abstimmen
+- [x] Status „Thesis defended“ und die Rollenfreigabe durch Erstprüfer:innen spezifizieren
+- [x] Minimierte Nachweisliste für Erstprüfer:innen und anonymisierte Abstract-Ablage definieren
+- [x] Technische Umsetzung, Auditierung, Sperrfristen und Wiederherstellungsgrenzen dokumentieren
