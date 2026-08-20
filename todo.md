@@ -1912,3 +1912,28 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Namens- und E-Mail-Suche für offene Registrierungen integrieren
 - [x] Zuordnungs-, Berechtigungs- und Suchregressionen mit Vitest ergänzen
 - [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
+
+## Filter, Prüfer:innenvorschau und Anmeldedatum in der Freigabeliste
+- [ ] Kombinierbare Rollen- und Fachbereichsfilter für offene Registrierungen ergänzen
+- [ ] Sortierung nach Anmeldedatum in beide Richtungen bereitstellen
+- [ ] Anträge mit mehr als sieben Tagen Wartezeit farblich und mit Dauer hervorheben
+- [ ] Direkte Profilvorschau für Erst- und Zweitgutachter:innen in der Freigabeliste integrieren
+- [ ] Filter-, Sortier-, Überfälligkeits- und Profilvorschau-Regressionen mit Vitest ergänzen
+- [ ] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
+
+## Prozessvideo Thesis Matching
+- [x] Kurzes Prozessvideo für die studentische Themenfindung, Auswahl der Erstbetreuung und den weiteren Thesis-Matching-Ablauf erstellen
+
+## Drehbuch und Präsentation Thesis Matching
+- [x] Detailliertes Drehbuch zum Thesis-Matching-Video erstellen
+- [x] Präsentation mit grafischer Übersicht des vollständigen Thesis-Matching-Prozesses erstellen
+
+## Studierenden-Mockups und technische Umsetzungscheckliste
+- [x] Grafische Übersicht der Studierendenansicht für Suche und Auswahl einer Betreuung erstellen
+- [x] Technische Checkliste zu Architektur, Schnittstellen, Sicherheit, Datenschutz, Betrieb und Tests erstellen
+
+## Konzept: E-Mail-Benachrichtigungen für Freigaben
+- [x] Auslöser, Empfängergruppen und E-Mail-Inhalte für neue Anträge und Statusänderungen festlegen
+- [x] Ereignisgesteuertes Versand- und Zustellkonzept mit Duplikatschutz entwerfen
+- [x] Datenschutz-, Fehlermanagement-, Protokollierungs- und Opt-out-Regeln definieren
+- [x] Umsetzungsphasen, Testfälle und Abnahmekriterien dokumentieren
