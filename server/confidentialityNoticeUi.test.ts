@@ -19,4 +19,13 @@ describe("Sperrvermerk-Sichtbarkeit", () => {
     expect(examiner).toContain("bg-amber-100");
     expect(examiner).toContain("Sperrvermerk");
   });
+
+  it("erklärt Studierenden die Folgen eines Sperrvermerks direkt am Eingabefeld", () => {
+    const student = readFileSync(projectFile("client", "src", "pages", "StudentDashboard.tsx"), "utf8");
+    const language = readFileSync(projectFile("client", "src", "contexts", "LanguageContext.tsx"), "utf8");
+    expect(student).toContain("confidentialityTooltip");
+    expect(student).toContain('title={t.student.confidentialityTooltip}');
+    expect(language).toContain("wird der Abstract nicht öffentlich präsentiert");
+    expect(language).toContain("the abstract is not presented publicly");
+  });
 });

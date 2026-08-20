@@ -1972,3 +1972,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Deutliches Sperrvermerk-Badge in Erst- und Zweitprüfer:innenansichten ergänzen
 - [x] Filter-, Ausschluss- und Sichtbarkeitsregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
+
+## Sperrvermerk in Akten, Antrag und Verwaltungsexport
+- [x] Sperrvermerk in der Prüfungsakten-PDF mit deutlichem Vertraulichkeitshinweis ausweisen
+- [x] Erklärenden Tooltip zur Sperrvermerk-Abfrage im studentischen Antrag ergänzen
+- [x] Datensparsamen CSV-Export aller Arbeiten mit aktivem Sperrvermerk für berechtigte Verwaltung bereitstellen
+- [x] PDF-, Tooltip-, Berechtigungs- und Exportregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { filterExaminerReportCases, registerExportRoutes } from "./exportRoutes";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 describe("PDF-Exportrouten", () => {
   it("registriert einen eigenen Export der vollständigen Fallhistorie", () => {
@@ -41,6 +43,21 @@ describe("PDF-Exportrouten", () => {
     registerExportRoutes(app as any);
     expect(paths).toContain("/api/export/my-students-report.pdf");
     expect(paths).toContain("/api/export/my-students-report.csv");
+  });
+
+  it("registriert den geschützten CSV-Export vertraulicher Arbeiten", () => {
+    const paths: string[] = [];
+    const app = { get(path: string) { paths.push(path); } };
+    registerExportRoutes(app as any);
+    expect(paths).toContain("/api/export/confidential-theses.csv");
+  });
+
+  it("weist den Sperrvermerk in beiden Prüfungsakten-PDFs deutlich aus", () => {
+    const source = readFileSync(resolve(process.cwd(), "server", "exportRoutes.ts"), "utf8");
+    expect(source).toContain("VERTRAULICH · Sperrvermerk");
+    expect(source).toContain("Keine öffentliche Weitergabe oder Abstract-Veröffentlichung.");
+    expect(source).toContain("exportConfidentialThesesCsv");
+    expect(source).toContain("Nur berechtigte Verwaltungs- und Superadmin-Konten dürfen diesen Export herunterladen.");
   });
 
   it("filtert und sortiert Berichtsfälle identisch für Vorschau und Export", () => {

@@ -936,10 +936,18 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
       `Erstellt: ${generatedAt.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} Uhr`,
       margin + 16, y + 46,
       { width: usableWidth - 32 }
-    );
-  y += 68;
+	    );
+	  y += 68;
 
-  // ── Rahmendaten ──────────────────────────────────────────────────────────────
+	  if (Number(thesis.hasConfidentialityNotice) === 1) {
+	    ensureSpace(62);
+	    doc.rect(margin, y, usableWidth, 52).fill("#7f1d1d");
+	    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(11).text("VERTRAULICH · Sperrvermerk", margin + 14, y + 10, { width: usableWidth - 28 });
+	    doc.fillColor("#fee2e2").font("Helvetica").fontSize(8).text("Die Unterlagen und Inhalte dieser Arbeit dürfen nur im Rahmen der Prüfungsverwaltung und der zugewiesenen Begutachtung verarbeitet oder weitergegeben werden.", margin + 14, y + 28, { width: usableWidth - 28 });
+	    y += 64;
+	  }
+
+	  // ── Rahmendaten ──────────────────────────────────────────────────────────────
   ensureSpace(20 + 5 * 18);
   doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Rahmendaten", margin, y);
   doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
@@ -1199,10 +1207,19 @@ async function exportThesisHistoryPdf(req: Request, res: Response) {
   y = doc.y + 8;
   doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(`${copy.student}: ${thesis.studentName ?? "–"} · ${copy.programme}: ${(thesis as any).programmeAbbreviation ?? (thesis as any).programmeName ?? "–"}`, margin, y, { width });
   y = doc.y + 4;
-  doc.text(`${copy.currentStatus}: ${currentStatus}`, margin, y, { width });
-  y = doc.y + 4;
-  doc.text(`${copy.firstExaminer}: ${thesis.firstExaminerName ?? copy.unassigned} · ${copy.secondExaminer}: ${thesis.secondExaminerName ?? copy.unassigned}`, margin, y, { width });
-  y = doc.y + 18;
+	  doc.text(`${copy.currentStatus}: ${currentStatus}`, margin, y, { width });
+	  y = doc.y + 4;
+	  doc.text(`${copy.firstExaminer}: ${thesis.firstExaminerName ?? copy.unassigned} · ${copy.secondExaminer}: ${thesis.secondExaminerName ?? copy.unassigned}`, margin, y, { width });
+	  y = doc.y + 10;
+	  if (Number(thesis.hasConfidentialityNotice) === 1) {
+	    ensureSpace(52);
+	    doc.rect(margin, y, width, 42).fill("#7f1d1d");
+	    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(10).text("VERTRAULICH · Sperrvermerk", margin + 12, y + 8, { width: width - 24 });
+	    doc.fillColor("#fee2e2").font("Helvetica").fontSize(7.5).text("Nur für Prüfungsverwaltung und zugewiesene Prüfer:innen. Keine öffentliche Weitergabe oder Abstract-Veröffentlichung.", margin + 12, y + 23, { width: width - 24 });
+	    y += 54;
+	  } else {
+	    y += 8;
+	  }
 
   doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text(copy.history, margin, y);
   y += 20;
@@ -1314,7 +1331,28 @@ async function exportMyNotesPdf(req: Request, res: Response) {
   await new Promise<void>((resolve) => doc.on("end", resolve));
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Anfragenotizen.pdf"');
-  res.send(Buffer.concat(chunks));
+	res.send(Buffer.concat(chunks));
+}
+
+async function exportConfidentialThesesCsv(req: Request, res: Response) {
+	const user = await getUserFromRequest(req);
+	if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+	const roles = await getUserRoles(user.id);
+	const isAllowed = roles.some((role) => ["admin", "superadmin", "pav"].includes(role)) || ["admin", "superadmin", "pav"].includes(user.role ?? "");
+	if (!isAllowed) return res.status(403).json({ error: "Nur berechtigte Verwaltungs- und Superadmin-Konten dürfen diesen Export herunterladen." });
+
+	const theses = (await getAllThesisRequests()).filter((thesis) => Number(thesis.hasConfidentialityNotice) === 1);
+	const rows = [
+	  ["Anfrage-ID", "Studierende:r", "E-Mail", "Thema", "Fachbereich", "Studiengang", "Zielsemester", "Status", "Erstgutachter:in", "Zweitgutachter:in", "Eingereicht am"],
+	  ...theses.map((thesis) => [
+	    thesis.id, thesis.studentName ?? "", thesis.studentEmail ?? "", thesis.title ?? "", thesis.department ?? "",
+	    thesis.programmeAbbreviation ?? thesis.programmeName ?? "", thesis.targetSemester ?? "", getStatusBadge(thesis.status ?? "").label,
+	    thesis.firstExaminerName ?? thesis.wantedExaminerName ?? "", thesis.secondExaminerName ?? thesis.wantedSecondExaminerName ?? "", formatDate(thesis.createdAt),
+	  ]),
+	];
+	res.setHeader("Content-Type", "text/csv; charset=utf-8");
+	res.setHeader("Content-Disposition", 'attachment; filename="HTW-Berlin_Arbeiten-mit-Sperrvermerk.csv"');
+	res.send(`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\r\n")}`);
 }
 
 // ─── Registrierung ────────────────────────────────────────────────────────────
@@ -1330,6 +1368,7 @@ export function registerExportRoutes(app: Express) {
   app.get("/api/export/examiner-quick-guide.pdf", exportExaminerQuickGuidePdf);
   app.get("/api/export/my-students-report.pdf", exportMyStudentsReportPdf);
   app.get("/api/export/my-students-report.csv", exportMyStudentsReportCsv);
-  app.get("/api/export/my-notes.csv", exportMyNotesCsv);
-  app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
+	  app.get("/api/export/my-notes.csv", exportMyNotesCsv);
+	  app.get("/api/export/my-notes.pdf", exportMyNotesPdf);
+	  app.get("/api/export/confidential-theses.csv", exportConfidentialThesesCsv);
 }
