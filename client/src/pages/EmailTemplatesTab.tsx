@@ -51,6 +51,7 @@ export function EmailTemplatesTab() {
   // Vorschau-Modus (HTML oder Text)
   const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [testMailStatus, setTestMailStatus] = useState<"sent" | "error" | null>(null);
 
   function startEdit(t: {
@@ -80,6 +81,7 @@ export function EmailTemplatesTab() {
     setActiveLang("de");
     setPreviewMode("html");
     setShowEmailPreview(false);
+    setPreviewDevice("desktop");
     setSaveStatus(null);
     setTestMailStatus(null);
   }
@@ -372,16 +374,44 @@ export function EmailTemplatesTab() {
 
               {showEmailPreview && (
                 <div className="space-y-3 border-b border-gray-100 bg-slate-50 p-5">
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
-                    <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{activeLang === "de" ? "Betreff" : "Subject"}</span>
-                    {fillEmailTemplatePreview(getCurrentSubject(), activeLang) || "—"}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">Darstellungsprüfung</p>
+                      <p className="text-xs text-slate-500">Die Vorschau verwendet denselben Vorlageninhalt wie die Test-E-Mail.</p>
+                    </div>
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1" aria-label="Ansicht für die E-Mail-Vorschau auswählen">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("desktop")}
+                        aria-pressed={previewDevice === "desktop"}
+                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${previewDevice === "desktop" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+                      >
+                        Desktop
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice("mobile")}
+                        aria-pressed={previewDevice === "mobile"}
+                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${previewDevice === "mobile" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+                      >
+                        Mobil · 375 px
+                      </button>
+                    </div>
                   </div>
-                  <iframe
-                    title={activeLang === "de" ? "E-Mail-Vorschau auf Deutsch" : "Email preview in English"}
-                    sandbox=""
-                    srcDoc={previewHtml || `<p style="font-family:Arial,sans-serif;color:#64748b">${activeLang === "de" ? "Kein HTML-Inhalt vorhanden." : "No HTML content available."}</p>`}
-                    className="h-80 w-full rounded-lg border border-slate-200 bg-white"
-                  />
+                  <div className={`rounded-xl border border-slate-200 bg-slate-200/60 p-3 ${previewDevice === "mobile" ? "flex justify-center" : ""}`}>
+                    <div className={previewDevice === "mobile" ? "w-[375px] max-w-full overflow-hidden rounded-[1.5rem] border-[7px] border-slate-900 bg-white shadow-xl" : "w-full"}>
+                      <div className="border-b border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+                        <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{activeLang === "de" ? "Betreff" : "Subject"}</span>
+                        {fillEmailTemplatePreview(getCurrentSubject(), activeLang) || "—"}
+                      </div>
+                      <iframe
+                        title={`${activeLang === "de" ? "E-Mail-Vorschau auf Deutsch" : "Email preview in English"} – ${previewDevice === "mobile" ? "Mobilansicht" : "Desktopansicht"}`}
+                        sandbox=""
+                        srcDoc={previewHtml || `<p style="font-family:Arial,sans-serif;color:#64748b">${activeLang === "de" ? "Kein HTML-Inhalt vorhanden." : "No HTML content available."}</p>`}
+                        className={`w-full border-0 bg-white ${previewDevice === "mobile" ? "h-[540px]" : "h-80"}`}
+                      />
+                    </div>
+                  </div>
                   <details className="rounded-lg border border-slate-200 bg-white px-3 py-2">
                     <summary className="cursor-pointer text-xs font-semibold text-slate-700">{activeLang === "de" ? "Textversion anzeigen" : "Show text version"}</summary>
                     <pre className="mt-2 whitespace-pre-wrap font-sans text-xs text-slate-600">{previewText || "—"}</pre>

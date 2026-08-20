@@ -2013,3 +2013,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] E-Mail-Gestaltung formalisieren und Impressumslink sowie Passwort-Sicherheitshinweis ergänzen
 - [x] Vorlagen-, Sprach- und Registrierungsdatenregressionen ergänzen und ausführen
 - [x] TypeScript, E-Mail-Vorschau und Laufzeit prüfen und Checkpoint speichern
+
+## Responsive E-Mail-Vorschau im Admin-Dashboard
+- [x] Bestehende Vorlagenvorschau um Desktop- und Mobilansicht ergänzen
+- [x] Produktive Marken-, Impressums- und Sicherheitsbausteine in der Vorschau realitätsnah darstellen
+- [x] Umschaltung, responsives Layout und Vorlagenregressionen testen
+- [x] TypeScript, Laufzeit und E-Mail-Vorschau prüfen und Checkpoint speichern
