@@ -2493,8 +2493,13 @@ export default function AdminDashboard() {
     }
   }, [user, hasRole, setLocation]);
 
-  if (user && !hasRole("admin") && !hasRole("superadmin")) return null;
-  const { data: pendingForNav } = trpc.roleApproval.getPending.useQuery(undefined, { refetchInterval: 60000 });
+  // Hooks müssen unabhängig vom Authentifizierungszustand immer in derselben Reihenfolge laufen.
+  // E-Mail-Links öffnen die Seite zunächst ohne vollständig aufgelöste Session und aktualisieren sie danach.
+  const canAccessAdmin = Boolean(user && (hasRole("admin") || hasRole("superadmin")));
+  const { data: pendingForNav } = trpc.roleApproval.getPending.useQuery(undefined, {
+    enabled: canAccessAdmin,
+    refetchInterval: canAccessAdmin ? 60000 : false,
+  });
   const pendingNavCount = (pendingForNav ?? []).length;
   const navItems = useNavItems(pendingNavCount, hasRole("superadmin"));
   const currentNavItems = navItems.map((item) => ({
@@ -2516,6 +2521,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/login-attempts") setActiveTab("login_attempts");
     },
   }));
+  if (user && !canAccessAdmin) return null;
   const titles: Record<string, string> = {
     role_approvals: "Freischaltungen",
     cross_department_approvals: "Übergreifende Freigaben",

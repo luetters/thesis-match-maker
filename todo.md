@@ -1999,3 +1999,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Betroffene Erst- und Zweitprüfer:innen im Dashboard deutlich über die Änderung informieren
 - [x] Begründungs-, Audit- und Warnungsregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
+
+## Fehlerbehebung: Mobil geöffneter E-Mail-Link
+- [x] Fehlerpfad und die inkonsistente React-Hook-Reihenfolge beim Öffnen von E-Mail-Links reproduzieren und eingrenzen
+- [x] Betroffene Komponente so korrigieren, dass Hooks in jedem Renderpfad unverändert aufgerufen werden
+- [x] Regressionstest für den betroffenen E-Mail- oder Authentifizierungsweg ergänzen
+- [x] TypeScript, Mobilansicht und Produktionspfad prüfen und Checkpoint speichern
