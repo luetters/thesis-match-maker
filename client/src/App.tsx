@@ -33,6 +33,7 @@ import PublicProfile from "./pages/PublicProfile";
 import NotificationSettings from "./pages/NotificationSettings";
 import SamlError from "./pages/SamlError";
 import Faq from "./pages/Faq";
+import AbstractCollection from "./pages/AbstractCollection";
 
 function Router() {
   return (
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/saml/error" component={SamlError} />
       <Route path="/faq" component={Faq} />
+      <Route path="/abschlussarbeiten" component={AbstractCollection} />
 
       {/* Onboarding: Rollenwahl nach erstem Login */}
       <Route path="/onboarding" component={Onboarding} />

@@ -6,9 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CalendarDays, CheckCircle2, Clock3, Link as LinkIcon, MapPin, Plus, UsersRound, Video } from "lucide-react";
+import { BookOpen, CalendarDays, CheckCircle2, Clock3, Link as LinkIcon, MapPin, Plus, ShieldCheck, UsersRound, Video } from "lucide-react";
 import { getColloquiumSchedulingStartState } from "@shared/colloquiumSchedulingAccess";
 
 type SchedulingMode = "student" | "examiner";
@@ -45,6 +46,52 @@ function defaultSlot(offsetDays: number) {
   date.setDate(date.getDate() + offsetDays);
   date.setHours(10, 0, 0, 0);
   return date.toISOString().slice(0, 16);
+}
+
+function currentSemester() {
+  const now = new Date();
+  const year = now.getFullYear();
+  return now.getMonth() < 3 || now.getMonth() > 8 ? `WS ${year}/${String(year + 1).slice(-2)}` : `SS ${year}`;
+}
+
+function AbstractPublicationCard({ thesisRequestId }: { thesisRequestId: number }) {
+  const utils = trpc.useUtils();
+  const { data: existing, isLoading } = trpc.abstractCollection.mine.useQuery({ thesisRequestId });
+  const [abstract, setAbstract] = useState("");
+  const [semester, setSemester] = useState(currentSemester);
+  const [consent, setConsent] = useState(false);
+  useEffect(() => {
+    if (existing) {
+      setAbstract(existing.abstract);
+      setSemester(existing.submissionSemester);
+      setConsent(existing.status !== "WITHDRAWN");
+    }
+  }, [existing]);
+  const submit = trpc.abstractCollection.submit.useMutation({
+    onSuccess: () => {
+      toast.success("Abstract zur redaktionellen Freigabe eingereicht.");
+      utils.abstractCollection.mine.invalidate({ thesisRequestId });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const withdraw = trpc.abstractCollection.withdraw.useMutation({
+    onSuccess: () => {
+      toast.success("Die Veröffentlichungsfreigabe wurde zurückgezogen.");
+      setConsent(false);
+      utils.abstractCollection.mine.invalidate({ thesisRequestId });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const isActive = existing && existing.status !== "WITHDRAWN";
+
+  return <div className="rounded-xl border border-[#76B900]/30 bg-[#f6faed] p-4">
+    <div className="flex items-start gap-3"><div className="rounded-lg bg-[#76B900]/15 p-2 text-[#456d00]"><BookOpen className="h-5 w-5" /></div><div><h4 className="font-semibold text-[#244400]">Abstract für die Abstract-Sammlung</h4><p className="mt-1 text-sm text-[#456d00]">Optional: Sie können Ihren Abstract für die redaktionell geprüfte Präsentation von Abschlussarbeiten einreichen. Veröffentlichungen erfolgen erst nach Freigabe und ohne Ihren Namen oder Ihre Matrikelnummer.</p></div></div>
+    {isLoading ? <p className="mt-3 text-sm text-gray-500">Abstract wird geladen …</p> : <div className="mt-4 space-y-3"><div className="grid gap-3 sm:grid-cols-[180px_1fr]"><div className="space-y-1.5"><Label htmlFor={`abstract-semester-${thesisRequestId}`}>Semester der Einreichung</Label><Input id={`abstract-semester-${thesisRequestId}`} value={semester} onChange={(event) => setSemester(event.target.value)} placeholder="z. B. WS 2026/27" /></div><div className="space-y-1.5"><Label htmlFor={`public-abstract-${thesisRequestId}`}>Abstract</Label><Textarea id={`public-abstract-${thesisRequestId}`} value={abstract} onChange={(event) => setAbstract(event.target.value)} maxLength={3500} placeholder="Fassen Sie Thema, Fragestellung, Vorgehen und Ergebnisse Ihrer Arbeit zusammen." className="min-h-28 bg-white" /></div></div>
+      <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-white/80 p-3 text-sm text-gray-700"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#5a8c00]" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Ich willige ein, dass <strong>Semester, Titel, Fachbereich und der von mir eingegebene Abstract</strong> nach redaktioneller Prüfung im Thesis Match Maker und später auf der Website der HTW Berlin veröffentlicht werden. Ich bestätige, dass der Text keine personenbezogenen Daten, vertraulichen Unternehmensinformationen oder schutzwürdigen Inhalte enthält.</span></label>
+      {isActive && <p className="text-xs font-medium text-[#456d00]">Status: {existing.status === "PENDING_REVIEW" ? "Redaktionelle Prüfung ausstehend" : existing.status === "APPROVED" ? "Freigegeben und sichtbar" : "Überarbeitung erforderlich"}{existing.reviewNote ? ` · Hinweis: ${existing.reviewNote}` : ""}</p>}
+      <div className="flex flex-wrap gap-2"><Button size="sm" className="bg-[#76B900] hover:bg-[#5a8c00]" disabled={!consent || abstract.trim().length < 80 || submit.isPending} onClick={() => submit.mutate({ thesisRequestId, submissionSemester: semester, abstract, publicationConsent: true })}><ShieldCheck className="mr-1.5 h-4 w-4" />{isActive ? "Abstract erneut einreichen" : "Abstract einreichen"}</Button>{isActive && <Button size="sm" variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ thesisRequestId })}>Freigabe zurückziehen</Button>}</div>
+    </div>}
+  </div>;
 }
 
 function SchedulingCreateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -164,6 +211,7 @@ export function ColloquiumSchedulingPanel({ mode }: { mode: SchedulingMode }) {
         {(detailData.poll.status === "OPEN" || detailData.poll.status === "MATCH_FOUND") && myParticipant && <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"><h4 className="font-semibold text-blue-950">Ihre Verfügbarkeit</h4><p className="mt-1 text-sm text-blue-800">Bitte bewerten Sie jede Terminoption. Erst bei drei Verfügbarkeiten kann ein Termin zur verbindlichen Bestätigung vorgeschlagen werden.</p><div className="mt-3 space-y-2">{detailData.slots.map((slot: any) => { const saved = slot.responses.find((response: any) => response.participantId === myParticipant.id)?.availability; return <div className="flex flex-wrap items-center justify-between gap-2" key={slot.id}><span className="text-sm text-gray-700">{formatDate(slot.startsAt)}</span><Select value={localResponses[slot.id] ?? saved ?? "UNSET"} onValueChange={(value) => value !== "UNSET" && setLocalResponses((current) => ({ ...current, [slot.id]: value as Availability }))}><SelectTrigger className="w-44 bg-white"><SelectValue placeholder="Bitte wählen" /></SelectTrigger><SelectContent><SelectItem value="UNSET" disabled>Bitte wählen</SelectItem><SelectItem value="YES">Verfügbar</SelectItem><SelectItem value="MAYBE">Unter Vorbehalt</SelectItem><SelectItem value="NO">Nicht verfügbar</SelectItem></SelectContent></Select></div>})}</div><Button className="mt-4 bg-blue-700 hover:bg-blue-800" onClick={submitAvailability} disabled={respond.isPending}>{respond.isPending ? "Wird gespeichert…" : "Verfügbarkeit speichern"}</Button></div>}
         {detailData.poll.status === "AWAITING_CONFIRMATION" && myParticipant && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><h4 className="font-semibold text-amber-950">Verbindliche Schlussbestätigung</h4><p className="mt-1 text-sm text-amber-800">Bestätigen Sie den vorgeschlagenen Termin verbindlich. Erst nach allen drei Bestätigungen wird der Kalendereintrag erstellt.</p><div className="mt-3 flex flex-wrap gap-2"><Button className="bg-[#76B900] hover:bg-[#5a8c00]" onClick={() => confirm.mutate({ pollId: detailData.poll.id, confirmed: true })} disabled={confirm.isPending}><CheckCircle2 className="mr-1.5 h-4 w-4" />Termin bestätigen</Button><Button variant="outline" className="border-red-200 text-red-700 hover:bg-red-50" onClick={() => { const reason = window.prompt("Optionaler Grund für die Ablehnung:"); confirm.mutate({ pollId: detailData.poll.id, confirmed: false, reason: reason || undefined }); }} disabled={confirm.isPending}>Termin ablehnen</Button></div></div>}
         {detailData.poll.status === "CONFIRMED" && <div className="rounded-xl border border-[#76B900]/30 bg-[#76B900]/10 p-4"><div className="flex items-center gap-2 font-semibold text-[#456d00]"><CheckCircle2 className="h-5 w-5" />Termin verbindlich bestätigt</div><p className="mt-1 text-sm text-[#456d00]">Der Termin wurde als Kolloquium und offizielles Verteidigungsdatum eingetragen. Raum und Online-Link sind im Kalendereintrag enthalten.</p>{locationLabel && <p className="mt-2 flex items-center gap-1.5 text-sm text-[#456d00]"><LinkIcon className="h-4 w-4" />{locationLabel}</p>}</div>}
+        {mode === "student" && <AbstractPublicationCard thesisRequestId={detailData.thesis.id} />}
       </div>}</CardContent></Card>
     </div>
   </div>;

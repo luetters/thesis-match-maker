@@ -415,6 +415,32 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	examinerTopicId: int("examiner_topic_id"),
 });
 
+// ─── Öffentlich freigegebene Abstracts von Abschlussarbeiten ─────────────────
+// Die öffentliche Abfrage gibt ausschließlich semester, title, department und abstract aus.
+// Technische Verknüpfungen und Freigabedaten bleiben ausschließlich im geschützten Bereich.
+export const publishedThesisAbstracts = mysqlTable("published_thesis_abstracts", {
+	id: int().autoincrement().notNull().primaryKey(),
+	thesisRequestId: int("thesis_request_id").notNull(),
+	submittedByUserId: int("submitted_by_user_id").notNull(),
+	submissionSemester: varchar("submission_semester", { length: 32 }).notNull(),
+	title: varchar({ length: 512 }).notNull(),
+	department: varchar({ length: 255 }).notNull(),
+	abstract: text().notNull(),
+	publicationConsent: tinyint("publication_consent").default(0).notNull(),
+	consentedAt: datetime("consented_at", { mode: "string" }),
+	status: mysqlEnum(["PENDING_REVIEW", "APPROVED", "REJECTED", "WITHDRAWN"]).default("PENDING_REVIEW").notNull(),
+	reviewedByUserId: int("reviewed_by_user_id"),
+	reviewedAt: datetime("reviewed_at", { mode: "string" }),
+	reviewNote: text("review_note"),
+	publishedAt: datetime("published_at", { mode: "string" }),
+	withdrawnAt: datetime("withdrawn_at", { mode: "string" }),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_published_abstract_thesis").on(table.thesisRequestId),
+	index("published_abstract_public_idx").on(table.status, table.department, table.submissionSemester),
+]);
+
 export const users = mysqlTable("users", {
 	id: int().autoincrement().notNull(),
 	openId: varchar({ length: 64 }).notNull(),

@@ -7,6 +7,7 @@ import { DeadlineManagementTab } from "@/components/DeadlineManagementTab";
 import { EmailTemplatesTab } from "./EmailTemplatesTab";
 import { HostingGuideHelp } from "@/components/HostingGuideHelp";
 import { FaqFeedbackAdminPanel } from "@/components/FaqFeedbackAdminPanel";
+import { AbstractModerationTab } from "@/components/AbstractModerationTab";
 import { LoginAttemptsView } from "@/components/admin/LoginAttemptsView";
 import { AssignExaminerModal } from "@/components/admin/AssignExaminerModal";
 import { AdminAuditSection, AdminUserManagementSection } from "@/components/admin/AdminWorkspaceSections";
@@ -50,6 +51,7 @@ function useNavItems(pendingCount = 0, isSuperadmin = false) {
     { href: "/admin/stats", label: t.admin.stats, icon: IconStats },
     { href: "/admin/colloquiums", label: t.admin.colloquiums, icon: IconCalendar },
     { href: "/admin/email-templates", label: "E-Mail-Vorlagen", icon: Icons.list },
+    { href: "/admin/abstracts", label: "Abstract-Freigaben", icon: Icons.list },
     { href: "/admin/login-attempts", label: "Login-Protokoll", icon: Icons.log },
     { href: "/admin/help", label: "Hilfe & Bereitstellung", icon: Icons.log },
   ];
@@ -2421,7 +2423,7 @@ function StatisticsView() {
 export default function AdminDashboard() {
   const { user, hasRole } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "deadlines" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "login_attempts" | "help">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "audit" | "users" | "stats" | "settings" | "deadlines" | "role_approvals" | "cross_department_approvals" | "saml" | "email_templates" | "abstracts" | "login_attempts" | "help">("overview");
   const [selectedUserFilter, setSelectedUserFilter] = useState<{ userId: number; userName: string } | null>(null);
   const [highlightRequestId, setHighlightRequestId] = useState<number | null>(null);
 
@@ -2450,6 +2452,7 @@ export default function AdminDashboard() {
       else if (item.href === "/admin/settings") setActiveTab("settings");
       else if (item.href === "/admin/deadlines") setActiveTab("deadlines");
       else if (item.href === "/admin/email-templates") setActiveTab("email_templates");
+      else if (item.href === "/admin/abstracts") setActiveTab("abstracts");
       else if (item.href === "/admin/help") setActiveTab("help");
       else if (item.href === "/admin/login-attempts") setActiveTab("login_attempts");
     },
@@ -2466,6 +2469,7 @@ export default function AdminDashboard() {
     settings: "Einstellungen",
     deadlines: "Fristenverwaltung",
     email_templates: "E-Mail-Vorlagen",
+    abstracts: "Abstract-Freigaben",
     login_attempts: "Login-Protokoll",
   };
   return (
@@ -2481,6 +2485,7 @@ export default function AdminDashboard() {
       {activeTab === "settings" && <SettingsView />}
       {activeTab === "deadlines" && <DeadlineManagementTab />}
       {activeTab === "email_templates" && <EmailTemplatesTab />}
+      {activeTab === "abstracts" && <AbstractModerationTab />}
       {activeTab === "login_attempts" && <LoginAttemptsView />}
       {activeTab === "help" && <><HostingGuideHelp /><FaqFeedbackAdminPanel /></>}
     </ThesisDashboardLayout>

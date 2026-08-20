@@ -428,6 +428,7 @@ export default function Home() {
               { label: t.nav.examiner, path: "/examiner" },
               { label: t.nav.admin, path: "/admin" },
               { label: t.nav.directory, path: "/examiners" },
+              { label: t.nav.abstracts, path: "/abschlussarbeiten" },
             ].map((item) => (
               <button
                 key={item.path}
@@ -500,12 +501,13 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white shadow-lg">
             <div className="container py-3 space-y-1">
-              {[
-                { label: t.nav.student, path: "/student" },
-                { label: t.nav.examiner, path: "/examiner" },
-                { label: t.nav.admin, path: "/admin" },
-                { label: t.nav.directory, path: "/examiners" },
-              ].map((item) => (
+            {[
+              { label: t.nav.student, path: "/student" },
+              { label: t.nav.examiner, path: "/examiner" },
+              { label: t.nav.admin, path: "/admin" },
+              { label: t.nav.directory, path: "/examiners" },
+              { label: t.nav.abstracts, path: "/abschlussarbeiten" },
+            ].map((item) => (
                 <button
                   key={item.path}
                   onClick={() => handleRoleNavigate(item.path)}

@@ -1949,3 +1949,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Status „Thesis defended“ und die Rollenfreigabe durch Erstprüfer:innen spezifizieren
 - [x] Minimierte Nachweisliste für Erstprüfer:innen und anonymisierte Abstract-Ablage definieren
 - [x] Technische Umsetzung, Auditierung, Sperrfristen und Wiederherstellungsgrenzen dokumentieren
+
+## Einwilligungsbasierte Abstract-Sammlung
+- [x] Datenmodell für freigegebene Abschlussarbeitsabstracts mit minimalen Metadaten ergänzen
+- [x] Abstract-Eingabe und ausdrückliche Freigabe im Abschlussprozess der Studierenden integrieren
+- [x] Rollenbasierte Prüfung und Freigabe vor öffentlicher Darstellung umsetzen
+- [x] Kartenübersicht mit Semester- und Fachbereichsfilter in Thesis Match Maker erstellen
+- [x] Exportfähige, öffentliche Datenschnittstelle für die spätere HTW-Berlin-Website vorbereiten
+- [x] Datenschutz-, Berechtigungs- und Veröffentlichungsregressionen ergänzen und ausführen
+- [x] Datenbankschema migrieren sowie TypeScript, Laufzeit und öffentliche Kartenansicht prüfen

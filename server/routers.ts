@@ -213,6 +213,7 @@ import {
   type NotificationTypeKey,
 } from "./db";
 import { examinerCommentsRouter } from "./routers/examinerCommentsRouter";
+import { abstractCollectionRouter } from "./routers/abstractCollectionRouter";
 import { faqRouter } from "./routers/faqRouter";
 import { createPavDeadlineProcedures } from "./routers/deadlineProcedures";
 import { colloquiumSchedulingRouter } from "./routers/colloquiumSchedulingRouter";
@@ -476,6 +477,7 @@ export const appRouter = router({
   }),
 
   faq: faqRouter,
+  abstractCollection: abstractCollectionRouter,
 
   saml: router({
     status: publicProcedure.query(async () => {
