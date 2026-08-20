@@ -7073,7 +7073,27 @@ export async function reviseThesisSubmission(
 	  ...(data.hasConfidentialityNotice !== undefined ? { hasConfidentialityNotice: nextConfidentiality ? 1 : 0 } : {}),
 	  status: "PENDING_FIRST_EXAMINER" as any,
 	}).where(eq(thesisRequests.id, id));
-	return { previousConfidentiality, nextConfidentiality, confidentialityChanged: previousConfidentiality !== nextConfidentiality };
+  return { previousConfidentiality, nextConfidentiality, confidentialityChanged: previousConfidentiality !== nextConfidentiality };
+}
+
+/** Ändert den Sperrvermerk ausschließlich über einen bereits autorisierten Verwaltungsprozess. */
+export async function updateThesisConfidentialityNotice(thesisRequestId: number, hasConfidentialityNotice: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  const existing = await getThesisRequestById(thesisRequestId);
+  if (!existing) throw new Error("Anfrage nicht gefunden");
+  if (hasConfidentialityNotice && Number(existing.isCooperation) !== 1) {
+    throw new Error("Ein Sperrvermerk kann nur für Arbeiten in Kooperation mit einem Unternehmen oder einer Organisation gesetzt werden.");
+  }
+
+  const previousValue = Number(existing.hasConfidentialityNotice) === 1;
+  const nextValue = hasConfidentialityNotice;
+  if (previousValue !== nextValue) {
+    await db.update(thesisRequests)
+      .set({ hasConfidentialityNotice: nextValue ? 1 : 0, updatedAt: new Date().toISOString().slice(0, 19).replace("T", " ") })
+      .where(eq(thesisRequests.id, thesisRequestId));
+  }
+  return { request: existing, previousValue, nextValue, changed: previousValue !== nextValue };
 }
 
 // ─── Login-Fehler-Protokoll ───────────────────────────────────────────────────

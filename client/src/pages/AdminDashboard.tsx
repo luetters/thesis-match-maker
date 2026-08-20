@@ -227,6 +227,14 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
     },
     onError: (err) => toast.error(err.message),
   });
+  const updateConfidentialityNotice = (trpc as any).admin.updateConfidentialityNotice.useMutation({
+    onSuccess: (data: { changed: boolean; hasConfidentialityNotice: boolean }) => {
+      toast.success(data.changed ? `Sperrvermerk ${data.hasConfidentialityNotice ? "aktiviert" : "aufgehoben"}.` : "Sperrvermerk bleibt unverändert.");
+      utils.thesis.all.invalidate();
+      utils.auditLog.all.invalidate();
+    },
+    onError: (error: { message: string }) => toast.error(error.message),
+  });
 
   const filtered = requests?.filter((r) => {
     const matchFilters = matchesAdminRequestFilters(r as any, {
@@ -530,6 +538,22 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                           title="Gutachter:innen direkt zuweisen (mit Verfügbarkeits-Prüfung)"
                         >
                           Zuweisen
+                        </button>
+                        <button
+                          type="button"
+                          disabled={updateConfidentialityNotice.isPending}
+                          onClick={() => {
+                            const current = Number((req as any).hasConfidentialityNotice) === 1;
+                            const next = !current;
+                            const question = next
+                              ? "Sperrvermerk aktivieren? Der öffentliche Abstract wird sofort gesperrt und die Änderung im Audit-Log protokolliert."
+                              : "Sperrvermerk aufheben? Die Änderung wird im Audit-Log protokolliert; eine öffentliche Abstract-Freigabe bleibt weiterhin separat erforderlich.";
+                            if (window.confirm(question)) updateConfidentialityNotice.mutate({ thesisRequestId: req.id, hasConfidentialityNotice: next });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${Number((req as any).hasConfidentialityNotice) === 1 ? "border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100" : "border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                          title="Nur die zuständige Verwaltung oder Superadmins können den Sperrvermerk ändern"
+                        >
+                          {Number((req as any).hasConfidentialityNotice) === 1 ? "🔒 Aufheben" : "🔒 Sperrvermerk"}
                         </button>
                         {/* Erinnerung senden – nur wenn Gutachter:in angefragt aber noch nicht bestätigt */}
                         {(

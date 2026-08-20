@@ -4056,6 +4056,7 @@ function ExaminerStatusHistory() {
     SECOND_EXAMINER_ASSIGNED: "Zweitgutachter:in zugewiesen",
     COLLOQUIUM_CREATED: "Kolloquium angelegt",
     DEADLINE_SET: "Abgabetermin gesetzt",
+    CONFIDENTIALITY_NOTICE_CHANGED: "Sperrvermerk geändert",
   };
   return (
     <div className="space-y-5">
@@ -4083,16 +4084,20 @@ function ExaminerStatusHistory() {
             <p className="text-sm text-gray-500">Noch keine Einträge.</p>
           ) : (
             <ol className="relative border-l-2" style={{ borderColor: "#76B900" }}>
-              {logs.map((log, i) => (
+              {logs.map((log, i) => {
+                const isConfidentialityEvent = log.action === "CONFIDENTIALITY_NOTICE_CHANGED";
+                const confidentialityMetadata = log.metadata && typeof log.metadata === "object" ? log.metadata as { previousValue?: boolean; newValue?: boolean } : {};
+                return (
                 <li key={log.id} className={`ml-6 ${i < logs.length - 1 ? "mb-6" : ""}`}>
                   <span
-                    className="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white"
-                    style={{ backgroundColor: "#76B900" }}
+                    className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white ${isConfidentialityEvent ? "bg-amber-600" : ""}`}
+                    style={isConfidentialityEvent ? undefined : { backgroundColor: "#76B900" }}
                   >
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    {isConfidentialityEvent ? <span className="text-xs" aria-label="Sperrvermerk">🔒</span> : <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
                   </span>
-                  <div className="pl-2">
+                  <div className={`pl-2 ${isConfidentialityEvent ? "rounded-xl border border-amber-300 bg-amber-50 p-3" : ""}`}>
                     <p className="text-sm font-semibold text-gray-900">{actionLabel[log.action] ?? log.action}</p>
+                    {isConfidentialityEvent && <p className="mt-1 text-xs font-semibold text-amber-900">🔒 {confidentialityMetadata.previousValue ? "Aktiv" : "Nicht aktiv"} → {confidentialityMetadata.newValue ? "Aktiv" : "Nicht aktiv"}</p>}
                     {log.fromStatus && log.toStatus && (
                       <p className="text-xs text-gray-500">{getThesisStatusPresentation({ status: log.fromStatus }).label} → {getThesisStatusPresentation({ status: log.toStatus }).label}</p>
                     )}
@@ -4101,7 +4106,7 @@ function ExaminerStatusHistory() {
                     <time className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("de-DE")}</time>
                   </div>
                 </li>
-              ))}
+              ); })}
             </ol>
           )}
         </div>

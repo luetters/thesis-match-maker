@@ -1986,3 +1986,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] CSV-Export vertraulicher Arbeiten nach Fachbereich und Semester filtern
 - [x] Audit- und Exportregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
+
+## Verwaltungsbeschränkte Sperrvermerk-Änderungen und Zeitachse
+- [x] Nachträgliche Änderung des Sperrvermerks auf zuständige Verwaltung beschränken
+- [x] Sperrvermerk-Ereignisse als hervorgehobene Marker in der Fallhistorie anzeigen
+- [x] Rollen-, Fachbereichs- und Zeitachsenregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern

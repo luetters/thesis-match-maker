@@ -201,6 +201,7 @@ import {
   adminDirectAssignExaminers,
   getThesisRequestByIdWithNames,
   reviseThesisSubmission,
+  updateThesisConfidentialityNotice,
   logLoginAttempt,
   getLoginAttempts,
   getLastPasswordResetSent,
@@ -1409,20 +1410,15 @@ export const appRouter = router({
         language: z.enum(["de", "en"]).optional(),
         targetSemester: z.string().max(32).optional(),
         degreeType: z.enum(["bachelor", "master"]).optional(),
-        isCooperation: z.boolean().optional(),
-        hasConfidentialityNotice: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        let revision: { previousConfidentiality: boolean; nextConfidentiality: boolean; confidentialityChanged: boolean } | undefined;
         try {
-          revision = await reviseThesisSubmission(input.thesisRequestId, ctx.user.id, {
+          await reviseThesisSubmission(input.thesisRequestId, ctx.user.id, {
             title: input.title,
             description: input.description,
             language: input.language,
             targetSemester: input.targetSemester,
             degreeType: input.degreeType,
-            isCooperation: input.isCooperation,
-            hasConfidentialityNotice: input.hasConfidentialityNotice,
           });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -1439,16 +1435,6 @@ export const appRouter = router({
           toStatus: "PENDING_FIRST_EXAMINER",
           reason: `Einreichung überarbeitet: Titel: "${input.title}"`,
         });
-        if (revision?.confidentialityChanged) {
-          await createAuditLogEntry({
-            thesisRequestId: input.thesisRequestId,
-            actorId: ctx.user.id,
-            actorRole: ctx.user.role,
-            action: "CONFIDENTIALITY_NOTICE_CHANGED",
-            reason: `Sperrvermerk ${revision.nextConfidentiality ? "aktiviert" : "aufgehoben"}.`,
-            metadata: { previousValue: revision.previousConfidentiality, newValue: revision.nextConfidentiality, source: "thesis_revision" },
-          });
-        }
         return { success: true };
       }),
   }),
@@ -2134,6 +2120,40 @@ export const appRouter = router({
 
   // -  // --- Admin: User-Management & Prüfer-CRUD -------------------------------------------
   admin: router({
+    updateConfidentialityNotice: protectedProcedure
+      .input(z.object({ thesisRequestId: z.number().int().positive(), hasConfidentialityNotice: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        const isSuperadmin = roles.includes("superadmin");
+        if (!isSuperadmin && !roles.includes("admin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur die zuständige Verwaltung darf einen Sperrvermerk nachträglich ändern." });
+        }
+        const existing = await getThesisRequestById(input.thesisRequestId);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden." });
+        if (!isSuperadmin) {
+          const adminDepartment = await getAdminDepartment(ctx.user.id);
+          if (!adminDepartment || existing.department !== adminDepartment) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen den Sperrvermerk nur für Arbeiten Ihres Fachbereichs ändern." });
+          }
+        }
+        let result: Awaited<ReturnType<typeof updateThesisConfidentialityNotice>>;
+        try {
+          result = await updateThesisConfidentialityNotice(input.thesisRequestId, input.hasConfidentialityNotice);
+        } catch (error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Sperrvermerk konnte nicht geändert werden." });
+        }
+        if (result.changed) {
+          await createAuditLogEntry({
+            thesisRequestId: input.thesisRequestId,
+            actorId: ctx.user.id,
+            actorRole: ctx.user.role,
+            action: "CONFIDENTIALITY_NOTICE_CHANGED",
+            reason: `Sperrvermerk ${result.nextValue ? "aktiviert" : "aufgehoben"} durch Verwaltung.`,
+            metadata: { previousValue: result.previousValue, newValue: result.nextValue, source: "admin_confidentiality_update" },
+          });
+        }
+        return { success: true, changed: result.changed, hasConfidentialityNotice: result.nextValue };
+      }),
     users: adminProcedure.query(async () => {
       return getAllUsersWithProfiles();
     }),
