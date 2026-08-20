@@ -1905,3 +1905,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Freigabeliste um deutlich sichtbare Fachbereichs- und E-Mail-Angaben erweitern
 - [x] Registrierungs-, Rollen- und Freigabelogik mit Vitest absichern
 - [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern
+
+## Editierbare Altfälle und Suche in der Freigabeliste
+- [x] Fachbereich bei unvollständigen Freigabefällen direkt in der Liste zuweisen
+- [x] Rollenbasierte Berechtigung für die nachträgliche Fachbereichszuordnung absichern
+- [x] Namens- und E-Mail-Suche für offene Registrierungen integrieren
+- [x] Zuordnungs-, Berechtigungs- und Suchregressionen mit Vitest ergänzen
+- [x] TypeScript, Laufzeit und Freigabeoberfläche prüfen und Checkpoint speichern

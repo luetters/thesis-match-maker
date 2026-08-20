@@ -144,6 +144,7 @@ import {
   canAdminManageUser,
   getAdminDepartment,
   assignAdminDepartment,
+  assignPendingExaminerDepartment,
   approveUserRole,
   rejectUserRole,
   getUserRoleStatus,
@@ -4774,6 +4775,37 @@ export const appRouter = router({
         const result = await assignAdminDepartment(input.userId, input.department, ctx.user.id);
         if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fachbereichsrecht konnte nicht gespeichert werden." });
         return { success: true };
+      }),
+
+    assignPendingExaminerDepartment: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+        if (!roles.includes("admin") && !roles.includes("superadmin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Kein Zugriff." });
+        }
+        const isSuperadmin = roles.includes("superadmin");
+        const target = await getUserRoleStatus(input.userId);
+        if (!target || target.requestedRole !== "examiner" || target.roleStatus !== "pending" || target.department) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Nur fachbereichslose, ausstehende Erstprüfer:innenanfragen können zugeordnet werden." });
+        }
+
+        let department = input.department;
+        if (isSuperadmin) {
+          if (!department) throw new TRPCError({ code: "BAD_REQUEST", message: "Bitte wählen Sie einen Fachbereich aus." });
+        } else {
+          const adminDepartment = await getAdminDepartment(ctx.user.id);
+          if (!adminDepartment) throw new TRPCError({ code: "FORBIDDEN", message: "Ihrem Verwaltungskonto ist kein Fachbereich zugeordnet." });
+          if (department && department !== adminDepartment) throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen nur Ihren eigenen Fachbereich zuordnen." });
+          department = adminDepartment;
+        }
+
+        const result = await assignPendingExaminerDepartment(input.userId, department!, ctx.user.id, isSuperadmin ? "superadmin" : "admin");
+        if (!result.success) throw new TRPCError({ code: "BAD_REQUEST", message: result.error ?? "Fachbereich konnte nicht zugeordnet werden." });
+        return { success: true, department };
       }),
 
     // Gewünschte Rolle eines wartenden Nutzers vor Freischaltung anpassen

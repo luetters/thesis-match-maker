@@ -4444,17 +4444,17 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
     if (confirmedByRole === "admin") {
-      if (requestedRole !== "student") {
+      if (requestedRole !== "student" && requestedRole !== "examiner") {
         return {
           success: false,
-          error: "Verwaltungsmitarbeiter:innen dürfen ausschließlich Studierende ihres zugeordneten Fachbereichs freischalten. Die Freigabe anderer Rollen erfolgt durch Superadmins.",
+          error: "Verwaltungsmitarbeiter:innen dürfen nur Studierende und interne Erstprüfer:innen ihres zugeordneten Fachbereichs freischalten. Die Freigabe anderer Rollen erfolgt durch Superadmins.",
         };
       }
       const adminDepartment = await getAdminDepartment(confirmedBy);
       if (!canManageDepartment(adminDepartment, user.department)) {
         return {
           success: false,
-          error: "Sie dürfen ausschließlich Studierende Ihres zugeordneten Fachbereichs freischalten.",
+          error: "Sie dürfen nur Personen Ihres zugeordneten Fachbereichs freischalten.",
         };
       }
     }
@@ -4555,17 +4555,17 @@ export async function rejectUserRole(userId: number, confirmedBy: number, confir
     if (user.roleStatus !== "pending") return { success: false, error: "Keine ausstehende Rollenanfrage" };
     const requestedRole = user.requestedRole as string;
     if (confirmedByRole === "admin") {
-      if (requestedRole !== "student") {
+      if (requestedRole !== "student" && requestedRole !== "examiner") {
         return {
           success: false,
-          error: "Verwaltungsmitarbeiter:innen dürfen ausschließlich Studierende ihres zugeordneten Fachbereichs ablehnen. Die Ablehnung anderer Rollen erfolgt durch Superadmins.",
+          error: "Verwaltungsmitarbeiter:innen dürfen nur Studierende und interne Erstprüfer:innen ihres zugeordneten Fachbereichs ablehnen. Die Ablehnung anderer Rollen erfolgt durch Superadmins.",
         };
       }
       const adminDepartment = await getAdminDepartment(confirmedBy);
       if (!canManageDepartment(adminDepartment, user.department)) {
         return {
           success: false,
-          error: "Sie dürfen ausschließlich Studierende Ihres zugeordneten Fachbereichs ablehnen.",
+          error: "Sie dürfen nur Personen Ihres zugeordneten Fachbereichs ablehnen.",
         };
       }
     }
@@ -4618,7 +4618,7 @@ export async function getUserRoleStatus(userId: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const userRows = await db.select({ id: users.id, role: users.role, roleStatus: users.roleStatus, requestedRole: users.requestedRole })
+    const userRows = await db.select({ id: users.id, role: users.role, roleStatus: users.roleStatus, requestedRole: users.requestedRole, department: users.department })
       .from(users).where(eq(users.id, userId)).limit(1);
     const user = userRows[0];
     if (!user) return null;
@@ -4627,11 +4627,39 @@ export async function getUserRoleStatus(userId: number) {
       role: user.role as string,
       roleStatus: user.roleStatus as "approved" | "pending" | "rejected",
       requestedRole: user.requestedRole as string | null,
+      department: user.department,
     };
   } catch (error) {
     console.error("[RoleApproval] Fehler beim Abrufen des Rollen-Status:", error);
     return null;
   }
+}
+
+/** Ergänzt bei einer ausstehenden internen Erstprüfer:innenanfrage den fehlenden Fachbereich und protokolliert den Vorgang. */
+export async function assignPendingExaminerDepartment(userId: number, department: AdminDepartment, assignedBy: number, assignedByRole: string) {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB nicht verfügbar" };
+
+  const targetRows = await db.select({ id: users.id, requestedRole: users.requestedRole, roleStatus: users.roleStatus, department: users.department })
+    .from(users).where(eq(users.id, userId)).limit(1);
+  const target = targetRows[0];
+  if (!target) return { success: false, error: "Nutzer nicht gefunden" };
+  if (target.roleStatus !== "pending" || target.requestedRole !== "examiner") {
+    return { success: false, error: "Nur ausstehende Erstprüfer:innenanfragen können nachträglich zugeordnet werden." };
+  }
+  if (target.department) return { success: false, error: "Für diese Person ist bereits ein Fachbereich hinterlegt." };
+
+  const nowTs = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await db.update(users).set({ department }).where(eq(users.id, userId));
+  await db.insert(auditLog).values({
+    actorId: assignedBy,
+    actorRole: assignedByRole,
+    action: "PENDING_EXAMINER_DEPARTMENT_ASSIGNED",
+    toStatus: department,
+    metadata: { userId, department },
+    createdAt: nowTs,
+  });
+  return { success: true };
 }
 
 // --- Profile ------------------------------------------------------------------

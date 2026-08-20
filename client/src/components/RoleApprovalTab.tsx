@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck, Mail } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User, RefreshCw, AlertCircle, Pencil, GraduationCap, BookOpen, Building2, CheckCheck, Mail, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +79,15 @@ function UserCard({
   canApproveAdministrative: boolean;
 }) {
   const [adminDepartment, setAdminDepartment] = useState<(typeof ADMIN_DEPARTMENTS)[number]>("FB3");
+  const [examinerDepartment, setExaminerDepartment] = useState<(typeof ADMIN_DEPARTMENTS)[number]>("FB3");
+  const utils = trpc.useUtils();
+  const assignDepartmentMutation = trpc.roleApproval.assignPendingExaminerDepartment.useMutation({
+    onSuccess: async () => {
+      await utils.roleApproval.getPending.invalidate();
+      toast.success("Fachbereich wurde ergänzt. Die Freigabe kann jetzt direkt erfolgen.");
+    },
+    onError: (error) => toast.error(error.message ?? "Fachbereich konnte nicht ergänzt werden."),
+  });
   const displayName = buildFullName({
     firstName: user.firstName,
     lastName: user.lastName,
@@ -90,6 +99,7 @@ function UserCard({
   const requestedBadge = getRoleBadge(user.requestedRole ?? "");
   const registeredAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString("de-DE") : "–";
   const canActOnUser = canApproveAdministrative || user.requestedRole === "student" || (user.requestedRole === "examiner" && Boolean(user.department));
+  const hasMissingExaminerDepartment = user.requestedRole === "examiner" && !user.department;
 
   return (
     <Card className="border border-gray-200 shadow-none">
@@ -125,7 +135,7 @@ function UserCard({
               ) : user.requestedRole === "student" || user.requestedRole === "examiner" ? (
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Fachbereich nicht angegeben{user.requestedRole === "examiner" ? " · Freigabe nur durch Superadmin" : ""}
+                  Fachbereich nicht angegeben{user.requestedRole === "examiner" ? " · Bitte direkt ergänzen" : ""}
                 </span>
               ) : null}
               {(user.programmeAbbreviation || user.programmeName) && (
@@ -149,6 +159,32 @@ function UserCard({
 
           {/* Aktions-Buttons */}
           <div className="flex items-center gap-2 shrink-0">
+            {hasMissingExaminerDepartment && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs">
+                {canApproveAdministrative ? (
+                  <select
+                    value={examinerDepartment}
+                    onChange={(event) => setExaminerDepartment(event.target.value as (typeof ADMIN_DEPARTMENTS)[number])}
+                    disabled={assignDepartmentMutation.isPending}
+                    className="h-7 rounded border border-amber-200 bg-white px-1.5 text-xs text-gray-800"
+                    aria-label="Fachbereich für Erstprüfer:in"
+                  >
+                    {ADMIN_DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                  </select>
+                ) : (
+                  <span className="font-medium text-amber-900">Eigenen Fachbereich übernehmen</span>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 border-amber-300 bg-white px-2 text-xs text-amber-900 hover:bg-amber-100"
+                  onClick={() => assignDepartmentMutation.mutate({ userId: user.id, department: canApproveAdministrative ? examinerDepartment : undefined })}
+                  disabled={assignDepartmentMutation.isPending}
+                >
+                  {assignDepartmentMutation.isPending ? "Wird ergänzt …" : "Zuordnen"}
+                </Button>
+              </div>
+            )}
             {user.requestedRole === "admin" && (
               <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs">
                 <span className="font-medium text-purple-900">Verwaltungsrecht:</span>
@@ -308,6 +344,7 @@ export default function RoleApprovalTab({
     users: [],
     groupTitle: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
   const pendingQuery = trpc.roleApproval.getPending.useQuery(undefined, {
     refetchInterval: 30000,
@@ -360,7 +397,12 @@ export default function RoleApprovalTab({
     },
   });
 
-  const pending = pendingQuery.data ?? [];
+  const searchValue = searchTerm.trim().toLocaleLowerCase("de-DE");
+  const pending = (pendingQuery.data ?? []).filter((user) => {
+    if (!searchValue) return true;
+    const name = buildFullName({ firstName: user.firstName, lastName: user.lastName, academicTitle: user.academicTitle, name: user.name }) ?? "";
+    return `${name} ${user.email ?? ""}`.toLocaleLowerCase("de-DE").includes(searchValue);
+  });
 
   // Gruppen aufteilen nach requestedRole
   const VERWALTUNG_ROLES = ["admin", "pav", "dean", "vice_dean", "superadmin", "programme_director"];
@@ -448,6 +490,17 @@ export default function RoleApprovalTab({
         </Button>
       </div>
 
+      <div className="relative max-w-xl">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Nach Name oder E-Mail suchen"
+          aria-label="Offene Registrierungen nach Name oder E-Mail durchsuchen"
+          className="h-10 w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#76B900] focus:ring-2 focus:ring-[#76B900]/20"
+        />
+      </div>
+
       {/* Leer-Zustand */}
       {pendingQuery.isLoading && (
         <div className="flex items-center justify-center py-12 text-gray-400 gap-3">
@@ -460,8 +513,8 @@ export default function RoleApprovalTab({
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <CheckCircle className="w-12 h-12 text-primary/60 mb-3" />
-            <p className="font-medium text-gray-700">Keine ausstehenden Registrierungen</p>
-            <p className="text-sm text-gray-400 mt-1">Alle Anfragen wurden bearbeitet.</p>
+            <p className="font-medium text-gray-700">{searchValue ? "Keine passenden Registrierungen" : "Keine ausstehenden Registrierungen"}</p>
+            <p className="text-sm text-gray-400 mt-1">{searchValue ? "Passen Sie den Suchbegriff an oder setzen Sie ihn zurück." : "Alle Anfragen wurden bearbeitet."}</p>
           </CardContent>
         </Card>
       )}

@@ -161,7 +161,7 @@ describe("approveUserRole", () => {
     fakeDbHolder.db = makeRoleDb(user);
     const result = await approveUserRole(2, 10, "admin");
     expect(result).toMatchObject({ success: false });
-    expect(result.error).toContain("ausschließlich Studierende");
+    expect(result.error).toContain("Studierende und interne Erstprüfer:innen");
   });
 
   it("bestätigt Studierenden-Rolle des eigenen Fachbereichs: users.update mit role=student und roleStatus=approved", async () => {
@@ -251,12 +251,11 @@ describe("approveUserRole", () => {
     expect(result).toEqual({ success: true });
   });
 
-  it("admin darf examiner-Rolle nicht bestätigen", async () => {
-    const user = { id: 9, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
-    fakeDbHolder.db = makeRoleDb(user);
+  it("admin darf examiner-Rolle im eigenen Fachbereich bestätigen", async () => {
+    const user = { id: 9, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending", department: "FB3" };
+    fakeDbHolder.db = makeRoleDb(user, [], "FB3");
     const result = await approveUserRole(9, 20, "admin");
-    expect(result).toMatchObject({ success: false });
-    expect(result.error).toContain("ausschließlich Studierende");
+    expect(result).toEqual({ success: true });
   });
 
   it("admin darf Studierende eines anderen Fachbereichs nicht bestätigen", async () => {
@@ -309,12 +308,11 @@ describe("rejectUserRole", () => {
     expect(result).toEqual({ success: false, error: "Keine ausstehende Rollenanfrage" });
   });
 
-  it("verbietet Verwaltung, eine Erstprüfer:innen-Rolle abzulehnen", async () => {
-    const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending" };
-    fakeDbHolder.db = makeRoleDb(user);
+  it("erlaubt Verwaltung, eine Erstprüfer:innen-Rolle des eigenen Fachbereichs abzulehnen", async () => {
+    const user = { id: 2, email: "prof@htw-berlin.de", name: "Prof Test", requestedRole: "examiner", roleStatus: "pending", department: "FB3" };
+    fakeDbHolder.db = makeRoleDb(user, [], "FB3");
     const result = await rejectUserRole(2, 10, "admin");
-    expect(result).toMatchObject({ success: false });
-    expect(result.error).toContain("ausschließlich Studierende");
+    expect(result).toEqual({ success: true });
   });
 
   it("lehnt Studierenden-Rolle des eigenen Fachbereichs ab: users.update mit roleStatus=rejected", async () => {
@@ -392,7 +390,7 @@ describe("rejectUserRole", () => {
     fakeDbHolder.db = makeRoleDb(user);
     const result = await rejectUserRole(8, 20, "admin");
     expect(result).toMatchObject({ success: false });
-    expect(result.error).toContain("ausschließlich Studierende");
+    expect(result.error).toContain("Studierende und interne Erstprüfer:innen");
   });
 
   it("admin darf Studierende eines anderen Fachbereichs nicht ablehnen", async () => {
