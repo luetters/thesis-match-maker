@@ -7,10 +7,12 @@
 export type Lang = "de" | "en";
 
 const SITE_URL_BASE = process.env.SITE_URL ?? process.env.FRONTEND_URL ?? "https://thesis.htw-berlin.com";
-const LOGO_URL = `${process.env.SITE_URL || SITE_URL_BASE}/manus-storage/ThesisMatchMaker_b92cd3c0.jpg`;
+const IMPRINT_URL = `${SITE_URL_BASE}/impressum`;
 
-const FOOTER_NOTE_DE = "Dies ist eine automatisch generierte E-Mail vom Thesis Match Maker der HTW Berlin.";
-const FOOTER_NOTE_EN = "This is an automatically generated email from the Thesis Match Maker of HTW Berlin.";
+const FOOTER_NOTE_DE = "Dies ist eine automatisch generierte Nachricht des Thesis Match Maker.";
+const FOOTER_NOTE_EN = "This is an automatically generated message from Thesis Match Maker.";
+const SECURITY_NOTICE_DE = "Hinweis: Dies ist kein offizielles Tool der HTW Berlin. Nutzen Sie niemals Ihr echtes HTW-Berlin-Passwort in diesem Portal.";
+const SECURITY_NOTICE_EN = "Notice: This is not an official HTW Berlin tool. Never use your actual HTW Berlin password in this portal.";
 
 function localizeContent(content: string, lang?: Lang): string {
   if (!lang) return content;
@@ -29,23 +31,24 @@ function htmlWrapper(content: string, lang?: Lang, showEnglishBelow = true): str
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px">
   <tr><td align="center">
-    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;max-width:560px">
-      <tr><td style="background:#006937;padding:24px 32px;text-align:center">
-        <img src="${LOGO_URL}" alt="Thesis Match Maker" style="height:48px;max-width:200px;object-fit:contain;display:block;margin:0 auto" />
-        <p style="color:#ffffff;margin:8px 0 0 0;font-size:13px;opacity:0.85">HTW Berlin – Thesis Match Maker</p>
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;overflow:hidden;max-width:560px;border:1px solid #dbe4db">
+      <tr><td style="background:#006937;padding:26px 32px;text-align:left">
+        <p style="color:#ffffff;margin:0;font-size:19px;font-weight:700;letter-spacing:0.1px">Thesis Match Maker</p>
+        <p style="color:#d9ecbf;margin:5px 0 0 0;font-size:12px;letter-spacing:0.2px">Organisation von Abschlussarbeiten</p>
       </td></tr>
       ${englishBelowBanner}
       <tr><td style="padding:32px">
         ${selectedContent}
       </td></tr>
-      <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;text-align:center">
+      <tr><td style="background:#f8faf8;padding:18px 32px;border-top:1px solid #dbe4db;text-align:left">
         ${lang === "en"
-          ? `<p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>`
+          ? `<p style="color:#526152;font-size:11px;line-height:1.5;margin:0 0 8px 0">${FOOTER_NOTE_EN}</p><p style="color:#7a3e00;font-size:11px;line-height:1.5;margin:0 0 8px 0"><strong>Security notice:</strong> ${SECURITY_NOTICE_EN}</p>`
           : lang === "de"
-          ? `<p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_DE}</p>`
-          : `<p style="color:#9ca3af;font-size:11px;margin:0 0 4px 0">${FOOTER_NOTE_DE}</p><p style="color:#9ca3af;font-size:11px;margin:0">${FOOTER_NOTE_EN}</p>`}
+          ? `<p style="color:#526152;font-size:11px;line-height:1.5;margin:0 0 8px 0">${FOOTER_NOTE_DE}</p><p style="color:#7a3e00;font-size:11px;line-height:1.5;margin:0 0 8px 0"><strong>Sicherheitshinweis:</strong> ${SECURITY_NOTICE_DE}</p>`
+          : `<p style="color:#526152;font-size:11px;line-height:1.5;margin:0 0 5px 0">${FOOTER_NOTE_DE}</p><p style="color:#526152;font-size:11px;line-height:1.5;margin:0 0 8px 0">${FOOTER_NOTE_EN}</p><p style="color:#7a3e00;font-size:11px;line-height:1.5;margin:0 0 8px 0"><strong>Sicherheitshinweis / Security notice:</strong> ${SECURITY_NOTICE_DE}<br>${SECURITY_NOTICE_EN}</p>`}
+        <p style="margin:0"><a href="${IMPRINT_URL}" style="color:#006937;font-size:11px;text-decoration:underline">Impressum</a></p>
       </td></tr>
     </table>
   </td></tr>

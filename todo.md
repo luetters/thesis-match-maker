@@ -2005,3 +2005,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Betroffene Komponente so korrigieren, dass Hooks in jedem Renderpfad unverändert aufgerufen werden
 - [x] Regressionstest für den betroffenen E-Mail- oder Authentifizierungsweg ergänzen
 - [x] TypeScript, Mobilansicht und Produktionspfad prüfen und Checkpoint speichern
+
+## Formale Registrierungs- und System-E-Mails
+- [x] Feste Fachbereichskennung FB3 aus allen E-Mail-Kopf- und Fußzeilen entfernen
+- [x] Marke „Thesis Match Maker“ in allen betroffenen E-Mail-Vorlagen ausschreiben
+- [x] Fachbereich sowie Datum und Uhrzeit in die Benachrichtigung über neue Registrierungen aufnehmen
+- [x] E-Mail-Gestaltung formalisieren und Impressumslink sowie Passwort-Sicherheitshinweis ergänzen
+- [x] Vorlagen-, Sprach- und Registrierungsdatenregressionen ergänzen und ausführen
+- [x] TypeScript, E-Mail-Vorschau und Laufzeit prüfen und Checkpoint speichern

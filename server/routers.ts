@@ -6,6 +6,10 @@ import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
 import { getStudentConsentFlags } from "./studentConsent";
 import { sanitizeBiographyText } from "./biographySanitization";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
+
+function escapeEmailHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 import { examinerTopics, users, thesisRequests, auditLog, userRoles, twoFactorRecoveryCodes } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
@@ -833,43 +837,54 @@ export const appRouter = router({
             const siteOrigin = input.origin ?? "https://thesis.htw-berlin.com";
             const approvalNotice = getRegistrationApprovalNotice(input.role);
             const adminUrl = `${siteOrigin}${approvalNotice.dashboardPath}`;
-            const logoUrl = `${siteOrigin}/manus-storage/ThesisMatchMaker_e15e6348.jpg`;
+            const imprintUrl = `${siteOrigin}/impressum`;
+            const registrationTime = new Intl.DateTimeFormat("de-DE", {
+              timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "short",
+            }).format(new Date());
+            const safeName = escapeEmailHtml(input.name);
+            const safeEmail = escapeEmailHtml(input.email);
+            const safeDepartment = escapeEmailHtml(input.department ?? "Nicht angegeben");
+            const safeRole = escapeEmailHtml(roleLabel);
             for (const adminEmail of superadminEmails) {
               await sendEmail({
                 to: adminEmail,
-                subject: `[HTW Berlin Thesis Match Maker] ${approvalNotice.subjectPrefix}: ${input.name} (${roleLabel})`,
+                subject: `[Thesis Match Maker] ${approvalNotice.subjectPrefix}: ${input.name} (${roleLabel})`,
                 html: `<!DOCTYPE html>
 <html lang="de">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px">
   <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-      <tr><td style="background:#76B900;padding:24px 32px;text-align:center">
-        <img src="${logoUrl}" alt="Thesis Match Maker" width="120" style="display:block;margin:0 auto 8px auto;border-radius:8px" />
-        <span style="color:#ffffff;font-size:18px;font-weight:bold;letter-spacing:0.5px">Thesis Match Maker</span><br>
-        <span style="color:#e8f5d0;font-size:13px">HTW Berlin &ndash; Fachbereich 3</span>
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #dbe4db;max-width:600px">
+      <tr><td style="background:#006937;padding:26px 32px">
+        <span style="color:#ffffff;font-size:19px;font-weight:bold;letter-spacing:0.2px">Thesis Match Maker</span><br>
+        <span style="color:#d9ecbf;font-size:12px">Organisation von Abschlussarbeiten</span>
       </td></tr>
       <tr><td style="padding:32px">
         <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">${approvalNotice.headline}</h2>
         <p style="color:#374151;font-size:14px;margin:0 0 20px 0">${approvalNotice.intro}</p>
         <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden">
-          <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">Name</td><td style="padding:12px 16px;color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb">${input.name}</td></tr>
-          <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">E-Mail</td><td style="padding:12px 16px;font-size:14px;border-bottom:1px solid #e5e7eb"><a href="mailto:${input.email}" style="color:#76B900;text-decoration:none">${input.email}</a></td></tr>
-          <tr><td style="padding:12px 16px;font-weight:bold;color:#6b7280;font-size:13px;width:40%">Gewünschte Rolle</td><td style="padding:12px 16px;color:#111827;font-size:14px">${roleLabel}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#526152;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">Name</td><td style="padding:12px 16px;color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb">${safeName}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#526152;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">E-Mail</td><td style="padding:12px 16px;font-size:14px;border-bottom:1px solid #e5e7eb"><a href="mailto:${safeEmail}" style="color:#006937;text-decoration:none">${safeEmail}</a></td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#526152;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">Gewünschte Rolle</td><td style="padding:12px 16px;color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb">${safeRole}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#526152;font-size:13px;width:40%;border-bottom:1px solid #e5e7eb">Fachbereich</td><td style="padding:12px 16px;color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb">${safeDepartment}</td></tr>
+          <tr><td style="padding:12px 16px;font-weight:bold;color:#526152;font-size:13px;width:40%">Registriert am</td><td style="padding:12px 16px;color:#111827;font-size:14px">${registrationTime} Uhr</td></tr>
         </table>
         <p style="color:#374151;font-size:14px;margin:24px 0 20px 0">${approvalNotice.instruction}</p>
         <p style="margin:0 0 32px 0">
-          <a href="${adminUrl}" style="background:#76B900;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;font-size:14px;font-weight:bold">${approvalNotice.actionLabel}</a>
+          <a href="${adminUrl}" style="background:#006937;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-size:14px;font-weight:bold">${approvalNotice.actionLabel}</a>
         </p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
-        <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6">⚠️ <strong>Hinweis:</strong> Diese Nachricht wurde automatisch generiert.</p>
+      </td></tr>
+      <tr><td style="background:#f8faf8;padding:18px 32px;border-top:1px solid #dbe4db">
+        <p style="color:#526152;font-size:11px;line-height:1.5;margin:0 0 8px 0">Dies ist eine automatisch generierte Nachricht des Thesis Match Maker.</p>
+        <p style="color:#7a3e00;font-size:11px;line-height:1.5;margin:0 0 8px 0"><strong>Sicherheitshinweis:</strong> Dies ist kein offizielles Tool der HTW Berlin. Nutzen Sie niemals Ihr echtes HTW-Berlin-Passwort in diesem Portal.</p>
+        <p style="margin:0"><a href="${imprintUrl}" style="color:#006937;font-size:11px;text-decoration:underline">Impressum</a></p>
       </td></tr>
     </table>
   </td></tr>
 </table>
 </body></html>`,
-                text: `${approvalNotice.headline}\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\n\n${approvalNotice.instruction}\n${adminUrl}`,
+                text: `${approvalNotice.headline}\n\nName: ${input.name}\nE-Mail: ${input.email}\nGewünschte Rolle: ${roleLabel}\nFachbereich: ${input.department ?? "Nicht angegeben"}\nRegistriert am: ${registrationTime} Uhr\n\n${approvalNotice.instruction}\n${adminUrl}\n\nDies ist eine automatisch generierte Nachricht des Thesis Match Maker.\nSicherheitshinweis: Dies ist kein offizielles Tool der HTW Berlin. Nutzen Sie niemals Ihr echtes HTW-Berlin-Passwort in diesem Portal.\nImpressum: ${imprintUrl}`,
               });
             }
           } catch (emailErr) {
