@@ -94,7 +94,8 @@ function getNextSemesters(): { label: string; value: string }[] {
 
 const DRAFT_KEY = "htw-thesis-request-draft";
 
-type FormDraft = { title: string; description: string; department: string; fachbereich: string; abstract: string; targetSemester: string; language: "de" | "en"; degreeType: "bachelor" | "master"; wantedExaminerId: number; };
+type WorkType = "literature_review" | "practical_development" | "lab_experiment" | "empirical_study" | "other";
+type FormDraft = { title: string; description: string; department: string; fachbereich: string; abstract: string; workType: WorkType | ""; workTypeOther: string; isCooperation: "yes" | "no" | ""; hasConfidentialityNotice: "yes" | "no" | ""; targetSemester: string; language: "de" | "en"; degreeType: "bachelor" | "master"; wantedExaminerId: number; };
 
 function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { onSuccess: () => void; preselectExaminerId?: number; initialDraft?: Partial<FormDraft>; }) {
   const { t } = useLanguage();
@@ -126,6 +127,10 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
     department: initialDraft?.department ?? "",
     fachbereich: initialDraft?.fachbereich ?? "FB3",
     abstract: initialDraft?.abstract ?? "",
+    workType: initialDraft?.workType ?? "",
+    workTypeOther: initialDraft?.workTypeOther ?? "",
+    isCooperation: initialDraft?.isCooperation ?? "",
+    hasConfidentialityNotice: initialDraft?.hasConfidentialityNotice ?? "",
     targetSemester: initialDraft?.targetSemester ?? "",
     language: (initialDraft?.language ?? "de") as "de" | "en",
     degreeType: (initialDraft?.degreeType ?? "bachelor") as "bachelor" | "master",
@@ -169,7 +174,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.form) setForm(parsed.form);
+        if (parsed.form) setForm((current) => ({ ...current, ...parsed.form }));
         if (parsed.hasOwnTopic !== undefined) setTopicMode(parsed.hasOwnTopic ? "own" : "assigned");
       }
     } catch {}
@@ -206,7 +211,7 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
     onSuccess: () => {
       toast.success(t.student.requestSubmitted);
       localStorage.removeItem(DRAFT_KEY);
-      setForm({ title: "", description: "", department: myProgramme?.name ?? "", fachbereich: "FB3", abstract: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
+      setForm({ title: "", description: "", department: myProgramme?.name ?? "", fachbereich: "FB3", abstract: "", workType: "", workTypeOther: "", isCooperation: "", hasConfidentialityNotice: "", targetSemester: "", language: "de", degreeType: myProgramme?.level === "master" ? "master" : "bachelor", wantedExaminerId: 0 });
       setExposeFile(null);
       setErrors({});
       onSuccess();
@@ -224,6 +229,10 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
     }
     if (!form.targetSemester) newErrors.targetSemester = t.student.validationSemester;
     if (!form.wantedExaminerId) newErrors.wantedExaminerId = t.student.validationExaminer;
+    if (!form.workType) newErrors.workType = t.student.validationWorkType;
+    if (form.workType === "other" && !form.workTypeOther.trim()) newErrors.workTypeOther = t.student.validationWorkTypeOther;
+    if (!form.isCooperation) newErrors.isCooperation = t.student.validationCooperation;
+    if (form.isCooperation === "yes" && !form.hasConfidentialityNotice) newErrors.hasConfidentialityNotice = t.student.validationConfidentiality;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -268,6 +277,10 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
       description: hasOwnTopic ? form.description : (form.description.trim() || "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in."),
       exposeUrl,
       exposeKey,
+	      workType: form.workType as WorkType,
+	      workTypeOther: form.workType === "other" ? form.workTypeOther.trim() || undefined : undefined,
+	      isCooperation: form.isCooperation === "yes",
+	      hasConfidentialityNotice: form.isCooperation === "yes" ? form.hasConfidentialityNotice === "yes" : false,
       studySpecializations: (form as any).studySpecializations || undefined,
       personalInterests: (form as any).personalInterests || undefined,
       keywords: (form as any).keywords || undefined,
@@ -402,6 +415,18 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
               <dt className="text-xs text-gray-500">{t.student.languageField}</dt>
               <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.language === "en" ? t.student.thesisLangEn : t.student.thesisLangDe}</dd>
             </div>
+            <div>
+              <dt className="text-xs text-gray-500">{t.student.workTypeLabel}</dt>
+	              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.workType ? { literature_review: t.student.workTypeLiteratureReview, practical_development: t.student.workTypePracticalDevelopment, lab_experiment: t.student.workTypeLabExperiment, empirical_study: t.student.workTypeEmpiricalStudy, other: form.workTypeOther || t.student.workTypeOther }[form.workType] : t.student.notSpecified}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">{t.student.cooperationQuestion}</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.isCooperation === "yes" ? t.student.optionYes : t.student.optionNo}</dd>
+            </div>
+            {form.isCooperation === "yes" && <div>
+              <dt className="text-xs text-gray-500">{t.student.confidentialityQuestion}</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">{form.hasConfidentialityNotice === "yes" ? t.student.optionYes : t.student.optionNo}</dd>
+            </div>}
           </dl>
         </div>
 
@@ -660,6 +685,14 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
             )}
           </div>
         )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+        <div><h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">{t.student.workTypeLabel}</h3><p className="mt-1 text-sm text-gray-600">Diese Angaben begleiten Ihre Anfrage in allen weiteren Prozessstufen und sind für Erst- und Zweitprüfer:innen sichtbar.</p></div>
+        <div><label className="mb-1.5 block text-sm font-medium text-gray-700">{t.student.workTypeLabel} <span className="text-red-500">*</span></label><select value={form.workType} onChange={(event) => setForm((current) => ({ ...current, workType: event.target.value as WorkType | "", workTypeOther: event.target.value === "other" ? current.workTypeOther : "" }))} className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.workType ? "border-red-400 ring-1 ring-red-300" : "border-gray-200 focus:ring-[#76B900]/30"}`}><option value="">{t.student.workTypePlaceholder}</option><option value="literature_review">{t.student.workTypeLiteratureReview}</option><option value="practical_development">{t.student.workTypePracticalDevelopment}</option><option value="lab_experiment">{t.student.workTypeLabExperiment}</option><option value="empirical_study">{t.student.workTypeEmpiricalStudy}</option><option value="other">{t.student.workTypeOther}</option></select>{errors.workType && <p className="mt-1 text-xs text-red-600">{errors.workType}</p>}</div>
+        {form.workType === "other" && <div><label className="mb-1.5 block text-sm font-medium text-gray-700">{t.student.workTypeOtherLabel} <span className="text-red-500">*</span></label><input type="text" value={form.workTypeOther} onChange={(event) => setForm((current) => ({ ...current, workTypeOther: event.target.value }))} maxLength={1000} placeholder={t.student.workTypeOtherPlaceholder} className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 ${errors.workTypeOther ? "border-red-400 ring-1 ring-red-300" : "border-gray-200 focus:ring-[#76B900]/30"}`} />{errors.workTypeOther && <p className="mt-1 text-xs text-red-600">{errors.workTypeOther}</p>}</div>}
+        <fieldset><legend className="text-sm font-medium text-gray-700">{t.student.cooperationQuestion} <span className="text-red-500">*</span></legend><div className="mt-2 flex flex-wrap gap-3"><label className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"><input type="radio" name="cooperation" checked={form.isCooperation === "yes"} onChange={() => setForm((current) => ({ ...current, isCooperation: "yes" }))} />{t.student.optionYes}</label><label className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm"><input type="radio" name="cooperation" checked={form.isCooperation === "no"} onChange={() => setForm((current) => ({ ...current, isCooperation: "no", hasConfidentialityNotice: "" }))} />{t.student.optionNo}</label></div>{errors.isCooperation && <p className="mt-1 text-xs text-red-600">{errors.isCooperation}</p>}</fieldset>
+        {form.isCooperation === "yes" && <fieldset className="rounded-xl border border-amber-200 bg-amber-50 p-4"><legend className="px-1 text-sm font-semibold text-amber-950">{t.student.confidentialityQuestion} <span className="text-red-500">*</span></legend><p className="mt-1 text-xs text-amber-800">Ein Sperrvermerk kann die Weitergabe von Dokumenten und die spätere Abstract-Veröffentlichung einschränken.</p><div className="mt-3 flex flex-wrap gap-3"><label className="flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"><input type="radio" name="confidentiality" checked={form.hasConfidentialityNotice === "yes"} onChange={() => setForm((current) => ({ ...current, hasConfidentialityNotice: "yes" }))} />{t.student.optionYes}</label><label className="flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"><input type="radio" name="confidentiality" checked={form.hasConfidentialityNotice === "no"} onChange={() => setForm((current) => ({ ...current, hasConfidentialityNotice: "no" }))} />{t.student.optionNo}</label></div>{errors.hasConfidentialityNotice && <p className="mt-1 text-xs text-red-600">{errors.hasConfidentialityNotice}</p>}</fieldset>}
       </div>
 
       {/* ── Abschnitt 1: Thema ───────────────────────────────────────────────────── */}

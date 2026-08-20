@@ -3689,27 +3689,37 @@ export const appRouter = router({
         return getSecondExaminers(input.department);
       }),
 
-    // Student: Neue Anfrage mit Wunschgutachter
-    createWithWantedExaminer: studentProcedure
-      .input(z.object({
-        title: z.string().min(1).max(512),
-          description: z.string().min(1),
-          department: z.string().max(255).optional(),
-          abstract: z.string().optional(),
-          targetSemester: z.string(),
-          language: z.enum(["de", "en"]).default("de"),
-          degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
-          wantedExaminerId: z.number().int().positive(),
+	    // Student: Neue Anfrage mit Wunschgutachter
+	    createWithWantedExaminer: studentProcedure
+	      .input(z.object({
+	        title: z.string().min(1).max(512),
+	          description: z.string().min(1),
+	          department: z.string().max(255).optional(),
+	          abstract: z.string().optional(),
+	          workType: z.enum(["literature_review", "practical_development", "lab_experiment", "empirical_study", "other"]),
+	          workTypeOther: z.string().trim().max(1000).optional(),
+	          isCooperation: z.boolean(),
+	          hasConfidentialityNotice: z.boolean().optional(),
+	          targetSemester: z.string(),
+	          language: z.enum(["de", "en"]).default("de"),
+	          degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
+	          wantedExaminerId: z.number().int().positive(),
         exposeUrl: z.string().optional(),
         exposeKey: z.string().optional(),
         studySpecializations: z.string().max(1000).optional(),
-        personalInterests: z.string().max(1000).optional(),
-                keywords: z.string().max(500).optional(),
-        examinerTopicId: z.number().int().positive().optional(),
-        hasOwnTopic: z.boolean().default(true).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // Prüfe ob Student offene Anfrage hat
+	        personalInterests: z.string().max(1000).optional(),
+	                keywords: z.string().max(500).optional(),
+	        examinerTopicId: z.number().int().positive().optional(),
+	        hasOwnTopic: z.boolean().default(true).optional(),
+	      }))
+	      .mutation(async ({ ctx, input }) => {
+	        if (input.workType === "other" && !input.workTypeOther?.trim()) {
+	          throw new TRPCError({ code: "BAD_REQUEST", message: "Bitte beschreiben Sie die sonstige Arbeitsart." });
+	        }
+	        if (input.isCooperation && input.hasConfidentialityNotice === undefined) {
+	          throw new TRPCError({ code: "BAD_REQUEST", message: "Bitte geben Sie an, ob die Kooperationsarbeit einem Sperrvermerk unterliegt." });
+	        }
+	        // Prüfe ob Student offene Anfrage hat
         if (await hasOpenThesisRequest(ctx.user.id)) {
           throw new TRPCError({ code: "CONFLICT", message: "Student hat bereits eine offene Anfrage" });
         }
@@ -3744,16 +3754,20 @@ export const appRouter = router({
           }
         }
 
-        let result: any;
-        try {
-          result = await createThesisRequest({
-            studentId: ctx.user.id,
-            wantedExaminerId: input.wantedExaminerId,
-            title: input.title,
-            description: input.description,
-            department: input.department ?? "",
-            abstract: input.abstract ?? "",
-            targetSemester: input.targetSemester,
+	        let result: any;
+	        try {
+	          result = await createThesisRequest({
+	            studentId: ctx.user.id,
+	            wantedExaminerId: input.wantedExaminerId,
+	            title: input.title,
+	            description: input.description,
+	            department: input.department ?? "",
+	            abstract: input.abstract ?? "",
+	            workType: input.workType,
+	            workTypeOther: input.workType === "other" ? input.workTypeOther?.trim() || null : null,
+	            isCooperation: input.isCooperation ? 1 : 0,
+	            hasConfidentialityNotice: input.isCooperation && input.hasConfidentialityNotice ? 1 : 0,
+	            targetSemester: input.targetSemester,
             language: input.language,
             degreeType: input.degreeType,
             exposeUrl: input.exposeUrl,

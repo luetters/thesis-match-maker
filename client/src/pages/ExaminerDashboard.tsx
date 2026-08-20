@@ -705,7 +705,7 @@ function ConditionalReasonBox({ requestId, reason, conditionalAt, onUpdated }: {
   );
 }
 
-function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; exposeUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; submissionDeadline?: string | null; defenseEligibility?: string | null; createdAt?: string | null } }) {
+function RequestCard({ req }: { req: { id: number; title: string; description: string; department: string; status: string; targetSemester?: string | null; language?: string | null; degreeType?: string | null; workType?: "literature_review" | "practical_development" | "lab_experiment" | "empirical_study" | "other" | null; workTypeOther?: string | null; isCooperation?: number | null; hasConfidentialityNotice?: number | null; exposeUrl?: string | null; studentName?: string | null; studentEmail?: string | null; studentId?: number | null; programmeName?: string | null; programmeAbbreviation?: string | null; firstExaminerName?: string | null; firstExaminerEmail?: string | null; examinerId?: number | null; secondExaminerName?: string | null; secondExaminerEmail?: string | null; secondExaminerId?: number | null; wantedExaminerName?: string | null; wantedExaminerId?: number | null; wantedSecondExaminerName?: string | null; wantedSecondExaminerEmail?: string | null; wantedSecondExaminerId?: number | null; conditionalAcceptanceReason?: string | null; conditionalAcceptanceAt?: string | null; submissionDeadline?: string | null; defenseEligibility?: string | null; createdAt?: string | null } }) {
   const { t } = useLanguage();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -1090,7 +1090,7 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
                 <p className="text-sm text-red-700">{(req as any).rejectionReason}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+	            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               {req.studentEmail && (
                 <div><span className="font-medium text-gray-500">E-Mail Studierende:r:</span>{" "}<span className="text-gray-700">{req.studentEmail}</span></div>
               )}
@@ -1100,10 +1100,19 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
               {req.language && (
                 <div><span className="font-medium text-gray-500">Sprache:</span>{" "}<span className="text-gray-700">{req.language === "de" ? "Deutsch" : "Englisch"}</span></div>
               )}
-              {req.targetSemester && (
-                <div><span className="font-medium text-gray-500">Zielsemester:</span>{" "}<span className="text-gray-700">{req.targetSemester}</span></div>
-              )}
-            </div>
+	              {req.targetSemester && (
+	                <div><span className="font-medium text-gray-500">Zielsemester:</span>{" "}<span className="text-gray-700">{req.targetSemester}</span></div>
+	              )}
+	              {req.workType && (
+	                <div className="col-span-2"><span className="font-medium text-gray-500">Art der Arbeit:</span>{" "}<span className="text-gray-700">{{ literature_review: "Theoretische Literaturarbeit", practical_development: "Praktische Entwicklung", lab_experiment: "Laborexperiment", empirical_study: "Empirische Studie", other: req.workTypeOther || "Sonstiges" }[req.workType]}</span></div>
+	              )}
+	              {req.isCooperation !== null && req.isCooperation !== undefined && (
+	                <div><span className="font-medium text-gray-500">Kooperation:</span>{" "}<span className="text-gray-700">{Number(req.isCooperation) === 1 ? "Ja" : "Nein"}</span></div>
+	              )}
+	              {Number(req.isCooperation) === 1 && (
+	                <div className={Number(req.hasConfidentialityNotice) === 1 ? "font-semibold text-amber-800" : ""}><span className="font-medium text-gray-500">Sperrvermerk:</span>{" "}<span>{Number(req.hasConfidentialityNotice) === 1 ? "Ja" : "Nein"}</span></div>
+	              )}
+	            </div>
 
             {/* ── Private Notizen (inline im aufgeklappten Bereich) ── */}
             <div className="border-t border-gray-100 pt-3">

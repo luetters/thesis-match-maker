@@ -1958,3 +1958,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Exportfähige, öffentliche Datenschnittstelle für die spätere HTW-Berlin-Website vorbereiten
 - [x] Datenschutz-, Berechtigungs- und Veröffentlichungsregressionen ergänzen und ausführen
 - [x] Datenbankschema migrieren sowie TypeScript, Laufzeit und öffentliche Kartenansicht prüfen
+
+## Arbeitsart, Kooperation und Sperrvermerk
+- [x] Arbeitsart als Pflichtauswahl mit zusätzlichem Textfeld für „Sonstiges“ im Thesis-Antrag ergänzen
+- [x] Kooperationsangabe und bedingten Sperrvermerk im Thesis-Antrag speichern und validieren
+- [x] Angaben in Erst- und Zweitprüfer:innenansichten sowie Prozessdetails anzeigen
+- [x] Datenmodell migrieren und Sichtbarkeits- sowie Validierungsregressionen ergänzen
+- [x] TypeScript, Laufzeit und Thesis-Anmeldeprozess prüfen und Checkpoint speichern

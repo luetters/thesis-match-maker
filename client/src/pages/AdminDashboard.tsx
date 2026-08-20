@@ -1820,13 +1820,14 @@ function Overview() {
             <p className="font-semibold text-[#4d7900]">Sie können freigeben oder ablehnen</p>
             <ul className="mt-2 space-y-1 text-gray-700 list-disc list-inside">
               <li>Studierende des eigenen Fachbereichs</li>
+	              <li>Erstprüfer:innen des eigenen Fachbereichs</li>
             </ul>
           </div>
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
             <p className="font-semibold text-amber-800">Superadmin-Freigabe erforderlich</p>
             <ul className="mt-2 space-y-1 text-gray-700 list-disc list-inside">
               <li>Studierende anderer Fachbereiche</li>
-              <li>Erstprüfer:innen und Zweitprüfer:innen</li>
+	              <li>Zweitprüfer:innen sowie fachbereichslose oder fachfremde Erstprüfer:innen</li>
               <li>Verwaltungsmitarbeiter:innen</li>
               <li>PA-Vorsitz, Dekanat und Studiengangsleitung</li>
               <li>Superadmin-Rollen</li>
