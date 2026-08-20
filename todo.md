@@ -1937,3 +1937,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Ereignisgesteuertes Versand- und Zustellkonzept mit Duplikatschutz entwerfen
 - [x] Datenschutz-, Fehlermanagement-, Protokollierungs- und Opt-out-Regeln definieren
 - [x] Umsetzungsphasen, Testfälle und Abnahmekriterien dokumentieren
+
+## Konzept: Kontrollierte Pilotphase
+- [x] Zielgruppen, Umfang, Zeitrahmen und Rollen der Pilotphase definieren
+- [x] Reale Testabläufe für Studierende, Erstprüfer:innen und Verwaltung beschreiben
+- [x] Support, Feedback, Datenschutz und Auswertung der Pilotphase festlegen
+- [x] Abnahmekriterien und Übergang in den Regelbetrieb dokumentieren
