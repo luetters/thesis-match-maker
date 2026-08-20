@@ -22,13 +22,15 @@ export async function submitThesisAbstract(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
-  const [thesis] = await db.select({
-    id: thesisRequests.id,
-    title: thesisRequests.title,
-    department: thesisRequests.department,
-    studentId: thesisRequests.studentId,
-  }).from(thesisRequests).where(and(eq(thesisRequests.id, input.thesisRequestId), eq(thesisRequests.studentId, input.studentId))).limit(1);
-  if (!thesis) throw new Error("Die Abschlussarbeit wurde nicht gefunden oder gehört nicht zu Ihrem Konto.");
+	  const [thesis] = await db.select({
+	    id: thesisRequests.id,
+	    title: thesisRequests.title,
+	    department: thesisRequests.department,
+	    studentId: thesisRequests.studentId,
+	    hasConfidentialityNotice: thesisRequests.hasConfidentialityNotice,
+	  }).from(thesisRequests).where(and(eq(thesisRequests.id, input.thesisRequestId), eq(thesisRequests.studentId, input.studentId))).limit(1);
+	  if (!thesis) throw new Error("Die Abschlussarbeit wurde nicht gefunden oder gehört nicht zu Ihrem Konto.");
+	  if (Number(thesis.hasConfidentialityNotice) === 1) throw new Error("Für Arbeiten mit aktivem Sperrvermerk ist keine öffentliche Abstract-Freigabe möglich.");
 
   const abstract = sanitizeAbstract(input.abstract);
   if (abstract.length < 80) throw new Error("Bitte reichen Sie einen Abstract mit mindestens 80 Zeichen ein.");
@@ -92,7 +94,7 @@ export async function getMyThesisAbstract(thesisRequestId: number, studentId: nu
 export async function getPublicThesisAbstracts(input: { department?: string; semester?: string; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [eq(publishedThesisAbstracts.status, "APPROVED"), eq(publishedThesisAbstracts.publicationConsent, 1)];
+	  const conditions = [eq(publishedThesisAbstracts.status, "APPROVED"), eq(publishedThesisAbstracts.publicationConsent, 1), eq(thesisRequests.hasConfidentialityNotice, 0)];
   if (input.department) conditions.push(eq(publishedThesisAbstracts.department, input.department));
   if (input.semester) conditions.push(eq(publishedThesisAbstracts.submissionSemester, input.semester));
   return db.select({
@@ -100,7 +102,7 @@ export async function getPublicThesisAbstracts(input: { department?: string; sem
     title: publishedThesisAbstracts.title,
     department: publishedThesisAbstracts.department,
     abstract: publishedThesisAbstracts.abstract,
-  }).from(publishedThesisAbstracts).where(and(...conditions)).orderBy(desc(publishedThesisAbstracts.publishedAt)).limit(Math.min(input.limit ?? 60, 100));
+	}).from(publishedThesisAbstracts).innerJoin(thesisRequests, eq(publishedThesisAbstracts.thesisRequestId, thesisRequests.id)).where(and(...conditions)).orderBy(desc(publishedThesisAbstracts.publishedAt)).limit(Math.min(input.limit ?? 60, 100));
 }
 
 export async function getAbstractReviewQueue() {
@@ -122,8 +124,9 @@ export async function getAbstractReviewQueue() {
 export async function reviewThesisAbstract(input: { id: number; reviewerId: number; approve: boolean; note?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Datenbank nicht verfügbar");
-  const [entry] = await db.select({ id: publishedThesisAbstracts.id }).from(publishedThesisAbstracts).where(eq(publishedThesisAbstracts.id, input.id)).limit(1);
-  if (!entry) throw new Error("Der Abstract wurde nicht gefunden.");
+	  const [entry] = await db.select({ id: publishedThesisAbstracts.id, hasConfidentialityNotice: thesisRequests.hasConfidentialityNotice }).from(publishedThesisAbstracts).innerJoin(thesisRequests, eq(publishedThesisAbstracts.thesisRequestId, thesisRequests.id)).where(eq(publishedThesisAbstracts.id, input.id)).limit(1);
+	  if (!entry) throw new Error("Der Abstract wurde nicht gefunden.");
+	  if (input.approve && Number(entry.hasConfidentialityNotice) === 1) throw new Error("Abstracts mit aktivem Sperrvermerk dürfen nicht veröffentlicht werden.");
   const now = toDbDate();
   await db.update(publishedThesisAbstracts).set({
     status: input.approve ? "APPROVED" : "REJECTED",

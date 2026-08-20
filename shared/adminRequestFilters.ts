@@ -1,4 +1,5 @@
 export type SecondExaminerFilter = "NONE" | "REQUESTED" | "ACCEPTED" | "REJECTED";
+export type ConfidentialityFilter = "ALL" | "CONFIDENTIAL" | "NOT_CONFIDENTIAL";
 
 export type AdminRequestFilterInput = {
   statusFilters: string[];
@@ -7,6 +8,7 @@ export type AdminRequestFilterInput = {
   programme: string;
   semester: string;
   search: string;
+  confidentiality: ConfidentialityFilter;
 };
 
 export type AdminRequestFilterable = {
@@ -24,6 +26,7 @@ export type AdminRequestFilterable = {
   secondExaminerId?: number | null;
   wantedSecondExaminerId?: number | null;
   secondExaminerRejectedAt?: string | Date | null;
+  hasConfidentialityNotice?: number | boolean | null;
 };
 
 export function getProgrammeFilterValue(request: AdminRequestFilterable): string {
@@ -57,5 +60,6 @@ export function matchesAdminRequestFilters(request: AdminRequestFilterable, filt
     && (filters.secondExaminerFilters.length === 0 || filters.secondExaminerFilters.some((filter) => matchesSecondExaminerFilter(request, filter)))
     && (filters.department === "ALL" || request.department === filters.department)
     && (filters.programme === "ALL" || getProgrammeFilterValue(request) === filters.programme)
-    && (filters.semester === "ALL" || request.targetSemester === filters.semester);
+    && (filters.semester === "ALL" || request.targetSemester === filters.semester)
+    && (filters.confidentiality === "ALL" || (filters.confidentiality === "CONFIDENTIAL" ? Number(request.hasConfidentialityNotice) === 1 : Number(request.hasConfidentialityNotice) !== 1));
 }

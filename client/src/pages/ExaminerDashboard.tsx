@@ -1043,9 +1043,10 @@ function RequestCard({ req }: { req: { id: number; title: string; description: s
             return <div className="mt-3"><InvolvedPersonsTable rows={rows} compact /></div>;
           })()}
         </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <StatusBadge status={req.status} />
-          {isConditional && (
+	        <div className="flex flex-col items-end gap-1.5">
+	          <StatusBadge status={req.status} />
+	          {Number(req.hasConfidentialityNotice) === 1 && <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-bold text-amber-950"><span aria-hidden="true">🔒</span>Sperrvermerk</span>}
+	          {isConditional && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-sm animate-pulse">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
               Unter Vorbehalt

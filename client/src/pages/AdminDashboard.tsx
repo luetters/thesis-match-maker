@@ -22,7 +22,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { buildFullName, getStatusBadge, getRoleBadge } from "@shared/const";
-import { getProgrammeFilterValue, matchesAdminRequestFilters, type SecondExaminerFilter } from "@shared/adminRequestFilters";
+import { getProgrammeFilterValue, matchesAdminRequestFilters, type ConfidentialityFilter, type SecondExaminerFilter } from "@shared/adminRequestFilters";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -154,10 +154,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
 
   const [statusFilters, setStatusFilters] = useState<Array<"PENDING" | "ACCEPTED" | "REJECTED" | "MATCHED">>([]);
   const [secondExaminerFilters, setSecondExaminerFilters] = useState<SecondExaminerFilter[]>([]);
-  const [departmentFilter, setDepartmentFilter] = useState("ALL");
-  const [programmeFilter, setProgrammeFilter] = useState("ALL");
-  const [semesterFilter, setSemesterFilter] = useState("ALL");
-  const [search, setSearch] = useState("");
+	  const [departmentFilter, setDepartmentFilter] = useState("ALL");
+	  const [programmeFilter, setProgrammeFilter] = useState("ALL");
+	  const [semesterFilter, setSemesterFilter] = useState("ALL");
+	  const [confidentialityFilter, setConfidentialityFilter] = useState<ConfidentialityFilter>("ALL");
+	  const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<AdminSortKey>("date");
   const [assignModal, setAssignModal] = useState<{ id: number; title: string } | null>(null);
   const [deadlineModal, setDeadlineModal] = useState<{ id: number; title: string; deadline?: Date | string | null } | null>(null);
@@ -195,14 +196,15 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
   const toggleSecondExaminerFilter = (status: SecondExaminerFilter) => {
     setSecondExaminerFilters((previous) => previous.includes(status) ? previous.filter((item) => item !== status) : [...previous, status]);
   };
-  const clearAllFilters = () => {
-    setStatusFilters([]); setSecondExaminerFilters([]); setDepartmentFilter("ALL"); setProgrammeFilter("ALL"); setSemesterFilter("ALL"); setSearch("");
-  };
+	  const clearAllFilters = () => {
+	    setStatusFilters([]); setSecondExaminerFilters([]); setDepartmentFilter("ALL"); setProgrammeFilter("ALL"); setSemesterFilter("ALL"); setConfidentialityFilter("ALL"); setSearch("");
+	  };
   const activeFilterCount = statusFilters.length + secondExaminerFilters.length
     + (departmentFilter !== "ALL" ? 1 : 0)
-    + (programmeFilter !== "ALL" ? 1 : 0)
-    + (semesterFilter !== "ALL" ? 1 : 0)
-    + (search.trim() ? 1 : 0);
+	    + (programmeFilter !== "ALL" ? 1 : 0)
+	    + (semesterFilter !== "ALL" ? 1 : 0)
+	    + (confidentialityFilter !== "ALL" ? 1 : 0)
+	    + (search.trim() ? 1 : 0);
 
   const sendReminderMutation = (trpc as any).admin.sendExaminerReminder.useMutation({
     onSuccess: (data: { sentTo: string[] }, variables: { thesisRequestId: number }) => {
@@ -230,10 +232,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
     const matchFilters = matchesAdminRequestFilters(r as any, {
       statusFilters,
       secondExaminerFilters,
-      department: departmentFilter,
-      programme: programmeFilter,
-      semester: semesterFilter,
-      search,
+	      department: departmentFilter,
+	      programme: programmeFilter,
+	      semester: semesterFilter,
+	      confidentiality: confidentialityFilter,
+	      search,
     });
     // Nutzer-Filter (aus Nutzerverwaltung)
     let matchUser = true;
@@ -307,10 +310,15 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
             <option value="ALL">Alle Studiengänge</option>
             {filterOptions.programmes.map((programme) => <option key={programme.value} value={programme.value}>{programme.label} · {programme.department}</option>)}
           </select>
-          <select value={semesterFilter} onChange={(e) => setSemesterFilter(e.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
-            <option value="ALL">Alle Semester</option>
-            {filterOptions.semesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}
-          </select>
+	          <select value={semesterFilter} onChange={(e) => setSemesterFilter(e.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
+	            <option value="ALL">Alle Semester</option>
+	            {filterOptions.semesters.map((semester) => <option key={semester} value={semester}>{semester}</option>)}
+	          </select>
+	          <select value={confidentialityFilter} onChange={(e) => setConfidentialityFilter(e.target.value as ConfidentialityFilter)} className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2">
+	            <option value="ALL">Alle Sperrvermerke</option>
+	            <option value="CONFIDENTIAL">Mit Sperrvermerk</option>
+	            <option value="NOT_CONFIDENTIAL">Ohne Sperrvermerk</option>
+	          </select>
         </div>
         <div className="mt-4 grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
           <FilterToggleGroup label="Status" options={[
@@ -325,9 +333,10 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
         {activeFilterCount > 0 && <div className="mt-4 flex flex-wrap gap-1.5 border-t border-gray-100 pt-3 text-xs">
           <span className="mr-1 self-center font-medium text-gray-500">Aktiv:</span>
           {departmentFilter !== "ALL" && <FilterChip label={departmentFilter} onRemove={() => setDepartmentFilter("ALL")} />}
-          {programmeFilter !== "ALL" && <FilterChip label={filterOptions.programmes.find((programme) => programme.value === programmeFilter)?.label ?? "Studiengang"} onRemove={() => setProgrammeFilter("ALL")} />}
-          {semesterFilter !== "ALL" && <FilterChip label={semesterFilter} onRemove={() => setSemesterFilter("ALL")} />}
-          {statusFilters.map((status) => <FilterChip key={status} label={{ PENDING: "Ausstehend", ACCEPTED: "Angenommen", MATCHED: "Matched", REJECTED: "Abgelehnt" }[status]} onRemove={() => toggleStatusFilter(status)} />)}
+	          {programmeFilter !== "ALL" && <FilterChip label={filterOptions.programmes.find((programme) => programme.value === programmeFilter)?.label ?? "Studiengang"} onRemove={() => setProgrammeFilter("ALL")} />}
+	          {semesterFilter !== "ALL" && <FilterChip label={semesterFilter} onRemove={() => setSemesterFilter("ALL")} />}
+	          {confidentialityFilter !== "ALL" && <FilterChip label={confidentialityFilter === "CONFIDENTIAL" ? "Mit Sperrvermerk" : "Ohne Sperrvermerk"} onRemove={() => setConfidentialityFilter("ALL")} />}
+	          {statusFilters.map((status) => <FilterChip key={status} label={{ PENDING: "Ausstehend", ACCEPTED: "Angenommen", MATCHED: "Matched", REJECTED: "Abgelehnt" }[status]} onRemove={() => toggleStatusFilter(status)} />)}
           {secondExaminerFilters.map((status) => <FilterChip key={status} label={{ NONE: "Keine:r Zweitgutachter:in", REQUESTED: "Zweitgutachter:in angefragt", ACCEPTED: "Zweitgutachter:in zugesagt", REJECTED: "Zweitgutachter:in abgelehnt" }[status]} onRemove={() => toggleSecondExaminerFilter(status)} />)}
         </div>}
       </section>
@@ -420,10 +429,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                       highlightedId === req.id ? 'ring-2 ring-inset ring-[#76B900] bg-[#76B900]/5' : ''
                     }`}
                   >
-                    <td className="px-5 py-4">
-                      <div className="font-medium text-gray-900 text-sm truncate max-w-xs">{req.title || "(kein Titel)"}</div>
-                      {req.studentName && <div className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</div>}
-                      <div className="text-xs text-gray-500 mt-0.5 md:hidden">{req.programmeAbbreviation ?? req.programmeName ?? req.department}</div>
+	                    <td className="px-5 py-4">
+	                      <div className="font-medium text-gray-900 text-sm truncate max-w-xs">{req.title || "(kein Titel)"}</div>
+	                      {req.studentName && <div className="text-xs font-medium text-[#76B900] mt-0.5">{req.studentName}</div>}
+	                      {Number((req as any).hasConfidentialityNotice) === 1 && <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900"><span aria-hidden="true">🔒</span>Sperrvermerk</div>}
+	                      <div className="text-xs text-gray-500 mt-0.5 md:hidden">{req.programmeAbbreviation ?? req.programmeName ?? req.department}</div>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
                       <span className="text-sm text-gray-600">{req.programmeAbbreviation ?? req.programmeName ?? req.department ?? "–"}</span>

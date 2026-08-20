@@ -1965,3 +1965,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Angaben in Erst- und Zweitprüfer:innenansichten sowie Prozessdetails anzeigen
 - [x] Datenmodell migrieren und Sichtbarkeits- sowie Validierungsregressionen ergänzen
 - [x] TypeScript, Laufzeit und Thesis-Anmeldeprozess prüfen und Checkpoint speichern
+
+## Schutz vertraulicher Arbeiten durch Sperrvermerk
+- [x] Sperrvermerk-Filter im Verwaltungsbereich ergänzen
+- [x] Arbeiten mit aktivem Sperrvermerk serverseitig von Abstract-Freigabe, öffentlicher Liste und Export ausschließen
+- [x] Deutliches Sperrvermerk-Badge in Erst- und Zweitprüfer:innenansichten ergänzen
+- [x] Filter-, Ausschluss- und Sichtbarkeitsregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern

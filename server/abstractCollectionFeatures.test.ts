@@ -45,4 +45,13 @@ describe("einwilligungsbasierte Abstract-Sammlung", () => {
     expect(moderation).toContain("Freigeben");
     expect(moderation).toContain("Nicht freigeben");
   });
+
+  it("schließt Arbeiten mit aktivem Sperrvermerk serverseitig von Einreichung, Freigabe und öffentlichem Export aus", () => {
+    const repository = readFileSync(projectFile("server", "db", "abstractCollection.ts"), "utf8");
+    expect(repository).toContain("hasConfidentialityNotice: thesisRequests.hasConfidentialityNotice");
+    expect(repository).toContain("Für Arbeiten mit aktivem Sperrvermerk ist keine öffentliche Abstract-Freigabe möglich.");
+    expect(repository).toContain('eq(thesisRequests.hasConfidentialityNotice, 0)');
+    expect(repository).toContain("innerJoin(thesisRequests, eq(publishedThesisAbstracts.thesisRequestId, thesisRequests.id))");
+    expect(repository).toContain("Abstracts mit aktivem Sperrvermerk dürfen nicht veröffentlicht werden.");
+  });
 });
