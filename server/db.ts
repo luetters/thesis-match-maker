@@ -7037,13 +7037,15 @@ export async function adminDirectAssignExaminers(
 export async function reviseThesisSubmission(
   id: number,
   studentId: number,
-  data: {
-    title: string;
-    description: string;
-    language?: string;
-    targetSemester?: string;
-    degreeType?: "bachelor" | "master";
-  }
+	data: {
+	  title: string;
+	  description: string;
+	  language?: string;
+	  targetSemester?: string;
+	  degreeType?: "bachelor" | "master";
+	  isCooperation?: boolean;
+	  hasConfidentialityNotice?: boolean;
+	}
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -7055,14 +7057,23 @@ export async function reviseThesisSubmission(
     throw new Error("Überarbeitung nur bei Status 'Zusage unter Vorbehalt' möglich");
   }
 
-  await db.update(thesisRequests).set({
-    title: data.title,
-    description: data.description,
-    ...(data.language ? { language: data.language } : {}),
-    ...(data.targetSemester ? { targetSemester: data.targetSemester } : {}),
-    ...(data.degreeType ? { degreeType: data.degreeType } : {}),
-    status: "PENDING_FIRST_EXAMINER" as any,
-  }).where(eq(thesisRequests.id, id));
+	const previousConfidentiality = Number(existing.hasConfidentialityNotice) === 1;
+	const cooperation = data.isCooperation ?? Number(existing.isCooperation) === 1;
+	const nextConfidentiality = data.hasConfidentialityNotice === undefined
+	  ? previousConfidentiality
+	  : cooperation && data.hasConfidentialityNotice;
+
+	await db.update(thesisRequests).set({
+	  title: data.title,
+	  description: data.description,
+	  ...(data.language ? { language: data.language } : {}),
+	  ...(data.targetSemester ? { targetSemester: data.targetSemester } : {}),
+	  ...(data.degreeType ? { degreeType: data.degreeType } : {}),
+	  ...(data.isCooperation !== undefined ? { isCooperation: data.isCooperation ? 1 : 0 } : {}),
+	  ...(data.hasConfidentialityNotice !== undefined ? { hasConfidentialityNotice: nextConfidentiality ? 1 : 0 } : {}),
+	  status: "PENDING_FIRST_EXAMINER" as any,
+	}).where(eq(thesisRequests.id, id));
+	return { previousConfidentiality, nextConfidentiality, confidentialityChanged: previousConfidentiality !== nextConfidentiality };
 }
 
 // ─── Login-Fehler-Protokoll ───────────────────────────────────────────────────

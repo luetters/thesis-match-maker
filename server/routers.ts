@@ -1409,15 +1409,20 @@ export const appRouter = router({
         language: z.enum(["de", "en"]).optional(),
         targetSemester: z.string().max(32).optional(),
         degreeType: z.enum(["bachelor", "master"]).optional(),
+        isCooperation: z.boolean().optional(),
+        hasConfidentialityNotice: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        let revision: { previousConfidentiality: boolean; nextConfidentiality: boolean; confidentialityChanged: boolean } | undefined;
         try {
-          await reviseThesisSubmission(input.thesisRequestId, ctx.user.id, {
+          revision = await reviseThesisSubmission(input.thesisRequestId, ctx.user.id, {
             title: input.title,
             description: input.description,
             language: input.language,
             targetSemester: input.targetSemester,
             degreeType: input.degreeType,
+            isCooperation: input.isCooperation,
+            hasConfidentialityNotice: input.hasConfidentialityNotice,
           });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -1434,6 +1439,16 @@ export const appRouter = router({
           toStatus: "PENDING_FIRST_EXAMINER",
           reason: `Einreichung überarbeitet: Titel: "${input.title}"`,
         });
+        if (revision?.confidentialityChanged) {
+          await createAuditLogEntry({
+            thesisRequestId: input.thesisRequestId,
+            actorId: ctx.user.id,
+            actorRole: ctx.user.role,
+            action: "CONFIDENTIALITY_NOTICE_CHANGED",
+            reason: `Sperrvermerk ${revision.nextConfidentiality ? "aktiviert" : "aufgehoben"}.`,
+            metadata: { previousValue: revision.previousConfidentiality, newValue: revision.nextConfidentiality, source: "thesis_revision" },
+          });
+        }
         return { success: true };
       }),
   }),
@@ -3798,6 +3813,16 @@ export const appRouter = router({
           action: "THESIS_CREATED_WITH_WANTED_EXAMINER",
           toStatus: "PENDING_FIRST_EXAMINER",
         });
+        if (input.isCooperation && input.hasConfidentialityNotice) {
+          await createAuditLogEntry({
+            thesisRequestId: insertId,
+            actorId: ctx.user.id,
+            actorRole: ctx.user.role,
+            action: "CONFIDENTIALITY_NOTICE_CHANGED",
+            reason: "Sperrvermerk bei Antragstellung aktiviert.",
+            metadata: { previousValue: false, newValue: true, source: "thesis_application" },
+          });
+        }
 
         // E-Mail sofort an Wunsch-Erstgutachter:in senden
         try {

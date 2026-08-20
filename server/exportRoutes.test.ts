@@ -60,6 +60,17 @@ describe("PDF-Exportrouten", () => {
     expect(source).toContain("Nur berechtigte Verwaltungs- und Superadmin-Konten dürfen diesen Export herunterladen.");
   });
 
+  it("filtert den Sperrvermerk-Export serverseitig nach Fachbereich und Semester", () => {
+    const source = readFileSync(resolve(process.cwd(), "server", "exportRoutes.ts"), "utf8");
+    const admin = readFileSync(resolve(process.cwd(), "client", "src", "pages", "AdminDashboard.tsx"), "utf8");
+    expect(source).toContain('req.query.department');
+    expect(source).toContain('req.query.semester');
+    expect(source).toContain('thesis.department === department');
+    expect(source).toContain('thesis.targetSemester === semester');
+    expect(admin).toContain('params.set("department", departmentFilter)');
+    expect(admin).toContain('params.set("semester", semesterFilter)');
+  });
+
   it("filtert und sortiert Berichtsfälle identisch für Vorschau und Export", () => {
     const cases = [
       { id: 1, targetSemester: "WS 2026/27", status: "IN_PROGRESS", submissionDeadline: new Date("2026-12-15") },

@@ -343,11 +343,11 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
 
       {/* Export-Button */}
 	      <div className="flex justify-end mb-2">
-	        <button
-	          onClick={() => { window.location.assign("/api/export/confidential-theses.csv"); }}
-	          className="mr-2 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-100"
-	          title="Alle Arbeiten mit aktivem Sperrvermerk als CSV herunterladen"
-	        >
+        <button
+          onClick={() => { const params = new URLSearchParams(); if (departmentFilter !== "ALL") params.set("department", departmentFilter); if (semesterFilter !== "ALL") params.set("semester", semesterFilter); window.location.assign(`/api/export/confidential-theses.csv${params.size ? `?${params.toString()}` : ""}`); }}
+          className="mr-2 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-100"
+          title="Arbeiten mit aktivem Sperrvermerk nach dem ausgewählten Fachbereich und Semester als CSV herunterladen"
+        >
 	          <span aria-hidden="true">🔒</span> Sperrvermerke exportieren
 	        </button>
 	        <button
@@ -666,6 +666,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
     SECOND_EXAMINER_ACCEPTED: "Zweitgutachter:in bestätigt",
     SECOND_EXAMINER_REJECTED: "Zweitgutachter:in abgelehnt",
     THESIS_MATCHED: "Thesis Match",
+    CONFIDENTIALITY_NOTICE_CHANGED: "Sperrvermerk geändert",
     ROLE_APPROVED: "Rolle freigegeben",
     ROLE_REJECTED: "Rolle abgelehnt",
     ROLE_CHANGED: "Rolle geändert",
@@ -686,6 +687,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
     SECOND_EXAMINER_ACCEPTED: "bg-primary/10 text-primary",
     SECOND_EXAMINER_REJECTED: "bg-red-100 text-red-700",
     THESIS_MATCHED: "bg-purple-100 text-purple-700",
+    CONFIDENTIALITY_NOTICE_CHANGED: "bg-amber-200 text-amber-950 ring-1 ring-amber-400",
     ROLE_APPROVED: "bg-green-100 text-green-700",
     ROLE_REJECTED: "bg-red-100 text-red-700",
     ROLE_CHANGED: "bg-blue-100 text-blue-700",
@@ -829,6 +831,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
           <option value="SECOND_EXAMINER_ACCEPTED">Zweitgutachter:in bestätigt</option>
           <option value="SECOND_EXAMINER_REJECTED">Zweitgutachter:in abgelehnt</option>
           <option value="THESIS_MATCHED">Thesis Match</option>
+          <option value="CONFIDENTIALITY_NOTICE_CHANGED">🔒 Sperrvermerk geändert</option>
           <option value="ROLE_APPROVED">Rolle freigegeben</option>
           <option value="ROLE_REJECTED">Rolle abgelehnt</option>
           <option value="ROLE_CHANGED">Rolle geändert</option>
@@ -865,10 +868,11 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
           <tbody>
             {(filteredLogs ?? []).map((log) => {
               const hasDiff: boolean = log.action === "THESIS_UPDATED_BY_STUDENT" && !!log.metadata && typeof log.metadata === "object" && Array.isArray((log.metadata as any).diff) && (log.metadata as any).diff.length > 0;
+              const isConfidentialityChange = log.action === "CONFIDENTIALITY_NOTICE_CHANGED";
               const isExpanded = expandedDiffId === log.id;
               return (
                 <>
-                  <tr key={log.id} className={`border-b border-gray-50 last:border-0 transition-colors ${hasDiff ? "cursor-pointer hover:bg-indigo-50/40" : "hover:bg-gray-50/50"}`}
+                  <tr key={log.id} className={`border-b border-gray-50 last:border-0 transition-colors ${isConfidentialityChange ? "bg-amber-50/80 hover:bg-amber-100/70" : hasDiff ? "cursor-pointer hover:bg-indigo-50/40" : "hover:bg-gray-50/50"}`}
                     onClick={() => hasDiff ? setExpandedDiffId(isExpanded ? null : log.id) : undefined}
                   >
                     <td className="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
@@ -883,7 +887,7 @@ function AuditLogView({ onNavigateToRequest }: { onNavigateToRequest?: (requestI
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${actionColors[log.action] ?? "bg-gray-100 text-gray-700"}`}>
-                          {actionLabels[log.action] ?? log.action}
+                          {isConfidentialityChange && <span className="mr-1" aria-hidden="true">🔒</span>}{actionLabels[log.action] ?? log.action}
                         </span>
                         {hasDiff && (
                           <span className="text-xs text-indigo-500 font-medium">

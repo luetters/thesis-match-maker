@@ -1341,7 +1341,13 @@ async function exportConfidentialThesesCsv(req: Request, res: Response) {
 	const isAllowed = roles.some((role) => ["admin", "superadmin", "pav"].includes(role)) || ["admin", "superadmin", "pav"].includes(user.role ?? "");
 	if (!isAllowed) return res.status(403).json({ error: "Nur berechtigte Verwaltungs- und Superadmin-Konten dürfen diesen Export herunterladen." });
 
-	const theses = (await getAllThesisRequests()).filter((thesis) => Number(thesis.hasConfidentialityNotice) === 1);
+	const department = typeof req.query.department === "string" && /^FB[1-5]$/.test(req.query.department) ? req.query.department : null;
+	const semester = typeof req.query.semester === "string" ? req.query.semester.trim().slice(0, 32) : null;
+	const theses = (await getAllThesisRequests()).filter((thesis) =>
+	  Number(thesis.hasConfidentialityNotice) === 1
+	  && (!department || thesis.department === department)
+	  && (!semester || thesis.targetSemester === semester)
+	);
 	const rows = [
 	  ["Anfrage-ID", "Studierende:r", "E-Mail", "Thema", "Fachbereich", "Studiengang", "Zielsemester", "Status", "Erstgutachter:in", "Zweitgutachter:in", "Eingereicht am"],
 	  ...theses.map((thesis) => [

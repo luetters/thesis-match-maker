@@ -1979,3 +1979,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Datensparsamen CSV-Export aller Arbeiten mit aktivem Sperrvermerk für berechtigte Verwaltung bereitstellen
 - [x] PDF-, Tooltip-, Berechtigungs- und Exportregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
+
+## Auditierung und gefilterter Export von Sperrvermerken
+- [x] Änderungen des Sperrvermerk-Status mit Alt-/Neu-Wert im Audit-Log erfassen
+- [x] Sperrvermerk-Ereignisse im Audit-Log gesondert hervorheben und filterbar machen
+- [x] CSV-Export vertraulicher Arbeiten nach Fachbereich und Semester filtern
+- [x] Audit- und Exportregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
