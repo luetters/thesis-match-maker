@@ -30,6 +30,7 @@ import {
   updateExaminerByAdmin,
   deleteUserByAdmin,
   getAuditLogByThesis,
+  getConfidentialityChangesForExaminer,
   getExaminerProfileByUserId,
   getNotificationsByUser,
   getThesisRequestById,
@@ -2086,6 +2087,13 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getAuditLogByThesis(input.thesisRequestId);
       }),
+    confidentialityChangesForExaminer: protectedProcedure.query(async ({ ctx }) => {
+      const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
+      if (!roles.includes("examiner") && !roles.includes("second_examiner")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Diese Hinweise sind nur für Erst- und Zweitprüfer:innen verfügbar." });
+      }
+      return getConfidentialityChangesForExaminer(ctx.user.id);
+    }),
     /**
      * Kombinierte Historien-Abfrage für Studierende:
      * Gibt Audit-Log-Einträge und Benachrichtigungen chronologisch zusammengeführt zurück.
@@ -2121,7 +2129,11 @@ export const appRouter = router({
   // -  // --- Admin: User-Management & Prüfer-CRUD -------------------------------------------
   admin: router({
     updateConfidentialityNotice: protectedProcedure
-      .input(z.object({ thesisRequestId: z.number().int().positive(), hasConfidentialityNotice: z.boolean() }))
+      .input(z.object({
+        thesisRequestId: z.number().int().positive(),
+        hasConfidentialityNotice: z.boolean(),
+        reason: z.string().trim().min(5, "Bitte begründen Sie die Änderung des Sperrvermerks.").max(1000),
+      }))
       .mutation(async ({ ctx, input }) => {
         const roles: string[] = (ctx.user as any).roles ?? [ctx.user.role];
         const isSuperadmin = roles.includes("superadmin");
@@ -2148,8 +2160,8 @@ export const appRouter = router({
             actorId: ctx.user.id,
             actorRole: ctx.user.role,
             action: "CONFIDENTIALITY_NOTICE_CHANGED",
-            reason: `Sperrvermerk ${result.nextValue ? "aktiviert" : "aufgehoben"} durch Verwaltung.`,
-            metadata: { previousValue: result.previousValue, newValue: result.nextValue, source: "admin_confidentiality_update" },
+            reason: input.reason,
+            metadata: { previousValue: result.previousValue, newValue: result.nextValue, source: "admin_confidentiality_update", changeReason: input.reason },
           });
         }
         return { success: true, changed: result.changed, hasConfidentialityNotice: result.nextValue };

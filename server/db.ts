@@ -622,6 +622,31 @@ export async function getAuditLogByThesis(thesisRequestId: number) {
     .orderBy(desc(auditLog.createdAt));
 }
 
+/** Liefert Sperrvermerk-Änderungen ausschließlich für eigene Erst- oder Zweitbegutachtungen. */
+export async function getConfidentialityChangesForExaminer(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: auditLog.id,
+      thesisRequestId: auditLog.thesisRequestId,
+      reason: auditLog.reason,
+      metadata: auditLog.metadata,
+      createdAt: auditLog.createdAt,
+      title: thesisRequests.title,
+      studentName: users.name,
+    })
+    .from(auditLog)
+    .innerJoin(thesisRequests, eq(auditLog.thesisRequestId, thesisRequests.id))
+    .leftJoin(users, eq(thesisRequests.studentId, users.id))
+    .where(and(
+      eq(auditLog.action, "CONFIDENTIALITY_NOTICE_CHANGED"),
+      or(eq(thesisRequests.examinerId, examinerId), eq(thesisRequests.secondExaminerId, examinerId)),
+    ))
+    .orderBy(desc(auditLog.createdAt))
+    .limit(10);
+}
+
 export async function getAllAuditLogs() {
   const db = await getDb();
   if (!db) return [];

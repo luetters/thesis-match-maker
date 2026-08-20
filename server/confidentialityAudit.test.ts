@@ -33,11 +33,34 @@ describe("Auditierung von Sperrvermerk-Änderungen", () => {
     expect(studentRevision).not.toContain("hasConfidentialityNotice: z.boolean().optional()");
   });
 
+  it("fordert eine Begründung und speichert sie als Audit-Grund sowie Metadatum", () => {
+    const router = readFileSync(projectFile("server", "routers.ts"), "utf8");
+    const admin = readFileSync(projectFile("client", "src", "pages", "AdminDashboard.tsx"), "utf8");
+    expect(router).toContain('reason: z.string().trim().min(5, "Bitte begründen Sie die Änderung des Sperrvermerks.").max(1000)');
+    expect(router).toContain("reason: input.reason");
+    expect(router).toContain("changeReason: input.reason");
+    expect(admin).toContain("confidentialityChangeReason");
+    expect(admin).toContain("Begründung der Änderung");
+    expect(admin).toContain("Änderung mit Begründung speichern");
+  });
+
   it("stellt Sperrvermerk-Ereignisse als amberfarbene Marker in der Fallhistorie dar", () => {
     const examiner = readFileSync(projectFile("client", "src", "pages", "ExaminerDashboard.tsx"), "utf8");
     expect(examiner).toContain("isConfidentialityEvent");
     expect(examiner).toContain("bg-amber-600");
     expect(examiner).toContain("Sperrvermerk geändert");
     expect(examiner).toContain("Aktiv\" : \"Nicht aktiv\"} →");
+  });
+
+  it("zeigt Prüfer:innen eine Dashboardwarnung ausschließlich für eigene betreute Arbeiten", () => {
+    const db = readFileSync(projectFile("server", "db.ts"), "utf8");
+    const router = readFileSync(projectFile("server", "routers.ts"), "utf8");
+    const examiner = readFileSync(projectFile("client", "src", "pages", "ExaminerDashboard.tsx"), "utf8");
+    expect(db).toContain("getConfidentialityChangesForExaminer");
+    expect(db).toContain("eq(thesisRequests.examinerId, examinerId)");
+    expect(db).toContain("eq(thesisRequests.secondExaminerId, examinerId)");
+    expect(router).toContain("confidentialityChangesForExaminer");
+    expect(examiner).toContain("Sperrvermerk nachträglich geändert");
+    expect(examiner).toContain("confidentialityChangesForExaminer.useQuery()");
   });
 });

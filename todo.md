@@ -1992,3 +1992,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Sperrvermerk-Ereignisse als hervorgehobene Marker in der Fallhistorie anzeigen
 - [x] Rollen-, Fachbereichs- und Zeitachsenregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern
+
+## Begründungspflicht und Prüfer:innenwarnung bei Sperrvermerk-Änderungen
+- [x] Pflichtbegründung im Verwaltungsdialog für nachträgliche Sperrvermerk-Änderungen ergänzen
+- [x] Begründung gemeinsam mit Alt-/Neuwert im Audit-Log speichern und anzeigen
+- [x] Betroffene Erst- und Zweitprüfer:innen im Dashboard deutlich über die Änderung informieren
+- [x] Begründungs-, Audit- und Warnungsregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Ansichten prüfen und Checkpoint speichern

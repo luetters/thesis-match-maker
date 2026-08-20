@@ -3991,6 +3991,7 @@ function ExaminerStatusHistory() {
     { thesisRequestId: selectedId! },
     { enabled: selectedId !== null }
   );
+  const { data: confidentialityChanges } = (trpc as any).auditLog.confidentialityChangesForExaminer.useQuery();
   if (isLoading) return <div className="text-sm text-gray-500">Wird geladen...</div>;
   if (!assignments?.length) return (
     <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm text-center">
@@ -4060,6 +4061,14 @@ function ExaminerStatusHistory() {
   };
   return (
     <div className="space-y-5">
+      {confidentialityChanges?.length > 0 && (
+        <section className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-5 shadow-sm" aria-label="Hinweise zu geänderten Sperrvermerken">
+          <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-lg" aria-hidden="true">🔒</span><div><h2 className="font-bold text-amber-950">Sperrvermerk nachträglich geändert</h2><p className="mt-1 text-sm text-amber-900">Für {confidentialityChanges.length === 1 ? "eine Ihrer betreuten Arbeiten wurde" : `${confidentialityChanges.length} Ihrer betreuten Arbeiten wurden`} Sperrvermerke durch die Verwaltung geändert. Bitte beachten Sie die Begründung in der Fallhistorie.</p></div></div>
+          <ul className="mt-4 space-y-2">
+            {confidentialityChanges.map((change: any) => <li key={change.id}><button type="button" onClick={() => setSelectedId(change.thesisRequestId)} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-left text-sm text-amber-950 hover:bg-amber-100"><span className="font-semibold">{change.title || "Abschlussarbeit"}</span>{change.studentName ? ` · ${change.studentName}` : ""}<span className="ml-2 text-xs text-amber-800">{new Date(change.createdAt).toLocaleString("de-DE")}</span></button></li>)}
+          </ul>
+        </section>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <div><h2 className="text-lg font-semibold text-gray-900">Betreute Abschlussarbeiten</h2><p className="mt-1 text-sm text-gray-600">Die Tabelle ist Ihre Berichtsvorschau. Semester, Aktivitätsfilter und Abgabedatumssortierung werden beim Export übernommen.</p><div className="mt-3 flex flex-wrap gap-2"><a href={`/api/export/my-students-report.pdf${reportQuery}`} className="inline-flex items-center gap-1.5 rounded-lg bg-[#76B900] px-3 py-2 text-xs font-semibold text-white hover:bg-[#5f9800]"><span aria-hidden="true">↓</span> Bericht als PDF</a><a href={`/api/export/my-students-report.csv${reportQuery}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#76B900] bg-white px-3 py-2 text-xs font-semibold text-[#4f7f00] hover:bg-[#f4fae9]"><span aria-hidden="true">↓</span> Bericht als CSV</a></div></div>
         <div className="flex flex-wrap items-center gap-3">

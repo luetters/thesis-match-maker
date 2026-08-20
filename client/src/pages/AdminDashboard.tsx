@@ -166,6 +166,8 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
     id: number; title?: string | null; studentName?: string | null;
     targetSemester?: string | null; department?: string | null; examinerId?: number | null; secondExaminerId?: number | null;
   } | null>(null);
+  const [confidentialityChangeTarget, setConfidentialityChangeTarget] = useState<{ id: number; title: string; current: boolean } | null>(null);
+  const [confidentialityChangeReason, setConfidentialityChangeReason] = useState("");
   const [remindingId, setRemindingId] = useState<number | null>(null);
   // Cooldown: requestId -> timestamp of last sent reminder (10 min)
   const [reminderCooldowns, setReminderCooldowns] = useState<Record<number, number>>({});
@@ -232,6 +234,8 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
       toast.success(data.changed ? `Sperrvermerk ${data.hasConfidentialityNotice ? "aktiviert" : "aufgehoben"}.` : "Sperrvermerk bleibt unverändert.");
       utils.thesis.all.invalidate();
       utils.auditLog.all.invalidate();
+      setConfidentialityChangeTarget(null);
+      setConfidentialityChangeReason("");
     },
     onError: (error: { message: string }) => toast.error(error.message),
   });
@@ -544,11 +548,8 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
                           disabled={updateConfidentialityNotice.isPending}
                           onClick={() => {
                             const current = Number((req as any).hasConfidentialityNotice) === 1;
-                            const next = !current;
-                            const question = next
-                              ? "Sperrvermerk aktivieren? Der öffentliche Abstract wird sofort gesperrt und die Änderung im Audit-Log protokolliert."
-                              : "Sperrvermerk aufheben? Die Änderung wird im Audit-Log protokolliert; eine öffentliche Abstract-Freigabe bleibt weiterhin separat erforderlich.";
-                            if (window.confirm(question)) updateConfidentialityNotice.mutate({ thesisRequestId: req.id, hasConfidentialityNotice: next });
+                            setConfidentialityChangeReason("");
+                            setConfidentialityChangeTarget({ id: req.id, title: req.title || "Abschlussarbeit", current });
                           }}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${Number((req as any).hasConfidentialityNotice) === 1 ? "border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100" : "border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
                           title="Nur die zuständige Verwaltung oder Superadmins können den Sperrvermerk ändern"
@@ -662,6 +663,18 @@ function AllRequests({ userFilter, onClearUserFilter, highlightId, onHighlightCl
           currentDeadline={deadlineModal.deadline}
           onClose={() => setDeadlineModal(null)}
         />
+      )}
+      {confidentialityChangeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="dialog" aria-modal="true" aria-labelledby="confidentiality-change-title" onClick={() => !updateConfidentialityNotice.isPending && setConfidentialityChangeTarget(null)}>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-4 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-lg" aria-hidden="true">🔒</span><div><h3 id="confidentiality-change-title" className="text-lg font-bold text-gray-900">Sperrvermerk {confidentialityChangeTarget.current ? "aufheben" : "aktivieren"}</h3><p className="mt-1 text-sm text-gray-600">{confidentialityChangeTarget.title}</p></div></div>
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Die Änderung wird mit Alt- und Neuwert im Audit-Log gespeichert. Betroffene Erst- und Zweitprüfer:innen sehen anschließend einen Hinweis in ihrer Fallhistorie.</p>
+            <label htmlFor="confidentiality-change-reason" className="mb-1.5 block text-sm font-semibold text-gray-800">Begründung der Änderung <span className="text-red-600">*</span></label>
+            <textarea id="confidentiality-change-reason" value={confidentialityChangeReason} onChange={(event) => setConfidentialityChangeReason(event.target.value)} rows={4} maxLength={1000} placeholder="Bitte erläutern Sie kurz, warum der Sperrvermerk geändert wird." className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100" autoFocus />
+            <p className="mt-1 text-xs text-gray-500">Mindestens 5 Zeichen. Die Begründung ist für die Nachvollziehbarkeit in der Fallhistorie sichtbar.</p>
+            <div className="mt-6 flex justify-end gap-3"><button type="button" disabled={updateConfidentialityNotice.isPending} onClick={() => setConfidentialityChangeTarget(null)} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Abbrechen</button><button type="button" disabled={updateConfidentialityNotice.isPending || confidentialityChangeReason.trim().length < 5} onClick={() => updateConfidentialityNotice.mutate({ thesisRequestId: confidentialityChangeTarget.id, hasConfidentialityNotice: !confidentialityChangeTarget.current, reason: confidentialityChangeReason.trim() })} className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">{updateConfidentialityNotice.isPending ? "Wird gespeichert …" : "Änderung mit Begründung speichern"}</button></div>
+          </div>
+        </div>
       )}
     </div>
   );
