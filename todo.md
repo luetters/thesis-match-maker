@@ -2099,3 +2099,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Übergabearchiv ohne `node_modules`, echte Geheimnisse oder unautorisierte Produktivdaten erstellen
 - [x] Lokale Sitzungen ohne Kennung oder OAuth-Dienst der bisherigen Plattform ermöglichen
 - [x] Hintergrundendpunkte im Zielbetrieb ausschließlich über den lokalen Cron-Schlüssel absichern
+
+## IONOS Deploy Now für thesismatch.online
+- [x] Bestehende GitHub- und IONOS-Deploy-Now-Integration einschließlich des bisherigen Forbidden-Fehlers prüfen
+- [x] Anforderungen an Build, Start, Laufzeit, Geheimnisse und persistente Daten mit dem Projekt abgleichen
+- [x] Ungeeignetheit von Deploy Now für die vollständige Serveranwendung nachweisen und die VPS-Alternative dokumentieren
+- [x] DNS-, HTTPS-, Weiterleitungs- und Anwendungstest für thesismatch.online vorbereiten
+- [x] Befund, verbleibende Grenzen und sicheren Go-Live-Ablauf dokumentieren
