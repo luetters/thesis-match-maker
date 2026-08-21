@@ -2135,6 +2135,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Zielordner, Eigentumsrechte und entpackten Code auf dem VPS prüfen
 - [x] Neue Zielgeheimnisse und leere Startkonfiguration vor dem Datenexport vorbereiten
 
+## Offizieller Website-Backupweg vor Produktivmigration
+- [x] Aktuellen vollständigen Website-Datensicherungs-Export über das offizielle Backupportal auslösen
+- [x] Erzeugte Sicherungspakete auf Vollständigkeit, Zeitpunkt und sichere Ablage prüfen
+- [ ] Zulässigen Importweg für Datenbank und Dateien aus den verfügbaren Sicherungspaketen klären
+- [x] Neuen IONOS-VPS als getestete, leere Zielumgebung dokumentieren; keine Produktivdaten oder DNS-Änderung vor autorisiertem Importweg durchführen
+
 ## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
 - [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
 - [x] Portablen Docker-Build ohne Corepack-Onlineaktivierung implementieren
