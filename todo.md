@@ -2067,3 +2067,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Leitfadenhinweis im Dashboard mit passendem Symbol und reduzierter Einblendung aufwerten
 - [x] Datenschutz, Zählung, Animation und barrierefreie Bewegungsreduktion mit Vitest absichern
 - [x] Datenbankschema migrieren, TypeScript, Portalansichten und Tests prüfen und veröffentlichen
+
+## Gestaltung der PDF-Kurzleitfäden
+- [x] Überschriften in allen drei Leitfäden hellgrün im Stil der HTW Berlin gestalten
+- [x] Durchgängige Seitenzahlen in allen drei Leitfäden ergänzen
+- [x] PDF-Layout, Überschriften und Seitenzahlen visuell prüfen
+- [x] Aktualisierte PDF-Assets bereitstellen und Portal-Downloadpfade ersetzen
+- [x] Downloads, TypeScript und Regressionen prüfen und veröffentlichen

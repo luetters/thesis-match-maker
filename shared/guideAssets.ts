@@ -1,7 +1,7 @@
 export const GUIDE_PDF_URLS = {
-  firstExaminer: "/manus-storage/thesis-match-maker-erste-pruefung-leitfaden_c75ce61d.pdf",
-  secondExaminer: "/manus-storage/thesis-match-maker-zweite-pruefung-leitfaden_0cc76265.pdf",
-  administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden_35a36afd.pdf",
+  firstExaminer: "/manus-storage/thesis-match-maker-erste-pruefung-leitfaden_9f379a35.pdf",
+  secondExaminer: "/manus-storage/thesis-match-maker-zweite-pruefung-leitfaden_35492f84.pdf",
+  administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden_d81de219.pdf",
 } as const;
 
 export const GUIDE_DOWNLOAD_KEYS = ["first_examiner", "second_examiner", "administration"] as const;
