@@ -252,6 +252,7 @@ import { examinerRequestEmail, statusChangeEmail, enrollmentEligibilityEmail, de
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { createPortableTransferDownloadToken } from "./portableTransferRoutes";
 
 // --- Role guards --------------------------------------------------------------
 // Hilfsfunktion: prüft ob user.roles (Multi-Rollen) eine bestimmte Rolle enthält
@@ -2821,6 +2822,10 @@ export const appRouter = router({
   }),
   // --- Superadmin: Systemkonfiguration ---
   superadmin: router({
+    /** Einmaliger, fünf Minuten gültiger Link. Das ZIP wird nicht serverseitig gespeichert. */
+    createPortableTransferDownload: superadminProcedure.mutation(async ({ ctx }) => {
+      return createPortableTransferDownloadToken(ctx.user.id);
+    }),
     getSettings: superadminProcedure.query(async () => {
       const rows = await getSystemSettings();
       const map: Record<string, string> = {};

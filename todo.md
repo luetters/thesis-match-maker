@@ -2141,6 +2141,32 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Zulässigen Importweg für Datenbank und Dateien aus den verfügbaren Sicherungspaketen klären
 - [x] Neuen IONOS-VPS als getestete, leere Zielumgebung dokumentieren; keine Produktivdaten oder DNS-Änderung vor autorisiertem Importweg durchführen
 
+## Separater Website-Export für den Thesis Match Maker
+- [ ] Vollsicherung unverändert behalten und Website-Export klar davon abgrenzen
+- [ ] Website-spezifischen Export über „Custom export → Website tasks → All time“ erstellen
+- [ ] Separates Sicherungspaket, Zeitpunkt und sichere Ablage prüfen
+
+## Quellcode-ZIP gegenüber vollständiger Portal-Sicherung
+- [ ] ZIP-Quellcodeexport und vollständiges Website-Sicherungspaket fachlich abgrenzen
+- [ ] Projektspezifischen ZIP-Download des Thesis Match Maker sicher vorbereiten
+- [ ] Fehlende Datenbank-, Upload-, Geheimnis- und Plattformbestandteile des ZIP-Exports transparent dokumentieren
+- [ ] Vollsicherung als unveränderte Rückfallreserve bestätigen
+
+## Zulässiger Import der Projektdaten auf den IONOS-VPS
+- [ ] Format und dokumentierte Wiederherstellungsoptionen der offiziellen Aufgabendatensicherung verbindlich prüfen
+- [ ] Anforderungen des vorbereiteten MySQL- und Dateirestores mit dem offiziellen Sicherungsformat abgleichen
+- [ ] Zulässigen Datenimport oder alternativ erforderliche Wiederherstellung innerhalb der bisherigen Plattform festlegen
+- [ ] Importablauf, Rückfallpunkt und benötigte Nutzeraktion dokumentieren
+
+## Portable Import- und Exportfunktion im Thesis Match Maker
+- [x] Tabellen, Dateien, Beziehungen und Schutzklassen für Nutzer:innen, Rollen, Stammdaten, Anträge, Profile, E-Mail-Vorlagen, Matchingprozesse und Bilder inventarisieren
+- [x] Versioniertes Exportformat mit Manifest, Prüfsummen, Exportzeitpunkt und Inhaltsübersicht definieren
+- [x] Geheimnisse, Sitzungen, Wiederherstellungscodes und reine Betriebsdaten verbindlich vom Export ausschließen
+- [x] Superadmin-geschützten Export mit Audit-Eintrag und zeitlich begrenztem Download implementieren
+- [x] Validierungsvorschau für Importarchive mit Versions-, Prüfsummen- und Beziehungsprüfung implementieren
+- [x] Transaktional abgesicherten Import mit expliziter finaler Freigabe und Rückfallpunkt implementieren
+- [x] Verwaltungsoberfläche sowie deutsch-englische Hinweise, Vitest-Regressionen und Wiederherstellungsdokumentation ergänzen
+
 ## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
 - [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
 - [x] Portablen Docker-Build ohne Corepack-Onlineaktivierung implementieren

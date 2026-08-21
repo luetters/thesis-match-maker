@@ -20,6 +20,8 @@ import { serveStatic, setupVite } from "./vite";
 import { maintenanceMiddleware } from "../maintenanceMiddleware";
 import { startScheduler } from "../scheduler";
 import { registerMigrationExportRoutes } from "../migrationExport";
+import { registerPortableTransferRoutes } from "../portableTransferRoutes";
+import { registerPortableTransferImportRoutes } from "../portableTransferImportRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -95,6 +97,8 @@ async function startServer() {
   ], authenticationLimiter);
   registerStorageProxy(app);
   registerMigrationExportRoutes(app);
+  registerPortableTransferRoutes(app);
+  registerPortableTransferImportRoutes(app);
   if (ENV.legacyPlatformIntegrations) {
     registerOAuthRoutes(app);
   }

@@ -12,6 +12,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { ProgrammeLogo } from "@/components/ProgrammeLogo";
 import { buildFullName, getRoleBadge } from "@shared/const";
 import { SamlConfigurationTab } from "@/components/SamlConfigurationTab";
+import { PortableTransferTab } from "@/components/PortableTransferTab";
 
 // ─── Infrastruktur-Tab ──────────────────────────────────────────────────────
 function InfrastructureTab() {
@@ -1469,6 +1470,7 @@ export default function SuperadminDashboard() {
     { id: "email_templates", label: t.superadmin.tabs.emailTemplates, icon: "✉️" },
     { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
     { id: "infrastructure", label: "Infrastruktur", icon: "🖥️" },
+    { id: "portable_transfer", label: "Datenübernahme", icon: "⇄" },
   ];
 
   useEffect(() => {
@@ -1526,6 +1528,7 @@ export default function SuperadminDashboard() {
       {activeTab === "email_templates" && <EmailTemplatesTab />}
       {activeTab === "admin_management" && <AdminManagementTab />}
       {activeTab === "infrastructure" && <InfrastructureTab />}
+      {activeTab === "portable_transfer" && <PortableTransferTab />}
     </ThesisDashboardLayout>
   );
 }
