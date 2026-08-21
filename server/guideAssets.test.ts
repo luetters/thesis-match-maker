@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUIDE_PDF_URLS, getDashboardGuideAudience, getExaminerGuide } from "../shared/guideAssets";
+import { getGuideDownloadSessionKey, GUIDE_DOWNLOAD_KEYS, GUIDE_PDF_URLS, getDashboardGuideAudience, getExaminerGuide, isGuideDownloadKey } from "../shared/guideAssets";
 
 describe("Rollenbezogene PDF-Leitfäden", () => {
   it("stellt getrennte, dauerhafte PDFs für Erstprüfung, Zweitprüfung und Verwaltung bereit", () => {
@@ -34,5 +34,13 @@ describe("Rollenbezogene PDF-Leitfäden", () => {
     expect(getDashboardGuideAudience("examiner", ["examiner", "second_examiner", "admin"])).toBe("firstExaminer");
     expect(getDashboardGuideAudience("second_examiner", ["examiner", "second_examiner"])).toBe("secondExaminer");
     expect(getDashboardGuideAudience("student", ["student"])).toBeNull();
+  });
+
+  it("definiert ausschließlich drei nicht personenbezogene Downloadschlüssel", () => {
+    expect(GUIDE_DOWNLOAD_KEYS).toEqual(["first_examiner", "second_examiner", "administration"]);
+    expect(isGuideDownloadKey("first_examiner")).toBe(true);
+    expect(isGuideDownloadKey("unknown")).toBe(false);
+    expect(getGuideDownloadSessionKey("administration")).toBe("thesis-match-guide-download:administration");
+    expect(getGuideDownloadSessionKey("administration")).not.toMatch(/user|email|ip|device/i);
   });
 });

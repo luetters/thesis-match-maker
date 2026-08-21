@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { BarChart3, CheckCircle2, MessageSquarePlus, Send, ThumbsDown, ThumbsUp } from "lucide-react";
+import { BarChart3, CheckCircle2, Download, MessageSquarePlus, Send, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 
 const audienceLabels: Record<string, string> = {
@@ -15,6 +15,7 @@ export function FaqFeedbackAdminPanel() {
   const { data, isLoading } = trpc.faq.adminOverview.useQuery();
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const publishAnswer = trpc.faq.answerAndPublish.useMutation({ onSuccess: () => utils.faq.adminOverview.invalidate() });
+  const guideLabels: Record<string, string> = { first_examiner: "Erstprüfung", second_examiner: "Zweitprüfung", administration: "Verwaltung" };
   if (isLoading) return <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">FAQ-Rückmeldungen werden geladen …</div>;
 
   return (
@@ -24,6 +25,10 @@ export function FaqFeedbackAdminPanel() {
         <span className="rounded-full bg-[#eff9df] px-3 py-1.5 text-sm font-bold text-[#527b00]">{data?.newCount ?? 0} offen</span>
       </div>
       <p className="max-w-3xl text-sm leading-relaxed text-slate-600">Die Übersicht zeigt ausschließlich anonym eingereichte Fragen und aggregierte Bewertungen. Es werden keine Namen, E-Mail-Adressen, Nutzerkennungen oder Fallinformationen erfasst.</p>
+      <section className="rounded-2xl border border-[#d9edb4] bg-[#f8fdf1] p-5" aria-labelledby="guide-download-analytics-title">
+        <div className="flex items-start gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#76B900] text-white"><BarChart3 className="h-5 w-5" /></div><div><h3 id="guide-download-analytics-title" className="font-bold text-slate-900">Anonyme Leitfaden-Downloads</h3><p className="mt-1 text-sm text-slate-600">Aggregierte Klickzahlen ohne Nutzer-, Geräte- oder IP-Bezug. Pro Browser-Sitzung wird ein Leitfaden höchstens einmal gezählt.</p></div></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">{["first_examiner", "second_examiner", "administration"].map((guideKey) => { const item = data?.guideDownloads.find((entry) => entry.guideKey === guideKey); return <div key={guideKey} className="rounded-xl bg-white p-4 ring-1 ring-[#dcecc1]"><p className="text-xs font-bold uppercase tracking-wide text-[#587d18]">{guideLabels[guideKey]}</p><p className="mt-2 flex items-center gap-2 text-2xl font-bold text-slate-900"><Download className="h-5 w-5 text-[#76B900]" />{item?.downloadCount ?? 0}</p></div>; })}</div>
+      </section>
       <div className="grid gap-5 xl:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-2 font-semibold text-slate-800"><MessageSquarePlus className="h-5 w-5 text-[#679900]" />Eingereichte Fragen</div>

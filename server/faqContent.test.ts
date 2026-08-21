@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FAQ_DE, FAQ_EN, FAQ_GUIDE_LINKS } from "../client/src/pages/Faq";
+import { FAQ_DE, FAQ_EN, FAQ_GUIDE_DOWNLOAD_KEYS, FAQ_GUIDE_LINKS } from "../client/src/pages/Faq";
 import { GUIDE_PDF_URLS } from "../shared/guideAssets";
 
 describe("FAQ-Inhalte", () => {
@@ -26,5 +26,6 @@ describe("FAQ-Inhalte", () => {
       GUIDE_PDF_URLS.secondExaminer,
       GUIDE_PDF_URLS.administration,
     ]);
+    expect(FAQ_GUIDE_DOWNLOAD_KEYS).toEqual(["first_examiner", "second_examiner", "administration"]);
   });
 });

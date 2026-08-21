@@ -327,6 +327,17 @@ export const faqRatingTotals = mysqlTable("faq_rating_totals", {
 	uniqueIndex("uq_faq_rating_key").on(table.faqKey),
 ]);
 
+// ─── PDF-Leitfäden: ausschließlich anonyme, aggregierte Downloadzählung ──────
+// Es werden weder IP-Adressen noch Sitzungs-, Geräte- oder Nutzerkennungen gespeichert.
+export const guideDownloadTotals = mysqlTable("guide_download_totals", {
+	id: int().autoincrement().notNull().primaryKey(),
+	guideKey: varchar("guide_key", { length: 32 }).notNull(),
+	downloadCount: int("download_count").default(0).notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_guide_download_key").on(table.guideKey),
+]);
+
 export const thesisRequests = mysqlTable("thesis_requests", {
 	id: int().autoincrement().notNull(),
 	studentId: int().notNull(),

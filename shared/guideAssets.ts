@@ -4,6 +4,18 @@ export const GUIDE_PDF_URLS = {
   administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden_35a36afd.pdf",
 } as const;
 
+export const GUIDE_DOWNLOAD_KEYS = ["first_examiner", "second_examiner", "administration"] as const;
+export type GuideDownloadKey = (typeof GUIDE_DOWNLOAD_KEYS)[number];
+
+export function isGuideDownloadKey(value: string): value is GuideDownloadKey {
+  return (GUIDE_DOWNLOAD_KEYS as readonly string[]).includes(value);
+}
+
+/** Sitzungsschlüssel ohne Personen-, Geräte- oder Netzwerkbezug für die lokale Klickdämpfung. */
+export function getGuideDownloadSessionKey(guideKey: GuideDownloadKey) {
+  return `thesis-match-guide-download:${guideKey}`;
+}
+
 export type ExaminerGuideRole = "examiner" | "second_examiner";
 export type GuideAudience = "firstExaminer" | "secondExaminer" | "administration";
 

@@ -2060,3 +2060,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Begrüßungs-E-Mail für neu freigeschaltete Erst- und Zweitprüfer:innen mit passendem Leitfaden ergänzen
 - [x] Sprachvarianten, Berechtigungen und Versandablauf mit Vitest absichern
 - [x] TypeScript, Portalansichten und Downloadpfade prüfen und veröffentlichen
+
+## Anonyme Leitfaden-Zählung und Dashboard-Hinweis
+- [x] Anonyme, aggregierte Zählung je Leitfaden ohne Personen- oder Gerätebezug speichern
+- [x] Zählung beim FAQ-Download auslösen und gegen ungültige Leitfadenschlüssel absichern
+- [x] Leitfadenhinweis im Dashboard mit passendem Symbol und reduzierter Einblendung aufwerten
+- [x] Datenschutz, Zählung, Animation und barrierefreie Bewegungsreduktion mit Vitest absichern
+- [x] Datenbankschema migrieren, TypeScript, Portalansichten und Tests prüfen und veröffentlichen

@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { faqFeedback, faqRatingTotals } from "../../drizzle/schema";
+import { faqFeedback, faqRatingTotals, guideDownloadTotals } from "../../drizzle/schema";
+import type { GuideDownloadKey } from "../../shared/guideAssets";
 import { sanitizeBiographyText } from "../biographySanitization";
 import { getDb } from "../db";
 
@@ -35,14 +36,29 @@ export async function recordFaqRating(input: { faqKey: string; helpful: boolean 
   return { helpfulCount: rating?.helpfulCount ?? 0, notHelpfulCount: rating?.notHelpfulCount ?? 0 };
 }
 
+/** Erhöht nur eine anonyme, aggregierte Downloadzahl; es werden keinerlei Abrufmerkmale gespeichert. */
+export async function recordGuideDownload(guideKey: GuideDownloadKey) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar");
+  await db.insert(guideDownloadTotals).values({ guideKey, downloadCount: 1 }).onDuplicateKeyUpdate({
+    set: {
+      downloadCount: sql`${guideDownloadTotals.downloadCount} + 1`,
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    },
+  });
+  const [total] = await db.select().from(guideDownloadTotals).where(eq(guideDownloadTotals.guideKey, guideKey)).limit(1);
+  return { guideKey, downloadCount: total?.downloadCount ?? 0 };
+}
+
 /** Liefert die administrative Arbeitsliste und aggregierte Antwortbewertungen. */
 export async function getFaqFeedbackOverview() {
   const db = await getDb();
-  if (!db) return { newCount: 0, feedback: [], ratings: [] };
+  if (!db) return { newCount: 0, feedback: [], ratings: [], guideDownloads: [] };
   const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(faqFeedback).where(eq(faqFeedback.status, "NEW"));
   const feedback = await db.select().from(faqFeedback).orderBy(desc(faqFeedback.createdAt)).limit(50);
   const ratings = await db.select().from(faqRatingTotals).orderBy(desc(faqRatingTotals.updatedAt));
-  return { newCount: Number(countRow?.count ?? 0), feedback, ratings };
+  const guideDownloads = await db.select().from(guideDownloadTotals).orderBy(desc(guideDownloadTotals.downloadCount), desc(guideDownloadTotals.updatedAt));
+  return { newCount: Number(countRow?.count ?? 0), feedback, ratings, guideDownloads };
 }
 
 /** Beantwortet eine Frage und veröffentlicht sie optional als Community-FAQ. */

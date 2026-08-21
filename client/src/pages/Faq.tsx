@@ -1,6 +1,7 @@
 import { LanguageSwitcher, useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { GUIDE_PDF_URLS } from "@/lib/guideAssets";
+import { getGuideDownloadSessionKey, GUIDE_DOWNLOAD_KEYS } from "@shared/guideAssets";
 import { ArrowLeft, CheckCircle2, ChevronDown, Download, FileQuestion, HeartHandshake, ListChecks, MessageSquarePlus, Search, Send, ShieldCheck, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -9,6 +10,7 @@ type Audience = "general" | "student" | "firstExaminer" | "secondExaminer" | "ad
 type FaqItem = { question: string; answer: string; faqKey?: string };
 
 export const FAQ_GUIDE_LINKS = [GUIDE_PDF_URLS.firstExaminer, GUIDE_PDF_URLS.secondExaminer, GUIDE_PDF_URLS.administration] as const;
+export const FAQ_GUIDE_DOWNLOAD_KEYS = GUIDE_DOWNLOAD_KEYS;
 
 export const FAQ_DE: Record<Audience, FaqItem[]> = {
   general: [
@@ -117,6 +119,7 @@ export default function Faq() {
     onSuccess: () => { setFeedbackMessage(""); setFeedbackSubmitted(true); },
   });
   const rateAnswer = trpc.faq.rateAnswer.useMutation();
+  const recordGuideDownload = trpc.faq.recordGuideDownload.useMutation();
   const visibleItems = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     const allItems = AUDIENCES.flatMap(({ id }) => content[id].map((item, index) => ({ ...item, audience: id, faqKey: item.faqKey ?? `${id}:${index}` })));
@@ -138,6 +141,12 @@ export default function Faq() {
     eyebrow: "Help & guidance", title: "Questions should be easy.", intro: "This FAQ explains the portal without unnecessary jargon. Select your role or search for a term to find the next step quickly.", search: "For example: approval, deadline, password or second examiner", noResults: "No answer has been found for this topic yet.", contact: "Is your question missing? Practical feedback helps make the portal easier to use.", contactLink: "Send feedback", back: "Back to homepage", trustTitle: "For productive collaboration", trust: ["Voluntary use and transparent processes", "Separate passwords instead of credentials from other systems", "No grades or comparable performance data in the portal", "Pilot phase: feedback is explicitly welcome"], firstSteps: "New here? Your first steps", helpful: "Was this answer helpful?", yes: "Helpful", no: "Not helpful", thanks: "Thank you for your rating.", feedbackTitle: "Is a question missing?", feedbackText: "Send a brief note. Please do not include names, student numbers, email addresses or case details.", feedbackPlaceholder: "Which question or information is missing?", feedbackSend: "Submit question", feedbackSuccess: "Thank you. Your note has been recorded for further improvement.", feedbackError: "Your question could not be saved. Please try again later.", guideTitle: "Compact PDF guides", guideIntro: "The guides bring together the key steps for first examination, second examination and administration. They are available in German and English.", guideDownload: "Download PDF", guides: [{ title: "First examiner guide", text: "Requests, capacity, committee preferences and colloquium." }, { title: "Second examiner guide", text: "Assigned cases, independent assessment and colloquium." }, { title: "Administration guide", text: "Approvals, deadlines, confidentiality and institutional benefits." }],
   };
   const guideLinks = FAQ_GUIDE_LINKS;
+  const handleGuideDownload = (guideKey: (typeof FAQ_GUIDE_DOWNLOAD_KEYS)[number]) => {
+    const sessionKey = getGuideDownloadSessionKey(guideKey);
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "counted");
+    recordGuideDownload.mutate({ guideKey });
+  };
 
   return (
     <div className="min-h-screen bg-[#f7faf5] text-slate-900">
@@ -171,7 +180,7 @@ export default function Faq() {
               <p className="mt-2 leading-relaxed text-slate-600">{copy.guideIntro}</p>
             </div>
             <div className="mt-6 grid gap-3 lg:grid-cols-3">
-              {copy.guides.map((guide, index) => <a key={guide.title} href={guideLinks[index]} download className="group flex min-h-32 flex-col justify-between rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-[#9dd14b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#76B900]">
+              {copy.guides.map((guide, index) => <a key={guide.title} href={guideLinks[index]} download onClick={() => handleGuideDownload(FAQ_GUIDE_DOWNLOAD_KEYS[index])} className="group flex min-h-32 flex-col justify-between rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:ring-[#9dd14b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#76B900]">
                 <div><h3 className="font-bold text-slate-900">{guide.title}</h3><p className="mt-2 text-sm leading-relaxed text-slate-600">{guide.text}</p></div>
                 <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#527b00]"><Download className="h-4 w-4" />{copy.guideDownload}</span>
               </a>)}

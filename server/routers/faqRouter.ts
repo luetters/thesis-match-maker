@@ -3,11 +3,13 @@ import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   answerAndPublishFaqFeedback,
   getFaqFeedbackOverview,
+  recordGuideDownload,
   getPublishedFaqFeedback,
   getTopFaqRatings,
   recordFaqRating,
   submitFaqFeedback,
 } from "../db/faq";
+import { GUIDE_DOWNLOAD_KEYS } from "../../shared/guideAssets";
 
 /** Öffentliche FAQ-Rückmeldungen und geschützte Redaktion. */
 export const faqRouter = router({
@@ -21,6 +23,9 @@ export const faqRouter = router({
   rateAnswer: publicProcedure
     .input(z.object({ faqKey: z.string().regex(/^(general|student|firstExaminer|secondExaminer|admin|community):\d+$/), helpful: z.boolean() }))
     .mutation(async ({ input }) => recordFaqRating(input)),
+  recordGuideDownload: publicProcedure
+    .input(z.object({ guideKey: z.enum(GUIDE_DOWNLOAD_KEYS) }))
+    .mutation(async ({ input }) => recordGuideDownload(input.guideKey)),
   published: publicProcedure
     .input(z.object({ language: z.enum(["de", "en"]) }))
     .query(async ({ input }) => getPublishedFaqFeedback(input.language)),
