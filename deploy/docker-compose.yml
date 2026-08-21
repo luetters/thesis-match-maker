@@ -59,8 +59,12 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       # 2FA-Verschlüsselung
       TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY}
+      # Einmaliger lokaler Bootstrap-Import in eine leere Zielumgebung.
+      TRANSFER_IMPORT_TOKEN: ${TRANSFER_IMPORT_TOKEN}
     volumes:
       - storage_data:/app/storage-data
+    ports:
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s

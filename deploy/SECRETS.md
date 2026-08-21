@@ -13,6 +13,7 @@ ungeschütztes Archiv geschrieben werden.
 | `JWT_SECRET` | selbst erzeugen | mindestens 48 zufällige Bytes; Verlust meldet alle Sitzungen ab |
 | `CRON_SECRET` | selbst erzeugen | mindestens 32 zufällige Bytes; schützt tägliche Hintergrundjobs |
 | `TWO_FACTOR_ENCRYPTION_KEY` | selbst erzeugen oder einmalig aus dem Bestand übernehmen | genau 32 Hex-Zeichen; Verlust macht bestehende 2FA-Geheimnisse unlesbar |
+| `TRANSFER_IMPORT_TOKEN` | selbst erzeugen | mindestens 32 zufällige Bytes; schützt ausschließlich den einmaligen lokalen Bootstrap-Import |
 | `SMTP_*` | Hochschul-IT oder SMTP-Anbieter | Host, Port, Login, Passwort und Absenderadresse |
 | `S3_*` | IONOS S3 oder Hetzner Object Storage | nur für einen privaten Bucket mit minimalen Objektberechtigungen |
 | `CADDY_EMAIL` | betreute technische Mailadresse | erhält Hinweise von Let's Encrypt; kein Passwort |

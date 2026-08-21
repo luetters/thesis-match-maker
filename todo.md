@@ -2167,6 +2167,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Transaktional abgesicherten Import mit expliziter finaler Freigabe und Rückfallpunkt implementieren
 - [x] Verwaltungsoberfläche sowie deutsch-englische Hinweise, Vitest-Regressionen und Wiederherstellungsdokumentation ergänzen
 
+## Lokaler Bootstrap-Import auf dem IONOS-VPS
+- [x] Sicherheitsgrenzen des bestehenden webbasierten Superadmin-Imports für eine leere Zielumgebung prüfen
+- [x] Lokalen Bootstrap-Endpunkt mit ausschließlich serverseitigem Token und Loopback-Bindung implementieren
+- [x] Import über lokales Archiv, Prüfsummen, leere Datenbank und Auditierung automatisiert testen
+- [x] VPS-Anleitung für den Bootstrap-Import ohne manuelles Entpacken des Archivs ergänzen
+
 ## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
 - [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
 - [x] Portablen Docker-Build ohne Corepack-Onlineaktivierung implementieren

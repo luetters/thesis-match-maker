@@ -58,6 +58,18 @@ describe("unabhängiges Übergabepaket", () => {
     expect(backup).not.toMatch(/password\s*=\s*['"][^$]/i);
   });
 
+  it("stellt den Bootstrap-Import nur lokal über einen eigenen Schlüssel bereit", () => {
+    const compose = readProjectFile("deploy/docker-compose.yml");
+    const bootstrap = readProjectFile("scripts/selfhosted/bootstrap-portable-import.sh");
+    const environment = readProjectFile("deploy/environment.example");
+
+    expect(compose).toContain('"127.0.0.1:3000:3000"');
+    expect(compose).toContain("TRANSFER_IMPORT_TOKEN: ${TRANSFER_IMPORT_TOKEN}");
+    expect(bootstrap).toContain("BOOTSTRAP_IMPORT");
+    expect(bootstrap).toContain("http://127.0.0.1:3000/api/bootstrap/portable-transfer/import");
+    expect(environment).toContain("TRANSFER_IMPORT_TOKEN=CHANGE_ME_64_RANDOM_ALPHANUMERIC_CHARACTERS");
+  });
+
   it("dokumentiert den getrennten Export-, Prüfsummen- und Wiederherstellungsweg", () => {
     const guide = readProjectFile("docs/Exportvorbereitung_Thesis_Match_Maker.md");
     const acceptance = readProjectFile("docs/Exportfenster_und_Abnahmeprotokoll.md");

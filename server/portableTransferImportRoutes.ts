@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import unzipper from "unzipper";
 import { unlink } from "fs/promises";
+import { timingSafeEqual } from "crypto";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
 import { COOKIE_NAME } from "@shared/const";
@@ -112,7 +113,7 @@ function assetFields(section: string): string[] {
   return section === "users" ? ["avatarKey", "bannerImageKey"] : section === "examiner_profiles" ? ["photoKey"] : section === "thesis_requests" ? ["exposeKey"] : section === "conditional_documents" ? ["storageKey"] : [];
 }
 
-async function importPortableTransferArchive(filePath: string, actor: { id: number; role: string }) {
+export async function importPortableTransferArchive(filePath: string, actor: { id: number | null; role: string }) {
   const preview = await previewPortableTransferArchive(filePath);
   if (!preview.valid) throw new Error(`Der Import wurde blockiert: ${preview.errors.join(" ")}`);
   const db = await getDb();
@@ -199,6 +200,30 @@ export function registerPortableTransferImportRoutes(app: Express) {
       return res.json({ success: true, ...(await importPortableTransferArchive(req.file.path, actor)) });
     } catch (error) {
       return res.status(400).json({ error: error instanceof Error ? error.message : "Der Import wurde abgebrochen." });
+    } finally {
+      await unlink(req.file.path).catch(() => undefined);
+    }
+  });
+
+  app.post("/api/bootstrap/portable-transfer/import", (req, res, next) => {
+    const remoteAddress = req.socket.remoteAddress ?? "";
+    const isLoopback = remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1";
+    const expectedToken = process.env.TRANSFER_IMPORT_TOKEN;
+    const providedToken = typeof req.headers["x-thesis-transfer-token"] === "string" ? req.headers["x-thesis-transfer-token"] : "";
+    const tokenMatches = Boolean(expectedToken) && Buffer.byteLength(providedToken) === Buffer.byteLength(expectedToken!) && timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken!));
+    if (!isLoopback || req.headers["x-thesis-transfer-confirmation"] !== "BOOTSTRAP_IMPORT" || !tokenMatches) {
+      return res.status(403).json({ error: "Der Bootstrap-Import ist ausschließlich lokal mit einem gültigen Import-Schlüssel zulässig." });
+    }
+    importUpload.single("archive")(req, res, (error) => {
+      if (error) return res.status(error.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: error.message });
+      next();
+    });
+  }, async (req: Request, res: Response) => {
+    if (!req.file) return res.status(400).json({ error: "Kein Transferarchiv übermittelt." });
+    try {
+      return res.json({ success: true, ...(await importPortableTransferArchive(req.file.path, { id: null, role: "bootstrap" })) });
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : "Der Bootstrap-Import wurde abgebrochen." });
     } finally {
       await unlink(req.file.path).catch(() => undefined);
     }
