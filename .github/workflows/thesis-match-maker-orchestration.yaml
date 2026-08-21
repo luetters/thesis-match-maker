@@ -6,9 +6,11 @@
 name: "Deploy Now: Orchestration"
 run-name: "Deploy Now: Build thesis-match-maker · ${{ github.event.head_commit.message || format('Triggered by {0}', github.triggering_actor) }}"
 
+# Das zugehörige IONOS-Deploy-Now-Projekt wurde entfernt.
+# Bis eine neue, getestete Projektverknüpfung eingerichtet ist, dürfen keine
+# automatischen Bereitstellungsversuche bei jedem Push ausgelöst werden.
 on:
-  - push
-  - workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   retrieve-project:

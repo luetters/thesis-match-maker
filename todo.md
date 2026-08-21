@@ -2106,3 +2106,17 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Ungeeignetheit von Deploy Now für die vollständige Serveranwendung nachweisen und die VPS-Alternative dokumentieren
 - [x] DNS-, HTTPS-, Weiterleitungs- und Anwendungstest für thesismatch.online vorbereiten
 - [x] Befund, verbleibende Grenzen und sicheren Go-Live-Ablauf dokumentieren
+
+## Verifikation eines IONOS-Deploy-Now-Neuaufbaus
+- [x] Aktuelle Node.js-Laufzeitunterstützung und Produktgrenzen von IONOS Deploy Now anhand primärer Quellen verifizieren
+- [x] Vollständige Portal-Anforderungen mit dem bestätigten Node.js-Betriebsmodell abgleichen
+- [x] Verlustfreien Parallel-Neuaufbau mit separater Testadresse, Geheimnissen und Rückfallpunkt planen
+- [x] Entscheidungsvorlage erstellen, wann das alte Projekt sicher gelöscht werden darf
+
+## Kontrollierter Neuaufbau nach gelöschtem IONOS-Projekt
+- [x] Erhaltene GitHub-Workflows, Repository-Historie und Domainvoraussetzungen prüfen
+- [x] Neue IONOS-Projektanlage mit einem isolierten Testziel statt unmittelbarer Domainumschaltung vorbereiten
+- [x] GitHub-Geheimnisse, Build- und Startkonfiguration für den IONOS-Neuaufbau eindeutig dokumentieren
+- [x] DNS-Wechsel und Abnahmekriterien mit unverändertem Rückfallpunkt vorbereiten
+- [x] Verwaiste Deploy-Now-Workflows nach der Projektlöschung gegen weitere automatische Fehlversuche absichern
+- [x] Manuelle Auslösung und fehlende automatische Push-Auslösung der gesicherten Workflows automatisiert prüfen

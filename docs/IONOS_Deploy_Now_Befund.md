@@ -24,6 +24,8 @@ Die offizielle IONOS-FAQ nennt für einen 403-Fehler insbesondere eine fehlende 
 
 IONOS dokumentiert Deploy Now als Plattform für **statische Projekte und PHP-Projekte**. Node.js steht in GitHub Actions zur Verfügung, um statische Dateien zu bauen, jedoch nicht als Serverlaufzeit. Serverseitiges Rendering beziehungsweise eine dauerhafte Node.js-Laufzeit wird ausdrücklich nicht angeboten. [1] [2]
 
+> **Wichtige Unterscheidung:** Node.js kann bei Deploy Now im GitHub-Build laufen, zum Beispiel für `pnpm build`. Das ist nicht dasselbe wie ein dauerhaft laufender Node.js-Server. Der Thesis Match Maker braucht nach dem Build weiterhin `node dist/index.js`, damit Anmeldung, API, Datenbankzugriff, Uploads, E-Mails und Hintergrundjobs funktionieren.
+
 | Benötigte Portal-Funktion | Erforderliche Laufzeit | Mit Deploy Now möglich? |
 |---|---|---|
 | React-Oberfläche | statische Dateien | ja |
@@ -56,6 +58,10 @@ Die detaillierten Befehle und Abnahmetests stehen in `docs/Umzug_und_Betrieb_The
 Der vorhandene Deploy-Now-Workflow sollte **nicht** weiter als Produktionsroute für das Portal verwendet werden. Nach der Entscheidung für den VPS-Betrieb sollte die automatische Deploy-Now-Verknüpfung im IONOS-Dashboard deaktiviert oder aus dem GitHub-Repository entfernt werden, damit keine weiteren fehlgeschlagenen Builds entstehen.
 
 Falls `thesismatch.online` bereits als Deploy-Now-Domain registriert ist, kann sie nach Abschluss des DNS-Wechsels vom alten Deploy-Now-Projekt gelöst und dem VPS zugeordnet werden. Die Domainregistrierung selbst bleibt davon unberührt.
+
+### Status nach Löschung des bisherigen Deploy-Now-Projekts
+
+Die Löschung des Deploy-Now-Projekts entfernt nach normalem IONOS-Verhalten die **Bereitstellungskonfiguration** und mögliche zugehörige Deploy-Now-Geheimnisse, nicht jedoch das GitHub-Repository oder die Domainregistrierung. Das Repository `luetters/thesis-match-maker`, die erhaltenen Workflowdateien und der DNS-Eintrag für `thesismatch.online` bestehen weiterhin. Ein neues Deploy-Now-Projekt könnte deshalb technisch separat angelegt werden, wäre für das vollständige Portal aber weiterhin nur ein statischer Test – kein produktiver Ersatz.
 
 ## 5. Falls eine rein statische Informationsseite gewünscht ist
 
