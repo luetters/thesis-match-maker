@@ -70,6 +70,16 @@ describe("unabhängiges Übergabepaket", () => {
     expect(environment).toContain("TRANSFER_IMPORT_TOKEN=CHANGE_ME_64_RANDOM_ALPHANUMERIC_CHARACTERS");
   });
 
+  it("liefert eine lokale, nicht verändernde Vorschau vor dem Bootstrap-Import", () => {
+    const preview = readProjectFile("scripts/selfhosted/bootstrap-portable-preview.sh");
+    const routes = readProjectFile("server/portableTransferImportRoutes.ts");
+
+    expect(preview).toContain("BOOTSTRAP_PREVIEW");
+    expect(preview).toContain("127.0.0.1:3000/api/bootstrap/portable-transfer/preview");
+    expect(routes).toContain('"/api/bootstrap/portable-transfer/preview"');
+    expect(routes).toContain("targetIsEmpty");
+  });
+
   it("dokumentiert den getrennten Export-, Prüfsummen- und Wiederherstellungsweg", () => {
     const guide = readProjectFile("docs/Exportvorbereitung_Thesis_Match_Maker.md");
     const acceptance = readProjectFile("docs/Exportfenster_und_Abnahmeprotokoll.md");

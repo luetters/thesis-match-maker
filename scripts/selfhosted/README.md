@@ -27,3 +27,13 @@ aus. Sie schreibt keinen Datenbankdump und überträgt keine Dateien:
 ```
 
 Der vollständige Ablauf steht in `docs/Exportvorbereitung_Thesis_Match_Maker.md`.
+
+## Lokale Vorschau vor dem ersten Import
+
+Auf einer leeren Zielumgebung muss vor dem endgültigen Import immer zuerst die Manifest-, Prüfsummen- und Leerstandsprüfung laufen. Das Archiv wird dabei nicht entpackt und es werden keine Daten verändert:
+
+```bash
+scripts/selfhosted/bootstrap-portable-preview.sh /tmp/thesis-transfer.zip
+```
+
+Der Befehl nutzt ausschließlich die lokale Loopback-Verbindung, den serverseitigen `TRANSFER_IMPORT_TOKEN` und die in `deploy/.env` gesetzte Datenbank. Der endgültige Import darf erst nach erfolgreicher Vorschau und ausdrücklicher Freigabe mit `bootstrap-portable-import.sh` erfolgen.

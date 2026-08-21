@@ -48,3 +48,13 @@ Vor dem finalen Import sind ein Datenbank-Backup der leeren Zielumgebung, die Im
 Vor dem ersten Login existiert auf einer leeren Zielumgebung noch kein Superadmin. Für diesen Sonderfall stellt `scripts/selfhosted/bootstrap-portable-import.sh` den Import über den lokalen Loopback-Port bereit. Das Skript übernimmt das Archiv unverändert, startet den Anwendungscontainer ohne Caddy und übergibt die ZIP-Datei an den Bootstrap-Endpunkt. Manuelles Entpacken ist weder erforderlich noch zulässig.
 
 Der Bootstrap-Endpunkt akzeptiert ausschließlich Verbindungen von `127.0.0.1` oder `::1`, verlangt `TRANSFER_IMPORT_TOKEN` und die feste Bestätigung `BOOTSTRAP_IMPORT`. Danach gelten dieselben Archiv-, Prüfsummen-, Leerdatenbank- und Assetprüfungen wie beim webbasierten Import. Importierte Konten müssen ihr Passwort zurücksetzen, bevor die öffentliche Domain aktiviert wird.
+
+### Verbindliche Vorschau vor dem Import
+
+Vor dem finalen Import muss auf dem Zielserver folgende Vorschau laufen:
+
+```bash
+scripts/selfhosted/bootstrap-portable-preview.sh /tmp/thesis-transfer.zip
+```
+
+Die Vorschau validiert das Manifest, jede Datensektion und jede Prüfsumme, zählt referenzierte Dateien und bestätigt, dass die Datenbank keine Nutzer:innen oder Abschlussarbeitsanträge enthält. Sie schreibt keine Daten. Erst wenn die Antwort `"valid": true` und `"targetIsEmpty": true` enthält, darf eine dafür berechtigte Person den finalen Bootstrap-Import ausdrücklich freigeben.

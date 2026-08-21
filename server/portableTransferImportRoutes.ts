@@ -228,4 +228,36 @@ export function registerPortableTransferImportRoutes(app: Express) {
       await unlink(req.file.path).catch(() => undefined);
     }
   });
+
+  app.post("/api/bootstrap/portable-transfer/preview", (req, res, next) => {
+    const remoteAddress = req.socket.remoteAddress ?? "";
+    const isLoopback = remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1";
+    const expectedToken = process.env.TRANSFER_IMPORT_TOKEN;
+    const providedToken = typeof req.headers["x-thesis-transfer-token"] === "string" ? req.headers["x-thesis-transfer-token"] : "";
+    const tokenMatches = Boolean(expectedToken) && Buffer.byteLength(providedToken) === Buffer.byteLength(expectedToken!) && timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken!));
+    if (!isLoopback || req.headers["x-thesis-transfer-confirmation"] !== "BOOTSTRAP_PREVIEW" || !tokenMatches) {
+      return res.status(403).json({ error: "Die Bootstrap-Vorschau ist ausschließlich lokal mit einem gültigen Import-Schlüssel zulässig." });
+    }
+    importUpload.single("archive")(req, res, (error) => {
+      if (error) return res.status(error.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: error.message });
+      next();
+    });
+  }, async (req: Request, res: Response) => {
+    if (!req.file) return res.status(400).json({ error: "Kein Transferarchiv übermittelt." });
+    try {
+      const [preview, db] = await Promise.all([previewPortableTransferArchive(req.file.path), getDb()]);
+      if (!db) throw new Error("Datenbank nicht verfügbar.");
+      const [users, requests] = await Promise.all([db.select({ id: schema.users.id }).from(schema.users), db.select({ id: schema.thesisRequests.id }).from(schema.thesisRequests)]);
+      return res.json({
+        success: true,
+        preview,
+        targetIsEmpty: users.length === 0 && requests.length === 0,
+        targetCounts: { users: users.length, thesisRequests: requests.length },
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : "Die Bootstrap-Vorschau wurde abgebrochen." });
+    } finally {
+      await unlink(req.file.path).catch(() => undefined);
+    }
+  });
 }

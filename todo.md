@@ -2173,6 +2173,17 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Import über lokales Archiv, Prüfsummen, leere Datenbank und Auditierung automatisiert testen
 - [x] VPS-Anleitung für den Bootstrap-Import ohne manuelles Entpacken des Archivs ergänzen
 
+## Lokale Vorschauprüfung vor VPS-Import
+- [x] Fehlende tokenbasierte Bootstrap-Vorschau vor dem endgültigen Import ergänzen
+- [x] Vorschau auf Manifest, Prüfsummen, Datenmengen und leere Zielumgebung beschränken und automatisiert testen
+- [x] VPS-Skript für die lokale Vorschauprüfung ohne Datenänderung ergänzen
+- [ ] Vorschauupdate sicher auf dem VPS bereitstellen und erst danach die finale Importfreigabe einholen
+
+## Robuste Übertragung der Bootstrap-Aktualisierung
+- [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
+- [ ] Bootstrap-Code-ZIP mit eindeutigem Zielnamen auf den VPS übertragen
+- [ ] Aktualisierten Code auf dem VPS entpacken und die Importbereitschaft ohne Datenimport prüfen
+
 ## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
 - [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
 - [x] Portablen Docker-Build ohne Corepack-Onlineaktivierung implementieren
