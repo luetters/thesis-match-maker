@@ -195,6 +195,7 @@ export default function Login() {
   const [showRegPw, setShowRegPw] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registeredRole, setRegisteredRole] = useState<string | null>(null);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [regEmailTouched, setRegEmailTouched] = useState(false);
   // Bei Rollenwechsel E-Mail-Touched zurücksetzen
   const prevSelectedRole = useRef(selectedRole);
@@ -309,7 +310,13 @@ export default function Login() {
       }
     },
     onError: (error) => {
-      toast.error(error.message ?? L.registerFailed);
+      const rawMessage = error.message ?? "";
+      const duplicateRegistration = /bereits|already|exists|existiert/i.test(rawMessage);
+      const message = duplicateRegistration
+        ? (lang === "de" ? "Für diese E-Mail-Adresse besteht bereits ein Konto. Melden Sie sich an oder setzen Sie Ihr Passwort zurück." : "An account already exists for this email address. Please sign in or reset your password.")
+        : (lang === "de" ? "Die Registrierung konnte nicht abgeschlossen werden. Prüfen Sie Ihre Angaben und versuchen Sie es erneut." : "Registration could not be completed. Please check your entries and try again.");
+      setRegistrationError(message);
+      toast.error(message);
     },
   });
 
@@ -340,25 +347,33 @@ export default function Login() {
 
   function handleRegisterSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!regFirstName.trim() || !regLastName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) return;
+    setRegistrationError(null);
+    const showRegistrationError = (message: string) => {
+      setRegistrationError(message);
+      toast.error(message);
+    };
+    if (!regFirstName.trim() || !regLastName.trim() || !regEmail.trim() || !regPassword || !regPasswordConfirm) {
+      showRegistrationError(lang === "de" ? "Bitte füllen Sie alle Pflichtfelder aus." : "Please complete all required fields.");
+      return;
+    }
     if ((selectedRole ?? "student") === "student" && !regMatrikelNr.trim()) {
-      toast.error(L.matrikelNrRequired);
+      showRegistrationError(L.matrikelNrRequired);
       return;
     }
     if ((selectedRole ?? "student") === "student" && !regProgrammeId) {
-      toast.error(L.selectProgrammeRequired);
+      showRegistrationError(L.selectProgrammeRequired);
       return;
     }
     if (selectedRole === "examiner" && !regExaminerDepartment) {
-      toast.error(lang === "de" ? "Bitte wählen Sie Ihren Fachbereich aus." : "Please select your department.");
+      showRegistrationError(lang === "de" ? "Bitte wählen Sie Ihren Fachbereich aus." : "Please select your department.");
       return;
     }
     if (regPassword !== regPasswordConfirm) {
-      toast.error(L.passwordMismatch);
+      showRegistrationError(L.passwordMismatch);
       return;
     }
     if (regPassword.length < 8) {
-      toast.error(L.passwordTooShort);
+      showRegistrationError(L.passwordTooShort);
       return;
     }
     setRegEmailTouched(true);
@@ -366,12 +381,12 @@ export default function Login() {
     const role = selectedRole ?? "student";
     if (role === "student") {
       if (!emailLower.endsWith("@student.htw-berlin.de")) {
-        toast.error(L.emailDomainErrorStudent ?? "Bitte verwenden Sie Ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de).");
+        showRegistrationError(L.emailDomainErrorStudent ?? "Bitte verwenden Sie Ihre Studierenden-E-Mail-Adresse (@student.htw-berlin.de).");
         return;
       }
     } else if (role === "examiner" || role === "admin") {
       if (!emailLower.endsWith("@htw-berlin.de") && !emailLower.endsWith("@htw-berlin.com")) {
-        toast.error(L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).");
+        showRegistrationError(L.emailDomainErrorExaminer ?? "Bitte verwenden Sie Ihre HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com).");
         return;
       }
     }
@@ -1329,6 +1344,18 @@ export default function Login() {
                           : L.pendingApproval}
                       </p>
                     </div>
+                    {registrationError && (
+                      <div role="alert" aria-live="assertive" className="flex items-start gap-3 rounded-xl border border-red-400/40 bg-red-500/10 p-3 text-sm text-red-100">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                        <div><p className="font-semibold">{lang === "de" ? "Registrierung nicht abgeschlossen" : "Registration not completed"}</p><p className="mt-0.5 text-xs leading-relaxed text-red-100/80">{registrationError}</p></div>
+                      </div>
+                    )}
+                    {registerMutation.isPending && (
+                      <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-xl border border-blue-300/30 bg-blue-400/10 p-3 text-sm text-blue-100">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-200" />
+                        <div><p className="font-semibold">{lang === "de" ? "Registrierung wird sicher übermittelt" : "Registration is being submitted securely"}</p><p className="mt-0.5 text-xs text-blue-100/75">{lang === "de" ? "Bitte schließen Sie diese Seite nicht. Dies kann einen Moment dauern." : "Please do not close this page. This may take a moment."}</p></div>
+                      </div>
+                    )}
                     <Button
                       type="submit"
                       disabled={

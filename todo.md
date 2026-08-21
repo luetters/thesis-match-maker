@@ -2024,3 +2024,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Forbidden-Fehler auf der externen Domain prüfen und technische Ursache eingrenzen
 - [x] Hosting-, Domain-, Berechtigungs- und SPA-Weiterleitungskonfiguration abgleichen
 - [x] Konkrete Behebungsschritte für die externe Bereitstellung dokumentieren
+
+## Startanleitung, Anmeldungsfilter und Registrierungsrückmeldungen
+- [x] Klare Startanleitung für Studierende auf der Startseite ergänzen
+- [x] Neue Registrierungen im Verwaltungsbereich nach Fachbereich und Anmeldedatum sortierbar machen
+- [x] Ladeanimation und nutzerfreundliche Fehlerrückmeldungen im Registrierungsformular ergänzen
+- [x] Inhalts-, Sortier- und Registrierungsregressionen ergänzen und ausführen
+- [x] TypeScript, Laufzeit und betroffene Benutzerflüsse prüfen und Checkpoint speichern
