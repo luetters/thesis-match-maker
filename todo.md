@@ -2045,3 +2045,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Motivationskarte mit Fortschritt und sicheren Profilverlinkungen integrieren
 - [x] Zugänglichkeit, Rollenabgrenzung und Profilregressionen prüfen
 - [x] TypeScript, Laufzeit und Profilansichten prüfen und Checkpoint speichern
+
+## PDF-Kurzleitfäden für Prüfer:innen und Verwaltung
+- [x] Kompakten zweisprachigen Leitfaden für Erstprüfer:innen erstellen
+- [x] Kompakten zweisprachigen Leitfaden für Zweitprüfer:innen erstellen
+- [x] Zweisprachigen Verwaltungsleitfaden mit individuellen und institutionellen Vorteilen erstellen
+- [x] PDFs als dauerhafte Projekt-Assets bereitstellen
+- [x] Zielgruppenspezifische Download-Buttons im Portal integrieren
+- [x] Leitfäden, Downloads und Startpunkte testen und veröffentlichen

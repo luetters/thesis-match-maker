@@ -19,6 +19,7 @@ import { getDeadlineUrgency, isAwaitingExaminerReview, matchesExaminerThesisFilt
 import { getThesisStatusPresentation, thesisStatusToneClasses } from "@shared/thesisStatusPresentation";
 import { RegistrationPdfPreviewModal } from "@/components/RegistrationPdfPreviewModal";
 import { DocComments } from "@/components/DocComments";
+import { GUIDE_PDF_URLS } from "@/lib/guideAssets";
 import { ColloquiumSchedulingPanel } from "@/components/ColloquiumSchedulingPanel";
 import { PrivateNotesLibrary } from "@/components/examiner/PrivateNotesLibrary";
 import { MyColloquiums } from "@/components/examiner/MyColloquiums";
@@ -3716,7 +3717,10 @@ function AcceptedStudentsSection({ acceptedStudents }: { acceptedStudents: any[]
 
 // --- Overview ---
 function Overview() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { user } = useAuth();
+  const isGerman = lang === "de";
+  const isSecondExaminerOnly = user?.role === "second_examiner";
   const { data: requests } = trpc.thesis.examinerRequests.useQuery();
   const { data: acceptedStudents = [] } = (trpc.examiner as any).getAcceptedRequests.useQuery();
   const { data: savedCapacities = [] } = trpc.examiner.getSemesterCapacities.useQuery(undefined, { refetchOnMount: 'always' });
@@ -3793,6 +3797,31 @@ function Overview() {
           </div>
         </div>
       )}
+
+      <section className="rounded-2xl border border-[#76B900]/25 bg-[#76B900]/5 p-5 shadow-sm" aria-labelledby="examiner-guides-title">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <h2 id="examiner-guides-title" className="font-semibold text-gray-900">{isGerman ? "Kompakte Leitfäden für die Prüfung" : "Compact guides for examination"}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-gray-600">
+              {isSecondExaminerOnly
+                ? (isGerman ? "Der Leitfaden erläutert Ihre unabhängige Rolle, die zugesicherten Fälle, Kapazitäten, Unterlagen und die Teilnahme am Kolloquium." : "This guide explains your independent role, assigned cases, capacity, documents and colloquium participation.")
+                : (isGerman ? "Die zweisprachigen Leitfäden erklären die Schritte für Erst- und Zweitprüfung, von Profil und Kapazitäten bis zur Terminabstimmung." : "The bilingual guides explain first- and second-examiner steps, from profiles and capacity through to scheduling.")}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!isSecondExaminerOnly && (
+              <a href={GUIDE_PDF_URLS.firstExaminer} download className="inline-flex items-center gap-2 rounded-lg bg-[#76B900] px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#649800]">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v11m0 0 4-4m-4 4-4-4m-3 7v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" /></svg>
+                {isGerman ? "Leitfaden Erstprüfung" : "First examiner guide"}
+              </a>
+            )}
+            <a href={GUIDE_PDF_URLS.secondExaminer} download className="inline-flex items-center gap-2 rounded-lg border border-[#76B900]/40 bg-white px-3.5 py-2.5 text-sm font-semibold text-[#527b00] transition hover:bg-[#eff9df]">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v11m0 0 4-4m-4 4-4-4m-3 7v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" /></svg>
+              {isGerman ? "Leitfaden Zweitprüfung" : "Second examiner guide"}
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Einladungsformular */}
       <div className="flex justify-end">

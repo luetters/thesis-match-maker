@@ -13,6 +13,7 @@ import { AssignExaminerModal } from "@/components/admin/AssignExaminerModal";
 import { AdminAuditSection, AdminUserManagementSection } from "@/components/admin/AdminWorkspaceSections";
 import { trpc } from "@/lib/trpc";
 import { UserAvatar } from "@/components/UserAvatar";
+import { GUIDE_PDF_URLS } from "@/lib/guideAssets";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -1769,6 +1770,8 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview() {
   const { hasRole } = useAuth();
+  const { lang } = useLanguage();
+  const isGerman = lang === "de";
   const { data: requests } = trpc.thesis.all.useQuery();
   const { data: users } = trpc.admin.users.useQuery();
   const { data: logs } = trpc.auditLog.all.useQuery();
@@ -1863,6 +1866,23 @@ function Overview() {
           {recoveryCodes && <div className="mt-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><h3 className="font-semibold">Einmalige Wiederherstellungscodes</h3><p className="mt-1">Bewahren Sie diese Codes an einem sicheren Ort auf. Jeder Code kann nur einmal verwendet werden und wird nach dem Schließen nicht erneut angezeigt.</p><div className="mt-3 grid grid-cols-2 gap-2 font-mono text-sm">{recoveryCodes.map((code) => <code key={code} className="rounded bg-white px-2 py-1">{code}</code>)}</div><button onClick={() => setRecoveryCodes(null)} className="mt-4 rounded-lg bg-amber-800 px-3 py-2 text-sm font-semibold text-white">Ich habe die Codes sicher aufbewahrt</button></div>}
           {twoFactorStatus.enabled && <div className="mt-3 flex gap-2"><input value={twoFactorCode} onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Code zum Deaktivieren" inputMode="numeric" className="rounded border p-2 text-sm" /><button onClick={() => disableTwoFactor.mutate({ code: twoFactorCode })} disabled={twoFactorCode.length !== 6 || disableTwoFactor.isPending} className="rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50">Deaktivieren</button></div>}
         </div>}
+      </section>
+
+      <section className="rounded-2xl border border-[#76B900]/25 bg-[#76B900]/5 p-5 shadow-sm" aria-labelledby="admin-guide-title">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <h2 id="admin-guide-title" className="font-semibold text-gray-900">{isGerman ? "Kurzleitfaden für die Verwaltung" : "Administration quick guide"}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-gray-600">
+              {isGerman
+                ? "Der zweisprachige Leitfaden bündelt Freigaben, Fristen, Sperrvermerke und Verteidigungsfähigkeit. Er erläutert außerdem den direkten Nutzen für Mitarbeitende, Fachbereiche und die HTW Berlin."
+                : "This bilingual guide covers approvals, deadlines, confidentiality restrictions and eligibility for defence. It also explains direct benefits for staff, departments and HTW Berlin."}
+            </p>
+          </div>
+          <a href={GUIDE_PDF_URLS.administration} download className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#76B900] px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#649800]">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v11m0 0 4-4m-4 4-4-4m-3 7v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" /></svg>
+            {isGerman ? "Leitfaden herunterladen" : "Download guide"}
+          </a>
+        </div>
       </section>
 
       <section className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm" aria-labelledby="admin-responsibilities-title">
