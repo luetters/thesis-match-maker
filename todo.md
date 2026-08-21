@@ -2038,3 +2038,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Download-Button in der Startanleitung für Studierende integrieren
 - [x] Download und Startseitenregressionen prüfen
 - [x] TypeScript, Laufzeit und PDF-Download prüfen und Checkpoint speichern
+
+## Freiwillige Motivationsstrecke zur Profilpflege
+- [x] Rollenbezogenen und datensparsamen Profilvollständigkeitsgrad definieren
+- [x] Nutzenorientierte, freiwillige Hinweise für fehlende Profilangaben erstellen
+- [x] Motivationskarte mit Fortschritt und sicheren Profilverlinkungen integrieren
+- [x] Zugänglichkeit, Rollenabgrenzung und Profilregressionen prüfen
+- [x] TypeScript, Laufzeit und Profilansichten prüfen und Checkpoint speichern
