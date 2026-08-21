@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FAQ_DE, FAQ_EN, FAQ_GUIDE_DOWNLOAD_KEYS, FAQ_GUIDE_LINKS } from "../client/src/pages/Faq";
-import { GUIDE_PDF_URLS } from "../shared/guideAssets";
+import { FAQ_DE, FAQ_EN, FAQ_GUIDE_DOWNLOAD_KEYS, FAQ_GUIDE_LINKS, FAQ_GUIDE_PRINT_LINKS } from "../client/src/pages/Faq";
+import { GUIDE_PDF_URLS, GUIDE_PRINT_PDF_URLS } from "../shared/guideAssets";
 
 describe("FAQ-Inhalte", () => {
   it("deckt alle vorgesehenen Zielgruppen auf Deutsch ab", () => {
@@ -20,11 +20,16 @@ describe("FAQ-Inhalte", () => {
     expect(english).toContain("password");
   });
 
-  it("stellt alle drei rollenbezogenen PDF-Leitfäden in der FAQ bereit", () => {
+  it("stellt alle drei rollenbezogenen PDF-Leitfäden sowie ihre Druckfassungen in der FAQ bereit", () => {
     expect(FAQ_GUIDE_LINKS).toEqual([
       GUIDE_PDF_URLS.firstExaminer,
       GUIDE_PDF_URLS.secondExaminer,
       GUIDE_PDF_URLS.administration,
+    ]);
+    expect(FAQ_GUIDE_PRINT_LINKS).toEqual([
+      GUIDE_PRINT_PDF_URLS.firstExaminer,
+      GUIDE_PRINT_PDF_URLS.secondExaminer,
+      GUIDE_PRINT_PDF_URLS.administration,
     ]);
     expect(FAQ_GUIDE_DOWNLOAD_KEYS).toEqual(["first_examiner", "second_examiner", "administration"]);
   });

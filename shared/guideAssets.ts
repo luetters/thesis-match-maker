@@ -1,7 +1,14 @@
 export const GUIDE_PDF_URLS = {
-  firstExaminer: "/manus-storage/thesis-match-maker-erste-pruefung-leitfaden_9f379a35.pdf",
-  secondExaminer: "/manus-storage/thesis-match-maker-zweite-pruefung-leitfaden_35492f84.pdf",
-  administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden_d81de219.pdf",
+  firstExaminer: "/manus-storage/thesis-match-maker-erste-pruefung-leitfaden_ed9fe14a.pdf",
+  secondExaminer: "/manus-storage/thesis-match-maker-zweite-pruefung-leitfaden_afa12c86.pdf",
+  administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden_7ca2f6a1.pdf",
+} as const;
+
+/** Schwarzweißfassungen mit reduzierter Farbdeckung für den Ausdruck. */
+export const GUIDE_PRINT_PDF_URLS = {
+  firstExaminer: "/manus-storage/thesis-match-maker-erste-pruefung-leitfaden-druckversion_ef38f151.pdf",
+  secondExaminer: "/manus-storage/thesis-match-maker-zweite-pruefung-leitfaden-druckversion_aa7dfb2c.pdf",
+  administration: "/manus-storage/thesis-match-maker-verwaltung-leitfaden-druckversion_a89cde2d.pdf",
 } as const;
 
 export const GUIDE_DOWNLOAD_KEYS = ["first_examiner", "second_examiner", "administration"] as const;

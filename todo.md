@@ -2074,3 +2074,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] PDF-Layout, Überschriften und Seitenzahlen visuell prüfen
 - [x] Aktualisierte PDF-Assets bereitstellen und Portal-Downloadpfade ersetzen
 - [x] Downloads, TypeScript und Regressionen prüfen und veröffentlichen
+
+## Versionierung und Druckfassungen der PDF-Kurzleitfäden
+- [x] Versionsnummer und Aktualisierungsdatum in den Fußzeilen aller Leitfäden ergänzen
+- [x] Druckoptimierte Schwarzweiß-Fassungen für Erstprüfung, Zweitprüfung und Verwaltung erzeugen
+- [x] Farb- und Druckfassungen technisch sowie visuell prüfen
+- [x] Schwarzweiß-PDFs als dauerhafte Assets bereitstellen und zentrale Downloadpfade ergänzen
+- [x] FAQ um separate Schwarzweiß-Downloads erweitern und mit Vitest absichern
+- [x] Downloads, TypeScript und vollständige Tests prüfen und veröffentlichen
