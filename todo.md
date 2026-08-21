@@ -2019,3 +2019,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Produktive Marken-, Impressums- und Sicherheitsbausteine in der Vorschau realitätsnah darstellen
 - [x] Umschaltung, responsives Layout und Vorlagenregressionen testen
 - [x] TypeScript, Laufzeit und E-Mail-Vorschau prüfen und Checkpoint speichern
+
+## Diagnose: Externe Bereitstellung thesismatch.online
+- [x] Forbidden-Fehler auf der externen Domain prüfen und technische Ursache eingrenzen
+- [x] Hosting-, Domain-, Berechtigungs- und SPA-Weiterleitungskonfiguration abgleichen
+- [x] Konkrete Behebungsschritte für die externe Bereitstellung dokumentieren
