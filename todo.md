@@ -2053,3 +2053,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] PDFs als dauerhafte Projekt-Assets bereitstellen
 - [x] Zielgruppenspezifische Download-Buttons im Portal integrieren
 - [x] Leitfäden, Downloads und Startpunkte testen und veröffentlichen
+
+## Sichtbarkeit und Begrüßung für PDF-Kurzleitfäden
+- [x] Leitfaden-Downloads als übersichtlichen Bereich im FAQ ergänzen
+- [x] Rollenbezogenen Hinweis auf Leitfäden nach der Anmeldung integrieren
+- [x] Begrüßungs-E-Mail für neu freigeschaltete Erst- und Zweitprüfer:innen mit passendem Leitfaden ergänzen
+- [x] Sprachvarianten, Berechtigungen und Versandablauf mit Vitest absichern
+- [x] TypeScript, Portalansichten und Downloadpfade prüfen und veröffentlichen

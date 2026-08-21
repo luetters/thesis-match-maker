@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FAQ_DE, FAQ_EN } from "../client/src/pages/Faq";
+import { FAQ_DE, FAQ_EN, FAQ_GUIDE_LINKS } from "../client/src/pages/Faq";
+import { GUIDE_PDF_URLS } from "../shared/guideAssets";
 
 describe("FAQ-Inhalte", () => {
   it("deckt alle vorgesehenen Zielgruppen auf Deutsch ab", () => {
@@ -17,5 +18,13 @@ describe("FAQ-Inhalte", () => {
     expect(german).toContain("Passwort");
     expect(english).toContain("voluntary");
     expect(english).toContain("password");
+  });
+
+  it("stellt alle drei rollenbezogenen PDF-Leitfäden in der FAQ bereit", () => {
+    expect(FAQ_GUIDE_LINKS).toEqual([
+      GUIDE_PDF_URLS.firstExaminer,
+      GUIDE_PDF_URLS.secondExaminer,
+      GUIDE_PDF_URLS.administration,
+    ]);
   });
 });

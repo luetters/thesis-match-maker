@@ -1,3 +1,5 @@
+import { getExaminerGuide, type ExaminerGuideRole } from "@shared/guideAssets";
+
 /**
  * Zweisprachige E-Mail-Templates für alle automatisch versendeten E-Mails.
  * Jede E-Mail enthält immer BEIDE Sprachen: zuerst Deutsch, dann Englisch.
@@ -479,9 +481,12 @@ export function roleApprovedEmail(opts: {
   roleLabel: string;
   dashboardPath: string; // z.B. "/examiner"
   includeSecondExaminerNote?: boolean; // true für examiner-Rolle
+  examinerGuideRole?: ExaminerGuideRole;
   lang?: Lang;
 }): { subject: string; html: string; text: string } {
   const dashboardUrl = `${SITE_URL}${opts.dashboardPath}`;
+  const guide = getExaminerGuide(opts.examinerGuideRole);
+  const guideUrl = guide ? `${SITE_URL}${guide.url}` : null;
   const subject = opts.lang === "en"
     ? "Your role has been activated – HTW Berlin Thesis Match Maker"
     : opts.lang === "de"
@@ -506,11 +511,20 @@ export function roleApprovedEmail(opts: {
   const secondExaminerTextEN = opts.includeSecondExaminerNote
     ? "\nNote: As an examiner, you are automatically authorized as a second examiner as well."
     : "";
+  const guideBlockDE = guide && guideUrl
+    ? `<div style="margin:16px 0;padding:14px 16px;background:#f4fbe9;border-left:4px solid #76B900;border-radius:0 6px 6px 0"><strong style="color:#527b00;font-size:13px">Ihr nächster Schritt</strong><br><span style="color:#3f4d38;font-size:13px">Laden Sie den kompakten ${guide.deLabel} herunter. Er führt durch die wichtigsten Abläufe im Portal.</span><br><a href="${guideUrl}" style="display:inline-block;margin-top:10px;color:#527b00;font-size:13px;font-weight:700;text-decoration:underline">${guide.deLabel} herunterladen</a></div>`
+    : "";
+  const guideBlockEN = guide && guideUrl
+    ? `<div style="margin:16px 0;padding:14px 16px;background:#f4fbe9;border-left:4px solid #76B900;border-radius:0 6px 6px 0"><strong style="color:#527b00;font-size:13px">Your next step</strong><br><span style="color:#3f4d38;font-size:13px">Download the compact ${guide.enLabel}. It explains the key workflows in the portal.</span><br><a href="${guideUrl}" style="display:inline-block;margin-top:10px;color:#527b00;font-size:13px;font-weight:700;text-decoration:underline">Download ${guide.enLabel}</a></div>`
+    : "";
+  const guideTextDE = guide && guideUrl ? `\nIhr nächster Schritt: ${guide.deLabel} herunterladen: ${guideUrl}` : "";
+  const guideTextEN = guide && guideUrl ? `\nYour next step: download the ${guide.enLabel}: ${guideUrl}` : "";
   const body = `
     <h2 style="color:#1a1a2e;font-size:20px;margin:0 0 16px 0">Freischaltung bestätigt / Role Activated</h2>
     ${p(`Sehr geehrte:r ${opts.userName},`)}
     ${p(`Ihre Rolle als <strong style="color:#006937">${opts.roleLabel}</strong> wurde soeben durch die Verwaltung freigeschaltet. Sie können sich nun vollständig im System anmelden und alle Funktionen nutzen.`)}
     ${secondExaminerNoteDE}
+    ${guideBlockDE}
     <p style="margin:20px 0 24px 0">
       <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Zum Dashboard</a>
     </p>
@@ -519,6 +533,7 @@ export function roleApprovedEmail(opts: {
     ${p(`Dear ${opts.userName},`)}
     ${p(`Your role as <strong style="color:#006937">${opts.roleLabel}</strong> has been activated by the administration. You can now log in and use all features.`)}
     ${secondExaminerNoteEN}
+    ${guideBlockEN}
     <p style="margin:20px 0 24px 0">
       <a href="${dashboardUrl}" style="background:#76B900;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block">Go to Dashboard</a>
     </p>
@@ -528,8 +543,8 @@ export function roleApprovedEmail(opts: {
     subject,
     html: htmlWrapper(body, opts.lang),
     text: opts.lang === "en"
-      ? `Your role as ${opts.roleLabel} has been activated.${secondExaminerTextEN}\nGo to dashboard: ${dashboardUrl}`
-      : `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.${secondExaminerTextDE}\nZum Dashboard: ${dashboardUrl}`,
+      ? `Your role as ${opts.roleLabel} has been activated.${secondExaminerTextEN}${guideTextEN}\nGo to dashboard: ${dashboardUrl}`
+      : `Ihre Rolle als ${opts.roleLabel} wurde freigeschaltet.${secondExaminerTextDE}${guideTextDE}\nZum Dashboard: ${dashboardUrl}`,
   };
 }
 

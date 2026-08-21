@@ -7,6 +7,41 @@ import { useLocation } from "wouter";
 import { UserAvatar } from "@/components/UserAvatar";
 import { buildFullName, getStatusBadge } from "@shared/const";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { GUIDE_PDF_URLS, getDashboardGuideAudience } from "@shared/guideAssets";
+
+type GuideNoticeUser = { role?: string; roles?: string[] } | null | undefined;
+
+function GuideWelcomeNotice({ user }: { user: GuideNoticeUser }) {
+  const { lang } = useLanguage();
+  const roles = user?.roles?.length ? user.roles : user?.role ? [user.role] : [];
+  const guideAudience = getDashboardGuideAudience(user?.role, roles);
+  const guide = guideAudience === "firstExaminer"
+    ? { id: "first-examiner", url: GUIDE_PDF_URLS.firstExaminer, de: "Leitfaden für die Erstprüfung", en: "First examiner guide", deText: "Anfragen, Kapazitäten, Kommissionspräferenzen und Kolloquium kompakt erklärt.", enText: "A concise introduction to requests, capacity, committee preferences and colloquium scheduling." }
+    : guideAudience === "secondExaminer"
+      ? { id: "second-examiner", url: GUIDE_PDF_URLS.secondExaminer, de: "Leitfaden für die Zweitprüfung", en: "Second examiner guide", deText: "Ihre unabhängige Rolle, zugeordnete Fälle und die Teilnahme am Kolloquium auf einen Blick.", enText: "Your independent role, assigned cases and colloquium participation at a glance." }
+      : guideAudience === "administration"
+        ? { id: "administration", url: GUIDE_PDF_URLS.administration, de: "Leitfaden für die Verwaltung", en: "Administration guide", deText: "Freigaben, Fristen, Sperrvermerke und der Nutzen für Fachbereiche und Hochschule.", enText: "Approvals, deadlines, confidentiality and benefits for departments and the university." }
+        : null;
+  const dismissKey = guide ? `thesis-match-guide-notice-${guide.id}` : "";
+  const [dismissed, setDismissed] = useState(() => guide ? localStorage.getItem(dismissKey) === "dismissed" : true);
+
+  if (!guide || dismissed) return null;
+  const isGerman = lang === "de";
+  const label = isGerman ? guide.de : guide.en;
+
+  return (
+    <section className="mb-5 flex flex-col gap-4 rounded-2xl border border-[#b8df73] bg-[#f5fbe9] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label={isGerman ? "Hinweis zu neuen Leitfäden" : "New guide notice"}>
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#76B900] text-white"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg></div>
+        <div><p className="font-semibold text-slate-900">{isGerman ? "Neu: Ihr kompakter Leitfaden" : "New: your compact guide"}</p><p className="mt-0.5 text-sm leading-relaxed text-slate-600">{isGerman ? guide.deText : guide.enText}</p></div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <a href={guide.url} download className="inline-flex items-center gap-2 rounded-lg bg-[#76B900] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#649800]"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v11m0 0 4-4m-4 4-4-4m-3 7v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" /></svg>{label}</a>
+        <button type="button" onClick={() => { localStorage.setItem(dismissKey, "dismissed"); setDismissed(true); }} className="rounded-lg p-2 text-slate-500 transition hover:bg-white hover:text-slate-800" aria-label={isGerman ? "Hinweis schließen" : "Dismiss notice"}><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18" /></svg></button>
+      </div>
+    </section>
+  );
+}
 
 // ─── App-Logo mit Fallback ────────────────────────────────────────────────────
 function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
@@ -583,7 +618,7 @@ export function ThesisDashboardLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6"><GuideWelcomeNotice user={user} />{children}</main>
       </div>
       {showChangePassword && <ChangePasswordDialog onClose={() => setShowChangePassword(false)} />}
     </div>

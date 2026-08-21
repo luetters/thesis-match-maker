@@ -4543,6 +4543,8 @@ export async function approveUserRole(userId: number, confirmedBy: number, confi
           dashboardPath: dashboardLink,
           // Erstprüfer:innen erhalten automatisch Zweitprüfer:innen-Rechte – explizit in der E-Mail erwähnen
           includeSecondExaminerNote: requestedRole === "examiner",
+          // Neue Prüfer:innen erhalten genau den Leitfaden für ihre freigeschaltete Rolle.
+          examinerGuideRole: requestedRole === "examiner" || requestedRole === "second_examiner" ? requestedRole : undefined,
           lang: userLang,
         });
         await sendEmail({ to: user.email as string, subject: emailData.subject, html: emailData.html, text: emailData.text });

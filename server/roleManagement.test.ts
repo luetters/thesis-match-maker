@@ -472,6 +472,16 @@ describe("approveUserRole – E-Mail-Benachrichtigung", () => {
     expect(templateArg.roleLabel).toBe("Prüfer:in (Erstprüfer:in)");
   });
 
+  it("übergibt Erstprüfer:innen den passenden Begrüßungsleitfaden", async () => {
+    const user = { id: 12, email: "prof-guide@htw-berlin.de", name: "Prof Guide", requestedRole: "examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user, [{ userId: 12 }]);
+
+    await approveUserRole(12, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.examinerGuideRole).toBe("examiner");
+  });
+
   it("übergibt korrektes roleLabel für second_examiner-Rolle", async () => {
     const user = { id: 5, email: "zweit@htw-berlin.de", name: "Zweit Test", requestedRole: "second_examiner", roleStatus: "pending" };
     fakeDbHolder.db = makeRoleDb(user, [{ userId: 5 }]);
@@ -480,6 +490,16 @@ describe("approveUserRole – E-Mail-Benachrichtigung", () => {
 
     const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
     expect(templateArg.roleLabel).toBe("Zweitprüfer:in");
+  });
+
+  it("übergibt Zweitprüfer:innen den passenden Begrüßungsleitfaden", async () => {
+    const user = { id: 13, email: "zweit-guide@example.org", name: "Zweit Guide", requestedRole: "second_examiner", roleStatus: "pending" };
+    fakeDbHolder.db = makeRoleDb(user, [{ userId: 13 }]);
+
+    await approveUserRole(13, 99, "superadmin");
+
+    const templateArg = (emailTemplatesModule.roleApprovedEmail as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(templateArg.examinerGuideRole).toBe("second_examiner");
   });
 
   it("übergibt korrekten dashboardPath für student (/student)", async () => {

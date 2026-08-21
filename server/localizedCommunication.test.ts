@@ -23,6 +23,36 @@ describe("sprachabhängige Kommunikationsvorlagen", () => {
     expect(email.text).toContain("Your role as Examiner has been activated");
   });
 
+  it("enthält für neue Erstprüfer:innen den passenden deutschsprachigen Leitfadenlink", () => {
+    const email = roleApprovedEmail({
+      userName: "Prof. Beispiel",
+      roleLabel: "Prüfer:in (Erstprüfer:in)",
+      dashboardPath: "/examiner",
+      examinerGuideRole: "examiner",
+      lang: "de",
+    });
+
+    expect(email.html).toContain("Leitfaden für die Erstprüfung");
+    expect(email.text).toContain("Leitfaden für die Erstprüfung herunterladen");
+    expect(email.text).toContain("thesis-match-maker-erste-pruefung-leitfaden");
+    expect(email.html).not.toContain("Leitfaden für die Zweitprüfung");
+  });
+
+  it("enthält für neue Zweitprüfer:innen den passenden englischsprachigen Leitfadenlink", () => {
+    const email = roleApprovedEmail({
+      userName: "Alex Example",
+      roleLabel: "Second Examiner",
+      dashboardPath: "/examiner",
+      examinerGuideRole: "second_examiner",
+      lang: "en",
+    });
+
+    expect(email.html).toContain("Second examiner guide");
+    expect(email.text).toContain("download the Second examiner guide");
+    expect(email.text).toContain("thesis-match-maker-zweite-pruefung-leitfaden");
+    expect(email.html).not.toContain("Leitfaden für die Erstprüfung");
+  });
+
   it("liefert Zweitprüfer:innenmails in der ausgewählten Sprache", () => {
     const request = buildSecondExaminerRequestEmail({ examinerName: "Sam", studentName: "Alex", thesisTitle: "Research", lang: "en" });
     const confirmed = buildSecondExaminerConfirmedEmail({ recipientName: "Sam", recipientRole: "student", secondExaminerName: "Taylor", thesisTitle: "Research", lang: "en" });
