@@ -2120,3 +2120,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] DNS-Wechsel und Abnahmekriterien mit unverändertem Rückfallpunkt vorbereiten
 - [x] Verwaiste Deploy-Now-Workflows nach der Projektlöschung gegen weitere automatische Fehlversuche absichern
 - [x] Manuelle Auslösung und fehlende automatische Push-Auslösung der gesicherten Workflows automatisiert prüfen
+
+## Exportvorbereitung ohne Produktivexport
+- [x] Exportmanifest mit Datenbank, privaten Dateien, statischen Assets, Konfiguration und Ausschlüssen erzeugen
+- [x] Exportskripte um Prüfsummen, verschlüsselte Zielablage und trockene Vorprüfung ergänzen
+- [x] Wiederherstellungsprotokoll mit Prüfung von Datenbank, Dateien, Rollen und Hintergrundaufgaben erstellen
+- [x] Sicheres Exportfenster, Einfrierungsschritte und fachliche Abnahmekriterien dokumentieren
+- [x] Exportvorbereitung, Geheimnisfreiheit und Wiederherstellungsanleitung automatisiert prüfen

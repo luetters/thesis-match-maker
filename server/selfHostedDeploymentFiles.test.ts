@@ -33,11 +33,31 @@ describe("unabhängiges Übergabepaket", () => {
     const backup = readProjectFile("scripts/selfhosted/backup.sh");
     const restore = readProjectFile("scripts/selfhosted/restore.sh");
     const verify = readProjectFile("scripts/selfhosted/verify-backup.sh");
+    const preflight = readProjectFile("scripts/selfhosted/preflight-export.sh");
+    const exportManifest = readProjectFile("scripts/selfhosted/create-export-manifest.sh");
+    const sealBackup = readProjectFile("scripts/selfhosted/seal-backup.sh");
 
     expect(backup).toContain("mysqldump --single-transaction");
     expect(backup).toContain("SHA256SUMS");
     expect(restore).toContain('"RESTORE"');
     expect(verify).toContain("sha256sum -c SHA256SUMS");
+    expect(preflight).toContain("kein Export wurde ausgeführt");
+    expect(preflight).not.toContain("mysqldump");
+    expect(exportManifest).toContain("EXPORT-MANIFEST.md");
+    expect(sealBackup).toContain("openssl enc -aes-256-cbc");
+    expect(sealBackup).not.toContain("-pass ");
     expect(backup).not.toMatch(/password\s*=\s*['"][^$]/i);
+  });
+
+  it("dokumentiert den getrennten Export-, Prüfsummen- und Wiederherstellungsweg", () => {
+    const guide = readProjectFile("docs/Exportvorbereitung_Thesis_Match_Maker.md");
+    const acceptance = readProjectFile("docs/Exportfenster_und_Abnahmeprotokoll.md");
+
+    expect(guide).toContain("preflight-export.sh");
+    expect(guide).toContain("verify-backup.sh");
+    expect(guide).toContain("DNS-Wechsel");
+    expect(guide).toContain("Produktivexport wird bewusst nicht automatisch");
+    expect(acceptance).toContain("Go-/No-Go-Entscheidung");
+    expect(acceptance).toContain("verschlüsselte Sicherung");
   });
 });
