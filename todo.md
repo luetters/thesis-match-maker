@@ -2127,3 +2127,21 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Wiederherstellungsprotokoll mit Prüfung von Datenbank, Dateien, Rollen und Hintergrundaufgaben erstellen
 - [x] Sicheres Exportfenster, Einfrierungsschritte und fachliche Abnahmekriterien dokumentieren
 - [x] Exportvorbereitung, Geheimnisfreiheit und Wiederherstellungsanleitung automatisiert prüfen
+
+## Übertragung auf den neuen IONOS-VPS
+- [x] Aktuelles geheimnisfreies Übergabearchiv aus dem geprüften Projektstand erzeugen
+- [x] Archiv auf Ausschlüsse, Prüfsumme und Vollständigkeit prüfen
+- [x] Übertragungsweg zum VPS ohne Weitergabe von Passwörtern oder Produktivdaten erläutern
+- [x] Zielordner, Eigentumsrechte und entpackten Code auf dem VPS prüfen
+- [x] Neue Zielgeheimnisse und leere Startkonfiguration vor dem Datenexport vorbereiten
+
+## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
+- [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
+- [x] Portablen Docker-Build ohne Corepack-Onlineaktivierung implementieren
+- [x] Docker-Build und Übergabepaket lokal prüfen
+- [x] Korrigierten Build-Schritt für den VPS bereitstellen und erneut anleiten
+
+## Fehlerbehebung: Korrigierte Dockerfile auf dem VPS durchsetzen
+- [x] Tatsächlichen Inhalt und Pfad der vom VPS verwendeten Dockerfile sichtbar prüfen
+- [x] Korrigierte Dockerfile direkt und mit Prüfsignal auf den VPS übertragen
+- [x] Build-Kontext ohne alte Zwischenspeicher erneut ausführen und Befund dokumentieren

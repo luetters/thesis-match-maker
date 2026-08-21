@@ -29,6 +29,15 @@ describe("unabhängiges Übergabepaket", () => {
     expect(secrets).toContain("TWO_FACTOR_ENCRYPTION_KEY");
   });
 
+  it("baut den VPS-Container ohne störungsanfällige Corepack-Aktivierung und mit pnpm-Patches", () => {
+    const dockerfile = readProjectFile("deploy/Dockerfile");
+
+    expect(dockerfile).toContain("npm install --global pnpm@10.4.1");
+    expect(dockerfile).toContain("COPY patches ./patches");
+    expect(dockerfile).toContain("pnpm install --frozen-lockfile --prod=false");
+    expect(dockerfile).not.toContain("corepack enable");
+  });
+
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {
     const backup = readProjectFile("scripts/selfhosted/backup.sh");
     const restore = readProjectFile("scripts/selfhosted/restore.sh");

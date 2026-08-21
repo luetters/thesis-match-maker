@@ -1,16 +1,25 @@
 # ─── Thesis Match Maker – Produktions-Dockerfile ────────────────────────────
 # Mehrstufiger Build: Abhängigkeiten → Build → schlankes Laufzeitimage
 
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS base
+WORKDIR /app
+
+# Node 22 liefert Corepack mit wechselnden Signaturschlüsseln aus. Das kann auf
+# neuen Docker-Hosts beim Aktivieren scheitern. pnpm wird deshalb reproduzierbar
+# in der zur Sperrdatei passenden Version installiert.
+RUN npm install --global pnpm@10.4.1
+
+FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --prod=false
+COPY patches ./patches
+RUN pnpm install --frozen-lockfile --prod=false
 
-FROM node:22-alpine AS builder
+FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN corepack enable && pnpm build
+RUN pnpm build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -24,4 +33,3 @@ RUN mkdir -p /app/storage-data && chown thesis:nodejs /app/storage-data
 USER thesis
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
-
