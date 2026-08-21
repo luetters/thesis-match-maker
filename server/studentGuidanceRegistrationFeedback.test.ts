@@ -13,6 +13,9 @@ describe("Studierendenanleitung, Freigabesortierung und Registrierungsrückmeldu
     expect(onboarding).toContain("2. Arbeit vorbereiten");
     expect(onboarding).toContain("3. Anfrage verfolgen");
     expect(onboarding).toContain('href="/login"');
+    expect(onboarding).toContain("thesis-match-maker-student-guide_4615c09b.pdf");
+    expect(onboarding).toContain("Kurzleitfaden als PDF herunterladen");
+    expect(onboarding).toContain("download");
   });
 
   it("filtert neue Registrierungen nach Fachbereich und sortiert sie nach Anmeldedatum", () => {

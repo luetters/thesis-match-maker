@@ -2031,3 +2031,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Ladeanimation und nutzerfreundliche Fehlerrückmeldungen im Registrierungsformular ergänzen
 - [x] Inhalts-, Sortier- und Registrierungsregressionen ergänzen und ausführen
 - [x] TypeScript, Laufzeit und betroffene Benutzerflüsse prüfen und Checkpoint speichern
+
+## PDF-Kurzleitfaden für Studierende
+- [x] Kompakten zweisprachigen PDF-Leitfaden für Registrierung, Thesis-Anfrage und Statusverfolgung erstellen
+- [x] PDF als statisches Webprojekt-Asset bereitstellen
+- [x] Download-Button in der Startanleitung für Studierende integrieren
+- [x] Download und Startseitenregressionen prüfen
+- [x] TypeScript, Laufzeit und PDF-Download prüfen und Checkpoint speichern

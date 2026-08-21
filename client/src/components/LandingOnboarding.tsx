@@ -43,7 +43,10 @@ export function LandingOnboarding() {
             </li>
           ))}
         </ol>
-        <a href="/login" className="mt-6 inline-flex items-center rounded-xl border border-[#b8e77a]/45 px-4 py-2.5 text-sm font-bold text-[#d9f5b5] transition hover:bg-[#76B900]/15">{de ? "Jetzt registrieren oder anmelden" : "Register or sign in now"}</a>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href="/login" className="inline-flex items-center rounded-xl border border-[#b8e77a]/45 px-4 py-2.5 text-sm font-bold text-[#d9f5b5] transition hover:bg-[#76B900]/15">{de ? "Jetzt registrieren oder anmelden" : "Register or sign in now"}</a>
+          <a href="/manus-storage/thesis-match-maker-student-guide_4615c09b.pdf" download className="inline-flex items-center gap-2 rounded-xl bg-[#76B900] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#649800]"><Download className="h-4 w-4" />{de ? "Kurzleitfaden als PDF herunterladen" : "Download student quick guide (PDF)"}</a>
+        </div>
       </div>
     </section>
   );
