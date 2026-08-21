@@ -15,7 +15,7 @@ import { appRouter } from "../routers";
 import { processColloquiumSchedulingReminders } from "../colloquiumScheduling";
 import { processOverdueTwoFactorReminders } from "../twoFactorReminder";
 import { createContext } from "./context";
-import { sdk } from "./sdk";
+import { ENV } from "./env";
 import { serveStatic, setupVite } from "./vite";
 import { maintenanceMiddleware } from "../maintenanceMiddleware";
 import { startScheduler } from "../scheduler";
@@ -95,7 +95,9 @@ async function startServer() {
   ], authenticationLimiter);
   registerStorageProxy(app);
   registerMigrationExportRoutes(app);
-  registerOAuthRoutes(app);
+  if (ENV.legacyPlatformIntegrations) {
+    registerOAuthRoutes(app);
+  }
   registerUploadRoutes(app);
   registerExportRoutes(app);
   registerMagicLinkRoutes(app); // Nur noch Logout-Route
@@ -112,17 +114,7 @@ async function startServer() {
         const result = await processColloquiumSchedulingReminders("local-cron");
         return res.json(result);
       }
-      // Manus Heartbeat: SDK-Authentifizierung
-      try {
-        const cronUser = await sdk.authenticateRequest(req);
-        if (!cronUser.isCron || !cronUser.taskUid) {
-          return res.status(403).json({ error: "cron-only" });
-        }
-        const result = await processColloquiumSchedulingReminders(cronUser.taskUid);
-        return res.json(result);
-      } catch {
-        return res.status(403).json({ error: "Nicht autorisiert." });
-      }
+      return res.status(403).json({ error: "Nicht autorisiert." });
     } catch (error) {
       console.error("[ColloquiumSchedulingHeartbeat]", error);
       return res.status(500).json({ error: "Die geplante Verarbeitung konnte nicht abgeschlossen werden." });
@@ -136,16 +128,7 @@ async function startServer() {
       if (cronSecret && req.headers["x-cron-secret"] === cronSecret) {
         return res.json(await processOverdueTwoFactorReminders("local-cron"));
       }
-      // Manus Heartbeat: SDK-Authentifizierung
-      try {
-        const cronUser = await sdk.authenticateRequest(req);
-        if (!cronUser.isCron || !cronUser.taskUid) {
-          return res.status(403).json({ error: "cron-only" });
-        }
-        return res.json(await processOverdueTwoFactorReminders(cronUser.taskUid));
-      } catch {
-        return res.status(403).json({ error: "Nicht autorisiert." });
-      }
+      return res.status(403).json({ error: "Nicht autorisiert." });
     } catch (error) {
       console.error("[TwoFactorReminderHeartbeat]", error);
       return res.status(500).json({ error: "Die geplante 2FA-Erinnerung konnte nicht abgeschlossen werden." });

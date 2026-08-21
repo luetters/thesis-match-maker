@@ -25,6 +25,11 @@ export type SessionPayload = {
 };
 
 const CRON_OPEN_ID_PREFIX = "cron_";
+const LOCAL_SESSION_APP_ID = "thesis-match-maker";
+
+export function getSessionApplicationId(): string {
+  return ENV.appId || LOCAL_SESSION_APP_ID;
+}
 
 export type AuthenticatedUser = User & {
   taskUid?: string;
@@ -109,12 +114,22 @@ const createOAuthHttpClient = (): AxiosInstance =>
   });
 
 class SDKServer {
-  private readonly client: AxiosInstance;
-  private readonly oauthService: OAuthService;
+  private readonly client: AxiosInstance | null;
+  private readonly oauthService: OAuthService | null;
 
-  constructor(client: AxiosInstance = createOAuthHttpClient()) {
-    this.client = client;
-    this.oauthService = new OAuthService(this.client);
+  constructor(client?: AxiosInstance) {
+    // Im autarken Betrieb wird weder ein Plattform-HTTP-Client erzeugt noch
+    // eine externe Basis-URL protokolliert. Der OAuth-Code bleibt nur für eine
+    // bewusst aktivierte Übergangsphase verfügbar.
+    this.client = ENV.legacyPlatformIntegrations ? (client ?? createOAuthHttpClient()) : null;
+    this.oauthService = this.client ? new OAuthService(this.client) : null;
+  }
+
+  private requireLegacyOAuth(): { client: AxiosInstance; oauthService: OAuthService } {
+    if (!ENV.legacyPlatformIntegrations || !this.client || !this.oauthService) {
+      throw ForbiddenError("Legacy platform integrations are disabled");
+    }
+    return { client: this.client, oauthService: this.oauthService };
   }
 
   private deriveLoginMethod(
@@ -148,7 +163,7 @@ class SDKServer {
     code: string,
     state: string
   ): Promise<ExchangeTokenResponse> {
-    return this.oauthService.getTokenByCode(code, state);
+    return this.requireLegacyOAuth().oauthService.getTokenByCode(code, state);
   }
 
   /**
@@ -157,7 +172,7 @@ class SDKServer {
    * const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
    */
   async getUserInfo(accessToken: string): Promise<GetUserInfoResponse> {
-    const data = await this.oauthService.getUserInfoByToken({
+    const data = await this.requireLegacyOAuth().oauthService.getUserInfoByToken({
       accessToken,
     } as ExchangeTokenResponse);
     const loginMethod = this.deriveLoginMethod(
@@ -197,7 +212,9 @@ class SDKServer {
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
+        // Eine lokale Kennung verhindert, dass Passwort-Sitzungen von einem
+        // externen OAuth-Client oder einer Plattform-App-ID abhängen.
+        appId: getSessionApplicationId(),
         name: options.name || "",
       },
       options
@@ -266,7 +283,7 @@ class SDKServer {
       projectId: ENV.appId,
     };
 
-    const { data } = await this.client.post<GetUserInfoWithJwtResponse>(
+    const { data } = await this.requireLegacyOAuth().client.post<GetUserInfoWithJwtResponse>(
       GET_USER_INFO_WITH_JWT_PATH,
       payload
     );
@@ -292,10 +309,13 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    // Heartbeat-Aufrufe erhalten eine Cron-Identität und werden nie gegen
-    // reguläre Nutzerkonten aufgelöst. Die taskUid ist die alleinige,
-    // serverseitig vertrauenswürdige Referenz für den geplanten Job.
+    // Cron-Identitäten werden ausschließlich im explizit aktivierten
+    // Legacy-Modus über einen externen Dienst aufgelöst. Der unabhängige
+    // Betrieb nutzt stattdessen den lokalen CRON_SECRET im Server-Bootstrap.
     if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {
+      if (!ENV.legacyPlatformIntegrations) {
+        throw ForbiddenError("External cron identities are disabled");
+      }
       const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
       if (!userInfo.taskUid) {
         throw ForbiddenError("Cron session missing task_uid");
@@ -307,8 +327,13 @@ class SDKServer {
     const signedInAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from OAuth server automatically
+    // Ein unbekanntes Konto darf nur im ausdrücklich aktivierten Legacy-Modus
+    // über OAuth abgeglichen werden. Im unabhängigen Betrieb bleiben alle
+    // Konten lokal und werden ausschließlich aus MySQL aufgelöst.
     if (!user) {
+      if (!ENV.legacyPlatformIntegrations) {
+        throw ForbiddenError("User not found");
+      }
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({

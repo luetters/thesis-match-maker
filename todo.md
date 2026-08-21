@@ -2082,3 +2082,20 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Schwarzweiß-PDFs als dauerhafte Assets bereitstellen und zentrale Downloadpfade ergänzen
 - [x] FAQ um separate Schwarzweiß-Downloads erweitern und mit Vitest absichern
 - [x] Downloads, TypeScript und vollständige Tests prüfen und veröffentlichen
+
+## Plattformunabhängige Projektübergabe und Serverumzug
+- [x] Vollständige technische Bestandsaufnahme von Code, Laufzeiten, Abhängigkeiten, Datenbank, Speicher, Login, Hintergrundprozessen und externen Diensten erstellen
+- [x] Inventarliste mit Abhängigkeiten, Migrationsrisiken und eindeutig dokumentierten offenen Punkten vorlegen
+- [x] Eigenständiges Übergabepaket mit Code, Konfiguration, Exportschnittstellen, Containerdefinitionen, Backup- und Restore-Werkzeugen vorbereiten
+- [ ] Datenbank- und Dateiexport mit Datenminimierung, Zugriffsschutz und Wiederherstellungsweg auf einer echten Zielumgebung prüfen
+- [x] Laiengerechte Umzugs- und Betriebsanleitung als Markdown und PDF einschließlich Sicherheits-, Kosten-, Notfall- und Fehlerbehebungskapiteln erstellen
+- [ ] Übergabepaket auf Vollständigkeit sowie unabhängige Lauffähigkeit auf einem echten Zielserver validieren und den Umzugsschritt freigeben
+
+### Konkrete Paketbestandteile
+- [x] Produktionsfähige Compose-Definition mit Reverse Proxy und HTTPS-Konfiguration ergänzen
+- [x] `.env.example`-äquivalente Vorlage `environment.example` und eine getrennte, geheimnisfreie `SECRETS.md` für den Zielbetrieb erstellen
+- [x] Skripte für Datenbankdump, Datenbankwiederherstellung und lokalen bzw. S3-Dateiexport erstellen
+- [x] Datenexport ohne personenbezogene Probe- oder Testdaten vorbereiten und die Grenzen des Live-Exports dokumentieren
+- [x] Übergabearchiv ohne `node_modules`, echte Geheimnisse oder unautorisierte Produktivdaten erstellen
+- [x] Lokale Sitzungen ohne Kennung oder OAuth-Dienst der bisherigen Plattform ermöglichen
+- [x] Hintergrundendpunkte im Zielbetrieb ausschließlich über den lokalen Cron-Schlüssel absichern

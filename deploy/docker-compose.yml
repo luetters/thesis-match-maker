@@ -1,24 +1,16 @@
-# ─── Thesis Match Maker – Docker Compose für IONOS VPS ──────────────────────
-# Startet MySQL 8 + Node.js-Anwendung mit einem einzigen Befehl.
-#
-# Verwendung:
-#   1. .env-Datei aus .env.example erstellen und ausfüllen
-#   2. docker compose up -d --build
-#   3. Datenbank-Migrationen ausführen (siehe Migrationsdokumentation)
-
-version: "3.9"
+# ─── Thesis Match Maker – unabhängiger Produktionsbetrieb ───────────────────
+# Startet MySQL 8, die Node.js-Anwendung und Caddy als Reverse Proxy mit
+# automatischem HTTPS-Zertifikat. Die Datei wird mit deploy/.env verwendet.
 
 services:
   db:
-    image: mysql:8.0
+    image: mysql:8.0.36
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: thesis_match
-      MYSQL_USER: thesis
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -36,37 +28,65 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: mysql://thesis:${MYSQL_PASSWORD}@db:3306/thesis_match
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
       JWT_SECRET: ${JWT_SECRET}
-      SITE_URL: ${SITE_URL}
+      SITE_URL: https://${SITE_DOMAIN}
+      APP_ORIGIN: https://${SITE_DOMAIN}
+      FRONTEND_URL: https://${SITE_DOMAIN}
+      PUBLIC_APP_URL: https://${SITE_DOMAIN}
       # SMTP
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM:-Thesis Match HTW Berlin <noreply@htw-berlin.de>}
+      SMTP_FROM: ${SMTP_FROM}
       # Eigenständiger Scheduler (ersetzt Manus Heartbeat)
       SCHEDULER_ENABLED: "true"
       CRON_SECRET: ${CRON_SECRET}
+      # Plattformcode ist nur für eine vorübergehende Rückmigration aktiv.
+      ENABLE_LEGACY_PLATFORM_INTEGRATIONS: "false"
       # Dateispeicher: lokal oder IONOS S3
       STORAGE_LOCAL_DIR: /app/storage-data
-      # Optional: IONOS S3 (wenn gesetzt, wird lokaler Speicher ignoriert)
-      # S3_ENDPOINT: https://s3.eu-central-1.ionoscloud.com
-      # S3_BUCKET: thesis-match-storage
-      # S3_REGION: de
-      # S3_ACCESS_KEY: <Ihr IONOS S3 Access Key>
-      # S3_SECRET_KEY: <Ihr IONOS S3 Secret Key>
+      # Optional: IONOS oder Hetzner S3 (wenn vollständig gesetzt, wird der
+      # lokale Speicher ignoriert; der Bucket bleibt privat.)
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       # 2FA-Verschlüsselung
       TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY}
     volumes:
       - storage_data:/app/storage-data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   mysql_data:
   storage_data:
-
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,11 @@
+{
+  "task_kind": "markdown-to-pdf",
+  "output": "pdf",
+  "signals": [],
+  "hard_constraints": ["German-language professional operations guide", "A4 portrait", "technical tables and shell code blocks", "reference list with official provider links"],
+  "content_features": {
+    "code_blocks": 8,
+    "defined_terms": 9,
+    "portrait_images": 0
+  }
+}

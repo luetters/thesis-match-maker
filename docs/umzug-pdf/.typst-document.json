@@ -1,0 +1,9 @@
+{
+  "entry": "main.typ",
+  "mode": "markdown",
+  "source": {
+    "original_path": "/home/ubuntu/thesis-match-maker/docs/Umzug_und_Betrieb_Thesis_Match_Maker.md",
+    "prepared_path": "source.md"
+  },
+  "theme": "report-theme.typ"
+}
