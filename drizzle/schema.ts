@@ -474,8 +474,8 @@ export const users = mysqlTable("users", {
 	twoFactorLastUsedStep: int("two_factor_last_used_step"),
 	// Optionale Föderationszuordnung für die SAML-2.0-Anmeldung.
 	// Das lokale Passwort bleibt unabhängig davon weiterhin verfügbar.
-	samlSubject: varchar("saml_subject", { length: 512 }),
-	samlIssuer: varchar("saml_issuer", { length: 512 }),
+	samlSubject: varchar("saml_subject", { length: 255 }),
+	samlIssuer: varchar("saml_issuer", { length: 255 }),
 	samlLinkedAt: timestamp("saml_linked_at", { mode: "string" }),
 	programmeId: int("programme_id"),
 	preferredLanguage: mysqlEnum(['de','en']).default('de').notNull(),

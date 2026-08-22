@@ -67,6 +67,13 @@ describe("unabhängiges Übergabepaket", () => {
     expect(unkeyedAutoIncrementIds).toHaveLength(0);
   });
 
+  it("hält den kombinierten SAML-Index unterhalb der MySQL-Schlüsselgrenze", () => {
+    const schema = readProjectFile("drizzle/schema.ts");
+
+    expect(schema).toContain('samlSubject: varchar("saml_subject", { length: 255 })');
+    expect(schema).toContain('samlIssuer: varchar("saml_issuer", { length: 255 })');
+  });
+
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {
     const backup = readProjectFile("scripts/selfhosted/backup.sh");
     const restore = readProjectFile("scripts/selfhosted/restore.sh");

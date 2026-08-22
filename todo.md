@@ -2192,6 +2192,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Allen Auto-Increment-Tabellen im aktuellen Drizzle-Datenmodell gültige Primärschlüssel zuordnen und die MySQL-Neuerzeugung absichern
 - [ ] Sicheren, zeitlich begrenzten SSH-Zugang ohne Weitergabe von Passwörtern oder privaten Schlüsseln für die direkte VPS-Bereitstellung einrichten
 - [ ] Alle als Zeichenkette erzeugten CURRENT_TIMESTAMP-Standardwerte im Drizzle-Modell in MySQL-kompatible SQL-Zeitstempelvorgaben überführen
+- [ ] Kombinierten SAML-Issuer-Subject-Index unterhalb der MySQL-Schlüsselgrenze modellieren und die direkte Schemaerzeugung erneut prüfen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
