@@ -11,6 +11,18 @@ COMPOSE_FILE="$PROJECT_DIR/deploy/docker-compose.yml"
 
 [[ -f "$ENV_FILE" ]] || { echo "Die Datei deploy/.env fehlt." >&2; exit 65; }
 
+# Eine fehlende SQL-Datei im Drizzle-Journal würde erst mitten im Lauf auffallen
+# und eine Teilstruktur hinterlassen. Vor dem ersten DDL-Befehl wird deshalb
+# die Vollständigkeit der Migrationskette geprüft.
+JOURNAL_FILE="$PROJECT_DIR/drizzle/meta/_journal.json"
+[[ -f "$JOURNAL_FILE" ]] || { echo "Drizzle-Migrationsjournal fehlt: $JOURNAL_FILE" >&2; exit 65; }
+while IFS= read -r migration; do
+  [[ -f "$PROJECT_DIR/drizzle/$migration.sql" ]] || {
+    echo "Drizzle-Migrationsdatei fehlt: drizzle/$migration.sql" >&2
+    exit 65
+  }
+done < <(sed -n 's/.*"tag": "\([^"]*\)".*/\1/p' "$JOURNAL_FILE")
+
 cd "$PROJECT_DIR"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
 
