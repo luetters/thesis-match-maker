@@ -10,9 +10,11 @@ ARCHIVE="$1"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ENV_FILE="$PROJECT_DIR/deploy/.env"
 COMPOSE_FILE="$PROJECT_DIR/deploy/docker-compose.yml"
+REQUEST_SCRIPT="$PROJECT_DIR/scripts/selfhosted/bootstrap-portable-request.mjs"
 
 [[ -f "$ARCHIVE" ]] || { echo "Transferarchiv nicht gefunden: $ARCHIVE" >&2; exit 66; }
 [[ -f "$ENV_FILE" ]] || { echo "Konfiguration fehlt: $ENV_FILE" >&2; exit 78; }
+[[ -f "$REQUEST_SCRIPT" ]] || { echo "Lokales Bootstrap-Anfrageskript fehlt: $REQUEST_SCRIPT" >&2; exit 78; }
 
 read_transfer_import_token() {
   local value first last
@@ -45,9 +47,17 @@ for _ in {1..30}; do
   sleep 2
 done
 
-curl --fail --silent --show-error \
-  -H "X-Thesis-Transfer-Token: $TOKEN" \
-  -H "X-Thesis-Transfer-Confirmation: BOOTSTRAP_PREVIEW" \
-  -F "archive=@$ARCHIVE;type=application/zip" \
-  http://127.0.0.1:3000/api/bootstrap/portable-transfer/preview
-echo
+# Der HTTP-Aufruf erfolgt im App-Container über 127.0.0.1. Der Endpunkt bleibt
+# am Host ausschließlich an 127.0.0.1 gebunden; Docker-Brückenadressen oder
+# öffentliche Reverse-Proxys erhalten damit keine Bootstrap-Berechtigung.
+CONTAINER_ID="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q app)"
+[[ -n "$CONTAINER_ID" ]] || { echo "App-Container nicht gefunden." >&2; exit 70; }
+CONTAINER_ARCHIVE="/tmp/bootstrap-preview-${RANDOM}-${RANDOM}.zip"
+CONTAINER_REQUEST="/tmp/bootstrap-request-${RANDOM}-${RANDOM}.mjs"
+cleanup() {
+  docker exec -u 0 "$CONTAINER_ID" rm -f "$CONTAINER_ARCHIVE" "$CONTAINER_REQUEST" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+docker cp "$ARCHIVE" "$CONTAINER_ID:$CONTAINER_ARCHIVE"
+docker cp "$REQUEST_SCRIPT" "$CONTAINER_ID:$CONTAINER_REQUEST"
+docker exec "$CONTAINER_ID" node "$CONTAINER_REQUEST" preview "$CONTAINER_ARCHIVE"

@@ -61,24 +61,30 @@ describe("unabhängiges Übergabepaket", () => {
   it("stellt den Bootstrap-Import nur lokal über einen eigenen Schlüssel bereit", () => {
     const compose = readProjectFile("deploy/docker-compose.yml");
     const bootstrap = readProjectFile("scripts/selfhosted/bootstrap-portable-import.sh");
+    const request = readProjectFile("scripts/selfhosted/bootstrap-portable-request.mjs");
     const environment = readProjectFile("deploy/environment.example");
 
     expect(compose).toContain('"127.0.0.1:3000:3000"');
     expect(compose).toContain("TRANSFER_IMPORT_TOKEN: ${TRANSFER_IMPORT_TOKEN}");
-    expect(bootstrap).toContain("BOOTSTRAP_IMPORT");
-    expect(bootstrap).toContain("http://127.0.0.1:3000/api/bootstrap/portable-transfer/import");
+    expect(bootstrap).toContain('docker exec "$CONTAINER_ID" node "$CONTAINER_REQUEST" import');
+    expect(bootstrap).toContain('docker cp "$ARCHIVE_PATH" "$CONTAINER_ID:$CONTAINER_ARCHIVE"');
+    expect(request).toContain("BOOTSTRAP_IMPORT");
+    expect(request).toContain("127.0.0.1:3000/api/bootstrap/portable-transfer/");
     expect(environment).toContain("TRANSFER_IMPORT_TOKEN=CHANGE_ME_64_RANDOM_ALPHANUMERIC_CHARACTERS");
   });
 
   it("liefert eine lokale, nicht verändernde Vorschau vor dem Bootstrap-Import", () => {
     const preview = readProjectFile("scripts/selfhosted/bootstrap-portable-preview.sh");
+    const request = readProjectFile("scripts/selfhosted/bootstrap-portable-request.mjs");
     const routes = readProjectFile("server/portableTransferImportRoutes.ts");
 
-    expect(preview).toContain("BOOTSTRAP_PREVIEW");
+    expect(preview).toContain('docker exec "$CONTAINER_ID" node "$CONTAINER_REQUEST" preview');
+    expect(preview).toContain('docker cp "$ARCHIVE" "$CONTAINER_ID:$CONTAINER_ARCHIVE"');
     expect(preview).toContain("read_transfer_import_token");
     expect(preview).toContain("tr -d '\\r'");
     expect(preview).not.toContain('source "$ENV_FILE"');
-    expect(preview).toContain("127.0.0.1:3000/api/bootstrap/portable-transfer/preview");
+    expect(request).toContain("BOOTSTRAP_PREVIEW");
+    expect(request).toContain("127.0.0.1:3000/api/bootstrap/portable-transfer/");
     expect(routes).toContain('"/api/bootstrap/portable-transfer/preview"');
     expect(routes).toContain("targetIsEmpty");
   });
