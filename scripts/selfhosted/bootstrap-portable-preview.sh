@@ -14,12 +14,25 @@ COMPOSE_FILE="$PROJECT_DIR/deploy/docker-compose.yml"
 [[ -f "$ARCHIVE" ]] || { echo "Transferarchiv nicht gefunden: $ARCHIVE" >&2; exit 66; }
 [[ -f "$ENV_FILE" ]] || { echo "Konfiguration fehlt: $ENV_FILE" >&2; exit 78; }
 
-# Die Konfiguration genauso laden wie der finale Bootstrap-Import. Dadurch
-# funktionieren korrekt gequotete Werte und Windows-Zeilenenden konsistent
-# mit Docker Compose und dem Importskript.
-source "$ENV_FILE"
-TOKEN="${TRANSFER_IMPORT_TOKEN:-}"
-TOKEN="${TOKEN//$'\r'/}"
+read_transfer_import_token() {
+  local value first last
+  value="$(grep -m1 -E '^TRANSFER_IMPORT_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '\r')"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  if [[ ${#value} -ge 2 ]]; then
+    first="${value:0:1}"
+    last="${value: -1}"
+    if [[ ( "$first" == "\"" && "$last" == "\"" ) || ( "$first" == "'" && "$last" == "'" ) ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+  fi
+  printf '%s' "$value"
+}
+
+# Keine Auswertung der vollständigen .env-Datei: einzelne Konfigurationswerte
+# können Shell-fremde Zeichen enthalten. Nur der benötigte Schlüssel wird als
+# Klartext gelesen; Anführungszeichen und Windows-Zeilenenden werden behandelt.
+TOKEN="$(read_transfer_import_token)"
 [[ -n "$TOKEN" && "$TOKEN" != "change_me" && "$TOKEN" != "CHANGE_ME" ]] || { echo "TRANSFER_IMPORT_TOKEN ist nicht gesetzt." >&2; exit 78; }
 
 cd "$PROJECT_DIR"

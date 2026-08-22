@@ -19,8 +19,25 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 65
 fi
 
-source "$ENV_FILE"
-if [[ -z "${TRANSFER_IMPORT_TOKEN:-}" || "$TRANSFER_IMPORT_TOKEN" == "CHANGE_ME" ]]; then
+read_transfer_import_token() {
+  local value first last
+  value="$(grep -m1 -E '^TRANSFER_IMPORT_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '\r')"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  if [[ ${#value} -ge 2 ]]; then
+    first="${value:0:1}"
+    last="${value: -1}"
+    if [[ ( "$first" == "\"" && "$last" == "\"" ) || ( "$first" == "'" && "$last" == "'" ) ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+  fi
+  printf '%s' "$value"
+}
+
+# Der Schlüssel wird gezielt gelesen; die gesamte Umgebungsdatei wird nie als
+# Shell-Code ausgeführt.
+TRANSFER_IMPORT_TOKEN="$(read_transfer_import_token)"
+if [[ -z "$TRANSFER_IMPORT_TOKEN" || "$TRANSFER_IMPORT_TOKEN" == "CHANGE_ME" || "$TRANSFER_IMPORT_TOKEN" == "change_me" ]]; then
   echo "TRANSFER_IMPORT_TOKEN muss vor dem Bootstrap-Import gesetzt werden." >&2
   exit 66
 fi

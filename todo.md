@@ -2179,6 +2179,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] VPS-Skript für die lokale Vorschauprüfung ohne Datenänderung ergänzen
 - [ ] Vorschauupdate sicher auf dem VPS bereitstellen und erst danach die finale Importfreigabe einholen
 - [ ] 403-Ablehnung der lokalen tokenbasierten Vorschau auf dem VPS ohne Datenmutation diagnostizieren und beheben
+- [ ] Sichere Extraktion des Transfer-Schlüssels ohne `source` der vollständigen VPS-Umgebungsdatei implementieren und prüfen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden

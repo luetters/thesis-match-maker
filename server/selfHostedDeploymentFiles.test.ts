@@ -75,8 +75,9 @@ describe("unabhängiges Übergabepaket", () => {
     const routes = readProjectFile("server/portableTransferImportRoutes.ts");
 
     expect(preview).toContain("BOOTSTRAP_PREVIEW");
-    expect(preview).toContain('source "$ENV_FILE"');
-    expect(preview).toContain("TOKEN=\"${TOKEN//$'\\r'/}\"");
+    expect(preview).toContain("read_transfer_import_token");
+    expect(preview).toContain("tr -d '\\r'");
+    expect(preview).not.toContain('source "$ENV_FILE"');
     expect(preview).toContain("127.0.0.1:3000/api/bootstrap/portable-transfer/preview");
     expect(routes).toContain('"/api/bootstrap/portable-transfer/preview"');
     expect(routes).toContain("targetIsEmpty");
