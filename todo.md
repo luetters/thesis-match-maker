@@ -2193,6 +2193,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Sicheren, zeitlich begrenzten SSH-Zugang ohne Weitergabe von Passwörtern oder privaten Schlüsseln für die direkte VPS-Bereitstellung einrichten
 - [ ] Alle als Zeichenkette erzeugten CURRENT_TIMESTAMP-Standardwerte im Drizzle-Modell in MySQL-kompatible SQL-Zeitstempelvorgaben überführen
 - [ ] Kombinierten SAML-Issuer-Subject-Index unterhalb der MySQL-Schlüsselgrenze modellieren und die direkte Schemaerzeugung erneut prüfen
+- [ ] Zu lange automatisch erzeugte Fremdschlüsselnamen durch explizite kurze MySQL-Namen ersetzen und Schemafehler fail-closed behandeln
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden

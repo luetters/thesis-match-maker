@@ -57,6 +57,7 @@ describe("unabhängiges Übergabepaket", () => {
     expect(emptyTargetBootstrap).toContain("build app");
     expect(emptyTargetBootstrap).toContain("drizzle-kit push --config=/app/drizzle.config.ts --force");
     expect(emptyTargetBootstrap).toContain("Schema-Initialisierung unvollständig: Tabelle users wurde nicht erzeugt");
+    expect(emptyTargetBootstrap).toContain("Schema-Initialisierung durch Drizzle fehlgeschlagen.");
     expect(emptyTargetBootstrap).toContain("Es wurden keine Transferdaten importiert");
   });
 
@@ -72,6 +73,13 @@ describe("unabhängiges Übergabepaket", () => {
 
     expect(schema).toContain('samlSubject: varchar("saml_subject", { length: 255 })');
     expect(schema).toContain('samlIssuer: varchar("saml_issuer", { length: 255 })');
+  });
+
+  it("verwendet kurze explizite MySQL-Namen für Fremdschlüssel langer Tabellennamen", () => {
+    const schema = readProjectFile("drizzle/schema.ts");
+
+    expect(schema).toContain('name: "cdc_doc_fk"');
+    expect(schema).toContain('name: "cdc_author_fk"');
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {

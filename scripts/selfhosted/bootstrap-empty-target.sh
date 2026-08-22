@@ -31,8 +31,17 @@ grep -q 'healthy' <<<"${DB_STATE:-}" || { echo "Datenbankcontainer wurde nicht g
 # Der Datenbankcontainer ist neu. push erzeugt daher die aktuelle Struktur ohne
 # historische Migrationsschritte und ohne vorhandene Daten anzutasten.
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build app
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps app \
-  ./node_modules/.bin/drizzle-kit push --config=/app/drizzle.config.ts --force
+PUSH_OUTPUT="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps app \
+  ./node_modules/.bin/drizzle-kit push --config=/app/drizzle.config.ts --force 2>&1)" || {
+  printf '%s\n' "$PUSH_OUTPUT" >&2
+  echo "Schema-Initialisierung durch Drizzle fehlgeschlagen." >&2
+  exit 71
+}
+printf '%s\n' "$PUSH_OUTPUT"
+if grep -q '^Error:' <<<"$PUSH_OUTPUT"; then
+  echo "Schema-Initialisierung durch Drizzle fehlgeschlagen." >&2
+  exit 71
+fi
 
 USERS_TABLE="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T db sh -lc \
   'mysql -N -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''users'\'';"')"

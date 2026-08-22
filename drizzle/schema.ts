@@ -755,12 +755,15 @@ export type SelectConditionalDocument = typeof conditionalDocuments.$inferSelect
 // ─── Kommentare zu Conditional-Dokumenten ────────────────────────────────────
 export const conditionalDocumentComments = mysqlTable("conditional_document_comments", {
   id: int().autoincrement().notNull().primaryKey(),
-  documentId: int("document_id").notNull().references(() => conditionalDocuments.id, { onDelete: "cascade" }),
-  authorId: int("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  documentId: int("document_id").notNull(),
+  authorId: int("author_id").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
+}, (table) => [
+  foreignKey({ columns: [table.documentId], foreignColumns: [conditionalDocuments.id], name: "cdc_doc_fk" }).onDelete("cascade"),
+  foreignKey({ columns: [table.authorId], foreignColumns: [users.id], name: "cdc_author_fk" }).onDelete("cascade"),
+]);
 export type InsertConditionalDocumentComment = typeof conditionalDocumentComments.$inferInsert;
 export type SelectConditionalDocumentComment = typeof conditionalDocumentComments.$inferSelect;
 
