@@ -49,7 +49,8 @@ describe("unabhängiges Übergabepaket", () => {
     expect(schemaBootstrap).toContain("Drizzle-Migrationsdatei fehlt");
     expect(migration0075).toContain("SELECT 1;");
     expect(migration0027).not.toMatch(/^ALTER TABLE .* DROP PRIMARY KEY;/m);
-    expect(migration0027).toContain("DROP INDEX IF EXISTS");
+    expect(migration0027).toContain("DROP INDEX `users_openId_unique`");
+    expect(migration0027).not.toContain("DROP INDEX IF EXISTS");
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {

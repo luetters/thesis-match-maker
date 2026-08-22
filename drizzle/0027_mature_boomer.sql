@@ -1,15 +1,16 @@
 -- AUTO_INCREMENT-Spalten benötigen in MySQL dauerhaft einen Schlüssel.
 -- Die historischen DROP PRIMARY KEY-Anweisungen waren für eine frische
 -- MySQL-Zielumgebung ungültig und werden bewusst nicht ausgeführt.
--- IF EXISTS macht den erneuten Lauf nach einem unterbrochenen Schema-Bootstrap sicher.
-ALTER TABLE `email_templates` DROP INDEX IF EXISTS `email_templates_key_unique`;--> statement-breakpoint
-ALTER TABLE `examiner_action_tokens` DROP INDEX IF EXISTS `examiner_action_tokens_token_unique`;--> statement-breakpoint
-ALTER TABLE `magic_links` DROP INDEX IF EXISTS `magic_links_token_unique`;--> statement-breakpoint
-ALTER TABLE `password_reset_tokens` DROP INDEX IF EXISTS `password_reset_tokens_token_unique`;--> statement-breakpoint
-ALTER TABLE `programmes` DROP INDEX IF EXISTS `programmes_abbreviation_unique`;--> statement-breakpoint
-ALTER TABLE `reminder_templates` DROP INDEX IF EXISTS `reminder_templates_type_unique`;--> statement-breakpoint
-ALTER TABLE `system_settings` DROP INDEX IF EXISTS `system_settings_key_unique`;--> statement-breakpoint
-ALTER TABLE `users` DROP INDEX IF EXISTS `users_openId_unique`;--> statement-breakpoint
+-- Diese Migration setzt eine leere, ununterbrochene Migrationskette voraus;
+-- ein abgebrochener Schema-Bootstrap wird daher vor dem erneuten Lauf zurückgesetzt.
+ALTER TABLE `email_templates` DROP INDEX `email_templates_key_unique`;--> statement-breakpoint
+ALTER TABLE `examiner_action_tokens` DROP INDEX `examiner_action_tokens_token_unique`;--> statement-breakpoint
+ALTER TABLE `magic_links` DROP INDEX `magic_links_token_unique`;--> statement-breakpoint
+ALTER TABLE `password_reset_tokens` DROP INDEX `password_reset_tokens_token_unique`;--> statement-breakpoint
+ALTER TABLE `programmes` DROP INDEX `programmes_abbreviation_unique`;--> statement-breakpoint
+ALTER TABLE `reminder_templates` DROP INDEX `reminder_templates_type_unique`;--> statement-breakpoint
+ALTER TABLE `system_settings` DROP INDEX `system_settings_key_unique`;--> statement-breakpoint
+ALTER TABLE `users` DROP INDEX `users_openId_unique`;--> statement-breakpoint
 ALTER TABLE `audit_log` MODIFY COLUMN `thesisRequestId` int NOT NULL;--> statement-breakpoint
 ALTER TABLE `audit_log` MODIFY COLUMN `createdAt` timestamp NOT NULL DEFAULT 'CURRENT_TIMESTAMP';--> statement-breakpoint
 ALTER TABLE `colloquiums` MODIFY COLUMN `scheduled_at` datetime NOT NULL;--> statement-breakpoint
