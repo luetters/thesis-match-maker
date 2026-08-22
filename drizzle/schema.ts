@@ -2,7 +2,7 @@ import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, tinyint, varchar, text, j
 import { sql } from "drizzle-orm"
 
 export const auditLog = mysqlTable("audit_log", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	thesisRequestId: int(),
 	actorId: int(),
 	actorRole: varchar({ length: 32 }),
@@ -15,7 +15,7 @@ export const auditLog = mysqlTable("audit_log", {
 });
 
 export const colloquiums = mysqlTable("colloquiums", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	thesisRequestId: int("thesis_request_id").notNull().references(() => thesisRequests.id, { onDelete: "cascade" } ),
 	title: varchar({ length: 512 }).notNull(),
 	scheduledAt: datetime("scheduled_at", { mode: 'string'}).notNull(),
@@ -121,7 +121,7 @@ export const colloquiumSchedulingResponses = mysqlTable("colloquium_scheduling_r
 ]);
 
 export const emailTemplates = mysqlTable("email_templates", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	key: varchar({ length: 64 }).notNull(),
 	label: varchar({ length: 128 }).notNull(),
 	// Sprachunabhängiger Fallback (Legacy)
@@ -145,7 +145,7 @@ export const emailTemplates = mysqlTable("email_templates", {
 ]);
 
 export const examinerActionTokens = mysqlTable("examiner_action_tokens", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	thesisRequestId: int("thesis_request_id").notNull(),
 	examinerId: int("examiner_id").notNull(),
 	token: varchar({ length: 128 }).notNull(),
@@ -159,7 +159,7 @@ export const examinerActionTokens = mysqlTable("examiner_action_tokens", {
 ]);
 
 export const examinerProfiles = mysqlTable("examiner_profiles", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	userId: int().notNull(),
 	title: varchar({ length: 64 }),
 	department: varchar({ length: 255 }),
@@ -182,7 +182,7 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
 });
 
 export const examinerCommissionPreferences = mysqlTable("examiner_commission_preferences", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	firstExaminerId: int("first_examiner_id").notNull(),
 	secondExaminerId: int("second_examiner_id").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
@@ -192,7 +192,7 @@ export const examinerCommissionPreferences = mysqlTable("examiner_commission_pre
 ]);
 
 export const examinerProgrammes = mysqlTable("examiner_programmes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	examinerId: int("examiner_id").notNull(),
 	programmeId: int("programme_id").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
@@ -202,7 +202,7 @@ export const examinerProgrammes = mysqlTable("examiner_programmes", {
 ]);
 
 export const magicLinks = mysqlTable("magic_links", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	email: varchar({ length: 320 }).notNull(),
 	token: varchar({ length: 128 }).notNull(),
 	role: mysqlEnum(['student','examiner','second_examiner','admin','user']).default('student').notNull(),
@@ -215,7 +215,7 @@ export const magicLinks = mysqlTable("magic_links", {
 ]);
 
 export const notifications = mysqlTable("notifications", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	userId: int().notNull(),
 	title: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
@@ -226,7 +226,7 @@ export const notifications = mysqlTable("notifications", {
 });
 
 export const passwordResetTokens = mysqlTable("password_reset_tokens", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	token: varchar({ length: 128 }).notNull(),
 	userId: int("user_id").notNull(),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
@@ -238,7 +238,7 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 ]);
 
 export const pavExaminerProposals = mysqlTable("pav_examiner_proposals", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	thesisRequestId: int("thesis_request_id").notNull(),
 	proposedByPavId: int("proposed_by_pav_id").notNull(),
 	examinerId: int("examiner_id").notNull(),
@@ -253,7 +253,7 @@ export const pavExaminerProposals = mysqlTable("pav_examiner_proposals", {
 });
 
 export const pavProgrammes = mysqlTable("pav_programmes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	pavUserId: int("pav_user_id").notNull(),
 	programmeId: int("programme_id").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
@@ -262,7 +262,7 @@ export const pavProgrammes = mysqlTable("pav_programmes", {
 // Verwaltungsmitarbeiter:innen haben genau ein Fachbereichsrecht (FB1 bis FB5).
 // Die berechtigten Studiengänge werden daraus dynamisch über programmes.fachbereich abgeleitet.
 export const adminDepartments = mysqlTable("admin_departments", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	adminUserId: int("admin_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
 	department: mysqlEnum("department", ["FB1", "FB2", "FB3", "FB4", "FB5"]).notNull(),
 	assignedBy: int("assigned_by"),
@@ -274,7 +274,7 @@ export const adminDepartments = mysqlTable("admin_departments", {
 ]);
 
 export const programmes = mysqlTable("programmes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	name: varchar({ length: 255 }).notNull(),
 	abbreviation: varchar({ length: 32 }).notNull(),
 	level: mysqlEnum(['bachelor','master']).notNull(),
@@ -291,7 +291,7 @@ export const programmes = mysqlTable("programmes", {
 ]);
 
 export const systemSettings = mysqlTable("system_settings", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	key: varchar({ length: 128 }).notNull(),
 	value: text().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow(),
@@ -339,7 +339,7 @@ export const guideDownloadTotals = mysqlTable("guide_download_totals", {
 ]);
 
 export const thesisRequests = mysqlTable("thesis_requests", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	studentId: int().notNull(),
 	examinerId: int(),
 	secondExaminerId: int(),
@@ -457,7 +457,7 @@ export const publishedThesisAbstracts = mysqlTable("published_thesis_abstracts",
 ]);
 
 export const users = mysqlTable("users", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().notNull().primaryKey(),
 	openId: varchar({ length: 64 }).notNull(),
 	name: text(),
 	email: varchar({ length: 320 }),
@@ -532,7 +532,7 @@ export const users = mysqlTable("users", {
 // ─── Fehlende Tabellen (wurden in db.ts referenziert, aber nicht definiert) ───
 
 export const reminderSchedules = mysqlTable("reminder_schedules", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   thesisRequestId: int("thesis_request_id").notNull(),
   reminderType: varchar("reminder_type", { length: 64 }).notNull(),
   scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
@@ -542,7 +542,7 @@ export const reminderSchedules = mysqlTable("reminder_schedules", {
 });
 
 export const reminderTemplates = mysqlTable("reminder_templates", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   type: varchar({ length: 64 }).notNull(),
   subject: varchar({ length: 512 }).notNull(),
   htmlBody: text("html_body"),
@@ -553,7 +553,7 @@ export const reminderTemplates = mysqlTable("reminder_templates", {
 });
 
 export const savedFilters = mysqlTable("saved_filters", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   userId: int("user_id").notNull(),
   name: varchar({ length: 255 }).notNull(),
   filterConfig: text("filter_config").notNull(),
@@ -565,7 +565,7 @@ export const savedFilters = mysqlTable("saved_filters", {
  * semester: z.B. "WS2025" oder "SoSe2026"
  */
 export const examinerSemesterCapacities = mysqlTable("examiner_semester_capacities", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   examinerId: int("examiner_id").notNull(),
   semester: varchar({ length: 16 }).notNull(),
   maxFirst: int("max_first").default(0).notNull(),
@@ -583,7 +583,7 @@ export const examinerSemesterCapacities = mysqlTable("examiner_semester_capaciti
 
 // ─── Prüfer:innen E-Mail-Templates ──────────────────────────────────────────
 export const examinerEmailTemplates = mysqlTable("examiner_email_templates", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   examinerId: int("examiner_id").notNull(),
   templateType: mysqlEnum("template_type", [
     "requirements",
@@ -602,7 +602,7 @@ export const examinerEmailTemplates = mysqlTable("examiner_email_templates", {
 // ─── Multi-Rollen-Tabelle ────────────────────────────────────────────────────
 // Jeder Nutzer kann mehrere Rollen gleichzeitig haben (z.B. Prüfer:in + Dekan + PAV)
 export const userRoles = mysqlTable("user_roles", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   role: mysqlEnum("role", ["user", "admin", "student", "examiner", "second_examiner", "superadmin", "pav", "dean", "vice_dean", "programme_director"]).notNull(),
   assignedBy: int("assigned_by"),
@@ -615,7 +615,7 @@ export const userRoles = mysqlTable("user_roles", {
 // ─── Prüfer:innen-Fachbereich-Zuordnung (Multi-Fachbereich) ──────────────────────────────
 // Ein Prüfer hat einen Primärfachbereich (isPrimary=1) und kann weitere erlauben (isPrimary=0)
 export const examinerDepartments = mysqlTable("examiner_departments", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   department: varchar({ length: 10 }).notNull(), // z.B. "FB1", "FB2", ...
   isPrimary: int("is_primary").default(0).notNull(), // 1 = Primärfachbereich
@@ -627,7 +627,7 @@ export const examinerDepartments = mysqlTable("examiner_departments", {
 
 // ─── Abgabefrist-Änderungsprotokoll ─────────────────────────────────────────────────────────
 export const deadlineChanges = mysqlTable("deadline_changes", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   thesisRequestId: int("thesis_request_id").notNull().references(() => thesisRequests.id, { onDelete: "cascade" }),
   previousDeadline: datetime("previous_deadline", { mode: "string" }),
   newDeadline: datetime("new_deadline", { mode: "string" }).notNull(),
@@ -640,7 +640,7 @@ export const deadlineChanges = mysqlTable("deadline_changes", {
 // Ein Eintrag kann als Fachbereichsstandard (programmeId = null) oder als
 // studiengangsspezifische Regel für ein Zielsemester hinterlegt werden.
 export const programmeSemesterDeadlines = mysqlTable("programme_semester_deadlines", {
-  id: int().autoincrement().notNull(),
+  id: int().autoincrement().notNull().primaryKey(),
   department: varchar("department", { length: 8 }).notNull(),
   programmeId: int("programme_id"),
   semester: varchar("semester", { length: 32 }).notNull(),

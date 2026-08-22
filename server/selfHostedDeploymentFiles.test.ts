@@ -56,7 +56,15 @@ describe("unabhängiges Übergabepaket", () => {
     expect(emptyTargetBootstrap).toContain("down -v --remove-orphans");
     expect(emptyTargetBootstrap).toContain("build app");
     expect(emptyTargetBootstrap).toContain("drizzle-kit push --config=/app/drizzle.config.ts --force");
+    expect(emptyTargetBootstrap).toContain("Schema-Initialisierung unvollständig: Tabelle users wurde nicht erzeugt");
     expect(emptyTargetBootstrap).toContain("Es wurden keine Transferdaten importiert");
+  });
+
+  it("definiert für jede Auto-Increment-ID im aktuellen MySQL-Modell einen Primärschlüssel", () => {
+    const schema = readProjectFile("drizzle/schema.ts");
+    const unkeyedAutoIncrementIds = schema.match(/id:\s*int\(\)\.autoincrement\(\)\.notNull\(\),(?:\r?\n)/g) ?? [];
+
+    expect(unkeyedAutoIncrementIds).toHaveLength(0);
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {

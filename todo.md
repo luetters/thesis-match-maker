@@ -2186,6 +2186,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Historische MySQL-Migration für audit_log mit Auto-Increment-Schlüssel reparieren und die leere Zielstruktur konsistent fortführen
 - [ ] Historische Indexmigration ohne nicht unterstützte MySQL-IF-EXISTS-Syntax idempotent ausführen
 - [ ] Einmalig freigegebenen Reset der leeren VPS-Teilstruktur durchführen und die aktuelle Datenstruktur direkt aus dem geprüften Datenmodell erzeugen
+- [ ] VPS-Codeübernahme vor dem Reset in kurzen, einzeln prüfbaren Schritten statt als lange zusammengesetzte Befehlszeile ausführen
+- [ ] Nach direkter Schema-Initialisierung die tatsächliche Tabellenstruktur und App-Datenbankverbindung vor der Transfer-Vorschau verifizieren
+- [ ] Direkte Schema-Initialisierung so korrigieren, dass die aktuelle Tabellenstruktur nachweisbar erzeugt und vor der Vorschau validiert wird
+- [ ] Allen Auto-Increment-Tabellen im aktuellen Drizzle-Datenmodell gültige Primärschlüssel zuordnen und die MySQL-Neuerzeugung absichern
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden

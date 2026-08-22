@@ -34,5 +34,12 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build app
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps app \
   ./node_modules/.bin/drizzle-kit push --config=/app/drizzle.config.ts --force
 
+USERS_TABLE="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T db sh -lc \
+  'mysql -N -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW TABLES LIKE '\''users'\'';"')"
+[[ "$USERS_TABLE" == "users" ]] || {
+  echo "Schema-Initialisierung unvollständig: Tabelle users wurde nicht erzeugt." >&2
+  exit 70
+}
+
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
 echo "Aktuelle leere Datenstruktur ist bereit. Es wurden keine Transferdaten importiert."
