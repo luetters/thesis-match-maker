@@ -2177,23 +2177,49 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fehlende tokenbasierte Bootstrap-Vorschau vor dem endgültigen Import ergänzen
 - [x] Vorschau auf Manifest, Prüfsummen, Datenmengen und leere Zielumgebung beschränken und automatisiert testen
 - [x] VPS-Skript für die lokale Vorschauprüfung ohne Datenänderung ergänzen
-- [ ] Vorschauupdate sicher auf dem VPS bereitstellen und erst danach die finale Importfreigabe einholen
-- [ ] 403-Ablehnung der lokalen tokenbasierten Vorschau auf dem VPS ohne Datenmutation diagnostizieren und beheben
-- [ ] Sichere Extraktion des Transfer-Schlüssels ohne `source` der vollständigen VPS-Umgebungsdatei implementieren und prüfen
-- [ ] Bootstrap-Zugriff über die ausschließlich lokale Docker-Portweiterleitung sicher akzeptieren und gegen öffentliche Zugriffe abschotten
-- [ ] Leere Datenbankstruktur vor der Bootstrap-Vorschau vollständig und ohne Portaldaten bereitstellen
-- [ ] Fehlende Drizzle-Migration 0075 reparieren und die leere Zielstruktur danach vollständig sowie konsistent anwenden
-- [ ] Historische MySQL-Migration für audit_log mit Auto-Increment-Schlüssel reparieren und die leere Zielstruktur konsistent fortführen
-- [ ] Historische Indexmigration ohne nicht unterstützte MySQL-IF-EXISTS-Syntax idempotent ausführen
-- [ ] Einmalig freigegebenen Reset der leeren VPS-Teilstruktur durchführen und die aktuelle Datenstruktur direkt aus dem geprüften Datenmodell erzeugen
-- [ ] VPS-Codeübernahme vor dem Reset in kurzen, einzeln prüfbaren Schritten statt als lange zusammengesetzte Befehlszeile ausführen
-- [ ] Nach direkter Schema-Initialisierung die tatsächliche Tabellenstruktur und App-Datenbankverbindung vor der Transfer-Vorschau verifizieren
-- [ ] Direkte Schema-Initialisierung so korrigieren, dass die aktuelle Tabellenstruktur nachweisbar erzeugt und vor der Vorschau validiert wird
-- [ ] Allen Auto-Increment-Tabellen im aktuellen Drizzle-Datenmodell gültige Primärschlüssel zuordnen und die MySQL-Neuerzeugung absichern
-- [ ] Sicheren, zeitlich begrenzten SSH-Zugang ohne Weitergabe von Passwörtern oder privaten Schlüsseln für die direkte VPS-Bereitstellung einrichten
-- [ ] Alle als Zeichenkette erzeugten CURRENT_TIMESTAMP-Standardwerte im Drizzle-Modell in MySQL-kompatible SQL-Zeitstempelvorgaben überführen
-- [ ] Kombinierten SAML-Issuer-Subject-Index unterhalb der MySQL-Schlüsselgrenze modellieren und die direkte Schemaerzeugung erneut prüfen
-- [ ] Zu lange automatisch erzeugte Fremdschlüsselnamen durch explizite kurze MySQL-Namen ersetzen und Schemafehler fail-closed behandeln
+- [x] Vorschauupdate sicher auf dem VPS bereitstellen und erst danach die finale Importfreigabe einholen
+- [x] 403-Ablehnung der lokalen tokenbasierten Vorschau auf dem VPS ohne Datenmutation diagnostizieren und beheben
+- [x] Sichere Extraktion des Transfer-Schlüssels ohne `source` der vollständigen VPS-Umgebungsdatei implementieren und prüfen
+- [x] Bootstrap-Zugriff über die ausschließlich lokale Docker-Portweiterleitung sicher akzeptieren und gegen öffentliche Zugriffe abschotten
+- [x] Leere Datenbankstruktur vor der Bootstrap-Vorschau vollständig und ohne Portaldaten bereitstellen
+- [x] Fehlende Drizzle-Migration 0075 reparieren und die leere Zielstruktur danach vollständig sowie konsistent anwenden
+- [x] Historische MySQL-Migration für audit_log mit Auto-Increment-Schlüssel reparieren und die leere Zielstruktur konsistent fortführen
+- [x] Historische Indexmigration ohne nicht unterstützte MySQL-IF-EXISTS-Syntax idempotent ausführen
+- [x] Einmalig freigegebenen Reset der leeren VPS-Teilstruktur durchführen und die aktuelle Datenstruktur direkt aus dem geprüften Datenmodell erzeugen
+- [x] VPS-Codeübernahme vor dem Reset in kurzen, einzeln prüfbaren Schritten statt als lange zusammengesetzte Befehlszeile ausführen
+- [x] Nach direkter Schema-Initialisierung die tatsächliche Tabellenstruktur und App-Datenbankverbindung vor der Transfer-Vorschau verifizieren
+- [x] Direkte Schema-Initialisierung so korrigieren, dass die aktuelle Tabellenstruktur nachweisbar erzeugt und vor der Vorschau validiert wird
+- [x] Allen Auto-Increment-Tabellen im aktuellen Drizzle-Datenmodell gültige Primärschlüssel zuordnen und die MySQL-Neuerzeugung absichern
+- [x] Sicheren, zeitlich begrenzten SSH-Zugang ohne Weitergabe von Passwörtern oder privaten Schlüsseln für die direkte VPS-Bereitstellung einrichten
+- [x] Alle als Zeichenkette erzeugten CURRENT_TIMESTAMP-Standardwerte im Drizzle-Modell in MySQL-kompatible SQL-Zeitstempelvorgaben überführen
+- [x] Kombinierten SAML-Issuer-Subject-Index unterhalb der MySQL-Schlüsselgrenze modellieren und die direkte Schemaerzeugung erneut prüfen
+- [x] Zu lange automatisch erzeugte Fremdschlüsselnamen durch explizite kurze MySQL-Namen ersetzen und Schemafehler fail-closed behandeln
+- [x] Freigegebenen portablen Transferimport auf der leeren VPS-Zielumgebung durchführen, Datenmengen prüfen und den temporären SSH-Zugang widerrufen
+
+## SMTP und Passwort-Reset nach VPS-Import
+- [x] SMTP-Voraussetzungen und sicheren temporären VPS-Zugang für die Konfiguration prüfen
+- [x] SMTP-Zugangsdaten ausschließlich geschützt auf dem VPS hinterlegen und den App-Container neu starten
+- [x] SMTP-Zugangsdaten durch die nutzende Person direkt im VPS-Terminal hinterlegen, ohne sie im Chat oder Projektkontext offenzulegen
+- [x] IONOS-SMTP-Anmeldefehler 535 mit bestätigter Mailboxadresse und aktuellem Mailbox-Passwort sicher korrigieren
+- [x] SMTP-Verbindung über eine einzelne Test-E-Mail prüfen
+- [ ] Passwort-Reset-E-Mails bis zum bestätigten Go-live zurückstellen und erst nach neuer ausdrücklicher Freigabe auslösen
+- [ ] Ausschließlich für die sechs benannten Pilotadressen einen gezielten Passwort-Reset prüfen, senden und protokollieren
+- [x] Direkte, verdeckte Testpasswörter für die freigegebenen eindeutig anmeldbaren Gruppen Prüfer:in, Studierende:r, Verwaltung und Superadmin setzen und ohne E-Mail-Versand prüfen
+- [ ] Mehrfachkonto-Verhalten für holger@luetters.net vor getrennten Rollen-Login-Tests behandeln
+- [x] Direkten Testpasswortweg ohne im temporären Container auflösbare Abhängigkeiten reparieren und ohne E-Mail-Versand prüfen
+- [x] Überlaufendes Superadmin-Menü responsiv korrigieren und auf dem VPS bereitstellen
+
+## Go-live-Abnahme auf dem IONOS-VPS
+- [ ] Technische Erreichbarkeit, HTTPS, Containerzustand, Datenbank, Backup und Sicherheitsgrenzen vor dem Go-live prüfen
+- [ ] Rollenbasierte Kernabläufe für Studierende, Prüfer:innen, Verwaltung und Superadmins fachlich abnehmen
+- [ ] E-Mail-Zustellung, Passwort-Reset-Aufschub, Fehlerseiten und mehrsprachige Oberflächen abnehmen
+- [ ] Go-live-Freigabe, DNS-Umstellung und verbleibende Restpunkte dokumentieren
+
+## Domainaktivierung thesismatch.online
+- [ ] Caddy-Konfiguration, Ports 80/443 und Domainvoraussetzungen auf dem IONOS-VPS prüfen
+- [ ] DNS-A-Records für thesismatch.online und www.thesismatch.online auf die VPS-IP vorbereiten und vor Änderung explizit freigeben lassen
+- [ ] Caddy mit thesismatch.online aktivieren und automatisches TLS-Zertifikat prüfen
+- [ ] Externe Erreichbarkeit, HTTPS-Weiterleitung und Portalzugang über die neue Domain abnehmen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden

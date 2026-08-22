@@ -1496,7 +1496,7 @@ export default function SuperadminDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+      <div className="flex max-w-full flex-wrap gap-1 rounded-xl bg-gray-100 p-1 mb-6">
         {TABS.map((tab) => (
           <button
             key={tab.id}
