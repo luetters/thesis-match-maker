@@ -2181,6 +2181,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] 403-Ablehnung der lokalen tokenbasierten Vorschau auf dem VPS ohne Datenmutation diagnostizieren und beheben
 - [ ] Sichere Extraktion des Transfer-Schlüssels ohne `source` der vollständigen VPS-Umgebungsdatei implementieren und prüfen
 - [ ] Bootstrap-Zugriff über die ausschließlich lokale Docker-Portweiterleitung sicher akzeptieren und gegen öffentliche Zugriffe abschotten
+- [ ] Leere Datenbankstruktur vor der Bootstrap-Vorschau vollständig und ohne Portaldaten bereitstellen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden

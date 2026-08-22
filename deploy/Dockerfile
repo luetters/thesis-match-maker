@@ -29,6 +29,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle.config.ts ./
 RUN mkdir -p /app/storage-data && chown thesis:nodejs /app/storage-data
 USER thesis
 EXPOSE 3000

@@ -35,7 +35,15 @@ describe("unabhängiges Übergabepaket", () => {
     expect(dockerfile).toContain("npm install --global pnpm@10.4.1");
     expect(dockerfile).toContain("COPY patches ./patches");
     expect(dockerfile).toContain("pnpm install --frozen-lockfile --prod=false");
+    expect(dockerfile).toContain("/app/drizzle.config.ts");
     expect(dockerfile).not.toContain("corepack enable");
+  });
+
+  it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
+    const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
+
+    expect(schemaBootstrap).toContain("drizzle-kit migrate --config=/app/drizzle.config.ts");
+    expect(schemaBootstrap).toContain("Es wurden keine Portal- oder Transferdaten importiert");
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {
