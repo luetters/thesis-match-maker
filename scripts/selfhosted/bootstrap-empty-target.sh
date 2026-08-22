@@ -30,6 +30,7 @@ grep -q 'healthy' <<<"${DB_STATE:-}" || { echo "Datenbankcontainer wurde nicht g
 
 # Der Datenbankcontainer ist neu. push erzeugt daher die aktuelle Struktur ohne
 # historische Migrationsschritte und ohne vorhandene Daten anzutasten.
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build app
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps app \
   ./node_modules/.bin/drizzle-kit push --config=/app/drizzle.config.ts --force
 

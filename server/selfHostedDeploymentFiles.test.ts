@@ -54,6 +54,7 @@ describe("unabhängiges Übergabepaket", () => {
     expect(migration0027).not.toContain("DROP INDEX IF EXISTS");
     expect(emptyTargetBootstrap).toContain("--confirm-empty-target-reset");
     expect(emptyTargetBootstrap).toContain("down -v --remove-orphans");
+    expect(emptyTargetBootstrap).toContain("build app");
     expect(emptyTargetBootstrap).toContain("drizzle-kit push --config=/app/drizzle.config.ts --force");
     expect(emptyTargetBootstrap).toContain("Es wurden keine Transferdaten importiert");
   });
