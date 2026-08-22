@@ -41,6 +41,7 @@ describe("unabhängiges Übergabepaket", () => {
 
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
+    const emptyTargetBootstrap = readProjectFile("scripts/selfhosted/bootstrap-empty-target.sh");
     const migration0075 = readProjectFile("drizzle/0075_tired_night_nurse.sql");
     const migration0027 = readProjectFile("drizzle/0027_mature_boomer.sql");
 
@@ -51,6 +52,10 @@ describe("unabhängiges Übergabepaket", () => {
     expect(migration0027).not.toMatch(/^ALTER TABLE .* DROP PRIMARY KEY;/m);
     expect(migration0027).toContain("DROP INDEX `users_openId_unique`");
     expect(migration0027).not.toContain("DROP INDEX IF EXISTS");
+    expect(emptyTargetBootstrap).toContain("--confirm-empty-target-reset");
+    expect(emptyTargetBootstrap).toContain("down -v --remove-orphans");
+    expect(emptyTargetBootstrap).toContain("drizzle-kit push --config=/app/drizzle.config.ts --force");
+    expect(emptyTargetBootstrap).toContain("Es wurden keine Transferdaten importiert");
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {

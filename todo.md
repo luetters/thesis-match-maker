@@ -2185,6 +2185,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Fehlende Drizzle-Migration 0075 reparieren und die leere Zielstruktur danach vollständig sowie konsistent anwenden
 - [ ] Historische MySQL-Migration für audit_log mit Auto-Increment-Schlüssel reparieren und die leere Zielstruktur konsistent fortführen
 - [ ] Historische Indexmigration ohne nicht unterstützte MySQL-IF-EXISTS-Syntax idempotent ausführen
+- [ ] Einmalig freigegebenen Reset der leeren VPS-Teilstruktur durchführen und die aktuelle Datenstruktur direkt aus dem geprüften Datenmodell erzeugen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
