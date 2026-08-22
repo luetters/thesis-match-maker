@@ -11,7 +11,7 @@ export const auditLog = mysqlTable("audit_log", {
 	toStatus: varchar({ length: 32 }),
 	reason: text(),
 	metadata: json(),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
 export const colloquiums = mysqlTable("colloquiums", {
@@ -28,7 +28,7 @@ export const colloquiums = mysqlTable("colloquiums", {
 	isRepeatColloquium: tinyint("is_repeat_colloquium").default(0).notNull(),
 	repeatReason: varchar("repeat_reason", { length: 512 }),
 	createdById: int("created_by_id"),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
@@ -152,7 +152,7 @@ export const examinerActionTokens = mysqlTable("examiner_action_tokens", {
 	action: mysqlEnum(['accept','reject']),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
 	usedAt: timestamp("used_at", { mode: 'string' }),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	index("token").on(table.token),
@@ -169,7 +169,7 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
 	bio: text(),
 	maxSupervisions: int().default(5),
 	phone: varchar({ length: 64 }),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	photoUrl: text(),
 	photoKey: varchar({ length: 512 }),
@@ -185,7 +185,7 @@ export const examinerCommissionPreferences = mysqlTable("examiner_commission_pre
 	id: int().autoincrement().notNull().primaryKey(),
 	firstExaminerId: int("first_examiner_id").notNull(),
 	secondExaminerId: int("second_examiner_id").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	index("uq_ecp").on(table.firstExaminerId, table.secondExaminerId),
@@ -195,7 +195,7 @@ export const examinerProgrammes = mysqlTable("examiner_programmes", {
 	id: int().autoincrement().notNull().primaryKey(),
 	examinerId: int("examiner_id").notNull(),
 	programmeId: int("programme_id").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	index("uq_ep").on(table.examinerId, table.programmeId),
@@ -208,7 +208,7 @@ export const magicLinks = mysqlTable("magic_links", {
 	role: mysqlEnum(['student','examiner','second_examiner','admin','user']).default('student').notNull(),
 	used: int().default(0).notNull(),
 	expiresAt: timestamp({ mode: 'string' }).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	index("token").on(table.token),
@@ -222,7 +222,7 @@ export const notifications = mysqlTable("notifications", {
 	type: mysqlEnum(['status_change','examiner_assigned','expose_uploaded','system']).default('system').notNull(),
 	read: int().default(0).notNull(),
 	thesisRequestId: int(),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
 export const passwordResetTokens = mysqlTable("password_reset_tokens", {
@@ -231,7 +231,7 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 	userId: int("user_id").notNull(),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
 	used: int().default(0).notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	index("token").on(table.token),
@@ -248,7 +248,7 @@ export const pavExaminerProposals = mysqlTable("pav_examiner_proposals", {
 	respondedAt: timestamp("responded_at", { mode: 'string' }),
 	declineReason: text("decline_reason"),
 	actionToken: varchar("action_token", { length: 128 }),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
@@ -256,7 +256,7 @@ export const pavProgrammes = mysqlTable("pav_programmes", {
 	id: int().autoincrement().notNull().primaryKey(),
 	pavUserId: int("pav_user_id").notNull(),
 	programmeId: int("programme_id").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
 // Verwaltungsmitarbeiter:innen haben genau ein Fachbereichsrecht (FB1 bis FB5).
@@ -281,7 +281,7 @@ export const programmes = mysqlTable("programmes", {
 	fachbereich: varchar({ length: 8 }).notNull().default('FB3'),
 	pictogramUrl: varchar("pictogram_url", { length: 512 }),
 	sortOrder: int("sort_order").default(0).notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
 (table) => [
 	// HTW-Berlin-Kürzel gelten fachbereichs- und abschlussübergreifend nicht zwingend als eindeutig
@@ -370,7 +370,7 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	conditionalAcceptanceReason: text("conditional_acceptance_reason"),
 	conditionalAcceptanceAt: datetime("conditional_acceptance_at", { mode: "string" }),
 	conditionalAcceptanceById: int("conditional_acceptance_by_id"),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	exposeUrl: text(),
 	exposeKey: varchar({ length: 512 }),
@@ -463,9 +463,9 @@ export const users = mysqlTable("users", {
 	email: varchar({ length: 320 }),
 	loginMethod: varchar({ length: 64 }),
 	role: mysqlEnum(['user','admin','student','examiner','second_examiner','superadmin','pav','dean','vice_dean','programme_director']).default('student').notNull(),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-	lastSignedIn: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	lastSignedIn: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	passwordHash: varchar({ length: 255 }),
 	// Optionale TOTP-Zwei-Faktor-Authentifizierung für Administrationskonten.
 	twoFactorSecret: text("two_factor_secret"),
@@ -534,11 +534,11 @@ export const users = mysqlTable("users", {
 export const reminderSchedules = mysqlTable("reminder_schedules", {
   id: int().autoincrement().notNull().primaryKey(),
   thesisRequestId: int("thesis_request_id").notNull(),
-  reminderType: varchar("reminder_type", { length: 64 }).notNull(),
-  scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
-  status: mysqlEnum(["pending", "sent", "failed"]).default("pending").notNull(),
-  sentAt: timestamp("sent_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+	reminderType: varchar("reminder_type", { length: 64 }).notNull(),
+	scheduledAt: timestamp("scheduled_at", { mode: "string" }).notNull(),
+	status: mysqlEnum(["pending", "sent", "failed"]).default("pending").notNull(),
+	sentAt: timestamp("sent_at", { mode: "string" }),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 });
 
 export const reminderTemplates = mysqlTable("reminder_templates", {
@@ -554,10 +554,10 @@ export const reminderTemplates = mysqlTable("reminder_templates", {
 
 export const savedFilters = mysqlTable("saved_filters", {
   id: int().autoincrement().notNull().primaryKey(),
-  userId: int("user_id").notNull(),
-  name: varchar({ length: 255 }).notNull(),
-  filterConfig: text("filter_config").notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
+	userId: int("user_id").notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	filterConfig: text("filter_config").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 });
 
 /**
@@ -690,8 +690,8 @@ export const thesisDocTokens = mysqlTable("thesis_doc_tokens", {
 	degreeType: varchar("degree_type", { length: 16 }),
 	plagiarismConsent: tinyint("plagiarism_consent").notNull().default(0),
 	aiReviewConsent: tinyint("ai_review_consent").notNull().default(0),
-	createdAt: timestamp("created_at", { mode: "string" }).default("CURRENT_TIMESTAMP").notNull(),
-  revoked: int().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	revoked: int().default(0).notNull(),
 });
 export type InsertThesisDocToken = InferInsertModel<typeof thesisDocTokens>;
 

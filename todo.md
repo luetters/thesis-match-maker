@@ -2190,6 +2190,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Nach direkter Schema-Initialisierung die tatsächliche Tabellenstruktur und App-Datenbankverbindung vor der Transfer-Vorschau verifizieren
 - [ ] Direkte Schema-Initialisierung so korrigieren, dass die aktuelle Tabellenstruktur nachweisbar erzeugt und vor der Vorschau validiert wird
 - [ ] Allen Auto-Increment-Tabellen im aktuellen Drizzle-Datenmodell gültige Primärschlüssel zuordnen und die MySQL-Neuerzeugung absichern
+- [ ] Sicheren, zeitlich begrenzten SSH-Zugang ohne Weitergabe von Passwörtern oder privaten Schlüsseln für die direkte VPS-Bereitstellung einrichten
+- [ ] Alle als Zeichenkette erzeugten CURRENT_TIMESTAMP-Standardwerte im Drizzle-Modell in MySQL-kompatible SQL-Zeitstempelvorgaben überführen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
