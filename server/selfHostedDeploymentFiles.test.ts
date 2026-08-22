@@ -42,11 +42,14 @@ describe("unabhängiges Übergabepaket", () => {
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
     const migration0075 = readProjectFile("drizzle/0075_tired_night_nurse.sql");
+    const migration0027 = readProjectFile("drizzle/0027_mature_boomer.sql");
 
     expect(schemaBootstrap).toContain("drizzle-kit migrate --config=/app/drizzle.config.ts");
     expect(schemaBootstrap).toContain("Es wurden keine Portal- oder Transferdaten importiert");
     expect(schemaBootstrap).toContain("Drizzle-Migrationsdatei fehlt");
     expect(migration0075).toContain("SELECT 1;");
+    expect(migration0027).not.toMatch(/^ALTER TABLE .* DROP PRIMARY KEY;/m);
+    expect(migration0027).toContain("DROP INDEX IF EXISTS");
   });
 
   it("liefert getrennte Backup-, Wiederherstellungs- und Prüfskripte ohne fest kodierte Zugangsdaten", () => {

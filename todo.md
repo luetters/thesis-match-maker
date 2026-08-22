@@ -2183,6 +2183,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Bootstrap-Zugriff über die ausschließlich lokale Docker-Portweiterleitung sicher akzeptieren und gegen öffentliche Zugriffe abschotten
 - [ ] Leere Datenbankstruktur vor der Bootstrap-Vorschau vollständig und ohne Portaldaten bereitstellen
 - [ ] Fehlende Drizzle-Migration 0075 reparieren und die leere Zielstruktur danach vollständig sowie konsistent anwenden
+- [ ] Historische MySQL-Migration für audit_log mit Auto-Increment-Schlüssel reparieren und die leere Zielstruktur konsistent fortführen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
