@@ -81,3 +81,23 @@ rm -f /etc/sudoers.d/thesis-deploy /usr/local/sbin/thesis-deploy /usr/local/libe
 ```
 
 Danach kann ein neues Schlüsselpaar erstellt und der Einrichtungsweg erneut durchgeführt werden.
+
+## Alternative ohne Windows-OpenSSH: FileZilla mit bewusster Freigabedatei
+
+Wenn auf dem Windows-PC weder `ssh` noch `scp` verfügbar sind, kann der VPS einen separaten Uploadzugang anbieten. Dieser Zugang kann ausschließlich SFTP verwenden, ist in `/var/lib/thesis-deploy` eingesperrt und hat keine interaktive Shell. Ein Upload allein startet **nie** einen Deploy.
+
+> Erst die separate Freigabedatei `DEPLOY.ready` startet den kontrollierten Deploy. Der VPS prüft das Archiv, erstellt eine lokale Rückfallsicherung, baut nur den App-Container neu und führt danach den Health-Check aus.
+
+Die einmalige Root-Einrichtung erfolgt auf dem VPS:
+
+```bash
+cd /opt/thesis-match-maker
+scripts/selfhosted/setup-thesis-filezilla-deploy.sh
+passwd thesis-upload
+```
+
+In FileZilla wird anschließend eine SFTP-Verbindung mit Benutzer `thesis-upload`, Server `217.154.124.8`, Port `22` und dem gesetzten Upload-Passwort eingerichtet. Als Remote-Ordner erscheint `/incoming`.
+
+Für jeden Deploy laden Sie zuerst das aktuelle, geheimnisfreie Releasearchiv hoch und benennen es exakt in `thesis-source.zip` um. Warten Sie den vollständig erfolgreichen Upload ab. Erstellen Sie anschließend lokal eine leere Datei namens `DEPLOY.ready` und laden Sie sie in denselben Ordner hoch. Erst dieser zweite, bewusste Upload löst den Deploy aus.
+
+Bei Erfolg verschiebt der VPS das angewendete Archiv in `/var/lib/thesis-deploy/releases`. Bei Fehlern verschiebt er Archiv und Freigabedatei nach `/var/lib/thesis-deploy/failed`, damit kein automatischer Wiederholungsversuch entsteht. Status und Fehler sind mit `journalctl -u thesis-sftp-deploy.service` einsehbar.

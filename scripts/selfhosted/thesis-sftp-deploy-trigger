@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Root-eigener, ereignisgesteuerter Deploy-Auslöser für einen FileZilla-Upload.
+# Der Upload allein löst keinen Deploy aus. Erst DEPLOY.ready startet die Prüfung.
+set -Eeuo pipefail
+
+readonly DEPLOY_ROOT="/var/lib/thesis-deploy"
+readonly INCOMING_DIR="$DEPLOY_ROOT/incoming"
+readonly ARCHIVE="$INCOMING_DIR/thesis-source.zip"
+readonly READY_FILE="$INCOMING_DIR/DEPLOY.ready"
+readonly FAILED_DIR="$DEPLOY_ROOT/failed"
+readonly DEPLOY_BIN="/usr/local/sbin/thesis-deploy"
+
+log() {
+  printf '[thesis-sftp-deploy] %s\n' "$*"
+  logger -t thesis-sftp-deploy -- "$*" || true
+}
+
+fail_upload() {
+  local timestamp
+  timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$FAILED_DIR"
+  [[ -f "$READY_FILE" ]] && mv "$READY_FILE" "$FAILED_DIR/${timestamp}-DEPLOY.ready"
+  [[ -f "$ARCHIVE" ]] && mv "$ARCHIVE" "$FAILED_DIR/${timestamp}-thesis-source.zip"
+  log "Deploy abgebrochen. Archiv und Freigabedatei wurden nach $FAILED_DIR verschoben."
+}
+
+main() {
+  [[ -f "$READY_FILE" ]] || exit 0
+
+  if [[ ! -f "$ARCHIVE" ]]; then
+    log "Freigabedatei erkannt, aber thesis-source.zip fehlt."
+    fail_upload
+    exit 1
+  fi
+
+  log "Freigabedatei erkannt. Kontrollierter Deploy wird gestartet."
+  if "$DEPLOY_BIN" deploy; then
+    rm -f "$READY_FILE"
+    log "Deploy nach FileZilla-Freigabe erfolgreich abgeschlossen."
+    exit 0
+  fi
+
+  fail_upload
+  exit 1
+}
+
+main "$@"

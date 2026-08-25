@@ -38,8 +38,17 @@ require_runtime() {
 health_check() {
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --status running app db | grep -q "app"
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --status running app db | grep -q "db"
-  curl --fail --silent --show-error --max-time 20 http://127.0.0.1:3000/ >/dev/null
-  log "Health-Check erfolgreich: App und Datenbank laufen."
+  local attempt
+  for attempt in $(seq 1 12); do
+    if curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/ >/dev/null; then
+      log "Health-Check erfolgreich: App und Datenbank laufen."
+      return 0
+    fi
+    log "App ist nach dem Neustart noch nicht bereit (Versuch $attempt/12)."
+    sleep 5
+  done
+  log "Health-Check nach 60 Sekunden fehlgeschlagen."
+  return 1
 }
 
 sync_release() {
@@ -69,9 +78,9 @@ deploy() {
   unzip -tqq "$INCOMING_ARCHIVE"
   local staging_dir
   staging_dir="$(mktemp -d)"
-  trap 'rm -rf "$staging_dir"' RETURN
   unzip -q "$INCOMING_ARCHIVE" -d "$staging_dir"
   [[ -f "$staging_dir/deploy/docker-compose.yml" ]] || {
+    rm -rf "$staging_dir"
     log "Releasearchiv enthält keine gültige Deploy-Konfiguration."
     exit 1
   }
@@ -79,6 +88,7 @@ deploy() {
   local snapshot
   snapshot="$(create_snapshot)"
   sync_release "$staging_dir"
+  rm -rf "$staging_dir"
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
   health_check
   mv "$INCOMING_ARCHIVE" "$RELEASES_DIR/$(date -u +%Y%m%dT%H%M%SZ)-applied.zip"
@@ -93,9 +103,9 @@ rollback() {
   }
   local staging_dir
   staging_dir="$(mktemp -d)"
-  trap 'rm -rf "$staging_dir"' RETURN
   tar -xzf "$snapshot" -C "$staging_dir"
   sync_release "$staging_dir"
+  rm -rf "$staging_dir"
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
   health_check
   log "Rollback erfolgreich."

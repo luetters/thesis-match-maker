@@ -111,6 +111,9 @@ describe("unabhängiges Übergabepaket", () => {
     expect(deploy).toContain("--exclude='deploy/.env'");
     expect(deploy).toContain("unzip -tqq");
     expect(deploy).toContain("Health-Check erfolgreich");
+    expect(deploy).toContain("Versuch $attempt/12");
+    expect(deploy).toContain("Health-Check nach 60 Sekunden fehlgeschlagen");
+    expect(deploy).not.toContain("trap 'rm -rf \"$staging_dir\"' RETURN");
     expect(gateway).toContain('"scp -t incoming/thesis-source.zip"');
     expect(gateway).toContain('"deploy"');
     expect(gateway).toContain("SSH_ORIGINAL_COMMAND");
@@ -118,6 +121,20 @@ describe("unabhängiges Übergabepaket", () => {
     expect(setup).toContain("NOPASSWD: /usr/local/sbin/thesis-deploy deploy");
     expect(windowsDeploy).toContain("scp -O -i $PrivateKeyPath");
     expect(windowsDeploy).toContain('"$UserName@$HostName" deploy');
+  });
+
+  it("bietet einen FileZilla-Deploy mit getrennter Freigabedatei statt automatischem Upload-Deploy", () => {
+    const trigger = readProjectFile("scripts/selfhosted/thesis-sftp-deploy-trigger");
+    const setup = readProjectFile("scripts/selfhosted/setup-thesis-filezilla-deploy.sh");
+
+    expect(trigger).toContain("DEPLOY.ready");
+    expect(trigger).toContain("thesis-source.zip");
+    expect(trigger).toContain('"$DEPLOY_BIN" deploy');
+    expect(trigger).toContain("failed");
+    expect(setup).toContain("ForceCommand internal-sftp -d /incoming");
+    expect(setup).toContain("PermitTTY no");
+    expect(setup).toContain("PathChanged=/var/lib/thesis-deploy/incoming/DEPLOY.ready");
+    expect(setup).toContain("thesis-sftp-deploy.path");
   });
 
   it("stellt den Bootstrap-Import nur lokal über einen eigenen Schlüssel bereit", () => {

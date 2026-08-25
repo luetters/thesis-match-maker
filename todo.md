@@ -2228,10 +2228,21 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Betriebsablauf für Änderungen, Rollback und Zugriffs-Widerruf dokumentieren
 
 ## GitHub-unabhängige VPS-Bereitstellung
-- [ ] Eingeschränktes dauerhaftes VPS-Deploy-Konto mit Schlüsselzugang und ohne interaktive Root-Shell einrichten
-- [ ] Root-eigenes Deploy-Skript für Codearchiv, Docker-Build und Health-Check einrichten
+- [x] Eingeschränktes dauerhaftes VPS-Deploy-Konto mit Schlüsselzugang und ohne interaktive Root-Shell einrichten
+- [x] Root-eigenes Deploy-Skript für Codearchiv, Docker-Build und Health-Check einrichten
 - [ ] Unabhängigen, prüfsummengesicherten Code-Transfer und kontrollierten Deploy testen
-- [ ] Manuellen Betriebsablauf mit Rollback und Schlüsselwiderruf dokumentieren
+- [x] Manuellen Betriebsablauf mit Rollback und Schlüsselwiderruf dokumentieren
+- [ ] Privaten Windows-Deploy-Schlüssel erzeugen und den öffentlichen Schlüssel einmalig am eingeschränkten VPS-Deploy-Konto hinterlegen
+- [ ] Eingeschränkten thesis-deploy-Zugang für den von Windows-OpenSSH unabhängigen Passwort-Deploy absichern und testen
+
+## FileZilla-basierter VPS-Deploy ohne Windows-OpenSSH
+- [x] Eingeschränkten SFTP-Uploadbereich für Releasearchive ohne interaktive Shell festlegen
+- [x] Kontrollierten serverseitigen Deploy-Auslöser über die separate Freigabedatei DEPLOY.ready nach vollständigem Upload einrichten
+- [x] Tatsächlichen FileZilla-Uploadpfad und Dateinamen vor dem ersten Freigabetest verifizieren
+- [x] Begrenzte Health-Check-Wartezeit nach App-Neustart ergänzen, damit erfolgreiche Containerstarts nicht falsch als Deploy-Fehler gelten
+- [x] Aufräumlogik des kontrollierten Deploy-Skripts ohne nachträglichen Fehler nach erfolgreichem Releaseabschluss ausführen
+- [x] FileZilla-Upload, bewussten Deploy-Auslöser und Health-Check ohne Datenänderung testen
+- [x] Betrieb, Fehlerbehebung und Widerruf des FileZilla-Deploy-Zugangs dokumentieren
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
