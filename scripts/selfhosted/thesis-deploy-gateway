@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Erzwungener SSH-Gateway für den eingeschränkten Benutzer thesis-deploy.
+set -Eeuo pipefail
+
+readonly DEPLOY_BIN="/usr/local/sbin/thesis-deploy"
+readonly INCOMING_ARCHIVE="/var/lib/thesis-deploy/incoming/thesis-source.zip"
+readonly COMMAND="${SSH_ORIGINAL_COMMAND:-}"
+
+case "$COMMAND" in
+  "scp -t incoming/thesis-source.zip")
+    exec /usr/bin/scp -t "$INCOMING_ARCHIVE"
+    ;;
+  "deploy")
+    exec /usr/bin/sudo -n "$DEPLOY_BIN" deploy
+    ;;
+  "health")
+    exec /usr/bin/sudo -n "$DEPLOY_BIN" health
+    ;;
+  rollback\ *)
+    snapshot="${COMMAND#rollback }"
+    [[ "$snapshot" == /var/lib/thesis-deploy/releases/*.tar.gz ]] || {
+      printf '%s\n' 'Ungültiger Rückfallpfad.' >&2
+      exit 1
+    }
+    exec /usr/bin/sudo -n "$DEPLOY_BIN" rollback "$snapshot"
+    ;;
+  *)
+    printf '%s\n' 'Dieser eingeschränkte Zugang akzeptiert nur: deploy, health, rollback oder den kontrollierten SCP-Upload.' >&2
+    exit 1
+    ;;
+esac

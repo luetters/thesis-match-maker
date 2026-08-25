@@ -2221,6 +2221,18 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Caddy mit thesismatch.online aktivieren und automatisches TLS-Zertifikat prüfen
 - [ ] Externe Erreichbarkeit, HTTPS-Weiterleitung und Portalzugang über die neue Domain abnehmen
 
+## Dauerhafte VPS-Bereitstellung
+- [ ] Bestehende GitHub-Workflow- und VPS-Deploy-Konfiguration auf Eignung prüfen
+- [ ] Dauerhaften, eingeschränkten Deploy-Zugang und geschützte GitHub-Secrets festlegen
+- [ ] Automatischen Deploy mit Build, Migration/Health-Check und klarer Fehlerausgabe einrichten
+- [ ] Betriebsablauf für Änderungen, Rollback und Zugriffs-Widerruf dokumentieren
+
+## GitHub-unabhängige VPS-Bereitstellung
+- [ ] Eingeschränktes dauerhaftes VPS-Deploy-Konto mit Schlüsselzugang und ohne interaktive Root-Shell einrichten
+- [ ] Root-eigenes Deploy-Skript für Codearchiv, Docker-Build und Health-Check einrichten
+- [ ] Unabhängigen, prüfsummengesicherten Code-Transfer und kontrollierten Deploy testen
+- [ ] Manuellen Betriebsablauf mit Rollback und Schlüsselwiderruf dokumentieren
+
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
 - [ ] Bootstrap-Code-ZIP mit eindeutigem Zielnamen auf den VPS übertragen

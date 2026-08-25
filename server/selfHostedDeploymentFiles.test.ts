@@ -102,6 +102,24 @@ describe("unabhängiges Übergabepaket", () => {
     expect(backup).not.toMatch(/password\s*=\s*['"][^$]/i);
   });
 
+  it("bietet einen eingeschränkten GitHub-unabhängigen Deploy-Weg ohne interaktive Root-Shell", () => {
+    const deploy = readProjectFile("scripts/selfhosted/thesis-deploy");
+    const gateway = readProjectFile("scripts/selfhosted/thesis-deploy-gateway");
+    const setup = readProjectFile("scripts/selfhosted/setup-thesis-deploy-user.sh");
+    const windowsDeploy = readProjectFile("scripts/selfhosted/deploy-thesis-match.ps1");
+
+    expect(deploy).toContain("--exclude='deploy/.env'");
+    expect(deploy).toContain("unzip -tqq");
+    expect(deploy).toContain("Health-Check erfolgreich");
+    expect(gateway).toContain('"scp -t incoming/thesis-source.zip"');
+    expect(gateway).toContain('"deploy"');
+    expect(gateway).toContain("SSH_ORIGINAL_COMMAND");
+    expect(setup).toContain('restrict,command="/usr/local/libexec/thesis-deploy-gateway"');
+    expect(setup).toContain("NOPASSWD: /usr/local/sbin/thesis-deploy deploy");
+    expect(windowsDeploy).toContain("scp -O -i $PrivateKeyPath");
+    expect(windowsDeploy).toContain('"$UserName@$HostName" deploy');
+  });
+
   it("stellt den Bootstrap-Import nur lokal über einen eigenen Schlüssel bereit", () => {
     const compose = readProjectFile("deploy/docker-compose.yml");
     const bootstrap = readProjectFile("scripts/selfhosted/bootstrap-portable-import.sh");

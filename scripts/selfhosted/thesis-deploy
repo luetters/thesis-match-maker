@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# Root-eigenes Deploy-Werkzeug für einen kontrollierten, GitHub-unabhängigen VPS-Deploy.
+set -Eeuo pipefail
+
+readonly APP_DIR="/opt/thesis-match-maker"
+readonly COMPOSE_FILE="$APP_DIR/deploy/docker-compose.yml"
+readonly ENV_FILE="$APP_DIR/deploy/.env"
+readonly DEPLOY_ROOT="/var/lib/thesis-deploy"
+readonly INCOMING_ARCHIVE="$DEPLOY_ROOT/incoming/thesis-source.zip"
+readonly RELEASES_DIR="$DEPLOY_ROOT/releases"
+readonly LOCK_FILE="/var/lock/thesis-deploy.lock"
+
+log() {
+  printf '[thesis-deploy] %s\n' "$*"
+}
+
+require_root() {
+  if [[ "${EUID}" -ne 0 ]]; then
+    log "Dieser Befehl muss als root ausgeführt werden."
+    exit 1
+  fi
+}
+
+require_runtime() {
+  for command in docker unzip rsync curl flock; do
+    command -v "$command" >/dev/null 2>&1 || {
+      log "Fehlende Laufzeitabhängigkeit: $command"
+      exit 1
+    }
+  done
+
+  [[ -f "$ENV_FILE" ]] || {
+    log "Die geschützte VPS-Konfiguration fehlt. Deploy abgebrochen."
+    exit 1
+  }
+}
+
+health_check() {
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --status running app db | grep -q "app"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --status running app db | grep -q "db"
+  curl --fail --silent --show-error --max-time 20 http://127.0.0.1:3000/ >/dev/null
+  log "Health-Check erfolgreich: App und Datenbank laufen."
+}
+
+sync_release() {
+  local source_dir="$1"
+  rsync -a --delete \
+    --exclude='deploy/.env' \
+    --exclude='deploy/storage' \
+    "$source_dir/" "$APP_DIR/"
+}
+
+create_snapshot() {
+  local snapshot="$RELEASES_DIR/$(date -u +%Y%m%dT%H%M%SZ)-before-deploy.tar.gz"
+  mkdir -p "$RELEASES_DIR"
+  tar -C "$APP_DIR" \
+    --exclude='./deploy/.env' \
+    --exclude='./deploy/storage' \
+    -czf "$snapshot" .
+  printf '%s\n' "$snapshot"
+}
+
+deploy() {
+  [[ -f "$INCOMING_ARCHIVE" ]] || {
+    log "Kein eingehendes Releasearchiv vorhanden."
+    exit 1
+  }
+
+  unzip -tqq "$INCOMING_ARCHIVE"
+  local staging_dir
+  staging_dir="$(mktemp -d)"
+  trap 'rm -rf "$staging_dir"' RETURN
+  unzip -q "$INCOMING_ARCHIVE" -d "$staging_dir"
+  [[ -f "$staging_dir/deploy/docker-compose.yml" ]] || {
+    log "Releasearchiv enthält keine gültige Deploy-Konfiguration."
+    exit 1
+  }
+
+  local snapshot
+  snapshot="$(create_snapshot)"
+  sync_release "$staging_dir"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
+  health_check
+  mv "$INCOMING_ARCHIVE" "$RELEASES_DIR/$(date -u +%Y%m%dT%H%M%SZ)-applied.zip"
+  log "Deploy erfolgreich. Rückfallarchiv: $snapshot"
+}
+
+rollback() {
+  local snapshot="${1:-}"
+  [[ -n "$snapshot" && -f "$snapshot" ]] || {
+    log "Bitte einen vorhandenen absoluten Rückfallpfad angeben."
+    exit 1
+  }
+  local staging_dir
+  staging_dir="$(mktemp -d)"
+  trap 'rm -rf "$staging_dir"' RETURN
+  tar -xzf "$snapshot" -C "$staging_dir"
+  sync_release "$staging_dir"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build app
+  health_check
+  log "Rollback erfolgreich."
+}
+
+main() {
+  require_root
+  require_runtime
+  mkdir -p "$DEPLOY_ROOT/incoming" "$RELEASES_DIR"
+
+  exec 9>"$LOCK_FILE"
+  flock -n 9 || {
+    log "Ein anderer Deploy läuft bereits."
+    exit 1
+  }
+
+  case "${1:-}" in
+    deploy) deploy ;;
+    health) health_check ;;
+    rollback) rollback "${2:-}" ;;
+    *)
+      log "Erlaubte Befehle: deploy | health | rollback <absoluter-archivpfad>"
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
