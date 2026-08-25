@@ -15,6 +15,25 @@ describe("PDF-Exportrouten", () => {
     expect(paths).toContain("/api/export/thesis/:id/history.pdf");
   });
 
+  it("erzeugt die Antragszusammenfassung als kompaktes Einseiten-PDF mit lokalem Logo und QR-Code oberhalb des Footers", () => {
+    const source = readFileSync(resolve(process.cwd(), "server", "exportRoutes.ts"), "utf8");
+    const summaryStart = source.indexOf("async function exportThesisSummaryPdf");
+    const summaryEnd = source.indexOf("// ─── Endpunkt 5", summaryStart);
+    const summarySource = source.slice(summaryStart, summaryEnd);
+
+    expect(source).toContain('join(localStorageDir, "thesis-logo-512_6fcdaa04.png")');
+    expect(source).toContain('PDFDocument as PdfLibDocument, StandardFonts, rgb');
+    expect(source).toContain('lineBreak: false');
+    expect(summarySource).toContain("const bottomLimit = pageHeight - 158;");
+    expect(summarySource).toContain('throw new Error("Das strukturierte Einseitenlayout des Antrags wurde unerwartet überschritten.")');
+    expect(summarySource).toContain("while (pdfDocument.getPageCount() > 1)");
+    expect(summarySource).toContain('firstPage.drawText("HTW Berlin – Thesis-Management-System"');
+    expect(summarySource).toContain('firstPage.drawText("Seite 1 von 1"');
+    expect(summarySource).toContain('firstPage.drawImage(qrImage');
+    expect(summarySource).not.toContain("doc.addPage()");
+    expect(summarySource).not.toContain('text(thesis.abstract');
+  });
+
   it("registriert private Notizexporte als CSV und PDF", () => {
     const paths: string[] = [];
     const app = { get(path: string) { paths.push(path); } };

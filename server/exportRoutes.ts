@@ -9,6 +9,7 @@
 import type { Express, Request, Response } from "express";
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
+import { PDFDocument as PdfLibDocument, StandardFonts, rgb } from "pdf-lib";
 import { parse as parseCookieHeader } from "cookie";
 import { jwtVerify } from "jose";
 import { readFileSync } from "fs";
@@ -42,12 +43,20 @@ const GRAY = "#6b7280";
 const LIGHT_GRAY = "#f3f4f6";
 const BORDER = "#e5e7eb";
 
-// Logo einmalig laden
+// Logo einmalig laden. Im selbst gehosteten Betrieb liegt das PNG im
+// persistenten lokalen Speicher; im Entwicklungsbetrieb bleiben die bisherigen
+// Projektpfade als Fallback erhalten.
 let logoBuffer: Buffer | null = null;
-const logoCandidates = ["HTW_Berlin_Logo.png", "HTW_Berlin_Logo.jpg", "ThesisMatchMaker.jpg"];
+const localStorageDir = process.env.STORAGE_LOCAL_DIR ?? join(process.cwd(), "storage-data");
+const logoCandidates = [
+  join(__dirname, "HTW_Berlin_Logo.png"),
+  join(__dirname, "HTW_Berlin_Logo.jpg"),
+  join(__dirname, "ThesisMatchMaker.jpg"),
+  join(localStorageDir, "thesis-logo-512_6fcdaa04.png"),
+];
 for (const candidate of logoCandidates) {
   try {
-    logoBuffer = readFileSync(join(__dirname, candidate));
+    logoBuffer = readFileSync(candidate);
     break;
   } catch {
     // nächste Datei versuchen
@@ -297,7 +306,9 @@ function drawHeader(doc: PDFKit.PDFDocument, title: string, subtitle?: string) {
 function drawFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) {
   const pageWidth = doc.page.width;
   const margin = 50;
-  const footerY = doc.page.height - 40;
+  // PDFKit erzwingt ab der unteren Seitenmarge einen Umbruch. Der Footer muss
+  // daher oberhalb dieser Grenze beginnen, auch wenn seine Position absolut ist.
+  const footerY = doc.page.height - doc.page.margins.bottom - 30;
 
   doc
     .moveTo(margin, footerY - 8)
@@ -306,13 +317,10 @@ function drawFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number
     .lineWidth(0.5)
     .stroke();
 
-  doc
-    .fillColor(GRAY)
-    .font("Helvetica")
-    .fontSize(8)
-    .text("HTW Berlin – Thesis-Management-System", margin, footerY, { width: 200 })
-    .text(`Seite ${pageNum} von ${totalPages}`, pageWidth - margin - 80, footerY, { width: 80, align: "right" })
-    .text(`Erstellt: ${formatDate(new Date())}`, margin, footerY + 12, { width: 200 });
+  doc.fillColor(GRAY).font("Helvetica").fontSize(8);
+  doc.text("HTW Berlin – Thesis-Management-System", margin, footerY, { width: 240, lineBreak: false });
+  doc.text(`Seite ${pageNum} von ${totalPages}`, pageWidth - margin - 80, footerY, { width: 80, align: "right", lineBreak: false });
+  doc.text(`Erstellt: ${formatDate(new Date())}`, margin, footerY + 12, { width: 240, lineBreak: false });
 }
 
 /** Hilfsfunktion: Zeichnet eine Tabellenzelle mit optionalem Hintergrund */
@@ -876,7 +884,10 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
   const margin = 50;
   const usableWidth = pageWidth - 2 * margin;
   const pageHeight = doc.page.height;
-  const bottomLimit = pageHeight - 60; // Platz für Footer
+  // Im unteren Bereich bleiben QR-Code und Footer reserviert. Die
+  // Antragszusammenfassung enthält nur strukturierte Kernangaben und erzeugt
+  // deshalb niemals eine Fortsetzungsseite.
+  const bottomLimit = pageHeight - 158;
 
   const statusInfo = getStatusBadge(thesis.status ?? "");
   const generatedAt = new Date();
@@ -884,12 +895,11 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
 
   let y = 80;
 
-  // Hilfsfunktion: neue Seite wenn nötig
+  // Die Zusammenfassung ist ein offizielles Einseiten-Dokument. Alle optionalen
+  // Langtexte gehören in die Fallhistorie, nicht in diesen Download.
   const ensureSpace = (needed: number) => {
     if (y + needed > bottomLimit) {
-      doc.addPage();
-      y = 80;
-      drawHeader(doc, `Antrag #${thesis.id} (Fortsetzung)`, `Status: ${statusInfo.label}`);
+      throw new Error("Das strukturierte Einseitenlayout des Antrags wurde unerwartet überschritten.");
     }
   };
 
@@ -1061,93 +1071,62 @@ async function exportThesisSummaryPdf(req: Request, res: Response) {
 
   y += 10;
 
-  // ── Beschreibung ─────────────────────────────────────────────────────────────
-  if (thesis.description && thesis.description.trim() && thesis.description !== "Thema wird noch festgelegt" && thesis.description !== "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in.") {
-    ensureSpace(40);
-    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Beschreibung", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
-    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(thesis.description, margin, y, { width: usableWidth, lineGap: 2 });
-    y = doc.y + 12;
-  }
-
-  // ── Abstract ─────────────────────────────────────────────────────────────────
-  if (thesis.abstract && thesis.abstract.trim()) {
-    ensureSpace(40);
-    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Abstract", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
-    doc.fillColor(HTW_DARK).font("Helvetica").fontSize(9).text(thesis.abstract, margin, y, { width: usableWidth, lineGap: 2 });
-    y = doc.y + 12;
-  }
-
-  // ── Ablehnungsgrund (falls vorhanden) ────────────────────────────────────────
-  if (thesis.rejectionReason) {
-    ensureSpace(40);
-    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Ablehnungsgrund", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
-    doc.fillColor("#dc2626").font("Helvetica").fontSize(9).text(thesis.rejectionReason, margin, y, { width: usableWidth });
-    y = doc.y + 12;
-  }
-
-  // ── Rückzugsgrund (falls vorhanden) ──────────────────────────────────────────
-  if (thesis.withdrawalReason) {
-    ensureSpace(40);
-    doc.fillColor(HTW_DARK).font("Helvetica-Bold").fontSize(11).text("Rückzugsgrund", margin, y);
-    doc.moveTo(margin, y + 14).lineTo(margin + usableWidth, y + 14).strokeColor(BORDER).lineWidth(0.5).stroke();
-    y += 20;
-    doc.fillColor(GRAY).font("Helvetica").fontSize(9).text(thesis.withdrawalReason, margin, y, { width: usableWidth });
-    y = doc.y + 12;
-  }
-
-  // ── Footer + Wasserzeichen + QR-Code auf jeder Seite ──────────────────────────────
-  const range = doc.bufferedPageRange();
-  for (let i = 0; i < range.count; i++) {
-    doc.switchToPage(range.start + i);
-
-    // Wasserzeichen: diagonal über die Seite
-    const wm = thesis.status === "WITHDRAWN" ? "ZURÜCKGEZOGEN"
-      : thesis.status === "REJECTED" ? "ABGELEHNT"
-      : null;
-    if (wm) {
-      doc.save();
-      doc.opacity(0.07);
-      doc.fillColor("#dc2626");
-      doc.font("Helvetica-Bold").fontSize(72);
-      // Diagonal über die Seite: Mittelpunkt der Seite, rotiert
-      const cx = pageWidth / 2;
-      const cy = pageHeight / 2;
-      doc.rotate(-45, { origin: [cx, cy] });
-      doc.text(wm, 0, cy - 36, { width: pageWidth, align: "center" });
-      doc.restore();
-    }
-
-    // Standard-Footer
-    drawFooter(doc, i + 1, range.count);
-
-    // QR-Code + Link in der rechten unteren Ecke des Footers
-    if (qrBuffer) {
-      const qrSize = 48;
-      const qrX = pageWidth - margin - qrSize;
-      const qrY = doc.page.height - 40 - qrSize + 8;
-      try {
-        doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
-        doc
-          .fillColor(GRAY)
-          .font("Helvetica")
-          .fontSize(6)
-          .text("Thesis-Portal", qrX, qrY + qrSize + 1, { width: qrSize, align: "center" });
-      } catch {
-        // QR-Code-Rendering ignorieren
-      }
-    }
-  }
-
   doc.end();
   await new Promise<void>(resolve => doc.on("end", resolve));
 
-  const pdfBuffer = Buffer.concat(chunks);
+  const pdfDocument = await PdfLibDocument.load(Buffer.concat(chunks));
+  while (pdfDocument.getPageCount() > 1) pdfDocument.removePage(pdfDocument.getPageCount() - 1);
+  const firstPage = pdfDocument.getPage(0);
+  const footerFont = await pdfDocument.embedFont(StandardFonts.Helvetica);
+  const { width: finalPageWidth } = firstPage.getSize();
+
+  // Footer und QR-Code werden mit PDF-Lib direkt auf der verbliebenen ersten
+  // Seite platziert. Dadurch kann PDFKit keinen zusätzlichen Seitenumbruch
+  // mehr auslösen.
+  const footerLineY = 82;
+  firstPage.drawLine({
+    start: { x: margin, y: footerLineY },
+    end: { x: finalPageWidth - margin, y: footerLineY },
+    thickness: 0.5,
+    color: rgb(0.9, 0.9, 0.9),
+  });
+  firstPage.drawText("HTW Berlin – Thesis-Management-System", {
+    x: margin,
+    y: 64,
+    size: 8,
+    font: footerFont,
+    color: rgb(0.42, 0.45, 0.5),
+  });
+  firstPage.drawText("Seite 1 von 1", {
+    x: finalPageWidth - margin - 58,
+    y: 64,
+    size: 8,
+    font: footerFont,
+    color: rgb(0.42, 0.45, 0.5),
+  });
+  firstPage.drawText(`Erstellt: ${formatDate(generatedAt)}`, {
+    x: margin,
+    y: 50,
+    size: 8,
+    font: footerFont,
+    color: rgb(0.42, 0.45, 0.5),
+  });
+  if (qrBuffer) {
+    const qrImage = await pdfDocument.embedPng(qrBuffer);
+    const qrSize = 48;
+    const qrX = finalPageWidth - margin - qrSize;
+    const qrY = 104;
+    firstPage.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+    firstPage.drawText("Verifikation", {
+      x: qrX - 1,
+      y: qrY - 10,
+      size: 6,
+      font: footerFont,
+      color: rgb(0.42, 0.45, 0.5),
+    });
+  }
+
+  const pdfBuffer = Buffer.from(await pdfDocument.save());
   const safeTitle = (thesis.title ?? "Antrag").replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 40);
   const filename = `HTW_Antrag_${thesis.id}_${safeTitle}.pdf`;
   res.setHeader("Content-Type", "application/pdf");
