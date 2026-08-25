@@ -666,6 +666,13 @@
       "when": 1787403766177,
       "tag": "0094_lethal_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "5",
+      "when": 1787664463078,
+      "tag": "0095_spicy_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

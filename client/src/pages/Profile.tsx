@@ -1402,36 +1402,6 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
           )}
         </div>}
 
-        {isStudent && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-start gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003.944 12c0 2.98 1.087 5.71 2.883 7.81A11.96 11.96 0 0012 21.056c1.96 0 3.81-.47 5.173-1.246A12.02 12.02 0 0020.056 12c0-2.114-.548-4.1-1.438-5.984z" /></svg>
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-gray-900">Ihre Einwilligungen</h2>
-                <p className="text-sm text-gray-500 mt-0.5">Freiwillige Angaben aus Ihrer Erstregistrierung.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { label: "Plagiatsprüfung", granted: Number((profile as any).plagiarismConsent ?? 0) === 1 },
-                { label: "KI-Prüfung", granted: Number((profile as any).aiReviewConsent ?? 0) === 1 },
-              ].map((consent) => (
-                <div key={consent.label} className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${consent.granted ? "border-emerald-100 bg-emerald-50" : "border-gray-100 bg-gray-50"}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center ${consent.granted ? "bg-emerald-600 text-white" : "bg-gray-200 text-gray-500"}`}>
-                    {consent.granted ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{consent.label}</p>
-                    <p className={`text-xs ${consent.granted ? "text-emerald-700" : "text-gray-500"}`}>{consent.granted ? "Einwilligung erteilt" : "Nicht erteilt"}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ── Zugewiesene Prüfer:innen (nur Studierende) ── */}
         {isStudent && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

@@ -2244,6 +2244,12 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] FileZilla-Upload, bewussten Deploy-Auslöser und Health-Check ohne Datenänderung testen
 - [x] Betrieb, Fehlerbehebung und Widerruf des FileZilla-Deploy-Zugangs dokumentieren
 
+## Einwilligungen zur Plagiats- und KI-Prüfung
+- [x] Optionale Einwilligungen vollständig aus der Registrierung entfernen
+- [x] Einwilligungen ausschließlich im Antrag an die Erstprüfung erfassen und zusammen mit dem Thesis-Fall speichern
+- [x] Deutsche und englische Antragstexte sowie die Prüfungsansichten aktualisieren
+- [x] Datenfluss, Berechtigungen und Regressionen automatisiert prüfen
+
 ## Robuste Übertragung der Bootstrap-Aktualisierung
 - [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
 - [ ] Bootstrap-Code-ZIP mit eindeutigem Zielnamen auf den VPS übertragen
@@ -2259,3 +2265,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Tatsächlichen Inhalt und Pfad der vom VPS verwendeten Dockerfile sichtbar prüfen
 - [x] Korrigierte Dockerfile direkt und mit Prüfsignal auf den VPS übertragen
 - [x] Build-Kontext ohne alte Zwischenspeicher erneut ausführen und Befund dokumentieren
+- [x] Veraltete registrierungsbezogene Einwilligungsanzeige aus dem Studierendenprofil entfernen.

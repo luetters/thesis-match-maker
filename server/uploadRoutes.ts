@@ -414,8 +414,8 @@ export function registerUploadRoutes(app: Express) {
         secondExaminerName: secondExaminer ? (buildFullName({ firstName: (secondExaminer as any)?.firstName, lastName: (secondExaminer as any)?.lastName, academicTitle: (secondExaminer as any)?.academicTitle, name: secondExaminer?.name }) || null) : null,
         targetSemester: thesis.targetSemester?.trim() || null,
         degreeType: thesis.degreeType?.trim() || null,
-        plagiarismConsent: Number((student as any)?.plagiarismConsent ?? 0),
-        aiReviewConsent: Number((student as any)?.aiReviewConsent ?? 0),
+        plagiarismConsent: Number((thesis as any)?.plagiarismConsent ?? 0),
+        aiReviewConsent: Number((thesis as any)?.aiReviewConsent ?? 0),
       });
 
       // Disclaimer-Texte aus den System-Einstellungen laden
@@ -442,8 +442,8 @@ export function registerUploadRoutes(app: Express) {
         verifyUrl,
         verifyToken: docToken,
         createdAt: new Date(),
-        plagiarismConsent: Number((student as any)?.plagiarismConsent ?? 0),
-        aiReviewConsent: Number((student as any)?.aiReviewConsent ?? 0),
+        plagiarismConsent: Number((thesis as any)?.plagiarismConsent ?? 0),
+        aiReviewConsent: Number((thesis as any)?.aiReviewConsent ?? 0),
         disclaimerDe,
         disclaimerEn,
       });

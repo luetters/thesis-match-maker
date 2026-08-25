@@ -3106,8 +3106,8 @@ export async function generateCSVReport(
         studentName: users.name,
         department: thesisRequests.department,
         status: thesisRequests.status,
-        plagiarismConsent: users.plagiarismConsent,
-        aiReviewConsent: users.aiReviewConsent,
+        plagiarismConsent: thesisRequests.plagiarismConsent,
+        aiReviewConsent: thesisRequests.aiReviewConsent,
         createdAt: thesisRequests.createdAt,
         updatedAt: thesisRequests.updatedAt,
       })

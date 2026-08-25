@@ -1,8 +1,7 @@
-export function getStudentConsentFlags(role: string, plagiarismConsent?: boolean, aiReviewConsent?: boolean) {
-  const isStudent = role === "student";
+export function getThesisConsentFlags(plagiarismConsent?: boolean, aiReviewConsent?: boolean) {
   return {
-    plagiarismConsent: isStudent && plagiarismConsent ? 1 : 0,
-    aiReviewConsent: isStudent && aiReviewConsent ? 1 : 0,
+    plagiarismConsent: plagiarismConsent ? 1 : 0,
+    aiReviewConsent: aiReviewConsent ? 1 : 0,
   };
 }
 

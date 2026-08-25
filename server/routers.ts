@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
-import { getStudentConsentFlags } from "./studentConsent";
+import { getThesisConsentFlags } from "./studentConsent";
 import { sanitizeBiographyText } from "./biographySanitization";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 
@@ -698,8 +698,6 @@ export const appRouter = router({
           programmeId: z.number().int().positive().optional(),
 	          department: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
 	          thesisType: z.enum(["bachelor", "master"]).optional(),
-	          plagiarismConsent: z.boolean().optional().default(false),
-	          aiReviewConsent: z.boolean().optional().default(false),
 	          origin: z.string().url().optional(),
           inviteToken: z.string().optional(),
         })
@@ -748,8 +746,7 @@ export const appRouter = router({
         // Studierende mit @student.htw-berlin.de werden automatisch freigeschaltet
         const isStudentAutoApprove = input.role === "student" && emailLowerReg.endsWith("@student.htw-berlin.de");
         const initialRoleStatus = isStudentAutoApprove ? "approved" : "pending";
-        const consentFlags = getStudentConsentFlags(input.role, input.plagiarismConsent, input.aiReviewConsent);
-        await drizzleDb.insert(users).values({
+	        await drizzleDb.insert(users).values({
           openId,
           email: input.email.toLowerCase(),
           name: input.name,
@@ -766,7 +763,6 @@ export const appRouter = router({
           ...(input.department ? { department: input.department } : {}),
 	          ...(input.thesisType ? { thesisType: input.thesisType } : {}),
 	          ...(input.programmeId ? { programmeId: input.programmeId } : {}),
-          ...consentFlags,
 	        } as any).onDuplicateKeyUpdate({
           set: { name: input.name } as any,
         });
@@ -1019,6 +1015,8 @@ export const appRouter = router({
           language: z.enum(["de", "en"]).default("de"),
           degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
           hasOwnTopic: z.boolean().default(true),
+          plagiarismConsent: z.boolean().optional().default(false),
+          aiReviewConsent: z.boolean().optional().default(false),
           studySpecializations: z.string().max(1000).optional(),
           personalInterests: z.string().max(1000).optional(),
           keywords: z.string().max(500).optional(),
@@ -1060,6 +1058,7 @@ export const appRouter = router({
           language: input.language,
           degreeType: input.degreeType,
           hasOwnTopic: input.hasOwnTopic ? 1 : 0,
+          ...getThesisConsentFlags(input.plagiarismConsent, input.aiReviewConsent),
           status: "PENDING",
           studySpecializations: input.studySpecializations ?? null,
           personalInterests: input.personalInterests ?? null,
@@ -3767,6 +3766,8 @@ export const appRouter = router({
 	          workTypeOther: z.string().trim().max(1000).optional(),
 	          isCooperation: z.boolean(),
 	          hasConfidentialityNotice: z.boolean().optional(),
+	          plagiarismConsent: z.boolean().optional().default(false),
+	          aiReviewConsent: z.boolean().optional().default(false),
 	          targetSemester: z.string(),
 	          language: z.enum(["de", "en"]).default("de"),
 	          degreeType: z.enum(["bachelor", "master"]).default("bachelor"),
@@ -3834,6 +3835,7 @@ export const appRouter = router({
 	            workTypeOther: input.workType === "other" ? input.workTypeOther?.trim() || null : null,
 	            isCooperation: input.isCooperation ? 1 : 0,
 	            hasConfidentialityNotice: input.isCooperation && input.hasConfidentialityNotice ? 1 : 0,
+	            ...getThesisConsentFlags(input.plagiarismConsent, input.aiReviewConsent),
 	            targetSemester: input.targetSemester,
             language: input.language,
             degreeType: input.degreeType,

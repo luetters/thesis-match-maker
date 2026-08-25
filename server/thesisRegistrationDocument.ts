@@ -73,8 +73,8 @@ export async function buildOfficialRegistrationDocument(thesisRequestId: number,
     secondExaminerName,
     targetSemester: thesis.targetSemester?.trim() || null,
     degreeType: thesis.degreeType?.trim() || null,
-    plagiarismConsent: Number((student as any).plagiarismConsent ?? 0),
-    aiReviewConsent: Number((student as any).aiReviewConsent ?? 0),
+    plagiarismConsent: Number((thesis as any).plagiarismConsent ?? 0),
+    aiReviewConsent: Number((thesis as any).aiReviewConsent ?? 0),
   });
   const disclaimerDe = (await getSystemSetting("pdfDisclaimerDe"))?.value
     ?? "Der Thesis Match Maker unterstützt die Organisation der Thesisbetreuung. Die offizielle Zulassung erfolgt durch die zuständige Verwaltung der HTW Berlin.";
@@ -98,8 +98,8 @@ export async function buildOfficialRegistrationDocument(thesisRequestId: number,
     verifyUrl,
     verifyToken: token,
     createdAt: new Date(),
-    plagiarismConsent: Number((student as any).plagiarismConsent ?? 0),
-    aiReviewConsent: Number((student as any).aiReviewConsent ?? 0),
+    plagiarismConsent: Number((thesis as any).plagiarismConsent ?? 0),
+    aiReviewConsent: Number((thesis as any).aiReviewConsent ?? 0),
     disclaimerDe,
     disclaimerEn,
   });

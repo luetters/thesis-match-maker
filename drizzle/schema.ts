@@ -353,6 +353,10 @@ export const thesisRequests = mysqlTable("thesis_requests", {
 	workTypeOther: varchar("work_type_other", { length: 1000 }),
 	isCooperation: tinyint("is_cooperation").default(0).notNull(),
 	hasConfidentialityNotice: tinyint("has_confidentiality_notice").default(0).notNull(),
+	// Freiwillige, fallbezogene Einwilligungen: Sie gehören zur konkreten Thesis-Anfrage,
+	// nicht zur Registrierung oder zum dauerhaften Studierendenprofil.
+	plagiarismConsent: tinyint("plagiarism_consent").default(0).notNull(),
+	aiReviewConsent: tinyint("ai_review_consent").default(0).notNull(),
 	targetSemester: varchar({ length: 32 }),
 	language: varchar({ length: 8 }).default('de'),
 	degreeType: mysqlEnum(['bachelor','master']).default('bachelor'),
