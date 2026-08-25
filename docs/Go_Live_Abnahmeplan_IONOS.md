@@ -27,6 +27,7 @@ Die technische Abnahme wird vor der Browser-Abnahme durchgeführt. Sie bestätig
 | Datenbankgrenzen | Docker-Compose-Konfiguration und Firewall prüfen | MySQL ist nicht über das Internet erreichbar; nur die App kann sie nutzen. |
 | Datenintegrität | Stichprobe im Verwaltungsbereich gegen den Export | Nutzerzahlen, Anträge und zugeordnete Dokumente entsprechen plausibel dem Import. |
 | Dokumentzugriff | Einen existierenden, berechtigten Fall testen | Datei ist für berechtigte Rollen erreichbar, nicht aber über einen anonym kopierten Link. |
+| Antrags-PDF | Einen bestehenden Antrag als Zusammenfassung herunterladen und mit der offiziellen Anmeldedokumentansicht vergleichen | Je Dokument genau eine Seite; HTW-Berlin-Logo oben links, QR-Code unten rechts und Footer auf derselben Seite sichtbar. |
 | Sicherungsweg | Transferarchiv und dokumentierter Exportweg prüfen | Das geprüfte Transferarchiv bleibt bis zur finalen Abnahme als Rückfallebene erhalten. |
 | HTTPS-Vorbereitung | Caddy-Konfiguration und DNS-Ziel prüfen | Caddy ist für die Domain vorbereitet; DNS wird erst nach der Abnahme geändert. |
 
@@ -90,4 +91,3 @@ Nach bestandener Abnahme erfolgen die finalen Schritte in dieser Reihenfolge:
 |  |  |  |  |  |  |
 |  |  |  |  |  |  |
 |  |  |  |  |  |  |
-
