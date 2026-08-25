@@ -2268,3 +2268,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Veraltete registrierungsbezogene Einwilligungsanzeige aus dem Studierendenprofil entfernen.
 - [x] Noch deutschsprachige Texte in Request-Ansichten bei aktivierter englischer Sprache vollständig übersetzen und regressionssicher prüfen.
 - [x] Alle öffentlichen Medienreferenzen gegen den lokalen Speicherbestand prüfen und die portable Selbsthosting-Bereitstellung vervollständigen.
+- [x] Eindeutige Passwortanmeldung für holger@luetters.net auf das Superadmin-Konto priorisieren und einen sicheren Sichtwechsel für Student-, Prüfungs- und Verwaltungssicht bereitstellen; historische Altkonten bleiben ohne Login-Funktion als Referenzen erhalten.

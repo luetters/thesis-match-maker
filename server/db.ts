@@ -1227,8 +1227,12 @@ export async function getUserByEmail(email: string) {
     .from(users)
     .where(eq(users.email, emailLower));
   if (result.length > 0) {
-    const pwAccount = result.find((u) => u.openId?.startsWith('pw_'));
-    return pwAccount ?? result[0];
+    // Importierte Altkonten können dieselbe E-Mail ohne Passwort enthalten.
+    // Für den Passwort-Login wird stets das eindeutige aktivierte Passwortkonto
+    // bevorzugt; damit bleiben historische Rollenreferenzen unangetastet.
+    const passwordAccount = result.find((u) => u.loginMethod === "password" && Boolean(u.passwordHash));
+    const legacyPasswordAccount = result.find((u) => u.openId?.startsWith("pw_") && Boolean(u.passwordHash));
+    return passwordAccount ?? legacyPasswordAccount ?? result[0];
   }
   // Fallback: alternative E-Mail (secondEmail) suchen
   const bySecondEmail = await db
@@ -1236,8 +1240,9 @@ export async function getUserByEmail(email: string) {
     .from(users)
     .where(eq(users.secondEmail, emailLower));
   if (bySecondEmail.length === 0) return undefined;
-  const pwAccount = bySecondEmail.find((u) => u.openId?.startsWith('pw_'));
-  return pwAccount ?? bySecondEmail[0];
+  const passwordAccount = bySecondEmail.find((u) => u.loginMethod === "password" && Boolean(u.passwordHash));
+  const legacyPasswordAccount = bySecondEmail.find((u) => u.openId?.startsWith("pw_") && Boolean(u.passwordHash));
+  return passwordAccount ?? legacyPasswordAccount ?? bySecondEmail[0];
 }
 
 export async function getUserBySamlIdentity(samlIssuer: string, samlSubject: string) {
@@ -3915,7 +3920,8 @@ export async function getSuperadminStatus(userId: number) {
  */
 export async function switchUserRole(
   superadminId: number,
-  targetRole: "admin" | "examiner" | "student"
+  targetRole: "admin" | "examiner" | "student",
+  previousView?: "admin" | "examiner" | "student"
 ) {
   const db = await getDb();
   if (!db) return { success: false, error: "Database connection failed" };
@@ -3932,7 +3938,9 @@ export async function switchUserRole(
       return { success: false, error: "Unauthorized: Not a superadmin" };
     }
 
-    const oldRole = superadmin[0].role || "user";
+    // Die Datenbankrolle bleibt bewusst "superadmin". Der Wechsel betrifft nur
+    // die angezeigte Fachansicht und darf keine Berechtigungen herabstufen.
+    const oldRole = previousView ?? "superadmin";
 
     // Speichere alte Rolle in metadata für Wechsel-History
     const metadata = {
@@ -3941,8 +3949,8 @@ export async function switchUserRole(
       switchedBy: superadminId,
     };
 
-    // Aktualisiere Rolle (nur für diese Session)
-    // In einer echten Implementierung würde dies in einer Session-Tabelle gespeichert
+    // Die Fachansicht wird im Client über die Zielroute aktiviert. Hier wird nur
+    // die Berechtigung geprüft und der auditierbare Wechsel bestätigt.
     return {
       success: true,
       newRole: targetRole,

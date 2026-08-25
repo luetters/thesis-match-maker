@@ -5018,7 +5018,7 @@ export default function ExaminerDashboard() {
     // 2. Profil ist vollständig geladen (nicht loading)
     // 3. Profil-Daten sind vorhanden (nicht undefined) – verhindert Race Condition nach Onboarding
     // 4. onboardingCompleted ist explizit NICHT 1
-    if ((hasRole("examiner") || hasRole("second_examiner")) && !profileLoading && profile !== undefined) {
+    if (!hasRole("superadmin") && (hasRole("examiner") || hasRole("second_examiner")) && !profileLoading && profile !== undefined) {
       const completed = (profile as { onboardingCompleted?: number } | null | undefined)?.onboardingCompleted === 1;
       if (!completed) navigate("/examiner/onboarding");
     }

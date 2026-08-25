@@ -10,12 +10,12 @@ vi.mock("./db", () => ({
     isSuperadmin: true,
     currentRole: "admin",
   }),
-  switchUserRole: vi.fn().mockResolvedValue({
+  switchUserRole: vi.fn((_userId: number, targetRole: string, previousView?: string) => ({
     success: true,
-    newRole: "examiner",
-    previousRole: "admin",
-    metadata: { previousRole: "admin", switchedAt: new Date().toISOString(), switchedBy: 1 },
-  }),
+    newRole: targetRole,
+    previousRole: previousView ?? "admin",
+    metadata: { previousRole: previousView ?? "admin", switchedAt: new Date().toISOString(), switchedBy: 1 },
+  })),
   getRoleSwitchHistory: vi.fn().mockResolvedValue([]),
   getAllActiveUsers: vi.fn().mockResolvedValue({
     users: [
@@ -291,6 +291,18 @@ describe("superadmin.switchRole", () => {
     expect(result).toMatchObject({
       success: true,
       newRole: "examiner",
+    });
+  });
+
+  it("protokolliert den Wechsel zwischen zwei Fachansichten, ohne das Superadmin-Konto zu ändern", async () => {
+    const ctx = createSuperadminContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.superadmin.switchRole({ targetRole: "admin", previousView: "examiner" });
+
+    expect(result).toMatchObject({
+      success: true,
+      previousRole: "examiner",
+      newRole: "admin",
     });
   });
 });

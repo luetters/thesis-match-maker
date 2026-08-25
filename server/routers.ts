@@ -3073,14 +3073,17 @@ export const appRouter = router({
       }),
 
     switchRole: protectedProcedure
-      .input(z.object({ targetRole: z.enum(["admin", "examiner", "student"]) }))
+      .input(z.object({
+        targetRole: z.enum(["admin", "examiner", "student"]),
+        previousView: z.enum(["admin", "examiner", "student"]).optional(),
+      }))
       .mutation(async ({ ctx, input }) => {
         const status = await getSuperadminStatus(ctx.user.id);
         if (!status.isSuperadmin) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Nur Superadmins können die Rolle wechseln" });
         }
 
-        const result = await switchUserRole(ctx.user.id, input.targetRole);
+        const result = await switchUserRole(ctx.user.id, input.targetRole, input.previousView);
         if (result.success) {
           await logRoleSwitchAction(ctx.user.id, result.previousRole || "user", input.targetRole);
         }
