@@ -129,6 +129,15 @@ curl -o storage-data/ThesisMatchMaker_b92cd3c0.jpg https://thesis.htw-berlin.com
 curl -o storage-data/ThesisMatchMaker_e15e6348.jpg https://thesis.htw-berlin.com/manus-storage/ThesisMatchMaker_e15e6348.jpg
 ```
 
+Prüfen Sie nach dem Kopieren und nach jedem Release die tatsächlich verwendeten öffentlichen Medien über den lokalen App-Port. Das Skript ist geheimnisfrei und greift weder auf die Datenbank noch auf private Fachakten zu:
+
+```bash
+chmod +x scripts/selfhosted/verify-public-media.sh
+scripts/selfhosted/verify-public-media.sh http://127.0.0.1:3000
+```
+
+Erst wenn alle gemeldeten Dateien mit `[OK]` bestätigt werden, sind Logos, Icons, Hintergrundvideos und Leitfäden im lokalen Speicher vollständig verfügbar. Die bestehenden `/manus-storage/`-Pfade bleiben dabei bewusst als kompatible öffentliche Route erhalten, werden im lokalen Betriebsmodus aber ausschließlich aus `storage-data/` ausgeliefert.
+
 ---
 
 ## Schritt 8: Datenbank migrieren

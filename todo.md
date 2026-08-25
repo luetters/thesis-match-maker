@@ -2267,3 +2267,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Build-Kontext ohne alte Zwischenspeicher erneut ausführen und Befund dokumentieren
 - [x] Veraltete registrierungsbezogene Einwilligungsanzeige aus dem Studierendenprofil entfernen.
 - [x] Noch deutschsprachige Texte in Request-Ansichten bei aktivierter englischer Sprache vollständig übersetzen und regressionssicher prüfen.
+- [x] Alle öffentlichen Medienreferenzen gegen den lokalen Speicherbestand prüfen und die portable Selbsthosting-Bereitstellung vervollständigen.

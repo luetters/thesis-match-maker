@@ -137,6 +137,18 @@ describe("unabhängiges Übergabepaket", () => {
     expect(setup).toContain("thesis-sftp-deploy.path");
   });
 
+  it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {
+    const mediaVerify = readProjectFile("scripts/selfhosted/verify-public-media.sh");
+    const guide = readProjectFile("docs/IONOS_Migrationsleitfaden.md");
+
+    expect(mediaVerify).toContain('BASE_URL="${1:-http://127.0.0.1:3000}"');
+    expect(mediaVerify).toContain('curl --fail --silent --show-error --location');
+    expect(mediaVerify).toContain("InfrarotinBibliothek_458a4f63.mp4");
+    expect(mediaVerify).toContain("thesis-match-maker-verwaltung-leitfaden_7ca2f6a1.pdf");
+    expect(mediaVerify).not.toContain("S3_SECRET_KEY");
+    expect(guide).toContain("verify-public-media.sh");
+  });
+
   it("stellt den Bootstrap-Import nur lokal über einen eigenen Schlüssel bereit", () => {
     const compose = readProjectFile("deploy/docker-compose.yml");
     const bootstrap = readProjectFile("scripts/selfhosted/bootstrap-portable-import.sh");
