@@ -2271,3 +2271,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Eindeutige Passwortanmeldung für holger@luetters.net auf das Superadmin-Konto priorisieren und einen sicheren Sichtwechsel für Student-, Prüfungs- und Verwaltungssicht bereitstellen; historische Altkonten bleiben ohne Login-Funktion als Referenzen erhalten.
 - [x] Offizielles Thesis-Anmeldedokument auf eine professionelle Seite begrenzen sowie HTW-Berlin-Logo und QR-Code sichtbar und korrekt positioniert ausgeben.
 - [x] Technische Go-live-Abnahme des selbst gehosteten Portals ohne DNS-Änderung und ohne Passwort-Reset-E-Mails vorbereiten.
+- [x] Rollenbasierte Kernablauf-Abnahme mit den vorhandenen Pilotkonten vorbereiten, ohne E-Mail-Versände oder DNS-Änderungen auszulösen.
