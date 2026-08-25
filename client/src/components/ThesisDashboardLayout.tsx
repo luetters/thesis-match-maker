@@ -140,7 +140,8 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 export function StatusBadge({ status }: { status: string }) {
-  const { label, className } = getStatusBadge(status);
+  const { lang } = useLanguage();
+  const { label, className } = getStatusBadge(status, lang);
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`}>
       {label}

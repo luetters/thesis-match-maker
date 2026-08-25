@@ -275,8 +275,8 @@ function NewRequestForm({ onSuccess, preselectExaminerId = 0, initialDraft }: { 
     createMutation.mutate({ 
       ...form,
       // Wenn kein eigenes Thema: Platzhalter damit Zod-Validierung (min(1)) besteht
-      title: hasOwnTopic ? form.title : (form.title.trim() || "Thema wird noch festgelegt"),
-      description: hasOwnTopic ? form.description : (form.description.trim() || "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in."),
+      title: hasOwnTopic ? form.title : (form.title.trim() || t.student.defaultTopicPending),
+      description: hasOwnTopic ? form.description : (form.description.trim() || t.student.defaultRequestDescription),
       exposeUrl,
       exposeKey,
 	      workType: form.workType as WorkType,
@@ -1417,7 +1417,7 @@ function SecondExaminerPicker({
   secondExaminerRejectedAt?: string | null;
   secondExaminerRejectionReason?: string | null;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const utils = trpc.useUtils();
 
   const hasRequest = !!wantedSecondExaminerId || !!externalSecondExaminerFirstName;
@@ -1441,7 +1441,7 @@ function SecondExaminerPicker({
 
   const setMutation = trpc.thesisPhase27.setWantedSecondExaminer.useMutation({
     onSuccess: () => {
-      toast.success("Anfrage an Zweitgutachter:in gesendet.");
+      toast.success(t.student.secondRequestSent);
       utils.thesis.myRequests.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -1449,7 +1449,7 @@ function SecondExaminerPicker({
 
   const setExternalMutation = trpc.thesisPhase27.setExternalSecondExaminer.useMutation({
     onSuccess: () => {
-      toast.success("Externe Zweitgutachter:in eingetragen.");
+      toast.success(t.student.externalSecondAdded);
       utils.thesis.myRequests.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -1457,7 +1457,7 @@ function SecondExaminerPicker({
 
   const withdrawMutation = trpc.thesisPhase27.withdrawSecondExaminerRequest.useMutation({
     onSuccess: () => {
-      toast.success("Anfrage zurückgezogen.");
+      toast.success(t.student.secondRequestWithdrawn);
       utils.thesis.myRequests.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -1466,7 +1466,7 @@ function SecondExaminerPicker({
   const handleSend = () => {
     if (selectedId === EXTERNAL_MARKER) {
       if (!extFirstName.trim() || !extLastName.trim() || !extEmail.trim()) {
-        toast.error("Bitte Vorname, Nachname und E-Mail angeben.");
+        toast.error(t.student.externalSecondRequired);
         return;
       }
       setExternalMutation.mutate({ requestId, title: extTitle, firstName: extFirstName, lastName: extLastName, email: extEmail });
@@ -1474,7 +1474,7 @@ function SecondExaminerPicker({
       // E-Mail-Vorschau öffnen statt direkt senden
       setShowEmailPreview(true);
     } else {
-      toast.error("Bitte eine Zweitgutachter:in auswählen.");
+      toast.error(t.student.selectSecondExaminerError);
     }
   };
 
@@ -1494,39 +1494,39 @@ function SecondExaminerPicker({
 
   // ── Ansicht: Anfrage abgelehnt (keine aktive Anfrage mehr) ──
   if (!hasRequest && secondExaminerRejectedAt) {
-    const rejectedDateStr = new Date(secondExaminerRejectedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+    const rejectedDateStr = new Date(secondExaminerRejectedAt).toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "long", year: "numeric" });
     return (
       <div className="mt-3 pt-3 border-t border-gray-50">
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-            <span className="text-xs font-semibold text-red-800">Zweitgutachter:in auswählen</span>
-            <span className="ml-auto text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Abgelehnt</span>
+            <span className="text-xs font-semibold text-red-800">{t.student.secondExaminerTitle}</span>
+            <span className="ml-auto text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded-full">{t.student.secondRequestRejected}</span>
           </div>
           <p className="text-xs text-red-700 mb-1">
-            Ihre letzte Anfrage wurde am {rejectedDateStr} abgelehnt.
+            {t.student.secondRequestRejectedOn.replace("{date}", rejectedDateStr)}
           </p>
           {secondExaminerRejectionReason && (
             <p className="text-xs text-red-700 bg-red-100 border border-red-200 rounded-lg px-2.5 py-1.5 mb-1">
-              <span className="font-semibold">Begründung:</span> {secondExaminerRejectionReason}
+              <span className="font-semibold">{t.student.requestReason}</span> {secondExaminerRejectionReason}
             </p>
           )}
-          <p className="text-xs text-red-600 font-medium">Sie können jetzt eine neue Anfrage stellen.</p>
+          <p className="text-xs text-red-600 font-medium">{t.student.secondRequestRetry}</p>
         </div>
         {/* Neues Auswahlformular unterhalb des Hinweises */}
         <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-            <span className="text-xs font-semibold text-blue-800">Neue Zweitgutachter:in anfragen</span>
+            <span className="text-xs font-semibold text-blue-800">{t.student.requestNewSecond}</span>
           </div>
-          <p className="text-xs text-blue-600 mb-3">Wählen Sie eine neue Zweitgutachter:in aus.</p>
+          <p className="text-xs text-blue-600 mb-3">{t.student.chooseNewSecond}</p>
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(parseInt(e.target.value))}
             className="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 mb-2"
           >
-            <option value={0}>-- Bitte auswählen --</option>
-            <option value={EXTERNAL_MARKER}>Zweitgutachter:in ist nicht in der Liste</option>
+            <option value={0}>{t.student.pleaseSelect}</option>
+            <option value={EXTERNAL_MARKER}>{t.student.externalSecondNotListed}</option>
             <option disabled value="">────────────────────</option>
             {(() => {
               const sorted = [...(secondExaminers as any[])]
@@ -1553,23 +1553,23 @@ function SecondExaminerPicker({
           </select>
           {selectedId === EXTERNAL_MARKER && (
             <div className="space-y-2 mb-3 p-3 bg-white rounded-lg border border-blue-200">
-              <p className="text-xs font-semibold text-gray-700 mb-1">Angaben zur externen Zweitgutachter:in</p>
+              <p className="text-xs font-semibold text-gray-700 mb-1">{t.student.externalSecondDetails}</p>
               <div className="flex gap-2">
                 <div className="w-28">
-                  <label className="text-xs text-gray-500 mb-0.5 block">Titel (opt.)</label>
+                  <label className="text-xs text-gray-500 mb-0.5 block">{t.student.titleOptional}</label>
                   <input type="text" value={extTitle} onChange={(e) => setExtTitle(e.target.value)} placeholder="Prof. Dr." className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 mb-0.5 block">Vorname *</label>
+                  <label className="text-xs text-gray-500 mb-0.5 block">{t.student.firstNameRequired}</label>
                   <input type="text" value={extFirstName} onChange={(e) => setExtFirstName(e.target.value)} placeholder="Maria" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 mb-0.5 block">Nachname *</label>
+                  <label className="text-xs text-gray-500 mb-0.5 block">{t.student.lastNameRequired}</label>
                   <input type="text" value={extLastName} onChange={(e) => setExtLastName(e.target.value)} placeholder="Musterfrau" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-0.5 block">E-Mail-Adresse *</label>
+                <label className="text-xs text-gray-500 mb-0.5 block">{t.student.emailRequired}</label>
                 <input type="email" value={extEmail} onChange={(e) => setExtEmail(e.target.value)} placeholder="m.musterfrau@beispiel.de" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-300" />
               </div>
             </div>
@@ -1580,7 +1580,7 @@ function SecondExaminerPicker({
             className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
             style={{ backgroundColor: "#76B900" }}
           >
-            {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "E-Mail prüfen & Anfrage senden"}
+            {isSaving ? t.student.sending : selectedId === EXTERNAL_MARKER ? t.student.addExternalSecond : t.student.reviewEmailAndSend}
           </button>
         </div>
       </div>
@@ -1602,15 +1602,15 @@ function SecondExaminerPicker({
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-            <span className="text-xs font-semibold text-amber-800">Zweitgutachter:in auswählen</span>
+            <span className="text-xs font-semibold text-amber-800">{t.student.secondExaminerTitle}</span>
             <span className="ml-auto text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-              {isExternal ? "Extern eingetragen" : "Anfrage gestellt"}
+              {isExternal ? t.student.externalSecondRecorded : t.student.secondRequestPending}
             </span>
           </div>
           <p className="text-xs text-amber-700 mb-2">
             {isExternal
-              ? "Externe Zweitgutachter:in eingetragen. Änderung nur möglich nach Rückzug."
-              : "Anfrage an Zweitgutachter:in wurde gesendet. Änderung nur möglich nach Rückzug oder Ablehnung."}
+              ? t.student.externalSecondLocked
+              : t.student.secondRequestLocked}
           </p>
           <div className="bg-white rounded-lg border border-amber-200 px-3 py-2 mb-2">
             <p className="text-xs font-semibold text-gray-800">{examinerDisplay}</p>
@@ -1619,7 +1619,7 @@ function SecondExaminerPicker({
             )}
             {secondExaminerRequestedAt && (
               <p className="text-xs text-gray-400 mt-0.5">
-                Angefragt: {new Date(secondExaminerRequestedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                {t.student.requestedOn.replace("{date}", new Date(secondExaminerRequestedAt).toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "short", year: "numeric" }))}
               </p>
             )}
           </div>
@@ -1630,14 +1630,14 @@ function SecondExaminerPicker({
                 disabled={withdrawMutation.isPending}
                 className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
               >
-                {withdrawMutation.isPending ? "Wird zurückgezogen…" : "Anfrage zurückziehen"}
+                {withdrawMutation.isPending ? t.student.withdrawing : t.student.withdrawSecondRequest}
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Anfrage zurückziehen?</AlertDialogTitle>
+                <AlertDialogTitle>{t.student.withdrawSecondRequestTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Möchten Sie die Anfrage an die Zweitgutachter:in wirklich zurückziehen? Sie können danach eine neue Anfrage stellen.
+                  {t.student.withdrawSecondRequestDescription}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -1646,7 +1646,7 @@ function SecondExaminerPicker({
                   className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => withdrawMutation.mutate({ requestId })}
                 >
-                  Zurückziehen
+                  {t.student.withdrawSecondRequest}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -1663,23 +1663,23 @@ function SecondExaminerPicker({
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-          <span className="text-xs font-semibold text-blue-800">Zweitgutachter:in auswählen</span>
-          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Erstgutachter:in hat zugesagt</span>
+          <span className="text-xs font-semibold text-blue-800">{t.student.secondExaminerTitle}</span>
+          <span className="ml-auto text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{t.student.firstExaminerAccepted}</span>
         </div>
-        <p className="text-xs text-blue-600 mb-3">Wählen Sie eine Zweitgutachter:in aus. Nach dem Senden wird eine Anfrage gestellt – analog zum Erstgutachter-Prozess.</p>
+        <p className="text-xs text-blue-600 mb-3">{t.student.secondSelectionDescription}</p>
 
         {/* Suchfeld */}
         <input
           type="text"
           value={secondExaminerSearch}
           onChange={(e) => setSecondExaminerSearch(e.target.value)}
-          placeholder="Name suchen…"
+          placeholder={t.student.searchName}
           className="w-full px-3 py-2 border border-blue-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 mb-2"
         />
 
         {/* Ergebnisliste */}
         {secondExaminersLoading ? (
-          <p className="text-xs text-gray-400 mb-2">Lade Prüfer:innen…</p>
+          <p className="text-xs text-gray-400 mb-2">{t.student.loadingExaminers}</p>
         ) : (
           <div className="max-h-48 overflow-y-auto border border-blue-100 rounded-lg bg-white mb-2">
             {/* Option: Externe Zweitgutachter:in */}
@@ -1690,7 +1690,7 @@ function SecondExaminerPicker({
                 selectedId === EXTERNAL_MARKER ? "bg-blue-100 font-semibold text-blue-800" : "text-gray-600"
               }`}
             >
-              Zweitgutachter:in ist nicht in der Liste (extern)
+              {t.student.externalSecondNotListedLong}
             </button>
             {/* Gefilterte Kandidaten */}
             {(secondExaminers as any[])
@@ -1732,13 +1732,13 @@ function SecondExaminerPicker({
                   >
                     <span className="font-medium">{displayName}</span>
                     {e.department && <span className="text-gray-400 ml-1">· {e.department}</span>}
-                    {isFull && <span className="text-red-400 ml-1">(Kapazität voll)</span>}
+                    {isFull && <span className="text-red-400 ml-1">({t.student.capacityFullNote})</span>}
                   </button>
                 );
               })
             }
             {(secondExaminers as any[]).filter((e: any) => e.id !== wantedExaminerId).length === 0 && !secondExaminersLoading && (
-              <p className="text-xs text-gray-400 px-3 py-2">Keine Zweitgutachter:innen verfügbar.</p>
+              <p className="text-xs text-gray-400 px-3 py-2">{t.student.noSecondExaminers}</p>
             )}
           </div>
         )}
@@ -1746,7 +1746,7 @@ function SecondExaminerPicker({
         {/* Ausgewählte Person anzeigen */}
         {selectedId > 0 && selectedId !== EXTERNAL_MARKER && (
           <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
-            <span className="font-semibold text-blue-800">Ausgewählt: </span>
+            <span className="font-semibold text-blue-800">{t.student.selected} </span>
             <span className="text-blue-700">{selectedExaminerName}</span>
             <button type="button" onClick={() => setSelectedId(0)} className="ml-2 text-gray-400 hover:text-red-500">✕</button>
           </div>
@@ -1754,10 +1754,10 @@ function SecondExaminerPicker({
 
         {selectedId === EXTERNAL_MARKER && (
           <div className="space-y-2 mb-3 p-3 bg-white rounded-lg border border-blue-200">
-            <p className="text-xs font-semibold text-gray-700 mb-1">Angaben zur externen Zweitgutachter:in</p>
+            <p className="text-xs font-semibold text-gray-700 mb-1">{t.student.externalSecondDetails}</p>
             <div className="flex gap-2">
               <div className="w-28">
-                <label className="text-xs text-gray-500 mb-0.5 block">Titel (opt.)</label>
+                <label className="text-xs text-gray-500 mb-0.5 block">{t.student.titleOptional}</label>
                 <input
                   type="text"
                   value={extTitle}
@@ -1767,7 +1767,7 @@ function SecondExaminerPicker({
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-gray-500 mb-0.5 block">Vorname *</label>
+                <label className="text-xs text-gray-500 mb-0.5 block">{t.student.firstNameRequired}</label>
                 <input
                   type="text"
                   value={extFirstName}
@@ -1777,7 +1777,7 @@ function SecondExaminerPicker({
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-gray-500 mb-0.5 block">Nachname *</label>
+                <label className="text-xs text-gray-500 mb-0.5 block">{t.student.lastNameRequired}</label>
                 <input
                   type="text"
                   value={extLastName}
@@ -1788,7 +1788,7 @@ function SecondExaminerPicker({
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-0.5 block">E-Mail-Adresse *</label>
+              <label className="text-xs text-gray-500 mb-0.5 block">{t.student.emailRequired}</label>
               <input
                 type="email"
                 value={extEmail}
@@ -1806,7 +1806,7 @@ function SecondExaminerPicker({
           className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50 transition-colors"
           style={{ backgroundColor: "#76B900" }}
         >
-          {isSaving ? "Wird gesendet…" : selectedId === EXTERNAL_MARKER ? "Externe Zweitgutachter:in eintragen" : "E-Mail prüfen & Anfrage senden"}
+          {isSaving ? t.student.sending : selectedId === EXTERNAL_MARKER ? t.student.addExternalSecond : t.student.reviewEmailAndSend}
         </button>
       </div>
     </div>
@@ -1816,19 +1816,19 @@ function SecondExaminerPicker({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">E-Mail-Vorschau</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t.student.emailPreview}</h3>
             <button onClick={() => setShowEmailPreview(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {/* Empfänger & Betreff */}
             <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
               <div className="flex gap-2">
-                <span className="text-gray-400 w-14 shrink-0">An:</span>
+                <span className="text-gray-400 w-14 shrink-0">{t.student.emailTo}</span>
                 <span className="font-medium text-gray-800">{selectedExaminerName}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-gray-400 w-14 shrink-0">Betreff:</span>
-                <span className="text-gray-700">Anfrage als Zweitgutachter:in – [Titel der Arbeit]</span>
+                <span className="text-gray-400 w-14 shrink-0">{t.student.emailSubject}</span>
+                <span className="text-gray-700">{t.student.secondRequestSubject}</span>
               </div>
             </div>
 
@@ -1889,7 +1889,7 @@ function SecondExaminerPicker({
 const WITHDRAWABLE_STATUSES = ["PENDING", "PENDING_FIRST_EXAMINER", "PENDING_SECOND_EXAMINER"];
 
 function MyRequests({ onReuseRequest }: { onReuseRequest?: (draft: Partial<FormDraft>) => void }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const utils = trpc.useUtils();
   const { data: requests, isLoading } = trpc.thesis.myRequests.useQuery();
 
@@ -2018,7 +2018,11 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
   const [reviseDescription, setReviseDescription] = useState(req.description ?? "");
   const [reviseLanguage, setReviseLanguage] = useState<"de" | "en">(req.language === "en" ? "en" : "de");
   const [reviseSemester, setReviseSemester] = useState(req.targetSemester ?? "");
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const displayTitle = req.title === "Thema wird noch festgelegt" ? t.student.defaultTopicPending : req.title;
+  const displayDescription = req.description === "Studierende:r sucht Betreuung für ein Thema nach Absprache mit der Prüfer:in."
+    ? t.student.defaultRequestDescription
+    : req.description;
 
   const { user } = useAuth();
   const isConditional = req.status === "CONDITIONAL_ACCEPTANCE";
@@ -2071,7 +2075,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between gap-4 mb-3">
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-gray-900 truncate">{req.title}</h3>
+              <h3 className="font-semibold text-gray-900 truncate">{displayTitle}</h3>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                 {/* Angefragte Prüfer:in (wantedExaminer) – immer anzeigen */}
                 {(req as any).wantedExaminerId && (
@@ -2139,7 +2143,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    {new Date(req.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
+                    {new Date(req.createdAt).toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { day: "2-digit", month: "short", year: "numeric" })}
                   </span>
                 )}
                 {(req as any).programmeName && (
@@ -2161,10 +2165,10 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                     >
                       <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <span className="truncate">{(req as any).secondExaminerName}</span>
-                      <span className="text-[10px] flex-shrink-0 text-green-500">(Zugesagt)</span>
+                      <span className="text-[10px] flex-shrink-0 text-green-500">({t.student.secondExaminerAccepted})</span>
                     </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="left">Profil der Zweitgutachter:in ansehen</TooltipContent>
+                  <TooltipContent side="left">{t.student.viewSecondExaminerProfile}</TooltipContent>
                 </Tooltip>
               )}
               {/* Zweitgutachter abgelehnt */}
@@ -2174,11 +2178,11 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                     <TooltipTrigger asChild>
                       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full max-w-[200px] border text-red-700 bg-red-50 border-red-300 animate-pulse">
                         <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span className="truncate">Zweitgutachter:in</span>
-                        <span className="text-[10px] flex-shrink-0 text-red-400">(Abgelehnt)</span>
+                        <span className="truncate">{t.student.secondExaminerTitle}</span>
+                        <span className="text-[10px] flex-shrink-0 text-red-400">({t.student.secondExaminerRejected})</span>
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="left">Die angefragte Person hat die Zweitbetreuung abgelehnt. Bitte wählen Sie eine andere Person.</TooltipContent>
+                  <TooltipContent side="left">{t.student.secondExaminerRejectionHint}</TooltipContent>
                   </Tooltip>
                   {(req as any).secondExaminerRejectionReason && (
                     <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 max-w-[280px]">
@@ -2230,7 +2234,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             </div>
           </div>
 
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3">{req.description}</p>
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">{displayDescription}</p>
           <div className="flex flex-wrap gap-3 text-xs text-gray-500">
             {req.targetSemester && (
               <span className="flex items-center gap-1">
@@ -2518,45 +2522,45 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
             <button
               onClick={() => setShowSummaryPreview(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-600 hover:border-[#76B900] hover:text-[#76B900] transition-colors flex-1"
-              title="Antrag-Zusammenfassung im Browser ansehen"
+              title={t.student.requestSummaryPreview}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              Zusammenfassung (PDF)
+              {t.student.requestSummaryPdf}
             </button>
             <a
               href={`/api/export/thesis/${req.id}/summary.pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center p-2 rounded-xl border border-gray-200 text-gray-500 hover:border-[#76B900] hover:text-[#76B900] transition-colors"
-              title="PDF direkt herunterladen"
+              title={t.student.downloadPdf}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             </a>
           </div>
           {/* Anmeldedokument – Vorschau + Download */}
           {("SECOND_EXAMINER_ACCEPTED MATCHED REGISTERED ACCEPTED COMPLETED".split(" ") as string[]).includes(req.status) && req.examinerId && (req.secondExaminerId || (req as any).externalSecondExaminerFirstName) && (() => {
-            const guidance = getRegistrationDocumentGuidance({ department: (req as any).programmeFachbereich, targetSemester: req.targetSemester });
+            const guidance = getRegistrationDocumentGuidance({ department: (req as any).programmeFachbereich, targetSemester: req.targetSemester, language: lang });
             const sentAt = (req as any).registrationDocumentSentAt;
-            const sentAtLabel = sentAt ? new Date(sentAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : null;
+            const sentAtLabel = sentAt ? new Date(sentAt).toLocaleString(lang === "en" ? "en-GB" : "de-DE", { dateStyle: "medium", timeStyle: "short" }) : null;
             return (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => setShowRegPreview(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors" title="Anmeldedokument im Browser ansehen">
+                  <button onClick={() => setShowRegPreview(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#76B900] text-white hover:bg-[#5a8f00] transition-colors" title={t.student.registrationDocumentPreview}>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    Anmeldedokument ansehen
+                    {t.student.registrationDocumentView}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{sentAtLabel ? `Zuletzt per E-Mail versandt am ${sentAtLabel}.` : "Der Versandzeitpunkt wird nach erfolgreichem E-Mail-Versand angezeigt."}</TooltipContent>
+                <TooltipContent>{sentAtLabel ? t.student.registrationDocumentSent.replace("{date}", sentAtLabel) : t.student.registrationDocumentNotSent}</TooltipContent>
               </Tooltip>
               <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
-                <p className="font-semibold">Nächster Schritt: bei der Fachbereichsverwaltung einreichen</p>
+                <p className="font-semibold">{t.student.registrationNextStep}</p>
                 <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-5 text-blue-900">
-                  <li>Laden Sie das offizielle Dokument mit Verifikations-QR-Code herunter und prüfen Sie die Angaben.</li>
-                  <li>Reichen Sie das Dokument bei der <strong>Verwaltung {guidance.department}</strong> ein. Gemeint ist stets die Verwaltung des Fachbereichs Ihres Studiengangs.</li>
+                  <li>{t.student.registrationStep1}</li>
+                  <li>{t.student.registrationStep2.replace("{department}", guidance.department)}</li>
                   <li>{guidance.deadlineText}</li>
                 </ol>
               </div>
@@ -2625,7 +2629,7 @@ function StudentRequestCard({ req, utils, withdrawMutation, onReuseRequest }: { 
                   </AlertDialogHeader>
                   <div className="px-1 pb-2 mt-2">
                     <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 text-xs text-red-700">
-                      <strong>Betrifft:</strong> „{req.title || "Thema wird noch festgelegt"}“
+                      <strong>Betrifft:</strong> „{displayTitle || t.student.defaultTopicPending}“
                     </div>
                     <label className="text-xs font-medium text-gray-600 block mb-1.5">
                       Grund für den Abbruch <span className="text-gray-400 font-normal">(optional)</span>
@@ -3313,6 +3317,7 @@ function StatusHistory() {
 // ─── Main Component ─────────────────────────────────────────────────────────────────────────────────────
 // ─── Benachrichtigungs-Banner ────────────────────────────────────────────────
 function StatusNotificationBanner() {
+  const { t } = useLanguage();
   const utils = trpc.useUtils();
   const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
     refetchInterval: 30_000,
@@ -3332,7 +3337,9 @@ function StatusNotificationBanner() {
   if (unread.length === 0) return null;
 
   const latest = unread[0];
-  const isAccepted = latest.title.toLowerCase().includes("angenommen") || latest.title.toLowerCase().includes("bestätigt");
+  const isAccepted = /angenommen|bestätigt|accepted|confirmed/i.test(latest.title);
+  const localizedTitle = isAccepted ? t.student.notificationAcceptedTitle : t.student.notificationRejectedTitle;
+  const localizedMessage = isAccepted ? t.student.notificationAcceptedMessage : t.student.notificationRejectedMessage;
 
   return (
     <div
@@ -3364,16 +3371,16 @@ function StatusNotificationBanner() {
         <p className={`text-sm font-semibold ${
           isAccepted ? "text-green-800" : "text-red-800"
         }`}>
-          {latest.title}
+          {localizedTitle}
         </p>
         <p className={`text-sm mt-0.5 ${
           isAccepted ? "text-green-700" : "text-red-700"
         }`}>
-          {latest.message}
+          {localizedMessage}
         </p>
         {unread.length > 1 && (
           <p className="text-xs mt-1 text-gray-500">
-            +{unread.length - 1} weitere ungelesene Benachrichtigung{unread.length - 1 > 1 ? "en" : ""}
+            {t.student.additionalUnread.replace("{count}", String(unread.length - 1))}
           </p>
         )}
       </div>
@@ -3384,7 +3391,7 @@ function StatusNotificationBanner() {
         className={`flex-shrink-0 p-1 rounded-lg transition-colors ${
           isAccepted ? "hover:bg-green-100 text-green-600" : "hover:bg-red-100 text-red-600"
         }`}
-        title="Als gelesen markieren"
+        title={t.student.markAsRead}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

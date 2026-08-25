@@ -39,4 +39,26 @@ describe("Registrierungs- und Antragsübersetzungen", () => {
       expect(translations.en.student[key]).toBeTruthy();
     }
   });
+
+  it("stellt die Request-Aktionen und Einreichhinweise zweisprachig bereit", () => {
+    const requiredStudentKeys = [
+      "secondExaminerTitle",
+      "secondRequestSent",
+      "reviewEmailAndSend",
+      "requestSummaryPdf",
+      "registrationDocumentView",
+      "registrationNextStep",
+      "notificationAcceptedTitle",
+      "notificationAcceptedMessage",
+      "additionalUnread",
+    ] as const;
+
+    for (const key of requiredStudentKeys) {
+      expect(translations.de.student[key]).toBeTruthy();
+      expect(translations.en.student[key]).toBeTruthy();
+    }
+
+    expect(translations.en.student.registrationNextStep).toContain("department administration");
+    expect(translations.en.student.requestSummaryPdf).toBe("Summary (PDF)");
+  });
 });
