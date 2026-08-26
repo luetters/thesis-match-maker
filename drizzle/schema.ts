@@ -500,7 +500,13 @@ export const publishedThesisAbstracts = mysqlTable("published_thesis_abstracts",
 	submissionSemester: varchar("submission_semester", { length: 32 }).notNull(),
 	title: varchar({ length: 512 }).notNull(),
 	department: varchar({ length: 255 }).notNull(),
+	programme: varchar({ length: 255 }),
+	// Der frühere Einzelabstract bleibt für Bestandsdaten erhalten. Neue Einträge
+	// werden zwingend zweisprachig gespeichert und öffentlich ausgegeben.
 	abstract: text().notNull(),
+	abstractDe: text("abstract_de"),
+	abstractEn: text("abstract_en"),
+	keywords: text(),
 	publicationConsent: tinyint("publication_consent").default(0).notNull(),
 	consentedAt: datetime("consented_at", { mode: "string" }),
 	status: mysqlEnum(["PENDING_REVIEW", "APPROVED", "REJECTED", "WITHDRAWN"]).default("PENDING_REVIEW").notNull(),

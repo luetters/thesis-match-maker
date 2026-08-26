@@ -48,22 +48,20 @@ function defaultSlot(offsetDays: number) {
   return date.toISOString().slice(0, 16);
 }
 
-function currentSemester() {
-  const now = new Date();
-  const year = now.getFullYear();
-  return now.getMonth() < 3 || now.getMonth() > 8 ? `WS ${year}/${String(year + 1).slice(-2)}` : `SS ${year}`;
-}
-
 function AbstractPublicationCard({ thesisRequestId }: { thesisRequestId: number }) {
   const utils = trpc.useUtils();
   const { data: existing, isLoading } = trpc.abstractCollection.mine.useQuery({ thesisRequestId });
-  const [abstract, setAbstract] = useState("");
-  const [semester, setSemester] = useState(currentSemester);
+  const { data: prefill, isLoading: isPrefillLoading } = trpc.abstractCollection.prefill.useQuery({ thesisRequestId });
+  const [abstractDe, setAbstractDe] = useState("");
+  const [abstractEn, setAbstractEn] = useState("");
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = useState("");
   const [consent, setConsent] = useState(false);
   useEffect(() => {
     if (existing) {
-      setAbstract(existing.abstract);
-      setSemester(existing.submissionSemester);
+      setAbstractDe(existing.abstractDe ?? "");
+      setAbstractEn(existing.abstractEn ?? "");
+      setKeywords(existing.keywords ?? []);
       setConsent(existing.status !== "WITHDRAWN");
     }
   }, [existing]);
@@ -83,13 +81,21 @@ function AbstractPublicationCard({ thesisRequestId }: { thesisRequestId: number 
     onError: (error) => toast.error(error.message),
   });
   const isActive = existing && existing.status !== "WITHDRAWN";
+  const addKeyword = () => {
+    const next = keywordInput.trim().replace(/\s+/g, " ");
+    if (next && !keywords.includes(next) && keywords.length < 15) setKeywords((current) => [...current, next]);
+    setKeywordInput("");
+  };
 
   return <div className="rounded-xl border border-[#76B900]/30 bg-[#f6faed] p-4">
-    <div className="flex items-start gap-3"><div className="rounded-lg bg-[#76B900]/15 p-2 text-[#456d00]"><BookOpen className="h-5 w-5" /></div><div><h4 className="font-semibold text-[#244400]">Abstract für die Abstract-Sammlung</h4><p className="mt-1 text-sm text-[#456d00]">Optional: Sie können Ihren Abstract für die redaktionell geprüfte Präsentation von Abschlussarbeiten einreichen. Veröffentlichungen erfolgen erst nach Freigabe und ohne Ihren Namen oder Ihre Matrikelnummer.</p></div></div>
-    {isLoading ? <p className="mt-3 text-sm text-gray-500">Abstract wird geladen …</p> : <div className="mt-4 space-y-3"><div className="grid gap-3 sm:grid-cols-[180px_1fr]"><div className="space-y-1.5"><Label htmlFor={`abstract-semester-${thesisRequestId}`}>Semester der Einreichung</Label><Input id={`abstract-semester-${thesisRequestId}`} value={semester} onChange={(event) => setSemester(event.target.value)} placeholder="z. B. WS 2026/27" /></div><div className="space-y-1.5"><Label htmlFor={`public-abstract-${thesisRequestId}`}>Abstract</Label><Textarea id={`public-abstract-${thesisRequestId}`} value={abstract} onChange={(event) => setAbstract(event.target.value)} maxLength={3500} placeholder="Fassen Sie Thema, Fragestellung, Vorgehen und Ergebnisse Ihrer Arbeit zusammen." className="min-h-28 bg-white" /></div></div>
-      <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-white/80 p-3 text-sm text-gray-700"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#5a8c00]" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Ich willige ein, dass <strong>Semester, Titel, Fachbereich und der von mir eingegebene Abstract</strong> nach redaktioneller Prüfung im Thesis Match Maker und später auf der Website der HTW Berlin veröffentlicht werden. Ich bestätige, dass der Text keine personenbezogenen Daten, vertraulichen Unternehmensinformationen oder schutzwürdigen Inhalte enthält.</span></label>
+    <div className="flex items-start gap-3"><div className="rounded-lg bg-[#76B900]/15 p-2 text-[#456d00]"><BookOpen className="h-5 w-5" /></div><div><h4 className="font-semibold text-[#244400]">Verpflichtender Abstract für die öffentliche Abstract-Sammlung</h4><p className="mt-1 text-sm text-[#456d00]">Für das vereinbarte Kolloquium reichen Sie den Abstract auf Deutsch und Englisch sowie Schlagwörter ein. Eine Veröffentlichung erfolgt erst nach redaktioneller Prüfung und ohne Ihren Namen oder Ihre Matrikelnummer.</p></div></div>
+    {isLoading || isPrefillLoading ? <p className="mt-3 text-sm text-gray-500">Abstract wird geladen …</p> : <div className="mt-4 space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div><Label>Titel der Arbeit</Label><p className="mt-1 rounded-md border bg-white px-3 py-2 text-sm text-gray-700">{prefill?.title}</p></div><div><Label>Studiengang</Label><p className="mt-1 rounded-md border bg-white px-3 py-2 text-sm text-gray-700">{prefill?.programme ?? "Noch nicht im Profil hinterlegt"}</p></div><div><Label>Fachbereich</Label><p className="mt-1 rounded-md border bg-white px-3 py-2 text-sm text-gray-700">{prefill?.department}</p></div><div><Label>Semester der Einreichung</Label><p className="mt-1 rounded-md border bg-white px-3 py-2 text-sm text-gray-700">{prefill?.submissionSemester}</p></div></div>
+      <div className="grid gap-3 lg:grid-cols-2"><div className="space-y-1.5"><Label htmlFor={`public-abstract-de-${thesisRequestId}`}>Abstract Deutsch</Label><Textarea id={`public-abstract-de-${thesisRequestId}`} value={abstractDe} onChange={(event) => setAbstractDe(event.target.value)} maxLength={3500} placeholder="Fassen Sie Thema, Fragestellung, Vorgehen und Ergebnisse Ihrer Arbeit auf Deutsch zusammen." className="min-h-36 bg-white" /></div><div className="space-y-1.5"><Label htmlFor={`public-abstract-en-${thesisRequestId}`}>Abstract English</Label><Textarea id={`public-abstract-en-${thesisRequestId}`} value={abstractEn} onChange={(event) => setAbstractEn(event.target.value)} maxLength={3500} placeholder="Summarise the topic, research question, method and results in English." className="min-h-36 bg-white" /></div></div>
+      <div className="space-y-1.5"><Label htmlFor={`abstract-keywords-${thesisRequestId}`}>Schlagwörter</Label><div className="flex gap-2"><Input id={`abstract-keywords-${thesisRequestId}`} value={keywordInput} onChange={(event) => setKeywordInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Tab" || event.key === "Enter") { event.preventDefault(); addKeyword(); } }} placeholder="Schlagwort eingeben und mit Tabulator ergänzen" /><Button type="button" variant="outline" onClick={addKeyword}>Hinzufügen</Button></div><div className="flex flex-wrap gap-2">{keywords.map((keyword) => <button type="button" key={keyword} onClick={() => setKeywords((current) => current.filter((item) => item !== keyword))} className="rounded-full bg-[#e8f4d4] px-3 py-1 text-xs font-medium text-[#456d00]">{keyword} ×</button>)}</div></div>
+      <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-white/80 p-3 text-sm text-gray-700"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#5a8c00]" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Ich willige ein, dass <strong>Semester, Titel, Studiengang, Fachbereich, Schlagwörter und die beiden von mir eingegebenen Abstracts</strong> nach redaktioneller Prüfung im Thesis Match Maker und später auf der Website der HTW Berlin veröffentlicht werden. Ich bestätige, dass die Texte keine personenbezogenen Daten, vertraulichen Unternehmensinformationen oder schutzwürdigen Inhalte enthalten.</span></label>
       {isActive && <p className="text-xs font-medium text-[#456d00]">Status: {existing.status === "PENDING_REVIEW" ? "Redaktionelle Prüfung ausstehend" : existing.status === "APPROVED" ? "Freigegeben und sichtbar" : "Überarbeitung erforderlich"}{existing.reviewNote ? ` · Hinweis: ${existing.reviewNote}` : ""}</p>}
-      <div className="flex flex-wrap gap-2"><Button size="sm" className="bg-[#76B900] hover:bg-[#5a8c00]" disabled={!consent || abstract.trim().length < 80 || submit.isPending} onClick={() => submit.mutate({ thesisRequestId, submissionSemester: semester, abstract, publicationConsent: true })}><ShieldCheck className="mr-1.5 h-4 w-4" />{isActive ? "Abstract erneut einreichen" : "Abstract einreichen"}</Button>{isActive && <Button size="sm" variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ thesisRequestId })}>Freigabe zurückziehen</Button>}</div>
+      <div className="flex flex-wrap gap-2"><Button size="sm" className="bg-[#76B900] hover:bg-[#5a8c00]" disabled={!consent || abstractDe.trim().length < 80 || abstractEn.trim().length < 80 || keywords.length === 0 || submit.isPending} onClick={() => submit.mutate({ thesisRequestId, abstractDe, abstractEn, keywords, publicationConsent: true })}><ShieldCheck className="mr-1.5 h-4 w-4" />{isActive ? "Abstract erneut einreichen" : "Abstract einreichen"}</Button>{isActive && <Button size="sm" variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ thesisRequestId })}>Freigabe zurückziehen</Button>}</div>
     </div>}
   </div>;
 }
@@ -211,7 +217,7 @@ export function ColloquiumSchedulingPanel({ mode }: { mode: SchedulingMode }) {
         {(detailData.poll.status === "OPEN" || detailData.poll.status === "MATCH_FOUND") && myParticipant && <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"><h4 className="font-semibold text-blue-950">Ihre Verfügbarkeit</h4><p className="mt-1 text-sm text-blue-800">Bitte bewerten Sie jede Terminoption. Erst bei drei Verfügbarkeiten kann ein Termin zur verbindlichen Bestätigung vorgeschlagen werden.</p><div className="mt-3 space-y-2">{detailData.slots.map((slot: any) => { const saved = slot.responses.find((response: any) => response.participantId === myParticipant.id)?.availability; return <div className="flex flex-wrap items-center justify-between gap-2" key={slot.id}><span className="text-sm text-gray-700">{formatDate(slot.startsAt)}</span><Select value={localResponses[slot.id] ?? saved ?? "UNSET"} onValueChange={(value) => value !== "UNSET" && setLocalResponses((current) => ({ ...current, [slot.id]: value as Availability }))}><SelectTrigger className="w-44 bg-white"><SelectValue placeholder="Bitte wählen" /></SelectTrigger><SelectContent><SelectItem value="UNSET" disabled>Bitte wählen</SelectItem><SelectItem value="YES">Verfügbar</SelectItem><SelectItem value="MAYBE">Unter Vorbehalt</SelectItem><SelectItem value="NO">Nicht verfügbar</SelectItem></SelectContent></Select></div>})}</div><Button className="mt-4 bg-blue-700 hover:bg-blue-800" onClick={submitAvailability} disabled={respond.isPending}>{respond.isPending ? "Wird gespeichert…" : "Verfügbarkeit speichern"}</Button></div>}
         {detailData.poll.status === "AWAITING_CONFIRMATION" && myParticipant && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><h4 className="font-semibold text-amber-950">Verbindliche Schlussbestätigung</h4><p className="mt-1 text-sm text-amber-800">Bestätigen Sie den vorgeschlagenen Termin verbindlich. Erst nach allen drei Bestätigungen wird der Kalendereintrag erstellt.</p><div className="mt-3 flex flex-wrap gap-2"><Button className="bg-[#76B900] hover:bg-[#5a8c00]" onClick={() => confirm.mutate({ pollId: detailData.poll.id, confirmed: true })} disabled={confirm.isPending}><CheckCircle2 className="mr-1.5 h-4 w-4" />Termin bestätigen</Button><Button variant="outline" className="border-red-200 text-red-700 hover:bg-red-50" onClick={() => { const reason = window.prompt("Optionaler Grund für die Ablehnung:"); confirm.mutate({ pollId: detailData.poll.id, confirmed: false, reason: reason || undefined }); }} disabled={confirm.isPending}>Termin ablehnen</Button></div></div>}
         {detailData.poll.status === "CONFIRMED" && <div className="rounded-xl border border-[#76B900]/30 bg-[#76B900]/10 p-4"><div className="flex items-center gap-2 font-semibold text-[#456d00]"><CheckCircle2 className="h-5 w-5" />Termin verbindlich bestätigt</div><p className="mt-1 text-sm text-[#456d00]">Der Termin wurde als Kolloquium und offizielles Verteidigungsdatum eingetragen. Raum und Online-Link sind im Kalendereintrag enthalten.</p>{locationLabel && <p className="mt-2 flex items-center gap-1.5 text-sm text-[#456d00]"><LinkIcon className="h-4 w-4" />{locationLabel}</p>}</div>}
-        {mode === "student" && <AbstractPublicationCard thesisRequestId={detailData.thesis.id} />}
+        {mode === "student" && detailData.poll.status === "CONFIRMED" && <AbstractPublicationCard thesisRequestId={detailData.thesis.id} />}
       </div>}</CardContent></Card>
     </div>
   </div>;

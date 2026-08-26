@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { getAbstractReviewQueue, getMyThesisAbstract, getPublicThesisAbstracts, reviewThesisAbstract, submitThesisAbstract, withdrawThesisAbstract } from "../db/abstractCollection";
+import { getAbstractReviewQueue, getAbstractSubmissionPrefill, getMyThesisAbstract, getPublicThesisAbstracts, reviewThesisAbstract, submitThesisAbstract, withdrawThesisAbstract } from "../db/abstractCollection";
 
 const semesterInput = z.string().trim().regex(/^(SS|WS)\s?20\d{2}(\/\d{2})?$/, "Bitte verwenden Sie ein Semester wie SS 2026 oder WS 2026/27.");
 
@@ -30,11 +30,13 @@ export const abstractCollectionRouter = router({
     generatedAt: new Date().toISOString(),
     entries: await getPublicThesisAbstracts({ ...(input ?? {}), limit: 100 }),
   })),
+  prefill: studentProcedure.input(z.object({ thesisRequestId: z.number().int().positive() })).query(({ ctx, input }) => getAbstractSubmissionPrefill(input.thesisRequestId, ctx.user.id)),
   mine: studentProcedure.input(z.object({ thesisRequestId: z.number().int().positive() })).query(({ ctx, input }) => getMyThesisAbstract(input.thesisRequestId, ctx.user.id)),
   submit: studentProcedure.input(z.object({
     thesisRequestId: z.number().int().positive(),
-    submissionSemester: semesterInput,
-    abstract: z.string().trim().min(80).max(3500),
+    abstractDe: z.string().trim().min(80).max(3500),
+    abstractEn: z.string().trim().min(80).max(3500),
+    keywords: z.array(z.string().trim().min(2).max(64)).min(1).max(15),
     publicationConsent: z.literal(true),
   })).mutation(({ ctx, input }) => submitThesisAbstract({ ...input, studentId: ctx.user.id })),
   withdraw: studentProcedure.input(z.object({ thesisRequestId: z.number().int().positive() })).mutation(({ ctx, input }) => withdrawThesisAbstract({ ...input, studentId: ctx.user.id })),
