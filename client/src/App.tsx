@@ -37,6 +37,7 @@ import AbstractCollection from "./pages/AbstractCollection";
 import ProgrammeDirectory from "./pages/ProgrammeDirectory";
 import ProgrammePage from "./pages/ProgrammePage";
 import ProgrammeManagement from "./pages/ProgrammeManagement";
+import DataDeletionManagement from "./pages/DataDeletionManagement";
 import SeoMetadata from "./components/SeoMetadata";
 
 function Router() {
@@ -94,6 +95,7 @@ function Router() {
 
       {/* Superadmin-Bereich */}
       <Route path="/superadmin/programmes" component={ProgrammeManagement} />
+      <Route path="/superadmin/data-deletion" component={DataDeletionManagement} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/superadmin/:tab" component={SuperadminDashboard} />
 

@@ -2224,10 +2224,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Externe Erreichbarkeit, HTTPS-Weiterleitung und Portalzugang über die neue Domain abnehmen
 
 ## Dauerhafte VPS-Bereitstellung
-- [ ] Bestehende GitHub-Workflow- und VPS-Deploy-Konfiguration auf Eignung prüfen
-- [ ] Dauerhaften, eingeschränkten Deploy-Zugang und geschützte GitHub-Secrets festlegen
-- [ ] Automatischen Deploy mit Build, Migration/Health-Check und klarer Fehlerausgabe einrichten
-- [ ] Betriebsablauf für Änderungen, Rollback und Zugriffs-Widerruf dokumentieren
+- [x] Bestehende GitHub-Workflow- und VPS-Deploy-Konfiguration auf Eignung prüfen; für den laufenden Betrieb durch den GitHub-unabhängigen FileZilla-Ablauf ersetzt.
+- [x] Dauerhaften, eingeschränkten Deploy-Zugang und geschützte GitHub-Secrets festlegen; der eingeschränkte SFTP-Zugang ersetzt diesen Weg.
+- [x] Automatischen Deploy mit Build, Migration/Health-Check und klarer Fehlerausgabe einrichten; der kontrollierte `DEPLOY.ready`-Auslöser führt diese Schritte serverseitig aus.
+- [x] Betriebsablauf für Änderungen, Rollback und Zugriffs-Widerruf dokumentieren; in der FileZilla-Betriebsdokumentation enthalten.
 
 ## GitHub-unabhängige VPS-Bereitstellung
 - [x] Eingeschränktes dauerhaftes VPS-Deploy-Konto mit Schlüsselzugang und ohne interaktive Root-Shell einrichten
@@ -2282,4 +2282,5 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Öffentliche Seiten um kontextbezogene Open-Graph- und Social-Preview-Metadaten ergänzen, ohne private URLs oder personenbezogene Daten preiszugeben.
 - [x] Öffentliche HTML-Auslieferung ohne JavaScript mit sicheren, route-spezifischen SEO- und Social-Metadaten ausstatten und gegen die private SPA-Auslieferung absichern.
 - [x] Arbeiten mit aktivem Sperrvermerk serverseitig aus jeder öffentlichen Abstractabfrage, Suche und Fachbereichsfilterung ausschließen und regressionssicher prüfen.
+- [x] Superadmin-Löschverwaltung für einzelne Testanfragen, vergangene Semester und mindestens drei Jahre alte Daten mit Vorschau, doppelter Sicherheitsabfrage, Auditprotokoll und ohne automatische Löschung implementieren.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.

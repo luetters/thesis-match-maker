@@ -229,6 +229,127 @@ export async function setExaminerPublicTemplate(
   }
 }
 
+export type ThesisDeletionScope = "single_request" | "semester" | "closed_over_three_years";
+
+export type ThesisDeletionPreview = {
+  scope: ThesisDeletionScope;
+  items: Array<{
+    id: number;
+    title: string;
+    targetSemester: string | null;
+    status: string;
+    createdAt: string;
+    caseClosedAt: string | null;
+  }>;
+  total: number;
+  notice: string;
+};
+
+function threeYearsAgoIsoDate(): string {
+  const date = new Date();
+  date.setUTCFullYear(date.getUTCFullYear() - 3);
+  return date.toISOString().slice(0, 19).replace("T", " ");
+}
+
+export async function getThesisDeletionPreview(input: {
+  scope: ThesisDeletionScope;
+  thesisRequestId?: number;
+  semester?: string;
+}): Promise<ThesisDeletionPreview> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+
+  const condition = input.scope === "single_request"
+    ? input.thesisRequestId
+      ? eq(thesisRequests.id, input.thesisRequestId)
+      : (() => { throw new Error("Für die Einzellöschung fehlt die Anfrage-ID."); })()
+    : input.scope === "semester"
+      ? input.semester?.trim()
+        ? eq(thesisRequests.targetSemester, input.semester.trim())
+        : (() => { throw new Error("Für die Semesterlöschung fehlt das Semester."); })()
+      : and(
+          isNotNull(thesisRequests.caseClosedAt),
+          lte(thesisRequests.caseClosedAt, threeYearsAgoIsoDate()),
+        );
+
+  const items = await db
+    .select({
+      id: thesisRequests.id,
+      title: thesisRequests.title,
+      targetSemester: thesisRequests.targetSemester,
+      status: thesisRequests.status,
+      createdAt: thesisRequests.createdAt,
+      caseClosedAt: thesisRequests.caseClosedAt,
+    })
+    .from(thesisRequests)
+    .where(condition)
+    .orderBy(desc(thesisRequests.createdAt));
+
+  return {
+    scope: input.scope,
+    items,
+    total: items.length,
+    notice: input.scope === "closed_over_three_years"
+      ? "Es werden ausschließlich abgeschlossene Fälle angezeigt, deren Abschlusszeitpunkt mindestens drei Jahre zurückliegt."
+      : "Die Auswahl ist eine Vorschau und führt noch zu keiner Datenänderung.",
+  };
+}
+
+export async function permanentlyDeleteThesisRequests(input: {
+  thesisRequestIds: number[];
+  expectedCount: number;
+  scope: ThesisDeletionScope;
+  thesisRequestId?: number;
+  semester?: string;
+  actorId: number;
+  reason: string;
+}): Promise<{ deletedCount: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const ids = Array.from(new Set(input.thesisRequestIds)).filter((id) => Number.isInteger(id) && id > 0);
+  if (ids.length === 0) throw new Error("Es wurden keine löschbaren Anfragen ausgewählt.");
+  if (ids.length !== input.expectedCount) throw new Error("Die Löschvorschau hat sich geändert. Bitte erneut prüfen.");
+  if (!input.reason.trim()) throw new Error("Für eine endgültige Löschung ist eine Begründung erforderlich.");
+
+  const freshPreview = await getThesisDeletionPreview({
+    scope: input.scope,
+    thesisRequestId: input.thesisRequestId,
+    semester: input.semester,
+  });
+  const freshIds = freshPreview.items.map((item) => item.id).sort((a, b) => a - b);
+  const requestedIds = ids.slice().sort((a, b) => a - b);
+  if (freshIds.length !== input.expectedCount || freshIds.length !== requestedIds.length || freshIds.some((id, index) => id !== requestedIds[index])) {
+    throw new Error("Die Löschvorschau ist nicht mehr aktuell oder enthält unzulässige Fälle. Bitte erneut prüfen.");
+  }
+
+  await db.transaction(async (tx) => {
+    const values = sql.join(ids.map((id) => sql`${id}`), sql`, `);
+    await tx.execute(sql`DELETE FROM conditional_document_comments WHERE document_id IN (SELECT id FROM conditional_documents WHERE thesis_request_id IN (${values}))`);
+    await tx.execute(sql`DELETE FROM conditional_documents WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM colloquium_scheduling_polls WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM colloquiums WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM examiner_action_tokens WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM examiner_comments WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM thesis_doc_tokens WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM deadline_changes WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM reminder_schedules WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM notifications WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM pav_examiner_proposals WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM published_thesis_abstracts WHERE thesis_request_id IN (${values})`);
+    await tx.execute(sql`DELETE FROM audit_log WHERE thesis_request_id IN (${values})`);
+    await tx.delete(thesisRequests).where(inArray(thesisRequests.id, ids));
+    await tx.insert(auditLog).values({
+      actorId: input.actorId,
+      actorRole: "superadmin",
+      action: "THESIS_DATA_DELETED",
+      reason: input.reason.trim().slice(0, 1000),
+      metadata: { scope: input.scope, deletedCount: ids.length },
+    });
+  });
+
+  return { deletedCount: ids.length };
+}
+
 export async function removeExaminerPublicTemplate(examinerId: number) {
   const db = await getDb();
   if (!db) return;

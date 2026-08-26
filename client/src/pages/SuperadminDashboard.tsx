@@ -1471,6 +1471,7 @@ export default function SuperadminDashboard() {
     { id: "admin_management", label: "Rechteverwaltung", icon: "🛡️" },
     { id: "infrastructure", label: "Infrastruktur", icon: "🖥️" },
     { id: "portable_transfer", label: "Datenübernahme", icon: "⇄" },
+    { id: "data_deletion", label: "Datenlöschung", icon: "🗑️", action: () => setLocation("/superadmin/data-deletion") },
   ];
 
   useEffect(() => {

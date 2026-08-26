@@ -50,6 +50,8 @@ import {
   getConfidentialityChangesForExaminer,
   getExaminerProfileByUserId,
   getExaminerPublicResources,
+  getThesisDeletionPreview,
+  permanentlyDeleteThesisRequests,
   replaceExaminerPublicRecommendations,
   removeExaminerPublicTemplate,
   getNotificationsByUser,
@@ -2877,9 +2879,38 @@ export const appRouter = router({
     }),
     scheduling: colloquiumSchedulingRouter,
   }),
-  // --- Superadmin: Systemkonfiguration ---
-  superadmin: router({
-    /** Einmaliger, fünf Minuten gültiger Link. Das ZIP wird nicht serverseitig gespeichert. */
+	  // --- Superadmin: Systemkonfiguration ---
+	  superadmin: router({
+	    deletionPreview: superadminProcedure
+	      .input(z.object({
+	        scope: z.enum(["single_request", "semester", "closed_over_three_years"]),
+	        thesisRequestId: z.number().int().positive().optional(),
+	        semester: z.string().trim().max(32).optional(),
+	      }))
+	      .query(async ({ input }) => getThesisDeletionPreview(input)),
+
+	    permanentlyDeleteThesisData: superadminProcedure
+	      .input(z.object({
+	        scope: z.enum(["single_request", "semester", "closed_over_three_years"]),
+	        thesisRequestIds: z.array(z.number().int().positive()).min(1).max(500),
+	        expectedCount: z.number().int().positive().max(500),
+	        thesisRequestId: z.number().int().positive().optional(),
+	        semester: z.string().trim().max(32).optional(),
+	        reason: z.string().trim().min(10).max(1000),
+	        confirmation: z.literal("ENDGUELTIG LOESCHEN"),
+	        secondConfirmation: z.literal(true),
+	      }))
+	      .mutation(async ({ ctx, input }) => permanentlyDeleteThesisRequests({
+	        thesisRequestIds: input.thesisRequestIds,
+	        expectedCount: input.expectedCount,
+	        scope: input.scope,
+	        thesisRequestId: input.thesisRequestId,
+	        semester: input.semester,
+	        actorId: ctx.user.id,
+	        reason: input.reason,
+	      })),
+
+	    /** Einmaliger, fünf Minuten gültiger Link. Das ZIP wird nicht serverseitig gespeichert. */
     createPortableTransferDownload: superadminProcedure.mutation(async ({ ctx }) => {
       return createPortableTransferDownloadToken(ctx.user.id);
     }),
