@@ -2204,8 +2204,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] SMTP-Verbindung über eine einzelne Test-E-Mail prüfen
 - [ ] Passwort-Reset-E-Mails bis zum bestätigten Go-live zurückstellen und erst nach neuer ausdrücklicher Freigabe auslösen
 - [ ] Ausschließlich für die sechs benannten Pilotadressen einen gezielten Passwort-Reset prüfen, senden und protokollieren
+- [ ] Ausschließlich für holger.luetters@htw-berlin.de einen einzelnen Passwort-Reset-Link zur Neuanmeldung versenden und den Versand ohne Offenlegung des Tokens prüfen.
+- [ ] Einzel-Reset für holger.luetters@htw-berlin.de, Exportarchiv und VPS-Deploy erst nach Abschluss der verbleibenden Aufgabenliste auslösen.
 - [x] Direkte, verdeckte Testpasswörter für die freigegebenen eindeutig anmeldbaren Gruppen Prüfer:in, Studierende:r, Verwaltung und Superadmin setzen und ohne E-Mail-Versand prüfen
-- [ ] Mehrfachkonto-Verhalten für holger@luetters.net vor getrennten Rollen-Login-Tests behandeln
+- [x] Mehrfachkonto-Verhalten für holger@luetters.net vor getrennten Rollen-Login-Tests behandeln; eindeutiges Superadmin-Passwortkonto und sicherer Sichtwechsel umgesetzt.
 - [x] Direkten Testpasswortweg ohne im temporären Container auflösbare Abhängigkeiten reparieren und ohne E-Mail-Versand prüfen
 - [x] Überlaufendes Superadmin-Menü responsiv korrigieren und auf dem VPS bereitstellen
 
@@ -2230,10 +2232,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## GitHub-unabhängige VPS-Bereitstellung
 - [x] Eingeschränktes dauerhaftes VPS-Deploy-Konto mit Schlüsselzugang und ohne interaktive Root-Shell einrichten
 - [x] Root-eigenes Deploy-Skript für Codearchiv, Docker-Build und Health-Check einrichten
-- [ ] Unabhängigen, prüfsummengesicherten Code-Transfer und kontrollierten Deploy testen
+- [x] Unabhängigen, prüfsummengesicherten Code-Transfer und kontrollierten Deploy testen; erfolgreich durch den kontrollierten FileZilla-SFTP-Ablauf mit `DEPLOY.ready` ersetzt.
 - [x] Manuellen Betriebsablauf mit Rollback und Schlüsselwiderruf dokumentieren
-- [ ] Privaten Windows-Deploy-Schlüssel erzeugen und den öffentlichen Schlüssel einmalig am eingeschränkten VPS-Deploy-Konto hinterlegen
-- [ ] Eingeschränkten thesis-deploy-Zugang für den von Windows-OpenSSH unabhängigen Passwort-Deploy absichern und testen
+- [x] Privaten Windows-Deploy-Schlüssel erzeugen und den öffentlichen Schlüssel einmalig am eingeschränkten VPS-Deploy-Konto hinterlegen; durch den vom Nutzer bevorzugten FileZilla-Ablauf ersetzt.
+- [x] Eingeschränkten thesis-deploy-Zugang für den von Windows-OpenSSH unabhängigen Passwort-Deploy absichern und testen; durch den eingeschränkten FileZilla-SFTP-Ablauf ersetzt.
 
 ## FileZilla-basierter VPS-Deploy ohne Windows-OpenSSH
 - [x] Eingeschränkten SFTP-Uploadbereich für Releasearchive ohne interaktive Shell festlegen
@@ -2251,9 +2253,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Datenfluss, Berechtigungen und Regressionen automatisiert prüfen
 
 ## Robuste Übertragung der Bootstrap-Aktualisierung
-- [ ] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden
-- [ ] Bootstrap-Code-ZIP mit eindeutigem Zielnamen auf den VPS übertragen
-- [ ] Aktualisierten Code auf dem VPS entpacken und die Importbereitschaft ohne Datenimport prüfen
+- [x] Zuletzt heruntergeladene Bootstrap-Code-ZIP auf dem Windows-PC automatisch finden; durch den wiederholbar dokumentierten FileZilla-Upload eines eindeutig benannten Releasearchivs ersetzt.
+- [x] Bootstrap-Code-ZIP mit eindeutigem Zielnamen auf den VPS übertragen; kontrollierter FileZilla-Upload erfolgreich erprobt.
+- [x] Aktualisierten Code auf dem VPS entpacken und die Importbereitschaft ohne Datenimport prüfen; kontrollierter Serverablauf validiert.
 
 ## Fehlerbehebung: Docker-Build auf dem IONOS-VPS
 - [x] Fehlerursache der `pnpm install`-Stufe im Container reproduzieren und eingrenzen
@@ -2272,3 +2274,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Offizielles Thesis-Anmeldedokument auf eine professionelle Seite begrenzen sowie HTW-Berlin-Logo und QR-Code sichtbar und korrekt positioniert ausgeben.
 - [x] Technische Go-live-Abnahme des selbst gehosteten Portals ohne DNS-Änderung und ohne Passwort-Reset-E-Mails vorbereiten.
 - [x] Rollenbasierte Kernablauf-Abnahme mit den vorhandenen Pilotkonten vorbereiten, ohne E-Mail-Versände oder DNS-Änderungen auszulösen.
+- [x] Alle verbleibenden lokal umsetzbaren Restaufgaben vor einem neuen VPS-Export priorisieren und abschließen; Export erst nach dokumentierter Gesamtprüfung vorbereiten.
