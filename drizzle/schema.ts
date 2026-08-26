@@ -301,14 +301,49 @@ export const programmes = mysqlTable("programmes", {
 	level: mysqlEnum(['bachelor','master']).notNull(),
 	fachbereich: varchar({ length: 8 }).notNull().default('FB3'),
 	pictogramUrl: varchar("pictogram_url", { length: 512 }),
+	information: text(),
+	logoUrl: varchar("logo_url", { length: 512 }),
+	logoKey: varchar("logo_key", { length: 512 }),
+	isPublished: tinyint("is_published").notNull().default(1),
 	sortOrder: int("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 (table) => [
 	// HTW-Berlin-Kürzel gelten fachbereichs- und abschlussübergreifend nicht zwingend als eindeutig
 	// (z. B. CE für Bachelor und Master). Die Abkürzung bleibt suchbar; eindeutig ist der Stammdatensatz.
 	index("idx_programmes_abbreviation").on(table.abbreviation),
 	uniqueIndex("uq_programmes_fachbereich_name_level").on(table.fachbereich, table.name, table.level),
+]);
+
+// Personen mit einer nachweisbaren Zuständigkeit dürfen Inhalte eines Studiengangs pflegen.
+// Rollen werden nicht ersetzt, sondern zusätzlich fachlich und programmbezogen zugeordnet.
+export const programmeContentManagers = mysqlTable("programme_content_managers", {
+	id: int().autoincrement().notNull().primaryKey(),
+	programmeId: int("programme_id").notNull(),
+	userId: int("user_id").notNull(),
+	managerType: mysqlEnum("manager_type", ["speaker", "admin"]).notNull(),
+	assignedBy: int("assigned_by").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_pcm_programme_user_type").on(table.programmeId, table.userId, table.managerType),
+	index("idx_pcm_user").on(table.userId),
+	index("idx_pcm_programme").on(table.programmeId),
+]);
+
+export const programmePublicLinks = mysqlTable("programme_public_links", {
+	id: int().autoincrement().notNull().primaryKey(),
+	programmeId: int("programme_id").notNull(),
+	title: varchar({ length: 160 }).notNull(),
+	description: text(),
+	url: text().notNull(),
+	sortOrder: int("sort_order").notNull().default(0),
+	createdBy: int("created_by").notNull(),
+	updatedBy: int("updated_by").notNull(),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_ppl_programme").on(table.programmeId, table.sortOrder),
 ]);
 
 export const systemSettings = mysqlTable("system_settings", {

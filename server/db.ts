@@ -16,6 +16,8 @@ import {
   pavExaminerProposals,
   pavProgrammes,
   programmes,
+  programmeContentManagers,
+  programmePublicLinks,
   examinerProgrammes,
   thesisRequests,
   users,
@@ -1462,6 +1464,184 @@ export async function getAllProgrammes() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(programmes).orderBy(programmes.sortOrder);
+}
+
+export type ProgrammeContentInput = {
+  name: string;
+  abbreviation: string;
+  level: "bachelor" | "master";
+  fachbereich: string;
+  information?: string | null;
+  logoUrl?: string | null;
+  logoKey?: string | null;
+  isPublished?: boolean;
+  sortOrder?: number;
+};
+
+export type ProgrammePublicLinkInput = {
+  title: string;
+  description?: string;
+  url: string;
+};
+
+export async function getPublicProgrammes() {
+  const db = await getDb();
+  if (!db) return [];
+  const { asc, eq } = await import("drizzle-orm");
+  return db.select()
+    .from(programmes)
+    .where(eq(programmes.isPublished, 1))
+    .orderBy(asc(programmes.fachbereich), asc(programmes.sortOrder), asc(programmes.name));
+}
+
+export async function getProgrammePublicPage(programmeId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { asc, eq } = await import("drizzle-orm");
+  const programmeRows = await db.select().from(programmes)
+    .where(eq(programmes.id, programmeId)).limit(1);
+  const programme = programmeRows[0];
+  if (!programme || programme.isPublished !== 1) return null;
+  const links = await db.select().from(programmePublicLinks)
+    .where(eq(programmePublicLinks.programmeId, programmeId))
+    .orderBy(asc(programmePublicLinks.sortOrder), asc(programmePublicLinks.id));
+  const managers = await db.select({
+    userId: programmeContentManagers.userId,
+    managerType: programmeContentManagers.managerType,
+    name: users.name,
+    title: users.academicTitle,
+  })
+    .from(programmeContentManagers)
+    .innerJoin(users, eq(programmeContentManagers.userId, users.id))
+    .where(eq(programmeContentManagers.programmeId, programmeId));
+  return { programme, links, managers };
+}
+
+export async function getProgrammeManagementDetail(programmeId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { asc, eq } = await import("drizzle-orm");
+  const programmeRows = await db.select().from(programmes)
+    .where(eq(programmes.id, programmeId)).limit(1);
+  const programme = programmeRows[0];
+  if (!programme) return null;
+  const [links, managers] = await Promise.all([
+    db.select().from(programmePublicLinks)
+      .where(eq(programmePublicLinks.programmeId, programmeId))
+      .orderBy(asc(programmePublicLinks.sortOrder), asc(programmePublicLinks.id)),
+    getProgrammeContentManagers(programmeId),
+  ]);
+  return { programme, links, managers };
+}
+
+export async function getProgrammeManagementOverview() {
+  const db = await getDb();
+  if (!db) return [];
+  const { asc } = await import("drizzle-orm");
+  return db.select().from(programmes)
+    .orderBy(asc(programmes.fachbereich), asc(programmes.sortOrder), asc(programmes.name));
+}
+
+export async function getProgrammeContentManagers(programmeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { eq } = await import("drizzle-orm");
+  return db.select({
+    id: programmeContentManagers.id,
+    programmeId: programmeContentManagers.programmeId,
+    userId: programmeContentManagers.userId,
+    managerType: programmeContentManagers.managerType,
+    assignedBy: programmeContentManagers.assignedBy,
+    createdAt: programmeContentManagers.createdAt,
+    name: users.name,
+    email: users.email,
+    primaryRole: users.role,
+  })
+    .from(programmeContentManagers)
+    .innerJoin(users, eq(programmeContentManagers.userId, users.id))
+    .where(eq(programmeContentManagers.programmeId, programmeId));
+}
+
+export async function getProgrammeManagerProgrammeIds(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { eq } = await import("drizzle-orm");
+  const rows = await db.select({ programmeId: programmeContentManagers.programmeId })
+    .from(programmeContentManagers)
+    .where(eq(programmeContentManagers.userId, userId));
+  return rows.map((row) => row.programmeId);
+}
+
+export async function createProgramme(input: ProgrammeContentInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const result = await db.insert(programmes).values({
+    name: sanitizeBiographyText(input.name).slice(0, 255),
+    abbreviation: sanitizeBiographyText(input.abbreviation).slice(0, 32),
+    level: input.level,
+    fachbereich: input.fachbereich,
+    information: input.information ? sanitizeBiographyText(input.information).slice(0, 5000) : null,
+    logoUrl: input.logoUrl ?? null,
+    logoKey: input.logoKey ?? null,
+    isPublished: input.isPublished === false ? 0 : 1,
+    sortOrder: input.sortOrder ?? 0,
+  });
+  return Number(result[0].insertId);
+}
+
+export async function updateProgrammeContent(programmeId: number, input: Partial<ProgrammeContentInput>) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const { eq } = await import("drizzle-orm");
+  const values: Record<string, unknown> = {};
+  if (input.name !== undefined) values.name = sanitizeBiographyText(input.name).slice(0, 255);
+  if (input.abbreviation !== undefined) values.abbreviation = sanitizeBiographyText(input.abbreviation).slice(0, 32);
+  if (input.level !== undefined) values.level = input.level;
+  if (input.fachbereich !== undefined) values.fachbereich = input.fachbereich;
+  if (input.information !== undefined) values.information = input.information ? sanitizeBiographyText(input.information).slice(0, 5000) : null;
+  if (input.logoUrl !== undefined) values.logoUrl = input.logoUrl;
+  if (input.logoKey !== undefined) values.logoKey = input.logoKey;
+  if (input.isPublished !== undefined) values.isPublished = input.isPublished ? 1 : 0;
+  if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
+  if (Object.keys(values).length > 0) await db.update(programmes).set(values).where(eq(programmes.id, programmeId));
+}
+
+export async function replaceProgrammePublicLinks(programmeId: number, actorId: number, links: ProgrammePublicLinkInput[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const { eq } = await import("drizzle-orm");
+  await db.transaction(async (tx) => {
+    await tx.delete(programmePublicLinks).where(eq(programmePublicLinks.programmeId, programmeId));
+    if (links.length > 0) {
+      await tx.insert(programmePublicLinks).values(links.map((link, index) => ({
+        programmeId,
+        title: sanitizeBiographyText(link.title).slice(0, 160),
+        description: link.description ? sanitizeBiographyText(link.description).slice(0, 1000) : null,
+        url: link.url,
+        sortOrder: index,
+        createdBy: actorId,
+        updatedBy: actorId,
+      })));
+    }
+  });
+}
+
+export async function assignProgrammeContentManager(
+  programmeId: number,
+  userId: number,
+  managerType: "speaker" | "admin",
+  assignedBy: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  await db.execute(sql`INSERT IGNORE INTO programme_content_managers (programme_id, user_id, manager_type, assigned_by) VALUES (${programmeId}, ${userId}, ${managerType}, ${assignedBy})`);
+}
+
+export async function removeProgrammeContentManager(managerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const { eq } = await import("drizzle-orm");
+  await db.delete(programmeContentManagers).where(eq(programmeContentManagers.id, managerId));
 }
 
 export async function getProgrammeById(id: number) {

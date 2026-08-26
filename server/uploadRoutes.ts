@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, setExaminerPublicTemplate } from "./db";
+import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, setExaminerPublicTemplate, updateProgrammeContent } from "./db";
 import { getAllColloquiums, getColloquiumsByExaminer } from "./db/colloquiums";
 import { generateThesisPdf } from "./thesisPdf";
 import { hasCompleteCommission } from "./thesisRegistrationDocument";
@@ -107,6 +107,38 @@ const pdfUpload = multer({
 });
 
 export function registerUploadRoutes(app: Express) {
+  // POST /api/upload/programme-logo/:programmeId
+  // Studiengangslogos sind öffentliche, durch Superadmin geprüfte Bilddateien.
+  app.post(
+    "/api/upload/programme-logo/:programmeId",
+    (req, res, next) => upload.single("logo")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "Das Logo ist zu groß. Maximal 5 MB sind erlaubt." });
+        return res.status(400).json({ error: err.message ?? "Ungültige Datei." });
+      }
+      next();
+    }),
+    async (req: Request, res: Response) => {
+      try {
+        const user = await getUserFromRequest(req);
+        if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+        if (user.role !== "superadmin") return res.status(403).json({ error: "Nur Superadmins dürfen Studiengangslogos verwalten." });
+        const programmeId = Number(req.params.programmeId);
+        if (!Number.isInteger(programmeId) || programmeId <= 0) return res.status(400).json({ error: "Ungültiger Studiengang." });
+        if (!req.file || !["image/jpeg", "image/png", "image/webp"].includes(req.file.mimetype) || !hasExpectedFileSignature(req.file)) {
+          return res.status(400).json({ error: "Das Logo muss ein gültiges PNG-, JPEG- oder WebP-Bild sein." });
+        }
+        const extension = req.file.mimetype === "image/png" ? "png" : req.file.mimetype === "image/webp" ? "webp" : "jpg";
+        const { key, url } = await storagePut(`programme-logos/${programmeId}/logo-${Date.now()}.${extension}`, req.file.buffer, req.file.mimetype);
+        await updateProgrammeContent(programmeId, { logoUrl: url, logoKey: key });
+        return res.json({ success: true, logoUrl: url, logoKey: key });
+      } catch (error) {
+        console.error("[Upload/programme-logo] Fehler:", error);
+        return res.status(500).json({ error: "Das Studiengangslogo konnte nicht gespeichert werden." });
+      }
+    },
+  );
+
   // POST /api/upload/examiner-template
   // Öffentliche Vorlagen sind strikt auf PDF begrenzt und nur für Prüfer:innen zugelassen.
   app.post(

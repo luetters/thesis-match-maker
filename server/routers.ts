@@ -10,6 +10,19 @@ import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-or
 function escapeEmailHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
+
+async function canEditProgrammeContent(user: { id: number; role: string }, programmeId: number): Promise<boolean> {
+  if (user.role === "superadmin") return true;
+  const managedProgrammeIds = await getProgrammeManagerProgrammeIds(user.id);
+  return managedProgrammeIds.includes(programmeId);
+}
+
+async function canAssignProgrammeSpeaker(user: { id: number; role: string }, programmeId: number): Promise<boolean> {
+  if (user.role === "superadmin") return true;
+  if (user.role !== "admin") return false;
+  const [programme, department] = await Promise.all([getProgrammeById(programmeId), getAdminDepartment(user.id)]);
+  return !!programme && !!department && programme.fachbereich === department;
+}
 import { examinerTopics, users, thesisRequests, auditLog, userRoles, twoFactorRecoveryCodes } from "../drizzle/schema";
 import { getDb } from "./db";
 import {
@@ -63,6 +76,18 @@ import {
   getPasswordResetToken,
   markPasswordResetTokenUsed,
   getAllProgrammes,
+  getProgrammeById,
+  getPublicProgrammes,
+  getProgrammePublicPage,
+  getProgrammeManagementDetail,
+  getProgrammeManagementOverview,
+  getProgrammeContentManagers,
+  getProgrammeManagerProgrammeIds,
+  createProgramme,
+  updateProgrammeContent,
+  replaceProgrammePublicLinks,
+  assignProgrammeContentManager,
+  removeProgrammeContentManager,
   setStudentProgramme,
   getExaminerProgrammes,
   setExaminerProgrammes,
@@ -3358,6 +3383,136 @@ export const appRouter = router({
         if (!userHasRole(ctx.user, 'examiner') && !userHasRole(ctx.user, 'second_examiner'))
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Nur Prüfer:innen können Studiengangsbeteiligungen verwalten.' });
         await setExaminerProgrammes(ctx.user.id, input.programmeIds);
+        return { success: true };
+      }),
+
+    publicList: publicProcedure.query(async () => getPublicProgrammes()),
+
+    publicPage: publicProcedure
+      .input(z.object({ programmeId: z.number().int().positive() }))
+      .query(async ({ input }) => getProgrammePublicPage(input.programmeId)),
+
+    myContentProgrammes: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role === "superadmin") return getProgrammeManagementOverview();
+      const allProgrammes = await getProgrammeManagementOverview();
+      if (ctx.user.role === "admin") {
+        const department = await getAdminDepartment(ctx.user.id);
+        return department ? allProgrammes.filter((programme) => programme.fachbereich === department) : [];
+      }
+      const programmeIds = await getProgrammeManagerProgrammeIds(ctx.user.id);
+      return allProgrammes.filter((programme) => programmeIds.includes(programme.id));
+    }),
+
+    assignableUsers: protectedProcedure
+      .input(z.object({ programmeId: z.number().int().positive(), managerType: z.enum(["speaker", "admin"]) }))
+      .query(async ({ ctx, input }) => {
+        const canAssignSpeaker = await canAssignProgrammeSpeaker(ctx.user, input.programmeId);
+        if (!canAssignSpeaker || (input.managerType === "admin" && ctx.user.role !== "superadmin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung für diese Auswahl." });
+        }
+        const allUsers = await getAllUsersWithRoles();
+        const requiredRole = input.managerType === "speaker" ? "programme_director" : "admin";
+        return allUsers
+          .filter((entry) => entry.role === requiredRole)
+          .map((entry) => ({ id: entry.id, name: entry.name, email: entry.email, role: entry.role }));
+      }),
+
+    managementDetail: protectedProcedure
+      .input(z.object({ programmeId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const permitted = await canEditProgrammeContent(ctx.user, input.programmeId) || await canAssignProgrammeSpeaker(ctx.user, input.programmeId);
+        if (!permitted) throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung für diesen Studiengang." });
+        const detail = await getProgrammeManagementDetail(input.programmeId);
+        if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: "Studiengang nicht gefunden." });
+        return detail;
+      }),
+
+    createManaged: superadminProcedure
+      .input(z.object({
+        name: z.string().trim().min(2).max(255),
+        abbreviation: z.string().trim().min(1).max(32),
+        level: z.enum(["bachelor", "master"]),
+        fachbereich: z.string().regex(/^FB[1-5]$/),
+        information: z.string().trim().max(5000).optional(),
+        sortOrder: z.number().int().min(0).max(999).optional(),
+        isPublished: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const programmeId = await createProgramme(input);
+        return { success: true, programmeId };
+      }),
+
+    updateManaged: superadminProcedure
+      .input(z.object({
+        programmeId: z.number().int().positive(),
+        name: z.string().trim().min(2).max(255).optional(),
+        abbreviation: z.string().trim().min(1).max(32).optional(),
+        level: z.enum(["bachelor", "master"]).optional(),
+        fachbereich: z.enum(["FB1", "FB2", "FB3", "FB4", "FB5"]).optional(),
+        information: z.string().trim().max(5000).nullable().optional(),
+        sortOrder: z.number().int().min(0).max(999).optional(),
+        isPublished: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { programmeId, ...changes } = input;
+        await updateProgrammeContent(programmeId, changes);
+        return { success: true };
+      }),
+
+    updatePublicContent: protectedProcedure
+      .input(z.object({
+        programmeId: z.number().int().positive(),
+        information: z.string().trim().max(5000).nullable().optional(),
+        links: z.array(z.object({
+          title: z.string().trim().min(1).max(160),
+          description: z.string().trim().max(1000).optional(),
+          url: z.string().url().max(2048),
+        })).max(20),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!(await canEditProgrammeContent(ctx.user, input.programmeId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Nur zugeordnete Studiengangssprecher:innen oder Verwaltung dürfen diese Inhalte pflegen." });
+        }
+        if (input.information !== undefined) await updateProgrammeContent(input.programmeId, { information: input.information });
+        await replaceProgrammePublicLinks(input.programmeId, ctx.user.id, input.links);
+        return { success: true };
+      }),
+
+    assignContentManager: protectedProcedure
+      .input(z.object({
+        programmeId: z.number().int().positive(),
+        userId: z.number().int().positive(),
+        managerType: z.enum(["speaker", "admin"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const canAssignSpeaker = await canAssignProgrammeSpeaker(ctx.user, input.programmeId);
+        if (!canAssignSpeaker || (input.managerType === "admin" && ctx.user.role !== "superadmin")) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung für diese Zuordnung." });
+        }
+        const target = await getUserById(input.userId);
+        if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "Person nicht gefunden." });
+        const targetRoles = await getUserRoles(input.userId);
+        const hasRequiredRole = input.managerType === "speaker"
+          ? target.role === "programme_director" || targetRoles.includes("programme_director")
+          : target.role === "admin" || targetRoles.includes("admin");
+        if (!hasRequiredRole) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: input.managerType === "speaker" ? "Die Person benötigt die Rolle Studiengangsleitung." : "Die Person benötigt die Rolle Verwaltung." });
+        }
+        await assignProgrammeContentManager(input.programmeId, input.userId, input.managerType, ctx.user.id);
+        return { success: true };
+      }),
+
+    removeContentManager: protectedProcedure
+      .input(z.object({ programmeId: z.number().int().positive(), managerId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const managers = await getProgrammeContentManagers(input.programmeId);
+        const manager = managers.find((entry) => entry.id === input.managerId);
+        if (!manager) throw new TRPCError({ code: "NOT_FOUND", message: "Zuordnung nicht gefunden." });
+        const allowed = manager.managerType === "speaker"
+          ? await canAssignProgrammeSpeaker(ctx.user, input.programmeId)
+          : ctx.user.role === "superadmin";
+        if (!allowed) throw new TRPCError({ code: "FORBIDDEN", message: "Keine Berechtigung zum Entfernen dieser Zuordnung." });
+        await removeProgrammeContentManager(manager.id);
         return { success: true };
       }),
   }),

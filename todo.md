@@ -2276,3 +2276,4 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Rollenbasierte Kernablauf-Abnahme mit den vorhandenen Pilotkonten vorbereiten, ohne E-Mail-Versände oder DNS-Änderungen auszulösen.
 - [x] Alle verbleibenden lokal umsetzbaren Restaufgaben vor einem neuen VPS-Export priorisieren und abschließen; Export erst nach dokumentierter Gesamtprüfung vorbereiten.
 - [x] Prüfer:innen ein öffentlich sichtbares Thesis-Template sowie eine pflegbare Liste empfohlener Links und Tipps im eigenen Profil bereitstellen; Upload- und Sichtbarkeitsrechte regressionssicher prüfen.
+- [x] Fachbereichsgeordnete öffentliche Studiengangsseiten mit Logo, Information und kuratierten Links bereitstellen; Anlage und Rollen-/Verwaltungszuordnung ausschließlich durch Superadmin, Inhaltspflege durch berechtigte Studiengangssprecher:innen und zugeordnete Verwaltung absichern.

@@ -34,6 +34,9 @@ import NotificationSettings from "./pages/NotificationSettings";
 import SamlError from "./pages/SamlError";
 import Faq from "./pages/Faq";
 import AbstractCollection from "./pages/AbstractCollection";
+import ProgrammeDirectory from "./pages/ProgrammeDirectory";
+import ProgrammePage from "./pages/ProgrammePage";
+import ProgrammeManagement from "./pages/ProgrammeManagement";
 
 function Router() {
   return (
@@ -46,6 +49,8 @@ function Router() {
       <Route path="/saml/error" component={SamlError} />
       <Route path="/faq" component={Faq} />
       <Route path="/abschlussarbeiten" component={AbstractCollection} />
+      <Route path="/studiengaenge" component={ProgrammeDirectory} />
+      <Route path="/studiengaenge/:programmeId" component={ProgrammePage} />
 
       {/* Onboarding: Rollenwahl nach erstem Login */}
       <Route path="/onboarding" component={Onboarding} />
@@ -87,6 +92,7 @@ function Router() {
       <Route path="/admin/:tab" component={AdminDashboard} />
 
       {/* Superadmin-Bereich */}
+      <Route path="/superadmin/programmes" component={ProgrammeManagement} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/superadmin/:tab" component={SuperadminDashboard} />
 
