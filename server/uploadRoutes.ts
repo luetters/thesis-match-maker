@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { jwtVerify } from "jose";
 import { parse as parseCookieHeader } from "cookie";
-import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles } from "./db";
+import { createAuditLogEntry, getThesisRequestById, getThesisRequestByIdWithNames, updateThesisExpose, getUserById, updateExaminerPhoto, updateProfileAvatar, getUserByOpenId, createThesisDocToken, getThesisDocTokenByToken, getSystemSetting, getUserRoles, setExaminerPublicTemplate } from "./db";
 import { getAllColloquiums, getColloquiumsByExaminer } from "./db/colloquiums";
 import { generateThesisPdf } from "./thesisPdf";
 import { hasCompleteCommission } from "./thesisRegistrationDocument";
@@ -107,6 +107,43 @@ const pdfUpload = multer({
 });
 
 export function registerUploadRoutes(app: Express) {
+  // POST /api/upload/examiner-template
+  // Öffentliche Vorlagen sind strikt auf PDF begrenzt und nur für Prüfer:innen zugelassen.
+  app.post(
+    "/api/upload/examiner-template",
+    (req, res, next) => pdfUpload.single("template")(req, res, (err) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Die Vorlage ist zu groß. Bitte laden Sie eine PDF-Datei mit maximal 5 MB hoch." });
+        }
+        return res.status(400).json({ error: err.message ?? "Ungültige Datei." });
+      }
+      next();
+    }),
+    async (req: Request, res: Response) => {
+      try {
+        const user = await getUserFromRequest(req);
+        if (!user) return res.status(401).json({ error: "Nicht angemeldet." });
+        const roles = await getUserRoles(user.id);
+        const hasExaminerRole = [user.role, ...roles].some((role) => role === "examiner" || role === "second_examiner");
+        if (!hasExaminerRole) return res.status(403).json({ error: "Nur Prüfer:innen dürfen ein öffentliches Thesis-Template veröffentlichen." });
+        if (!req.file || !isPdfBuffer(req.file.buffer)) {
+          return res.status(400).json({ error: "Die Vorlage muss ein gültiges PDF-Dokument sein." });
+        }
+
+        const sourceName = req.file.originalname.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9äöüÄÖÜß _.-]/g, "").trim();
+        const title = sourceName.slice(0, 160) || "Thesis-Template";
+        const fileName = `template-${Date.now()}.pdf`;
+        const { key, url } = await storagePut(`examiner-templates/${user.id}/${fileName}`, req.file.buffer, "application/pdf");
+        await setExaminerPublicTemplate(user.id, { title, url, storageKey: key });
+        return res.json({ success: true, template: { title, url, storageKey: key } });
+      } catch (err: unknown) {
+        console.error("[Upload/examiner-template] Fehler:", err);
+        return res.status(500).json({ error: "Das Thesis-Template konnte nicht veröffentlicht werden." });
+      }
+    }
+  );
+
   // POST /api/upload/expose  (pre-upload vor Thesis-Erstellung – kein thesisId erforderlich)
   app.post(
     "/api/upload/expose",

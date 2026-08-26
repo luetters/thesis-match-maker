@@ -133,6 +133,10 @@ export default function PublicProfile() {
   const isExaminer = profile.role === "examiner" || profile.role === "second_examiner";
   const departmentLabel = profile.department ? (DEPARTMENTS[profile.department] ?? profile.department) : null;
   const researchTagList = profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+  const publicTemplate = (profile as any).publicTemplate as { title: string; url: string } | null;
+  const recommendations = Array.isArray((profile as any).recommendations)
+    ? (profile as any).recommendations as Array<{ id: number; title: string; description: string | null; url: string }>
+    : [];
 
   // Kapazitäts-Badge: Berechnung auf Basis von maxSupervisions und activeFirstCount
   const maxSup: number = (profile as any).maxSupervisions ?? 0;
@@ -297,6 +301,49 @@ export default function PublicProfile() {
                     <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #93c5fd" }}>
                       {tag}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Öffentliche Thesis-Ressourcen ── */}
+        {isExaminer && (publicTemplate || recommendations.length > 0) && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span style={{ color: "#5e9200" }}>{isDE ? "Thesis-Template & Empfehlungen" : "Thesis Template & Recommendations"}</span>
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">{isDE ? "Von dieser Prüferin bzw. diesem Prüfer veröffentlichte Materialien und Hinweise." : "Materials and guidance published by this examiner."}</p>
+            </div>
+
+            {publicTemplate && (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{isDE ? "Thesis-Template" : "Thesis Template"}</label>
+                <LinkCard
+                  href={publicTemplate.url}
+                  label={publicTemplate.title}
+                  iconBg="#f0fdf4" iconColor="#5e9200"
+                  hoverBorder="hover:border-[#76b900]" hoverBg="hover:bg-[#f6ffe0]" textColor="text-[#4f7d00]"
+                  iconContent={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v-2m0 2l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                />
+              </div>
+            )}
+
+            {recommendations.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{isDE ? "Empfehlungen & Tipps" : "Recommendations & Tips"}</label>
+                <div className="space-y-2">
+                  {recommendations.map((recommendation) => (
+                    <a key={recommendation.id} href={recommendation.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-gray-200 px-4 py-3 hover:border-[#76b900] hover:bg-[#f6ffe0] transition-colors">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0 text-[#5e9200]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                        <span className="text-sm font-medium text-gray-800">{recommendation.title}</span>
+                      </div>
+                      {recommendation.description && <p className="text-xs text-gray-500 leading-relaxed mt-1.5 ml-6">{recommendation.description}</p>}
+                    </a>
                   ))}
                 </div>
               </div>

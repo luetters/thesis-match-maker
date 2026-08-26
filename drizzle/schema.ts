@@ -181,6 +181,27 @@ export const examinerProfiles = mysqlTable("examiner_profiles", {
 	onboardingCompleted: int().default(0).notNull(),
 });
 
+// Öffentlich sichtbare Materialien und Empfehlungen von Prüfer:innen.
+// Fallbezogene Dokumente werden bewusst nicht in dieser Tabelle gespeichert.
+export const examinerPublicResources = mysqlTable("examiner_public_resources", {
+	id: int().autoincrement().notNull().primaryKey(),
+	examinerId: int("examiner_id").notNull(),
+	resourceType: mysqlEnum("resource_type", ["template", "recommendation"]).notNull(),
+	title: varchar({ length: 160 }).notNull(),
+	description: text(),
+	url: text().notNull(),
+	storageKey: varchar("storage_key", { length: 512 }),
+	sortOrder: int("sort_order").notNull().default(0),
+	isPublished: tinyint("is_published").notNull().default(1),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_epr_examiner").on(table.examinerId),
+	index("idx_epr_examiner_type").on(table.examinerId, table.resourceType),
+]);
+export type InsertExaminerPublicResource = typeof examinerPublicResources.$inferInsert;
+export type SelectExaminerPublicResource = typeof examinerPublicResources.$inferSelect;
+
 export const examinerCommissionPreferences = mysqlTable("examiner_commission_preferences", {
 	id: int().autoincrement().notNull().primaryKey(),
 	firstExaminerId: int("first_examiner_id").notNull(),

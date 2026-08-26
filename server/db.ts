@@ -4,6 +4,7 @@ import {
   auditLog,
   adminDepartments,
   examinerProfiles,
+	  examinerPublicResources,
   examinerCommissionPreferences,
   InsertAuditLogEntry,
   InsertExaminerProfile,
@@ -173,6 +174,93 @@ export async function getExaminerProfileByUserId(userId: number) {
     .where(eq(users.id, userId))
     .limit(1);
   return { ...result[0], roleStatus: userRow[0]?.roleStatus ?? 'approved' };
+}
+
+export type ExaminerPublicRecommendationInput = {
+  title: string;
+  url: string;
+  description?: string;
+};
+
+export async function getExaminerPublicResources(examinerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { asc, eq } = await import("drizzle-orm");
+  return db
+    .select()
+    .from(examinerPublicResources)
+    .where(eq(examinerPublicResources.examinerId, examinerId))
+    .orderBy(asc(examinerPublicResources.sortOrder), asc(examinerPublicResources.id));
+}
+
+export async function setExaminerPublicTemplate(
+  examinerId: number,
+  template: { title: string; url: string; storageKey: string }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const { and, eq } = await import("drizzle-orm");
+  const existing = await db
+    .select({ id: examinerPublicResources.id })
+    .from(examinerPublicResources)
+    .where(and(
+      eq(examinerPublicResources.examinerId, examinerId),
+      eq(examinerPublicResources.resourceType, "template"),
+    ))
+    .limit(1);
+
+  const values = {
+    title: sanitizeBiographyText(template.title).slice(0, 160),
+    url: template.url,
+    storageKey: template.storageKey,
+    isPublished: 1,
+  };
+  if (existing[0]) {
+    await db.update(examinerPublicResources).set(values).where(eq(examinerPublicResources.id, existing[0].id));
+  } else {
+    await db.insert(examinerPublicResources).values({
+      examinerId,
+      resourceType: "template",
+      sortOrder: 0,
+      ...values,
+    });
+  }
+}
+
+export async function removeExaminerPublicTemplate(examinerId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const { and, eq } = await import("drizzle-orm");
+  await db.delete(examinerPublicResources).where(and(
+    eq(examinerPublicResources.examinerId, examinerId),
+    eq(examinerPublicResources.resourceType, "template"),
+  ));
+}
+
+export async function replaceExaminerPublicRecommendations(
+  examinerId: number,
+  recommendations: ExaminerPublicRecommendationInput[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Datenbank nicht verfügbar.");
+  const { and, eq } = await import("drizzle-orm");
+  await db.transaction(async (tx) => {
+    await tx.delete(examinerPublicResources).where(and(
+      eq(examinerPublicResources.examinerId, examinerId),
+      eq(examinerPublicResources.resourceType, "recommendation"),
+    ));
+    if (recommendations.length > 0) {
+      await tx.insert(examinerPublicResources).values(recommendations.map((item, index) => ({
+        examinerId,
+        resourceType: "recommendation" as const,
+        title: sanitizeBiographyText(item.title).slice(0, 160),
+        description: item.description ? sanitizeBiographyText(item.description).slice(0, 1000) : null,
+        url: item.url,
+        sortOrder: index,
+        isPublished: 1,
+      })));
+    }
+  });
 }
 
 export async function getAllExaminers() {

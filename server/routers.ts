@@ -36,6 +36,9 @@ import {
   getAuditLogByThesis,
   getConfidentialityChangesForExaminer,
   getExaminerProfileByUserId,
+  getExaminerPublicResources,
+  replaceExaminerPublicRecommendations,
+  removeExaminerPublicTemplate,
   getNotificationsByUser,
   getThesisRequestById,
   getThesisRequestsByExaminer,
@@ -1479,6 +1482,29 @@ export const appRouter = router({
       return getExaminerProfileByUserId(ctx.user.id);
     }),
 
+    // Prüfer:in: eigene, öffentlich sichtbare Materialien und Empfehlungen verwalten
+    myPublicResources: anyExaminerProcedure.query(async ({ ctx }) => {
+      return getExaminerPublicResources(ctx.user.id);
+    }),
+
+    replacePublicRecommendations: anyExaminerProcedure
+      .input(z.object({
+        recommendations: z.array(z.object({
+          title: z.string().trim().min(1).max(160),
+          url: z.string().url().max(2048),
+          description: z.string().trim().max(1000).optional(),
+        })).max(12),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await replaceExaminerPublicRecommendations(ctx.user.id, input.recommendations);
+        return { success: true };
+      }),
+
+    removePublicTemplate: anyExaminerProcedure.mutation(async ({ ctx }) => {
+      await removeExaminerPublicTemplate(ctx.user.id);
+      return { success: true };
+    }),
+
     // Prüfer: Profil aktualisieren
     updateProfile: anyExaminerProcedure
       .input(
@@ -1581,6 +1607,9 @@ export const appRouter = router({
           }
         }
         const examinerProfile = isExaminerRole ? await getExaminerProfileByUserId(input.userId) : null;
+        const publicResources = isExaminerRole
+          ? (await getExaminerPublicResources(input.userId)).filter((resource) => resource.isPublished === 1)
+          : [];
         // Semesterkapazitäten und aktive Betreuungslast für Prüfer:innen
         let semesterCapacities: Array<{ semester: string; maxFirst: number; maxSecond: number }> = [];
         let activeFirstCount = 0;
@@ -1659,6 +1688,10 @@ export const appRouter = router({
           activeFirstCount,
           activeSecondCount,
           maxSupervisions: examinerProfile?.maxSupervisions ?? null,
+          publicTemplate: publicResources.find((resource) => resource.resourceType === "template") ?? null,
+          recommendations: publicResources
+            .filter((resource) => resource.resourceType === "recommendation")
+            .map((resource) => ({ id: resource.id, title: resource.title, description: resource.description, url: resource.url })),
         };
       }),
     // Prüfer: Erweiterte Profil-Felder aktualisieren

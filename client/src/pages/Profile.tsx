@@ -451,6 +451,7 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const { t, lang } = useLanguage();
   const p = t.myProfilePage;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const templateInputRef = useRef<HTMLInputElement>(null);
 
   // Prüfer:innen werden nach Auth-Load zum Dashboard-Profil-Tab weitergeleitet
   // (nur im standalone-Modus, nicht wenn die Komponente bereits eingebettet ist)
@@ -470,6 +471,12 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
     staleTime: 30_000,
+  });
+  const hasExaminerAccount = hasRole("examiner") || hasRole("second_examiner");
+  const { data: publicResources, refetch: refetchPublicResources } = trpc.examiner.myPublicResources.useQuery(undefined, {
+    enabled: !!user && hasExaminerAccount,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
   const utils = trpc.useUtils();
   const [editMode, setEditMode] = useState(false);
@@ -498,6 +505,9 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   const [showBioUnsavedWarning, setShowBioUnsavedWarning] = useState(false);
   // Eigenständiger Bearbeitungsmodus für Online-Links
   const [linksEditMode, setLinksEditMode] = useState(false);
+  const [resourcesEditMode, setResourcesEditMode] = useState(false);
+  const [publicRecommendations, setPublicRecommendations] = useState<Array<{ title: string; url: string; description: string }>>([]);
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deletingAvatar, setDeletingAvatar] = useState(false);
@@ -525,6 +535,28 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
     onSuccess: () => { toast.success('Banner entfernt'); setShowBannerEditor(false); refetchBanner(); },
     onError: (e) => toast.error(e.message),
   });
+  const replaceRecommendationsMutation = trpc.examiner.replacePublicRecommendations.useMutation({
+    onSuccess: () => {
+      toast.success(lang === "de" ? "Empfehlungen veröffentlicht" : "Recommendations published");
+      setResourcesEditMode(false);
+      refetchPublicResources();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeTemplateMutation = trpc.examiner.removePublicTemplate.useMutation({
+    onSuccess: () => {
+      toast.success(lang === "de" ? "Thesis-Template entfernt" : "Thesis template removed");
+      refetchPublicResources();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  useEffect(() => {
+    if (resourcesEditMode) return;
+    setPublicRecommendations((publicResources ?? [])
+      .filter((resource) => resource.resourceType === "recommendation")
+      .map((resource) => ({ title: resource.title, url: resource.url, description: resource.description ?? "" })));
+  }, [publicResources, resourcesEditMode]);
 
   const uploadBanner = async (file: File) => {
     setUploadingBanner(true);
@@ -613,6 +645,31 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
     }
   };
 
+  const uploadPublicTemplate = async (file: File) => {
+    if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error(lang === "de" ? "Bitte wählen Sie eine PDF-Datei aus." : "Please choose a PDF file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(lang === "de" ? "Die Vorlage darf höchstens 5 MB groß sein." : "The template must not exceed 5 MB.");
+      return;
+    }
+    setUploadingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.append("template", file);
+      const response = await fetch("/api/upload/examiner-template", { method: "POST", body: formData, credentials: "include" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error ?? `HTTP ${response.status}`);
+      toast.success(lang === "de" ? "Thesis-Template veröffentlicht" : "Thesis template published");
+      refetchPublicResources();
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : (lang === "de" ? "Upload fehlgeschlagen" : "Upload failed"));
+    } finally {
+      setUploadingTemplate(false);
+    }
+  };
+
   const handleEditStart = () => {
     if (!profile) return;
     setResearchTagList(profile.researchTags ? profile.researchTags.split(",").map((t) => t.trim()).filter(Boolean) : []);
@@ -650,6 +707,21 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
   };
 
   const isExaminerRole = hasExaminerProfileCapabilities(profile?.role, !!(profile as any)?.isExaminer);
+  const publicTemplate = (publicResources ?? []).find((resource) => resource.resourceType === "template");
+  const hasRecommendationError = publicRecommendations.some((resource) => !resource.title.trim() || !isValidUrl(resource.url));
+  const savePublicRecommendations = () => {
+    if (hasRecommendationError) {
+      toast.error(lang === "de" ? "Bitte füllen Sie Titel und gültige HTTPS- oder HTTP-Links aus." : "Please provide a title and valid HTTPS or HTTP link for every recommendation.");
+      return;
+    }
+    replaceRecommendationsMutation.mutate({
+      recommendations: publicRecommendations.map((resource) => ({
+        title: resource.title.trim(),
+        url: resource.url.trim(),
+        description: resource.description.trim() || undefined,
+      })),
+    });
+  };
   const handleSave = () => {
     if (hasUrlErrors) {
       toast.error(p.urlSaveBlocked);
@@ -1794,6 +1866,78 @@ export default function Profile({ embedded = false }: { embedded?: boolean }) {
                   ) : <span className="text-sm text-gray-400 italic">{p.notSpecified}</span>}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Prüfer:innen: Öffentliche Materialien & Empfehlungen ── */}
+        {isExaminer && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5" style={{ color: "#76B900" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span style={{ color: "#76B900" }}>{lang === "de" ? "Thesis-Template & Empfehlungen" : "Thesis Template & Recommendations"}</span>
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">{lang === "de" ? "Diese Inhalte sind für andere Personen auf Ihrem öffentlichen Profil sichtbar." : "These resources are visible to others on your public profile."}</p>
+              </div>
+              <button type="button" onClick={() => setResourcesEditMode((open) => !open)} className="shrink-0 text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-300">
+                {resourcesEditMode ? (lang === "de" ? "Abbrechen" : "Cancel") : (lang === "de" ? "Empfehlungen bearbeiten" : "Edit recommendations")}
+              </button>
+            </div>
+
+            <div className="border-t border-gray-100 pt-5">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">{lang === "de" ? "Öffentliches Thesis-Template" : "Public Thesis Template"}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{lang === "de" ? "Eine PDF-Vorlage, maximal 5 MB. Das neueste Dokument ersetzt die bisherige Vorlage." : "One PDF template, up to 5 MB. A new file replaces the previous template."}</p>
+                </div>
+                <input ref={templateInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void uploadPublicTemplate(file);
+                }} />
+                <button type="button" disabled={uploadingTemplate} onClick={() => templateInputRef.current?.click()} className="shrink-0 text-sm text-white px-3 py-1.5 rounded-lg disabled:opacity-50" style={{ backgroundColor: "#76B900" }}>
+                  {uploadingTemplate ? (lang === "de" ? "Wird hochgeladen…" : "Uploading…") : (publicTemplate ? (lang === "de" ? "Ersetzen" : "Replace") : (lang === "de" ? "PDF hochladen" : "Upload PDF"))}
+                </button>
+              </div>
+              {publicTemplate ? (
+                <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+                  <svg className="w-5 h-5 text-[#5e9200] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3zm0 0h6m-3 3v4m0-4v-4" /></svg>
+                  <a href={publicTemplate.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 text-sm font-medium text-[#4f7d00] hover:underline truncate">{publicTemplate.title}</a>
+                  <button type="button" onClick={() => removeTemplateMutation.mutate()} disabled={removeTemplateMutation.isPending} className="text-xs text-red-700 hover:underline disabled:opacity-50">{lang === "de" ? "Entfernen" : "Remove"}</button>
+                </div>
+              ) : <p className="text-sm text-gray-400 italic">{lang === "de" ? "Noch kein Template veröffentlicht." : "No template published yet."}</p>}
+            </div>
+
+            <div className="border-t border-gray-100 pt-5">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">{lang === "de" ? "Empfehlungen & Tipps" : "Recommendations & Tips"}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{lang === "de" ? "Kuratiert veröffentlichte Links, zum Beispiel Schreib-, Zitier- oder Formatierungshinweise." : "Curated public links, for example to writing, citation or formatting guidance."}</p>
+                </div>
+                {resourcesEditMode && <button type="button" onClick={() => setPublicRecommendations((items) => [...items, { title: "", url: "", description: "" }])} disabled={publicRecommendations.length >= 12} className="shrink-0 text-sm px-3 py-1.5 rounded-lg border border-[#76B900] text-[#5e9200] disabled:opacity-50">{lang === "de" ? "Link hinzufügen" : "Add link"}</button>}
+              </div>
+              {resourcesEditMode ? (
+                <div className="space-y-3">
+                  {publicRecommendations.map((resource, index) => (
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 rounded-xl border border-gray-200 p-3">
+                      <input value={resource.title} onChange={(event) => setPublicRecommendations((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item))} placeholder={lang === "de" ? "Titel der Empfehlung" : "Recommendation title"} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <input value={resource.url} onChange={(event) => setPublicRecommendations((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))} placeholder="https://…" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                      <button type="button" onClick={() => setPublicRecommendations((items) => items.filter((_, itemIndex) => itemIndex !== index))} className="text-sm text-red-700 px-2">{lang === "de" ? "Löschen" : "Delete"}</button>
+                      <textarea value={resource.description} onChange={(event) => setPublicRecommendations((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item))} placeholder={lang === "de" ? "Kurzer Tipp oder Einordnung (optional)" : "Brief tip or context (optional)"} className="sm:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm min-h-20" maxLength={1000} />
+                    </div>
+                  ))}
+                  <button type="button" disabled={replaceRecommendationsMutation.isPending || hasRecommendationError} onClick={savePublicRecommendations} className="text-sm text-white px-4 py-2 rounded-lg disabled:opacity-50" style={{ backgroundColor: "#76B900" }}>{replaceRecommendationsMutation.isPending ? (lang === "de" ? "Wird gespeichert…" : "Saving…") : (lang === "de" ? "Empfehlungen veröffentlichen" : "Publish recommendations")}</button>
+                </div>
+              ) : publicRecommendations.length > 0 ? (
+                <div className="space-y-2">
+                  {publicRecommendations.map((resource, index) => <a key={`${resource.url}-${index}`} href={resource.url} target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-gray-200 px-4 py-3 hover:border-[#76B900] hover:bg-[#f6ffe0]">
+                    <p className="text-sm font-medium text-gray-800">{resource.title}</p>
+                    {resource.description && <p className="text-xs text-gray-500 mt-1">{resource.description}</p>}
+                  </a>)}
+                </div>
+              ) : <p className="text-sm text-gray-400 italic">{lang === "de" ? "Noch keine Empfehlungen veröffentlicht." : "No recommendations published yet."}</p>}
             </div>
           </div>
         )}
