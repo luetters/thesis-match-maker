@@ -1194,6 +1194,8 @@ function LastResetInfo({ userId }: { userId: number }) {
 }
 
 function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (userId: number, userName: string) => void } = {}) {
+  const { hasRole } = useAuth();
+  const isSuperadmin = hasRole("superadmin");
   const { data: users, isLoading } = trpc.admin.users.useQuery();
   const utils = trpc.useUtils();
   const [showCreate, setShowCreate] = useState(false);
@@ -1244,14 +1246,18 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
 
   const [showBulkResetDialog, setShowBulkResetDialog] = useState(false);
   const [bulkResetDone, setBulkResetDone] = useState<{ sent: number; failed: number } | null>(null);
-  const magicLinkUsersQuery = trpc.admin.getMagicLinkUsersCount.useQuery(
-    { origin: window.location.origin },
-    { enabled: showBulkResetDialog }
+  const [passwordRenewalPhrase, setPasswordRenewalPhrase] = useState("");
+  const [passwordRenewalSecondConfirmation, setPasswordRenewalSecondConfirmation] = useState(false);
+  const passwordRenewalCandidates = trpc.admin.getPasswordRenewalCandidates.useQuery(
+    undefined,
+    { enabled: showBulkResetDialog && isSuperadmin }
   );
-  const bulkReset = trpc.admin.sendPasswordResetToMagicLinkUsers.useMutation({
+  const bulkReset = trpc.admin.sendPasswordRenewalInvitations.useMutation({
     onSuccess: (data) => {
       setBulkResetDone({ sent: data.sent, failed: data.failed });
       setShowBulkResetDialog(false);
+      setPasswordRenewalPhrase("");
+      setPasswordRenewalSecondConfirmation(false);
       toast.success(`Passwort-Reset-E-Mails versendet: ${data.sent} erfolgreich, ${data.failed} fehlgeschlagen.`);
     },
     onError: (err) => toast.error(err.message),
@@ -1323,7 +1329,7 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
   return (
     <div className="space-y-4">
       {/* Bulk-Passwort-Reset-Dialog */}
-      {showBulkResetDialog && (
+      {showBulkResetDialog && isSuperadmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
             <div className="flex items-start gap-3 mb-4">
@@ -1331,34 +1337,52 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
                 <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Passwort-Reset an alle bisherigen Magic-Link-Nutzer:innen senden</h3>
-                <p className="text-sm text-gray-500 mt-1">Alle Konten, die bisher per E-Mail-Link angemeldet waren und noch kein Passwort vergeben haben, erhalten eine E-Mail mit einem 48-Stunden-Reset-Link.</p>
+                <h3 className="text-base font-semibold text-gray-900">Einmalige Passwort-Neuanmeldung versenden</h3>
+                <p className="text-sm text-gray-500 mt-1">Alle freigegebenen Konten mit E-Mail-Adresse erhalten einmalig einen 48-Stunden-Link zur Vergabe eines neuen Portalpassworts. Pro E-Mail-Adresse wird nur ein Login-Konto berücksichtigt.</p>
               </div>
             </div>
-            {magicLinkUsersQuery.isLoading ? (
+            {passwordRenewalCandidates.isLoading ? (
               <div className="bg-gray-50 rounded-xl p-4 mb-4 text-sm text-gray-500 animate-pulse">Betroffene Nutzer:innen werden ermittelt…</div>
             ) : (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
                 <p className="text-sm font-semibold text-amber-800 mb-2">
-                  {magicLinkUsersQuery.data?.count ?? 0} Nutzer:in{(magicLinkUsersQuery.data?.count ?? 0) !== 1 ? "nen" : ""} betroffen
+                  {passwordRenewalCandidates.data?.count ?? 0} Nutzer:in{(passwordRenewalCandidates.data?.count ?? 0) !== 1 ? "nen" : ""} betroffen
                 </p>
-                {(magicLinkUsersQuery.data?.users ?? []).length > 0 && (
+                {(passwordRenewalCandidates.data?.users ?? []).length > 0 && (
                   <ul className="text-xs text-amber-700 space-y-0.5 max-h-32 overflow-y-auto">
-                    {magicLinkUsersQuery.data!.users.map((u) => (
+                    {passwordRenewalCandidates.data!.users.map((u) => (
                       <li key={u.id} className="truncate">{u.name || "—"} &lt;{u.email}&gt;</li>
                     ))}
                   </ul>
                 )}
               </div>
             )}
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Zur ersten Bestätigung bitte <strong>PASSWORT-NEUANMELDUNG</strong> eingeben.
+              <input
+                value={passwordRenewalPhrase}
+                onChange={(event) => setPasswordRenewalPhrase(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                placeholder="PASSWORT-NEUANMELDUNG"
+              />
+            </label>
+            <label className="mb-5 flex items-start gap-2 text-sm text-gray-700">
+              <input type="checkbox" checked={passwordRenewalSecondConfirmation} onChange={(event) => setPasswordRenewalSecondConfirmation(event.target.checked)} className="mt-1" />
+              <span>Ich habe die Zielgruppe geprüft und bestätige den einmaligen Versand von Passwort-Neuanmeldungslinks.</span>
+            </label>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowBulkResetDialog(false)}
                 className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >Abbrechen</button>
               <button
-                onClick={() => bulkReset.mutate({ origin: window.location.origin })}
-                disabled={bulkReset.isPending || (magicLinkUsersQuery.data?.count ?? 0) === 0}
+                onClick={() => bulkReset.mutate({
+                  origin: window.location.origin,
+                  expectedUserIds: passwordRenewalCandidates.data?.users.map((user) => user.id) ?? [],
+                  confirmationPhrase: "PASSWORT-NEUANMELDUNG",
+                  secondConfirmation: true,
+                })}
+                disabled={bulkReset.isPending || (passwordRenewalCandidates.data?.count ?? 0) === 0 || passwordRenewalPhrase !== "PASSWORT-NEUANMELDUNG" || !passwordRenewalSecondConfirmation}
                 className="px-4 py-2 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-50"
                 style={{ backgroundColor: "#006937" }}
               >
@@ -1413,15 +1437,17 @@ function UserManagement({ onNavigateToRequests }: { onNavigateToRequests?: (user
           </button>
         )}
       </div>
-      {/* Bulk-Reset-Button */}
-      <button
-        onClick={() => setShowBulkResetDialog(true)}
-        title="Passwort-Reset-E-Mails an alle bisherigen Magic-Link-Nutzer:innen senden"
-        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-        Migration: Passwort-Reset senden
-      </button>
+      {/* Massenversand ausschließlich für Superadmins; Server erzwingt dieselbe Grenze. */}
+      {isSuperadmin && (
+        <button
+          onClick={() => setShowBulkResetDialog(true)}
+          title="Einmalige Passwort-Neuanmeldung für alle freigegebenen Konten senden"
+          className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          Passwort-Neuanmeldung senden
+        </button>
+      )}
       </div>
       {/* Tab-Navigation */}
       <div className="flex items-center justify-between">

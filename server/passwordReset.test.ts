@@ -5,6 +5,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as db from "./db";
 import bcrypt from "bcryptjs";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -147,5 +149,20 @@ describe("auth.resetPassword", () => {
     // used === 1 → Prozedur würde ablehnen
     expect(record?.used).toBe(1);
     expect(db.setUserPasswordHash).not.toHaveBeenCalled();
+  });
+});
+
+describe("einmalige Passwort-Neuanmeldung", () => {
+  it("ist als doppelt bestätigte Superadmin-Aktion für alle freigegebenen E-Mail-Konten implementiert", () => {
+    const source = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8");
+    const adminUi = readFileSync(resolve(process.cwd(), "client/src/pages/AdminDashboard.tsx"), "utf8");
+    expect(source).toContain("getPasswordRenewalCandidates: superadminProcedure");
+    expect(source).toContain("sendPasswordRenewalInvitations: superadminProcedure");
+    expect(source).toContain('confirmationPhrase: z.literal("PASSWORT-NEUANMELDUNG")');
+    expect(source).toContain("secondConfirmation: z.literal(true)");
+    expect(source).toContain("Die Versandvorschau hat sich geändert");
+    expect(source).toContain("SUPERADMIN_PASSWORD_RENEWAL_SENT");
+    expect(adminUi).toContain("const isSuperadmin = hasRole(\"superadmin\")");
+    expect(adminUi).toContain("showBulkResetDialog && isSuperadmin");
   });
 });

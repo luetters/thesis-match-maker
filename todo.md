@@ -2283,4 +2283,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Öffentliche HTML-Auslieferung ohne JavaScript mit sicheren, route-spezifischen SEO- und Social-Metadaten ausstatten und gegen die private SPA-Auslieferung absichern.
 - [x] Arbeiten mit aktivem Sperrvermerk serverseitig aus jeder öffentlichen Abstractabfrage, Suche und Fachbereichsfilterung ausschließen und regressionssicher prüfen.
 - [x] Superadmin-Löschverwaltung für einzelne Testanfragen, vergangene Semester und mindestens drei Jahre alte Daten mit Vorschau, doppelter Sicherheitsabfrage, Auditprotokoll und ohne automatische Löschung implementieren.
+- [ ] Zugriffsverlust von holger.luetters@htw-berlin.de auf der VPS-Ausgabe anhand des realen Kontostatus, Passwort-Login und Resetablaufs nachvollziehbar analysieren.
+- [x] Einmalige formale Passwort-Neuanmeldungsinformation für alle berechtigten VPS-Nutzer:innen mit geprüfter Zielgruppe, Versandvorschau und expliziter Freigabe vor dem Massenversand vorbereiten.
+- [x] Einmaligen Passwort-Neuanmeldungsprozess für alle freigegebenen VPS-Nutzer:innen unabhängig von vorhandenem Altpasswort mit Zielgruppenvorschau, doppelter Versandfreigabe und revisionssicherem Protokoll implementieren.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.

@@ -8,7 +8,57 @@ import { sanitizeBiographyText } from "./biographySanitization";
 import { sql, eq, and, notInArray, aliasedTable, isNull, desc } from "drizzle-orm";
 
 function escapeEmailHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+type PasswordRenewalCandidate = {
+  id: number;
+  name: string | null;
+  email: string;
+  role: string;
+};
+
+/**
+ * Liefert genau ein aktives Konto je E-Mail-Adresse für die einmalige
+ * Passwort-Neuanmeldung. Importierte Rollenreferenzen mit gleicher E-Mail
+ * bleiben erhalten, dürfen aber keine doppelte E-Mail auslösen.
+ */
+async function getPasswordRenewalCandidates(): Promise<PasswordRenewalCandidate[]> {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Datenbank nicht verfügbar." });
+
+  const rows = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    loginMethod: users.loginMethod,
+    passwordHash: users.passwordHash,
+    openId: users.openId,
+    createdAt: users.createdAt,
+  }).from(users)
+    .where(and(eq(users.roleStatus, "approved"), sql`${users.email} IS NOT NULL`))
+    .orderBy(desc(users.createdAt))
+    .limit(500);
+
+  const byEmail = new Map<string, typeof rows[number]>();
+  const priority = (user: typeof rows[number]) => {
+    if (user.loginMethod === "password" && user.passwordHash) return 3;
+    if (user.openId?.startsWith("pw_") && user.passwordHash) return 2;
+    if (user.passwordHash) return 1;
+    return 0;
+  };
+
+  for (const user of rows) {
+    if (!user.email) continue;
+    const key = user.email.trim().toLowerCase();
+    const selected = byEmail.get(key);
+    if (!selected || priority(user) > priority(selected)) byEmail.set(key, user);
+  }
+
+  return Array.from(byEmail.values())
+    .map((user) => ({ id: user.id, name: user.name ?? null, email: user.email!.trim().toLowerCase(), role: user.role }))
+    .sort((a, b) => a.email.localeCompare(b.email, "de"));
 }
 
 async function canEditProgrammeContent(user: { id: number; role: string }, programmeId: number): Promise<boolean> {
@@ -2531,7 +2581,7 @@ export const appRouter = router({
         });
         return { success: true, message: "Einladungs-E-Mail wurde versendet." };
       }),
-    // Anzahl der Magic-Link-Nutzer ohne Passwort abfragen (Vorschau vor Massen-Reset)
+    // Bestehende Kompatibilitätsvorschau: nur ehemalige Magic-Link-Konten ohne Passwort.
     getMagicLinkUsersCount: adminProcedure
       .input(z.object({ origin: z.string().url() }))
       .query(async () => {
@@ -2551,6 +2601,82 @@ export const appRouter = router({
           count: list.length,
           users: list.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role as string })),
         };
+      }),
+
+    // Superadmin: datensparsame Vorschau vor einer einmaligen Passwort-Neuanmeldung.
+    getPasswordRenewalCandidates: superadminProcedure
+      .query(async () => {
+        const candidates = await getPasswordRenewalCandidates();
+        return { count: candidates.length, users: candidates };
+      }),
+
+    // Superadmin: einmalige Passwort-Neuanmeldung für alle freigegebenen Konten.
+    // Die Zielgruppe wird unmittelbar vor dem Versand serverseitig neu berechnet.
+    sendPasswordRenewalInvitations: superadminProcedure
+      .input(z.object({
+        origin: z.string().url(),
+        expectedUserIds: z.array(z.number().int().positive()).min(1).max(500),
+        confirmationPhrase: z.literal("PASSWORT-NEUANMELDUNG"),
+        secondConfirmation: z.literal(true),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const candidates = await getPasswordRenewalCandidates();
+        const actualIds = candidates.map((candidate) => candidate.id).sort((a, b) => a - b);
+        const expectedIds = Array.from(new Set(input.expectedUserIds)).sort((a, b) => a - b);
+        if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Die Versandvorschau hat sich geändert. Bitte prüfen Sie die aktuelle Zielgruppe erneut und bestätigen Sie den Versand nochmals.",
+          });
+        }
+
+        const { randomBytes } = await import("crypto");
+        const { sendEmail: send } = await import("./emailHelper");
+        let sent = 0;
+        let failed = 0;
+
+        for (const user of candidates) {
+          try {
+            const token = randomBytes(32).toString("hex");
+            const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+            await createPasswordResetToken(user.id, token, expiresAt);
+            const resetUrl = `${input.origin}/reset-password?token=${token}`;
+            await send({
+              to: user.email,
+              subject: "Erforderliche Passwort-Neuanmeldung – HTW Berlin Thesis Match Maker",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                  <div style="background: #006937; padding: 24px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 20px;">HTW Berlin – Thesis Match Maker</h1>
+                  </div>
+                  <div style="padding: 32px; background: #f9f9f9;">
+                    <h2 style="color: #1a1a1a; margin-top: 0;">Erforderliche Passwort-Neuanmeldung</h2>
+                    <p>Sehr geehrte:r ${escapeEmailHtml(user.name || "Nutzer:in")},</p>
+                    <p>für die weitere Nutzung des Thesis Match Maker ist eine einmalige Neuanmeldung erforderlich. Bitte vergeben Sie über den folgenden Link ein persönliches Passwort:</p>
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${resetUrl}" style="background: #76B900; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Passwort vergeben</a>
+                    </div>
+                    <p style="color: #555;">Der Link ist 48 Stunden gültig. Melden Sie sich danach unter <a href="${input.origin}/login">${input.origin}/login</a> mit Ihrer E-Mail-Adresse und dem gewählten Passwort an.</p>
+                    <p style="color: #8a3b00; font-size: 13px;"><strong>Sicherheitshinweis:</strong> Dies ist kein offizielles Tool der HTW Berlin. Verwenden Sie niemals Ihr echtes HTW-Berlin-Passwort in diesem Portal.</p>
+                    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;" />
+                    <p style="color: #888; font-size: 12px;">Falls Sie diese Nachricht nicht zuordnen können, wenden Sie sich bitte an die Verwaltung der HTW Berlin.</p>
+                  </div>
+                </div>`,
+            });
+            sent++;
+          } catch (error) {
+            console.error(`[PasswordRenewal] Versand fehlgeschlagen für ${user.email}:`, error);
+            failed++;
+          }
+        }
+
+        await createAuditLogEntry({
+          action: "SUPERADMIN_PASSWORD_RENEWAL_SENT",
+          actorId: ctx.user.id,
+          actorRole: ctx.user.role,
+          metadata: { sent, failed, total: candidates.length, targetUserIds: actualIds, confirmation: "double-confirmed" },
+        });
+        return { sent, failed, total: candidates.length };
       }),
 
     // Massen-Passwort-Reset: alle Magic-Link-Nutzer ohne Passwort per E-Mail benachrichtigen
