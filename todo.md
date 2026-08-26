@@ -2281,4 +2281,5 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Öffentliche Portalbereiche für Suchmaschinen und KI-basierte Informationssuche mit sicheren Metadaten, strukturierter Auszeichnung, Indexierungsregeln und datensparsamer Inhaltsstrategie optimieren und prüfen.
 - [x] Öffentliche Seiten um kontextbezogene Open-Graph- und Social-Preview-Metadaten ergänzen, ohne private URLs oder personenbezogene Daten preiszugeben.
 - [x] Öffentliche HTML-Auslieferung ohne JavaScript mit sicheren, route-spezifischen SEO- und Social-Metadaten ausstatten und gegen die private SPA-Auslieferung absichern.
+- [x] Arbeiten mit aktivem Sperrvermerk serverseitig aus jeder öffentlichen Abstractabfrage, Suche und Fachbereichsfilterung ausschließen und regressionssicher prüfen.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.
