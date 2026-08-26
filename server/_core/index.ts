@@ -22,6 +22,7 @@ import { startScheduler } from "../scheduler";
 import { registerMigrationExportRoutes } from "../migrationExport";
 import { registerPortableTransferRoutes } from "../portableTransferRoutes";
 import { registerPortableTransferImportRoutes } from "../portableTransferImportRoutes";
+import { registerSeoRoutes } from "../seoRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -104,6 +105,7 @@ async function startServer() {
   }
   registerUploadRoutes(app);
   registerExportRoutes(app);
+  registerSeoRoutes(app);
   registerMagicLinkRoutes(app); // Nur noch Logout-Route
   registerSamlAuthRoutes(app); // Optionale SAML-2.0-Anmeldung
   // Heartbeat: automatische E-Mail-Erinnerungen drei und einen Tag vor Ablauf

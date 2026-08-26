@@ -1,4 +1,5 @@
 import { Link, useRoute } from "wouter";
+import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -12,6 +13,33 @@ export default function ProgrammePage() {
   const { lang } = useLanguage();
   const isDE = lang === "de";
   const { data, isLoading } = trpc.programmes.publicPage.useQuery({ programmeId }, { enabled: Number.isInteger(programmeId) && programmeId > 0 });
+
+  useEffect(() => {
+    if (!data?.programme) return;
+    const { programme } = data;
+    const information = programme.information?.replace(/\s+/g, " ").trim();
+    const description = information?.slice(0, 155) || `${programme.name} im ${DEPARTMENT_LABELS[programme.fachbereich]?.de ?? programme.fachbereich} an der HTW Berlin.`;
+    document.title = `${programme.name} | Studiengang | HTW Berlin`;
+    const meta = document.head.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (meta) meta.content = description;
+
+    document.getElementById("thesis-programme-structured-data")?.remove();
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "EducationalOccupationalProgram",
+      name: programme.name,
+      description,
+      educationalLevel: programme.level === "master" ? "Master" : "Bachelor",
+      provider: { "@type": "EducationalOrganization", name: "HTW Berlin" },
+      url: window.location.href,
+    };
+    const script = document.createElement("script");
+    script.id = "thesis-programme-structured-data";
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [data]);
 
   if (isLoading) return <main className="min-h-screen grid place-items-center text-slate-500">{isDE ? "Studiengang wird geladen …" : "Loading programme …"}</main>;
   if (!data) return <main className="min-h-screen grid place-items-center p-6 text-center"><div><h1 className="text-2xl font-semibold">{isDE ? "Studiengang nicht gefunden" : "Programme not found"}</h1><Link href="/studiengaenge" className="mt-4 inline-block text-[#4f7d00] underline">{isDE ? "Zur Übersicht" : "Back to overview"}</Link></div></main>;

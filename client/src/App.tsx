@@ -37,6 +37,7 @@ import AbstractCollection from "./pages/AbstractCollection";
 import ProgrammeDirectory from "./pages/ProgrammeDirectory";
 import ProgrammePage from "./pages/ProgrammePage";
 import ProgrammeManagement from "./pages/ProgrammeManagement";
+import SeoMetadata from "./components/SeoMetadata";
 
 function Router() {
   return (
@@ -141,6 +142,7 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster richColors position="top-right" />
+          <SeoMetadata />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
