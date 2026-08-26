@@ -2279,4 +2279,5 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Fachbereichsgeordnete öffentliche Studiengangsseiten mit Logo, Information und kuratierten Links bereitstellen; Anlage und Rollen-/Verwaltungszuordnung ausschließlich durch Superadmin, Inhaltspflege durch berechtigte Studiengangssprecher:innen und zugeordnete Verwaltung absichern.
 - [x] Öffentlichen Einstieg zu den Studiengangsseiten in der bestehenden Portalnavigation sichtbar machen und prüfen.
 - [x] Öffentliche Portalbereiche für Suchmaschinen und KI-basierte Informationssuche mit sicheren Metadaten, strukturierter Auszeichnung, Indexierungsregeln und datensparsamer Inhaltsstrategie optimieren und prüfen.
+- [x] Öffentliche Seiten um kontextbezogene Open-Graph- und Social-Preview-Metadaten ergänzen, ohne private URLs oder personenbezogene Daten preiszugeben.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.

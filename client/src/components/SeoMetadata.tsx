@@ -41,6 +41,22 @@ function upsertMeta(name: string, content: string) {
   element.content = content;
 }
 
+function upsertProperty(property: string, content: string) {
+  let element = document.head.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute("property", property);
+    document.head.appendChild(element);
+  }
+  element.content = content;
+}
+
+function removeSocialMetadata() {
+  ["og:title", "og:description", "og:type", "og:url", "twitter:card"].forEach((key) => {
+    document.head.querySelector(`meta[property="${key}"], meta[name="${key}"]`)?.remove();
+  });
+}
+
 function removeCanonical() {
   document.head.querySelector('link[rel="canonical"]')?.remove();
 }
@@ -58,6 +74,7 @@ export default function SeoMetadata() {
     upsertMeta("robots", definition.indexable ? "index,follow,max-image-preview:large" : "noindex,nofollow,noarchive");
 
     const isPublicProductionDomain = window.location.hostname === "thesismatch.online" || window.location.hostname === "www.thesismatch.online";
+    const publicUrl = isPublicProductionDomain ? `https://thesismatch.online${location === "/" ? "/" : location}` : `${window.location.origin}${location}`;
     if (definition.indexable && isPublicProductionDomain) {
       let canonical = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
       if (!canonical) {
@@ -65,9 +82,19 @@ export default function SeoMetadata() {
         canonical.rel = "canonical";
         document.head.appendChild(canonical);
       }
-      canonical.href = `https://thesismatch.online${location === "/" ? "/" : location}`;
+      canonical.href = publicUrl;
     } else {
       removeCanonical();
+    }
+
+    if (definition.indexable) {
+      upsertProperty("og:title", definition.title);
+      upsertProperty("og:description", definition.description);
+      upsertProperty("og:type", "website");
+      upsertProperty("og:url", publicUrl);
+      upsertMeta("twitter:card", "summary");
+    } else {
+      removeSocialMetadata();
     }
 
     const existing = document.getElementById("thesis-match-maker-structured-data");

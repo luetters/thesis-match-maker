@@ -19,6 +19,9 @@ describe("öffentliche Metadaten und Indexierungsgrenzen", () => {
     expect(component).toContain('window.location.hostname === "thesismatch.online"');
     expect(component).toContain("https://thesismatch.online");
     expect(component).toContain('"@type": "EducationalOrganization"');
+    expect(component).toContain('upsertProperty("og:title", definition.title)');
+    expect(component).toContain('upsertProperty("og:url", publicUrl)');
+    expect(component).toContain('upsertMeta("twitter:card", "summary")');
   });
 
   it("zeichnet veröffentlichte Studiengangsdetailseiten nur mit ihren sichtbaren Programminformationen aus", () => {
