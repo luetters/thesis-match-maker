@@ -428,6 +428,7 @@ export default function Home() {
               { label: t.nav.examiner, path: "/examiner" },
               { label: t.nav.admin, path: "/admin" },
               { label: t.nav.directory, path: "/examiners" },
+              { label: t.nav.programmes, path: "/studiengaenge" },
               { label: t.nav.abstracts, path: "/abschlussarbeiten" },
             ].map((item) => (
               <button
@@ -506,6 +507,7 @@ export default function Home() {
               { label: t.nav.examiner, path: "/examiner" },
               { label: t.nav.admin, path: "/admin" },
               { label: t.nav.directory, path: "/examiners" },
+              { label: t.nav.programmes, path: "/studiengaenge" },
               { label: t.nav.abstracts, path: "/abschlussarbeiten" },
             ].map((item) => (
                 <button
