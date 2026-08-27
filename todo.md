@@ -2286,7 +2286,15 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Zugriffsverlust von holger.luetters@htw-berlin.de auf der VPS-Ausgabe anhand des realen Kontostatus, Passwort-Login und Resetablaufs nachvollziehbar analysieren.
 - [ ] Nicht funktionierende Zweisprachigkeit der IONOS-VPS-Ausgabe gegenüber dem geprüften lokalen Sprachwechsel analysieren, korrigieren und auf dem VPS verifizieren.
 - [ ] VPS-spezifische Wiederherstellung und Reaktivierung von holger.luetters@htw-berlin.de mit Kontostatusprüfung, sicherem Reset-Link und Rollenabnahme kontrolliert durchführen.
-- [ ] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.
+- [ ] Bestehendes VPS-Prüferkonto holger.luetters@htw-berlin.de ohne Neuregistrierung auf Passwortfähigkeit und mögliche Duplikate prüfen, sicheren Einzel-Reset auslösen und Ursache des Zugriffsverlusts dokumentieren.
+- [x] Entwicklungsdaten zu holger.luetters@htw-berlin.de über die bestehende Nutzerverwaltung ohne SSH- oder Datenbankzugriff sichtbar machen und prüfen.
+- [x] Passwort-Login für das vorhandene, freigegebene Entwicklungskonto holger.luetters@htw-berlin.de korrigieren, wenn die Oberfläche fälschlich „Kein Konto gefunden“ meldet.
+- [ ] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
+- [ ] Tatsächlich vorhandene VPS-Nutzerkonto-Spalten und Migrationsprotokoll rein lesend mit dem aktuellen Projektmodell abgleichen, bevor ein Reset ausgelöst wird.
+- [x] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.
+- [ ] Serverseitigen Deploy-Status und Health-Check nach dem FileZilla-Auslöser unabhängig von FileZilla über den sicheren VPS-Betriebsweg prüfen.
+- [ ] Tatsächliche systemd-Auslöser, Containerstatus sowie Release- und Fehlerablage nach fehlendem Protokolleintrag risikofrei identifizieren.
+- [x] Release- und Rückfallablage des aktuellen FileZilla-Deploys verifizieren; das neue Archiv wurde als `applied.zip` abgelegt und ein Rückfallarchiv erzeugt.
 - [ ] Formale Präsentation zum Rechte- und Sicherheitskonzept des Thesis Match Maker mit Rollen, Berechtigungsgrenzen und Prüfpfaden erstellen.
 - [x] Einmalige formale Passwort-Neuanmeldungsinformation für alle berechtigten VPS-Nutzer:innen mit geprüfter Zielgruppe, Versandvorschau und expliziter Freigabe vor dem Massenversand vorbereiten.
 - [x] Einmaligen Passwort-Neuanmeldungsprozess für alle freigegebenen VPS-Nutzer:innen unabhängig von vorhandenem Altpasswort mit Zielgruppenvorschau, doppelter Versandfreigabe und revisionssicherem Protokoll implementieren.

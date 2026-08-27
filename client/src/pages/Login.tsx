@@ -266,15 +266,6 @@ export default function Login() {
         setLoginStatus("pending");
       } else if (msg.includes("abgelehnt") || msg.includes("rejected")) {
         setLoginStatus("rejected");
-      } else if (msg.includes("ungültig") || msg.includes("not found") || msg.includes("UNAUTHORIZED") || msg.toLowerCase().includes("invalid")) {
-        // Prüfen ob E-Mail mit @student.htw-berlin.de endet – dann Registrierungs-Hinweis
-        const emailLower = loginEmail.trim().toLowerCase();
-        if (emailLower.endsWith("@student.htw-berlin.de") || emailLower.endsWith("@htw-berlin.de") || emailLower.endsWith("@htw-berlin.com")) {
-          setLoginStatus("not_found");
-        } else {
-          setLoginStatus(null);
-          toast.error(msg || L.loginFailed);
-        }
       } else {
         setLoginStatus(null);
         toast.error(msg || L.loginFailed);
