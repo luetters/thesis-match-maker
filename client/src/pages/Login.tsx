@@ -20,6 +20,7 @@ import {
   User,
   ShieldCheck,
   HelpCircle,
+  CircleAlert,
   X,
   ChevronDown,
   ChevronUp,
@@ -181,6 +182,7 @@ export default function Login() {
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [resetSent, setResetSent] = useState(false);
   const [loginStatus, setLoginStatus] = useState<"pending" | "rejected" | "not_found" | "two_factor" | null>(null);
+  const [loginErrorMessage, setLoginErrorMessage] = useState<string | null>(null);
   const [showFaq, setShowFaq] = useState(false);
 
   // Registrierungs-State
@@ -242,9 +244,11 @@ export default function Login() {
   const loginMutation = trpc.auth.loginWithPassword.useMutation({
     onSuccess: (data) => {
       if ((data as any).requiresTwoFactor) {
+        setLoginErrorMessage(null);
         setLoginStatus("two_factor");
         return;
       }
+      setLoginErrorMessage(null);
       setLoginStatus(null);
       // Multi-Rollen: Routing nach Priorität (roles[] hat Vorrang vor role)
       const roles: string[] = (data as any).roles?.length ? (data as any).roles : [data.role];
@@ -263,11 +267,14 @@ export default function Login() {
     onError: (error) => {
       const msg = error.message ?? "";
       if (msg.includes("noch nicht freigeschaltet") || msg.includes("pending")) {
+        setLoginErrorMessage(null);
         setLoginStatus("pending");
       } else if (msg.includes("abgelehnt") || msg.includes("rejected")) {
+        setLoginErrorMessage(null);
         setLoginStatus("rejected");
       } else {
         setLoginStatus(null);
+        setLoginErrorMessage(msg || L.loginFailed);
         toast.error(msg || L.loginFailed);
       }
     },
@@ -311,15 +318,25 @@ export default function Login() {
 
   const requestReset = trpc.auth.requestPasswordReset.useMutation({
     onSuccess: () => {
+      setLoginErrorMessage(null);
       setResetSent(true);
       toast.success(L.resetSent);
     },
     onError: (e) => toast.error(e.message),
   });
 
+  const handlePasswordReset = () => {
+    if (!loginEmail.trim()) {
+      toast.error(L.enterEmailFirst);
+      return;
+    }
+    requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
+  };
+
   function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword) return;
+    setLoginErrorMessage(null);
     setLoginStatus(null);
     // E-Mail bei Bedarf im localStorage speichern oder löschen
     if (rememberMe) {
@@ -602,7 +619,10 @@ export default function Login() {
                         type="email"
                         placeholder={L.emailPlaceholderLogin ?? "ihre@htw-berlin.de"}
                         value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
+                        onChange={(e) => {
+                          setLoginEmail(e.target.value);
+                          setLoginErrorMessage(null);
+                        }}
                         required
                         autoComplete="email"
                         autoFocus
@@ -618,7 +638,10 @@ export default function Login() {
                         type={showLoginPw ? "text" : "password"}
                         placeholder={L.passwordPlaceholder ?? "Passwort"}
                         value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
+                        onChange={(e) => {
+                          setLoginPassword(e.target.value);
+                          setLoginErrorMessage(null);
+                        }}
                         required
                         autoComplete="current-password"
                         className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/25 focus:border-[#76b900] focus:ring-[#76b900]/20"
@@ -659,13 +682,7 @@ export default function Login() {
                     <div className="flex justify-end pt-0.5">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (!loginEmail.trim()) {
-                            toast.error(L.enterEmailFirst);
-                            return;
-                          }
-                          requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin });
-                        }}
+                        onClick={handlePasswordReset}
                         className="text-sm font-medium text-[#76b900] hover:text-[#8fd400] underline underline-offset-2 transition-colors"
                       >
                         {L.forgotPassword}
@@ -690,6 +707,41 @@ export default function Login() {
                     >
                       <p className="font-semibold mb-1" style={{ color: "#ef4444" }}>{L.rejectedTitle}</p>
                       <p style={{ color: "rgba(239,68,68,0.75)" }}>{L.rejectedText}</p>
+                    </div>
+                  )}
+
+                  {loginErrorMessage && (
+                    <div
+                      role="alert"
+                      aria-live="assertive"
+                      className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200 motion-reduce:animate-none rounded-xl border px-4 py-3"
+                      style={{ background: "rgba(234, 88, 12, 0.13)", borderColor: "rgba(251, 146, 60, 0.6)", boxShadow: "0 0 0 3px rgba(251, 146, 60, 0.08)" }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#fdba74" }} aria-hidden="true" />
+                        <div className="min-w-0">
+                          <p className="font-semibold" style={{ color: "#fed7aa" }}>
+                            {lang === "de" ? "Anmeldung nicht möglich" : "Sign-in was not possible"}
+                          </p>
+                          <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255, 237, 213, 0.9)" }}>{loginErrorMessage}</p>
+                          <p className="mt-2 text-xs leading-relaxed" style={{ color: "rgba(255, 237, 213, 0.74)" }}>
+                            {lang === "de"
+                              ? "Wenn Sie Ihr Passwort nicht kennen, fordern Sie sicher einen neuen Link an."
+                              : "If you do not know your password, request a new link securely."}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePasswordReset}
+                            disabled={requestReset.isPending}
+                            className="mt-3 border-orange-200/60 bg-orange-50/10 text-orange-50 hover:bg-orange-50/20 hover:text-white active:scale-[0.97] motion-reduce:transition-none"
+                          >
+                            {requestReset.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Lock className="mr-2 h-3.5 w-3.5" />}
+                            {lang === "de" ? "Passwort zurücksetzen" : "Reset password"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
 

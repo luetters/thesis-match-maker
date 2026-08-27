@@ -17,4 +17,14 @@ describe("Passwort-Loginfehlermeldungen", () => {
     expect(source).toContain("requestReset.mutate({ email: loginEmail.trim(), origin: window.location.origin })");
     expect(source).toContain("L.forgotPassword");
   });
+
+  it("hebt fehlgeschlagene Passwortanmeldungen zugänglich hervor und verlinkt direkt den Resetweg", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/pages/Login.tsx"), "utf8");
+
+    expect(source).toContain('role="alert"');
+    expect(source).toContain('aria-live="assertive"');
+    expect(source).toContain("loginErrorMessage");
+    expect(source).toContain("handlePasswordReset");
+    expect(source).toContain("motion-reduce:animate-none");
+  });
 });

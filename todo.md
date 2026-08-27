@@ -2289,6 +2289,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Bestehendes VPS-Prüferkonto holger.luetters@htw-berlin.de ohne Neuregistrierung auf Passwortfähigkeit und mögliche Duplikate prüfen, sicheren Einzel-Reset auslösen und Ursache des Zugriffsverlusts dokumentieren.
 - [x] Entwicklungsdaten zu holger.luetters@htw-berlin.de über die bestehende Nutzerverwaltung ohne SSH- oder Datenbankzugriff sichtbar machen und prüfen.
 - [x] Passwort-Login für das vorhandene, freigegebene Entwicklungskonto holger.luetters@htw-berlin.de korrigieren, wenn die Oberfläche fälschlich „Kein Konto gefunden“ meldet.
+- [x] Passwort-Anmeldefehlermeldung visuell hervorheben, den sicheren Passwort-Reset-Weg eindeutig anbieten und eine reduzierte, barrierearme Einblendung ergänzen.
 - [ ] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
 - [ ] Tatsächlich vorhandene VPS-Nutzerkonto-Spalten und Migrationsprotokoll rein lesend mit dem aktuellen Projektmodell abgleichen, bevor ein Reset ausgelöst wird.
 - [x] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.
