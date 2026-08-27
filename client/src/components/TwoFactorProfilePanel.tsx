@@ -52,7 +52,7 @@ export function TwoFactorProfilePanel() {
       </div>
 
       {!status.enabled && !setup && (
-        <button type="button" onClick={() => begin.mutate()} disabled={begin.isPending} className="mt-5 rounded-lg bg-[#2f6f2f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+        <button type="button" onClick={() => begin.mutate()} disabled={begin.isPending} className="mt-5 rounded-lg bg-[#76B900] px-4 py-2.5 text-sm font-semibold text-[#142800] transition-colors hover:bg-[#8FD400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76B900] focus-visible:ring-offset-2 active:scale-[0.97] disabled:opacity-50">
           {begin.isPending ? "Einrichtung wird vorbereitet …" : "2FAS einrichten"}
         </button>
       )}
@@ -66,7 +66,7 @@ export function TwoFactorProfilePanel() {
           <label className="mt-4 block text-sm font-medium text-gray-700" htmlFor="profile-two-factor-confirm">Sicherheitscode</label>
           <input id="profile-two-factor-confirm" value={code} onChange={(event) => setNumericCode(event.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="Sechsstelliger Code" className="mt-1 w-full max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" />
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => confirm.mutate({ code })} disabled={code.length !== 6 || confirm.isPending} className="rounded-lg bg-[#2f6f2f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Aktivierung bestätigen</button>
+            <button type="button" onClick={() => confirm.mutate({ code })} disabled={code.length !== 6 || confirm.isPending} className="rounded-lg bg-[#76B900] px-4 py-2 text-sm font-semibold text-[#142800] transition-colors hover:bg-[#8FD400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76B900] focus-visible:ring-offset-2 active:scale-[0.97] disabled:opacity-50">Aktivierung bestätigen</button>
             <button type="button" onClick={() => { setSetup(null); setCode(""); }} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700">Abbrechen</button>
           </div>
         </div>
