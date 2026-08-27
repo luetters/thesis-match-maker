@@ -2292,6 +2292,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Passwort-Anmeldefehlermeldung visuell hervorheben, den sicheren Passwort-Reset-Weg eindeutig anbieten und eine reduzierte, barrierearme Einblendung ergänzen.
 - [x] Vom Nutzer autorisierte manuelle Passwortneuvergabe ausschließlich für das bestehende Entwicklungskonto holger.luetters@htw-berlin.de sicher durchführen und ohne Passwortoffenlegung prüfen.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.
+- [x] Manus-Favicon durch das bestehende Projektlogo ersetzen und die Browserauslieferung prüfen.
 - [ ] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
 - [ ] Tatsächlich vorhandene VPS-Nutzerkonto-Spalten und Migrationsprotokoll rein lesend mit dem aktuellen Projektmodell abgleichen, bevor ein Reset ausgelöst wird.
 - [x] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.

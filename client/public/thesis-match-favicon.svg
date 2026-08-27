@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Thesis Match Maker</title>
+  <rect width="64" height="64" rx="14" fill="#76B900"/>
+  <path d="M8 27.5 32 16l24 11.5L32 39 8 27.5Z" fill="#fff"/>
+  <path d="M18 33.5v10.2c0 2.5 6.3 5.8 14 5.8s14-3.3 14-5.8V33.5L32 40.2 18 33.5Z" fill="#fff"/>
+  <path d="M54.5 29v13.4" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>
+  <circle cx="54.5" cy="45.3" r="3.4" fill="#fff"/>
+</svg>
