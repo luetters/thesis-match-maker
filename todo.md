@@ -2292,6 +2292,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Passwort-Anmeldefehlermeldung visuell hervorheben, den sicheren Passwort-Reset-Weg eindeutig anbieten und eine reduzierte, barrierearme Einblendung ergänzen.
 - [x] Vom Nutzer autorisierte manuelle Passwortneuvergabe ausschließlich für das bestehende Entwicklungskonto holger.luetters@htw-berlin.de sicher durchführen und ohne Passwortoffenlegung prüfen.
 - [x] Erneut autorisiertes Passwort ausschließlich für das bestehende Entwicklungskonto holger.luetters@htw-berlin.de sicher setzen und ohne Klartextoffenlegung validieren.
+- [x] Fehlgeschlagene Superadmin-Anmeldung für holger@luetters.net in der Entwicklungsumgebung anhand von Kontozuordnung, Passwortfähigkeit und Loginprotokoll rein lesend analysieren; keine Konto-, Rollen- oder Passwortänderung ohne ausdrückliche Freigabe.
+- [x] Vom Nutzer autorisiertes Passwort ausschließlich für das bestehende Superadmin-Konto holger@luetters.net sicher setzen und ohne Klartextoffenlegung validieren.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.
 - [x] Manus-Favicon durch das bestehende Projektlogo ersetzen und die Browserauslieferung prüfen.
 - [x] Bestehendes Entwicklungskonto holger.luetters@htw-berlin.de erneut auf korrekten Rollentyp, Passwortlogin und mögliche Ursachen einer abgelehnten Anmeldung prüfen, ohne Zugangsdaten offenzulegen.
