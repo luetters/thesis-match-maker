@@ -1,4 +1,4 @@
-import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
+import { BROWSER_SESSION_MAX_AGE_MS, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
@@ -971,7 +971,7 @@ export const appRouter = router({
         return { success: true, autoApproved: isStudentAutoApprove };
       }),
     loginWithPassword: publicProcedure
-      .input(z.object({ email: z.string().email(), password: z.string().min(1), twoFactorCode: z.string().trim().min(6).max(16).optional() }))
+      .input(z.object({ email: z.string().email(), password: z.string().min(1), twoFactorCode: z.string().trim().min(6).max(16).optional(), rememberMe: z.boolean().optional().default(false) }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserByEmail(input.email);
         const ipAddr = ctx.req.ip;
@@ -1055,6 +1055,10 @@ export const appRouter = router({
             message: "Bitte melden Sie sich mit Ihrer HTW-Berlin-E-Mail-Adresse (@htw-berlin.de oder @htw-berlin.com) an.",
           });
         }
+        // Ohne „Angemeldet bleiben“ ist das Cookie eine Browser-Sitzung.
+        // Bei aktivierter Option bleibt ausschließlich ein HTTP-only-Sitzungstoken bis zu 30 Tage erhalten;
+        // Kennwort oder Zugangsdaten werden dabei nicht im Browser gespeichert.
+        const sessionAgeMs = input.rememberMe ? SESSION_MAX_AGE_MS : BROWSER_SESSION_MAX_AGE_MS;
         // JWT mit appId erstellen (kompatibel mit sdk.verifySession)
         const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "");
         const sessionToken = await new SignJWT({
@@ -1064,10 +1068,12 @@ export const appRouter = router({
         })
           .setProtectedHeader({ alg: "HS256" })
           .setIssuedAt()
-          .setExpirationTime(Math.floor((Date.now() + SESSION_MAX_AGE_MS) / 1000))
+          .setExpirationTime(Math.floor((Date.now() + sessionAgeMs) / 1000))
           .sign(secret);
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, input.rememberMe
+          ? { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS }
+          : cookieOptions);
         // Multi-Rollen: roles[] aus user_roles laden
         const userRolesArr = await getUserRoles(user.id);
         if (userRolesArr.length === 0 && user.role && user.role !== 'user') {

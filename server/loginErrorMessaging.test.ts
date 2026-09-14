@@ -27,4 +27,16 @@ describe("Passwort-Loginfehlermeldungen", () => {
     expect(source).toContain("handlePasswordReset");
     expect(source).toContain("motion-reduce:animate-none");
   });
+
+  it("stellt einen zugänglichen Passwortanzeigeschalter bereit", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/pages/Login.tsx"), "utf8");
+    const passwordField = source.slice(
+      source.indexOf('type={showLoginPw ? "text" : "password"}'),
+      source.indexOf('{loginStatus === "two_factor"}'),
+    );
+
+    expect(passwordField).toContain('aria-label={showLoginPw ? L.hidePassword : L.showPassword}');
+    expect(passwordField).toContain('aria-pressed={showLoginPw}');
+    expect(passwordField).toContain('title={showLoginPw ? L.hidePassword : L.showPassword}');
+  });
 });

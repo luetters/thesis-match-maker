@@ -170,14 +170,10 @@ export default function Login() {
   const [step, setStep] = useState<"action" | "login" | "role" | "register">("action");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  // "Angemeldet bleiben" – E-Mail aus localStorage vorausfüllen
-  const REMEMBER_KEY = "tmm_remember_email";
-  const savedEmail = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) ?? "" : "";
-
   // Login-State
-  const [loginEmail, setLoginEmail] = useState(savedEmail);
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(savedEmail !== "");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [resetSent, setResetSent] = useState(false);
@@ -338,13 +334,7 @@ export default function Login() {
     if (!loginEmail.trim() || !loginPassword) return;
     setLoginErrorMessage(null);
     setLoginStatus(null);
-    // E-Mail bei Bedarf im localStorage speichern oder löschen
-    if (rememberMe) {
-      localStorage.setItem(REMEMBER_KEY, loginEmail.trim());
-    } else {
-      localStorage.removeItem(REMEMBER_KEY);
-    }
-    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword, ...(twoFactorCode ? { twoFactorCode } : {}) });
+    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword, rememberMe, ...(twoFactorCode ? { twoFactorCode } : {}) });
   }
 
   function startSamlLogin() {
@@ -649,8 +639,10 @@ export default function Login() {
                       <button
                         type="button"
                         onClick={() => setShowLoginPw(!showLoginPw)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                        tabIndex={-1}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/50 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76b900]"
+                        aria-label={showLoginPw ? L.hidePassword : L.showPassword}
+                        aria-pressed={showLoginPw}
+                        title={showLoginPw ? L.hidePassword : L.showPassword}
                       >
                         {showLoginPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -775,20 +767,22 @@ export default function Login() {
                     </div>
                   )}
 
-                  {/* Angemeldet bleiben */}
-                  <div className="flex items-center gap-2.5 py-1">
-                    <Checkbox
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked === true)}
-                      className="border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
-                    />
-                    <label
-                      htmlFor="remember-me"
-                      className="text-sm text-white/60 cursor-pointer select-none leading-none"
-                    >
-                      {L.rememberMe}
-                    </label>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <Checkbox
+                        id="remember-me"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                        className="border-white/30 data-[state=checked]:bg-[#76b900] data-[state=checked]:border-[#76b900]"
+                      />
+                      <label
+                        htmlFor="remember-me"
+                        className="cursor-pointer select-none text-sm font-medium leading-none text-white/80"
+                      >
+                        {L.rememberMe}
+                      </label>
+                    </div>
+                    <p className="ml-7 mt-1.5 text-xs leading-relaxed text-white/45">{L.rememberMeHint}</p>
                   </div>
 
                   <Button

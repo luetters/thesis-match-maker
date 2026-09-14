@@ -2293,6 +2293,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Vom Nutzer autorisierte manuelle Passwortneuvergabe ausschließlich für das bestehende Entwicklungskonto holger.luetters@htw-berlin.de sicher durchführen und ohne Passwortoffenlegung prüfen.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.
 - [x] Manus-Favicon durch das bestehende Projektlogo ersetzen und die Browserauslieferung prüfen.
+- [x] Bestehendes Entwicklungskonto holger.luetters@htw-berlin.de erneut auf korrekten Rollentyp, Passwortlogin und mögliche Ursachen einer abgelehnten Anmeldung prüfen, ohne Zugangsdaten offenzulegen.
+- [x] Passwortanzeige im Loginformular barrierearm ergänzen und ihren Zustand klar beschriften.
+- [x] Sichere Funktion „Angemeldet bleiben“ mit serverseitig langlebiger, widerrufbarer Sitzung statt Speicherung von Zugangsdaten im Browser implementieren und prüfen.
 - [ ] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
 - [ ] Tatsächlich vorhandene VPS-Nutzerkonto-Spalten und Migrationsprotokoll rein lesend mit dem aktuellen Projektmodell abgleichen, bevor ein Reset ausgelöst wird.
 - [x] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.
