@@ -57,8 +57,9 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    // SameSite=None erfordert Secure=true – bei lokalem HTTP auf Lax zurückfallen
-    sameSite: secure ? "none" : "lax",
+    // Das Portal wird stets als First-Party-Anwendung betrieben. Lax lässt
+    // sichere Top-Level-Rückkehrwege zu und schützt unsichere Cross-Site-Posts.
+    sameSite: "lax",
     secure,
   };
 }

@@ -12,9 +12,13 @@ import * as schema from "../drizzle/schema";
 import { storagePut } from "./storageLocal";
 import { basename } from "path";
 
+const MAX_TRANSFER_ARCHIVE_BYTES = 128 * 1024 * 1024;
+const MAX_TRANSFER_ARCHIVE_ENTRIES = 10_000;
+const MAX_TRANSFER_UNCOMPRESSED_BYTES = 512 * 1024 * 1024;
+
 const importUpload = multer({
   dest: "/tmp/thesis-match-maker-transfer-imports",
-  limits: { fileSize: 1024 * 1024 * 1024, files: 1 },
+  limits: { fileSize: MAX_TRANSFER_ARCHIVE_BYTES, files: 1 },
   fileFilter: (_req, file, callback) => {
     if (!["application/zip", "application/x-zip-compressed", "application/octet-stream"].includes(file.mimetype)) {
       callback(new Error("Nur ZIP-Transferarchive sind zulässig."));
@@ -43,8 +47,36 @@ async function getSuperadminRequest(req: Request): Promise<{ id: number; role: s
   }
 }
 
-function safeArchivePath(path: string): boolean {
-  return !path.startsWith("/") && !path.includes("..") && path.length <= 2048;
+export function safeArchivePath(path: string): boolean {
+  const normalized = String(path ?? "").replace(/\\/g, "/");
+  const segments = normalized.split("/");
+  return Boolean(normalized)
+    && !normalized.startsWith("/")
+    && !normalized.includes("\0")
+    && normalized.length <= 2048
+    && segments.every((segment) => segment && segment !== "." && segment !== "..");
+}
+
+export function assertSafeArchiveEntries(entries: Array<{ path: string; uncompressedSize?: number | null }>): void {
+  if (entries.length > MAX_TRANSFER_ARCHIVE_ENTRIES) {
+    throw new Error("Das Transferarchiv enthält zu viele Dateien.");
+  }
+  let totalUncompressedBytes = 0;
+  for (const entry of entries) {
+    if (!safeArchivePath(entry.path)) throw new Error("Das Archiv enthält einen unzulässigen Dateipfad.");
+    const size = Number(entry.uncompressedSize ?? 0);
+    if (!Number.isSafeInteger(size) || size < 0) throw new Error("Das Transferarchiv enthält eine ungültige Dateigröße.");
+    totalUncompressedBytes += size;
+    if (totalUncompressedBytes > MAX_TRANSFER_UNCOMPRESSED_BYTES) {
+      throw new Error("Das Transferarchiv ist nach dem Entpacken zu groß.");
+    }
+  }
+}
+
+function matchesImportToken(providedToken: string, expectedToken: string | undefined): boolean {
+  return Boolean(expectedToken)
+    && Buffer.byteLength(providedToken) === Buffer.byteLength(expectedToken!)
+    && timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken!));
 }
 
 export type PortableTransferPreview = {
@@ -58,8 +90,7 @@ export type PortableTransferPreview = {
 
 export async function previewPortableTransferArchive(filePath: string): Promise<PortableTransferPreview> {
   const directory = await unzipper.Open.file(filePath);
-  const unsafe = directory.files.find((file) => !safeArchivePath(file.path));
-  if (unsafe) throw new Error("Das Archiv enthält einen unzulässigen Dateipfad.");
+  assertSafeArchiveEntries(directory.files);
   const manifestEntry = directory.files.find((file) => file.path === "manifest.json");
   if (!manifestEntry) throw new Error("Das Transfermanifest fehlt.");
   const parsed = validatePortableTransferManifest(JSON.parse((await manifestEntry.buffer()).toString("utf8")));
@@ -185,7 +216,8 @@ export function registerPortableTransferImportRoutes(app: Express) {
 
   app.post("/api/admin/portable-transfer/import", (req, res, next) => {
     const importToken = process.env.TRANSFER_IMPORT_TOKEN;
-    if (!importToken || req.headers["x-thesis-transfer-confirmation"] !== "IMPORTIEREN" || req.headers["x-thesis-transfer-token"] !== importToken) {
+    const providedToken = typeof req.headers["x-thesis-transfer-token"] === "string" ? req.headers["x-thesis-transfer-token"] : "";
+    if (req.headers["x-thesis-transfer-confirmation"] !== "IMPORTIEREN" || !matchesImportToken(providedToken, importToken)) {
       return res.status(400).json({ error: "Die finale Importfreigabe oder der Import-Schlüssel fehlt." });
     }
     importUpload.single("archive")(req, res, (error) => {
@@ -210,7 +242,7 @@ export function registerPortableTransferImportRoutes(app: Express) {
     const isLoopback = remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1";
     const expectedToken = process.env.TRANSFER_IMPORT_TOKEN;
     const providedToken = typeof req.headers["x-thesis-transfer-token"] === "string" ? req.headers["x-thesis-transfer-token"] : "";
-    const tokenMatches = Boolean(expectedToken) && Buffer.byteLength(providedToken) === Buffer.byteLength(expectedToken!) && timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken!));
+    const tokenMatches = matchesImportToken(providedToken, expectedToken);
     if (!isLoopback || req.headers["x-thesis-transfer-confirmation"] !== "BOOTSTRAP_IMPORT" || !tokenMatches) {
       return res.status(403).json({ error: "Der Bootstrap-Import ist ausschließlich lokal mit einem gültigen Import-Schlüssel zulässig." });
     }
@@ -234,7 +266,7 @@ export function registerPortableTransferImportRoutes(app: Express) {
     const isLoopback = remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "::ffff:127.0.0.1";
     const expectedToken = process.env.TRANSFER_IMPORT_TOKEN;
     const providedToken = typeof req.headers["x-thesis-transfer-token"] === "string" ? req.headers["x-thesis-transfer-token"] : "";
-    const tokenMatches = Boolean(expectedToken) && Buffer.byteLength(providedToken) === Buffer.byteLength(expectedToken!) && timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken!));
+    const tokenMatches = matchesImportToken(providedToken, expectedToken);
     if (!isLoopback || req.headers["x-thesis-transfer-confirmation"] !== "BOOTSTRAP_PREVIEW" || !tokenMatches) {
       return res.status(403).json({ error: "Die Bootstrap-Vorschau ist ausschließlich lokal mit einem gültigen Import-Schlüssel zulässig." });
     }

@@ -5,7 +5,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { ZipArchive } from "archiver";
 import { createPortableTransferManifest, sha256 } from "@shared/portableTransfer";
-import { previewPortableTransferArchive } from "./portableTransferImportRoutes";
+import { assertSafeArchiveEntries, previewPortableTransferArchive, safeArchivePath } from "./portableTransferImportRoutes";
 
 async function writeArchive(rows: unknown[], checksum = sha256(Buffer.from(JSON.stringify(rows)))): Promise<{ dir: string; path: string }> {
   const dir = await mkdtemp(join(tmpdir(), "tmm-transfer-"));
@@ -44,5 +44,21 @@ describe("portable transfer preview", () => {
       expect(preview.valid).toBe(false);
       expect(preview.errors.some((error) => error.includes("Prüfsumme"))).toBe(true);
     } finally { await rm(archive.dir, { recursive: true, force: true }); }
+  });
+});
+
+describe("portable transfer archive safeguards", () => {
+  it("rejects traversal paths including Windows separators", () => {
+    expect(safeArchivePath("records/users.json")).toBe(true);
+    expect(safeArchivePath("../.env")).toBe(false);
+    expect(safeArchivePath("records\\..\\.env")).toBe(false);
+    expect(safeArchivePath("records//users.json")).toBe(false);
+  });
+
+  it("rejects archives whose uncompressed content exceeds the configured limit", () => {
+    expect(() => assertSafeArchiveEntries([
+      { path: "assets/one.bin", uncompressedSize: 300 * 1024 * 1024 },
+      { path: "assets/two.bin", uncompressedSize: 300 * 1024 * 1024 },
+    ])).toThrow("nach dem Entpacken zu groß");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterExaminerReportCases, registerExportRoutes } from "./exportRoutes";
+import { csvValue, filterExaminerReportCases, registerExportRoutes } from "./exportRoutes";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -99,5 +99,17 @@ describe("PDF-Exportrouten", () => {
     ];
     const result = filterExaminerReportCases(cases, { semester: "WS 2026/27", activeOnly: true, deadlineSort: "asc" });
     expect(result.map((entry) => entry.id)).toEqual([4, 1]);
+  });
+});
+
+describe("CSV-Exportschutz", () => {
+  it("neutralisiert Tabellenformeln auch nach führenden Steuer- oder Leerzeichen", () => {
+    expect(csvValue("=HYPERLINK(\"https://example.invalid\")")).toBe('"\'=HYPERLINK(""https://example.invalid"")"');
+    expect(csvValue("\t+SUM(A1:A2)")).toBe('"\'\t+SUM(A1:A2)"');
+    expect(csvValue("-1")).toBe('"\'-1"');
+  });
+
+  it("übernimmt unkritische Tabellenwerte unverändert in eine CSV-Zelle", () => {
+    expect(csvValue("Regulärer Titel")).toBe('"Regulärer Titel"');
   });
 });

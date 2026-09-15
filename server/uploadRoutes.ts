@@ -8,7 +8,7 @@ import { generateThesisPdf } from "./thesisPdf";
 import { hasCompleteCommission } from "./thesisRegistrationDocument";
 import crypto from "crypto";
 import { generateDeadlineIcs, createIcsEvent } from "./icsHelper";
-import { storagePut, getStorageMode, localReadFile, s3ReadFile } from "./storageLocal";
+import { storagePut, getStorageMode, isSafeStorageKey, localReadFile, s3ReadFile } from "./storageLocal";
 import { lookup as mimeLookup } from "mime-types";
 import { COOKIE_NAME, buildFullName } from "@shared/const";
 
@@ -366,7 +366,7 @@ export function registerUploadRoutes(app: Express) {
   // --- Storage-Proxy: öffentliche Medien und autorisierte private Fachakten ---
   app.get("/api/storage/*", async (req: Request, res: Response) => {
     const key = (req.params as Record<string, string | undefined>)[0];
-    if (!key) { res.status(400).send("Missing key"); return; }
+    if (!key || !isSafeStorageKey(key)) { res.status(404).send("Not found"); return; }
     const isPrivate = isPrivateThesisStorageKey(key);
     if (isPrivate) {
       const user = await getUserFromRequest(req);

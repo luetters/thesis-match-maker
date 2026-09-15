@@ -17,13 +17,39 @@
  */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve, sep } from "path";
 import crypto from "crypto";
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
+  const normalized = String(relKey ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
+  const segments = normalized.split("/");
+
+  if (!normalized || normalized.includes("\0") || segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new Error("Ungültiger Speicherpfad.");
+  }
+
+  return normalized;
+}
+
+/** Prüft einen extern übergebenen Speicherschlüssel vor dem Dateizugriff. */
+export function isSafeStorageKey(relKey: string): boolean {
+  try {
+    normalizeKey(relKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveLocalStoragePath(key: string): string {
+  const storageDir = resolve(getLocalDir());
+  const filePath = resolve(storageDir, normalizeKey(key));
+  if (!filePath.startsWith(`${storageDir}${sep}`)) {
+    throw new Error("Ungültiger Speicherpfad.");
+  }
+  return filePath;
 }
 
 function appendHashSuffix(relKey: string): string {
@@ -93,7 +119,7 @@ function getLocalDir(): string {
 
 async function localPut(relKey: string, data: Buffer | Uint8Array | string, _contentType?: string): Promise<{ key: string; url: string }> {
   const key = appendHashSuffix(normalizeKey(relKey));
-  const filePath = join(getLocalDir(), key);
+  const filePath = resolveLocalStoragePath(key);
   const fileDir = dirname(filePath);
   if (!existsSync(fileDir)) mkdirSync(fileDir, { recursive: true });
   const buf = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
@@ -117,7 +143,7 @@ async function localGetSignedUrl(relKey: string): Promise<string> {
  * Wird vom lokalen Storage-Proxy verwendet.
  */
 export function localReadFile(key: string): { data: Buffer; exists: boolean } {
-  const filePath = join(getLocalDir(), normalizeKey(key));
+  const filePath = resolveLocalStoragePath(key);
   if (!existsSync(filePath)) return { data: Buffer.alloc(0), exists: false };
   return { data: readFileSync(filePath), exists: true };
 }

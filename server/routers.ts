@@ -355,6 +355,36 @@ async function assertDeadlineDepartmentScope(ctx: { user: { id: number; role: st
   return scope;
 }
 
+type ColloquiumThesisAccessSubject = {
+  studentId?: number | null;
+  examinerId?: number | null;
+  secondExaminerId?: number | null;
+};
+
+/** Begrenzt Kolloquiumsdaten auf den konkreten Thesis-Fall und berechtigte Verwaltungsrollen. */
+export function hasColloquiumThesisAccess(
+  user: { id: number; role: string; roles?: string[] },
+  thesis: ColloquiumThesisAccessSubject,
+  additionalRoles: string[] = [],
+) {
+  const roles = new Set([user.role, ...(user.roles ?? []), ...additionalRoles]);
+  if (["admin", "superadmin", "pav"].some((role) => roles.has(role))) return true;
+  return [thesis.studentId, thesis.examinerId, thesis.secondExaminerId].includes(user.id);
+}
+
+async function assertColloquiumThesisAccess(
+  ctx: { user: { id: number; role: string; roles?: string[] } },
+  thesisRequestId: number,
+) {
+  const thesis = await getThesisRequestById(thesisRequestId);
+  if (!thesis) throw new TRPCError({ code: "NOT_FOUND", message: "Anfrage nicht gefunden." });
+  const additionalRoles = await getUserRoles(ctx.user.id);
+  if (!hasColloquiumThesisAccess(ctx.user, thesis, additionalRoles)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Sie dürfen die Kolloquiumsdaten dieses Falls nicht abrufen." });
+  }
+  return thesis;
+}
+
 const studentProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!userHasRole(ctx.user, "student") && !userHasRole(ctx.user, "admin") && !userHasRole(ctx.user, "superadmin")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Nur Studierende haben Zugriff." });
@@ -2933,7 +2963,10 @@ export const appRouter = router({
     all: adminProcedure.query(async () => getAllColloquiums()),
     byThesis: protectedProcedure
       .input(z.object({ thesisRequestId: z.number().int().positive() }))
-      .query(async ({ input }) => getColloquiumsByThesis(input.thesisRequestId)),
+      .query(async ({ ctx, input }) => {
+        await assertColloquiumThesisAccess(ctx, input.thesisRequestId);
+        return getColloquiumsByThesis(input.thesisRequestId);
+      }),
     create: adminProcedure
       .input(z.object({
         thesisRequestId: z.number().int().positive(),
@@ -2979,10 +3012,11 @@ export const appRouter = router({
       }),
     getIcs: protectedProcedure
       .input(z.object({ colloquiumId: z.number().int().positive() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
         const all = await getAllColloquiums();
         const col = all.find(c => c.id === input.colloquiumId);
         if (!col) throw new TRPCError({ code: "NOT_FOUND", message: "Kolloquium nicht gefunden" });
+        await assertColloquiumThesisAccess(ctx, col.thesisRequestId);
         // Thesis-Daten mit aufgelösten Namen laden
         const thesis = await getThesisRequestByIdWithNames(col.thesisRequestId);
         const icsContent = createIcsEvent({

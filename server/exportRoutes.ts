@@ -124,10 +124,12 @@ function examinerReportRole(request: { examinerId?: number | null; secondExamine
   return "Zweitgutachten angefragt";
 }
 
-function csvValue(value: string | number | null | undefined): string {
+export function csvValue(value: string | number | null | undefined): string {
   const text = String(value ?? "");
   // Schutz vor Formelinterpretation beim Öffnen in Tabellenkalkulationen.
-  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  // Führende Steuer- oder Leerzeichen dürfen die Prüfung nicht umgehen.
+  const formulaCandidate = text.replace(/^[\u0000-\u0020]+/, "");
+  const safe = /^[=+\-@]/.test(formulaCandidate) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
@@ -1237,7 +1239,7 @@ function getNoteExportFilters(req: Request): { search?: string; priority?: "norm
 
 function csvCell(value: unknown): string {
   const text = String(value ?? "").replace(/\r?\n/g, " ");
-  return `"${text.replace(/"/g, '""')}"`;
+  return csvValue(text);
 }
 
 async function exportMyNotesCsv(req: Request, res: Response) {
