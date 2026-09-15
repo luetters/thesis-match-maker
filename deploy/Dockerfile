@@ -11,8 +11,9 @@ RUN npm install --global pnpm@10.4.1
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
+COPY vendor ./vendor
 RUN pnpm install --frozen-lockfile --prod=false
 
 FROM base AS builder

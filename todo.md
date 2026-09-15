@@ -2294,12 +2294,13 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Erneut autorisiertes Passwort ausschließlich für das bestehende Entwicklungskonto holger.luetters@htw-berlin.de sicher setzen und ohne Klartextoffenlegung validieren.
 - [x] Fehlgeschlagene Superadmin-Anmeldung für holger@luetters.net in der Entwicklungsumgebung anhand von Kontozuordnung, Passwortfähigkeit und Loginprotokoll rein lesend analysieren; keine Konto-, Rollen- oder Passwortänderung ohne ausdrückliche Freigabe.
 - [x] Vom Nutzer autorisiertes Passwort ausschließlich für das bestehende Superadmin-Konto holger@luetters.net sicher setzen und ohne Klartextoffenlegung validieren.
-- [ ] Sicherheitsprüfung des Portals für Anmeldung, Sitzungen, Rollenrechte, Datenzugriffe, Eingaben, Uploads, öffentliche Routen und Abhängigkeiten durchführen; Befunde priorisieren und testbar härten.
-- [ ] Lokale Speicherabrufe gegen Dateipfadmanipulation außerhalb des vorgesehenen Speicherbereichs absichern und regressionssicher prüfen.
-- [ ] Kolloquiumsdaten und ICS-Exports serverseitig auf den jeweiligen Fallzugriff beschränken und gegen unbefugten Abruf regressionssicher absichern.
-- [ ] Sitzungscookies im regulären Portalbetrieb mit SameSite=Lax gegen browserbasierte Cross-Site-Anfragen absichern und regressionssicher prüfen.
-- [ ] Transferimport gegen übergroße oder stark komprimierte Archive begrenzen und den Import-Schlüssel einheitlich zeitkonstant prüfen.
-- [ ] Bekannte Sicherheitsbefunde in direkt verwendeten Laufzeitabhängigkeiten kontrolliert beheben und ungenutzte verwundbare Bibliotheken entfernen.
+- [x] Sicherheitsprüfung des Portals für Anmeldung, Sitzungen, Rollenrechte, Datenzugriffe, Eingaben, Uploads, öffentliche Routen und Abhängigkeiten durchführen; Befunde priorisieren und testbar härten.
+- [x] Lokale Speicherabrufe gegen Dateipfadmanipulation außerhalb des vorgesehenen Speicherbereichs absichern und regressionssicher prüfen.
+- [x] Kolloquiumsdaten und ICS-Exports serverseitig auf den jeweiligen Fallzugriff beschränken und gegen unbefugten Abruf regressionssicher absichern.
+- [x] Sitzungscookies im regulären Portalbetrieb mit SameSite=Lax gegen browserbasierte Cross-Site-Anfragen absichern und regressionssicher prüfen.
+- [x] Transferimport gegen übergroße oder stark komprimierte Archive begrenzen und den Import-Schlüssel einheitlich zeitkonstant prüfen.
+- [x] Bekannte Sicherheitsbefunde in direkt verwendeten Laufzeitabhängigkeiten kontrolliert beheben und ungenutzte verwundbare Bibliotheken entfernen.
+- [ ] Lokale, vendorte Sicherheitsabhängigkeiten im selbst gehosteten und verwalteten Container-Build vor der Paketinstallation bereitstellen und den Build erfolgreich validieren.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.
 - [x] Manus-Favicon durch das bestehende Projektlogo ersetzen und die Browserauslieferung prüfen.
 - [x] Bestehendes Entwicklungskonto holger.luetters@htw-berlin.de erneut auf korrekten Rollentyp, Passwortlogin und mögliche Ursachen einer abgelehnten Anmeldung prüfen, ohne Zugangsdaten offenzulegen.

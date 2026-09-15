@@ -33,10 +33,21 @@ describe("unabhängiges Übergabepaket", () => {
     const dockerfile = readProjectFile("deploy/Dockerfile");
 
     expect(dockerfile).toContain("npm install --global pnpm@10.4.1");
+    expect(dockerfile).toContain("COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./");
     expect(dockerfile).toContain("COPY patches ./patches");
+    expect(dockerfile).toContain("COPY vendor ./vendor");
     expect(dockerfile).toContain("pnpm install --frozen-lockfile --prod=false");
     expect(dockerfile).toContain("/app/drizzle.config.ts");
     expect(dockerfile).not.toContain("corepack enable");
+  });
+
+  it("liefert vendorte Sicherheitsabhängigkeiten auch im verwalteten Container-Build aus", () => {
+    const dockerfile = readProjectFile("Dockerfile");
+    const gitignore = readProjectFile(".gitignore");
+
+    expect(dockerfile).toContain("COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./");
+    expect(dockerfile).toContain("COPY vendor ./vendor");
+    expect(gitignore).toContain("!vendor/*.tgz");
   });
 
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
