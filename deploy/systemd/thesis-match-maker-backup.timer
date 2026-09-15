@@ -1,0 +1,11 @@
+[Unit]
+Description=Tägliche Sicherung für Thesis Match Maker
+
+[Timer]
+OnCalendar=*-*-* 02:17:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=thesis-match-maker-backup.service
+
+[Install]
+WantedBy=timers.target

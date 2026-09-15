@@ -1,0 +1,17 @@
+[Unit]
+Description=Thesis Match Maker – verschlüsselt abzulegende Sicherung vorbereiten
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/thesis-match-maker
+ExecStart=/opt/thesis-match-maker/scripts/selfhosted/backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+# Die Sicherung wird lokal erzeugt und muss anschließend gemäß den HTW-Berlin-
+# Vorgaben verschlüsselt an einen getrennten, zugriffsgeschützten Ort übertragen werden.

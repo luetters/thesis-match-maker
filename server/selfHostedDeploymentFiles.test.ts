@@ -50,6 +50,23 @@ describe("unabhängiges Übergabepaket", () => {
     expect(gitignore).toContain("!vendor/*.tgz");
   });
 
+  it("stellt einen kontrollierten HTW-Berlin-Deploy mit Schema-Schutz und täglicher Sicherung bereit", () => {
+    const deploy = readProjectFile("deploy/htw-ubuntu-deploy.sh");
+    const guide = readProjectFile("docs/HTW_Berlin_Ubuntu_Bereitstellung.md");
+    const backupService = readProjectFile("deploy/systemd/thesis-match-maker-backup.service");
+    const backupTimer = readProjectFile("deploy/systemd/thesis-match-maker-backup.timer");
+
+    expect(deploy).toContain("--initialize-empty-database --confirm-empty-database");
+    expect(deploy).toContain("chmod 600");
+    expect(deploy).toContain("docker compose --env-file");
+    expect(deploy).toContain("127.0.0.1:3000");
+    expect(deploy).not.toContain("ufw allow");
+    expect(guide).toContain("Keine öffentliche MySQL-Freigabe");
+    expect(guide).toContain("Thesis Match Maker auf einem Ubuntu-Server der HTW Berlin");
+    expect(backupService).toContain("scripts/selfhosted/backup.sh");
+    expect(backupTimer).toContain("OnCalendar=*-*-* 02:17:00");
+  });
+
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
     const emptyTargetBootstrap = readProjectFile("scripts/selfhosted/bootstrap-empty-target.sh");
