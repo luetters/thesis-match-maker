@@ -1201,7 +1201,7 @@ function SystemStatsTab() {
 
 function SystemConfigTab() {
   const utils = trpc.useUtils();
-  const { data: settings, isLoading } = trpc.superadmin.getSettings.useQuery();
+  const { data: settings, isLoading, isError, error, refetch } = trpc.superadmin.getSettings.useQuery();
   const { data: twoFactorGaps, isLoading: twoFactorGapsLoading } = trpc.superadmin.getTwoFactorEnrollmentGaps.useQuery();
   const twoFactorRoleLabels: Record<string, string> = { examiner: "Erstprüfer:in", second_examiner: "Zweitprüfer:in", admin: "Verwaltung", dean: "Dekanat", vice_dean: "Prodekanat", programme_director: "Studiengangsleitung", pav: "PA-Vorsitz", superadmin: "Superadmin" };
   const updateSettings = trpc.superadmin.updateSettings.useMutation({
@@ -1256,8 +1256,28 @@ function SystemConfigTab() {
     }
   };
 
-  if (isLoading || !form) {
+  if (isLoading || (settings && !form)) {
     return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  if (isError || !form) {
+    const message = isError
+      ? error?.message ?? "Die Einstellungen konnten nicht geladen werden."
+      : "Für dieses Konto liegen derzeit keine Einstellungen vor.";
+
+    return (
+      <div className="max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 p-6" role="alert">
+        <h3 className="text-base font-semibold text-amber-950">Einstellungen momentan nicht verfügbar</h3>
+        <p className="mt-2 text-sm text-amber-900">{message}</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        >
+          Erneut laden
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -78,3 +78,9 @@ curl -sS -o /dev/null -w 'HTTP %{http_code}\n' http://127.0.0.1:3000/
 ```
 
 Bei einem fehlgeschlagenen Deploy erstellt der Server vor der Synchronisierung ein Rückfallarchiv. Ein Rollback wird ausschließlich durch eine berechtigte Administration über den eingeschränkten Deployweg ausgelöst. DNS-, Firewall-, Datenbank- und Passwortänderungen sind nicht Teil des GitHub-Workflows.
+
+## 6. Lesende Betriebsdiagnose und weitere Freigaben
+
+Vor einem Passwort-Reset, einer DNS-Änderung oder einem Go-live führt die Administration den lesenden Check `scripts/selfhosted/verify-server-readonly.sh` aus. Er prüft Container, lokalen HTTP-Status, Releaseablage und – optional – minimierte Kontometadaten, ohne Geheimnisse oder Passwort-Hashes auszugeben und ohne Änderungen vorzunehmen.
+
+Die vollständige Reihenfolge für Datenübernahme, E-Mail-Freigabe, Rollenabnahme und DNS ist in [Administrator_Abnahme_und_Restschritte.md](./Administrator_Abnahme_und_Restschritte.md) dokumentiert.

@@ -2304,18 +2304,20 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Eigenständig betreibbares Ubuntu-Deploy-Artefakt und verständliche HTW-Berlin-Installationsanleitung mit kontrolliertem Build-, Backup-, Rollback- und Sicherheitsablauf fertigstellen.
 - [x] Docker-Image-Variante mit Registry-konfigurierbarer Compose-Datei, geheimnisfreier Build-Übergabe und verständlicher HTW-Berlin-Betriebsanleitung bereitstellen.
 - [x] Git-basierten Container-Deploy von GitHub auf gitlab.htw-berlin.de mit geschützter GitLab-CI/CD-Pipeline, Registry-Übergabe und dokumentiertem HTW-Berlin-Serverablauf umstellen.
-- [ ] Aktuellen geprüften Projektstand sicher in das private Zielprojekt https://gitlab.rz.htw-berlin.de/luetters/thesis-match-maker übertragen, ohne Zugangsdaten in Projektdateien oder Chat zu speichern.
-- [ ] Nach dem erfolgreichen GitLab-Push die geschützten CI/CD-Variablen, den ersten Prüflauf und den weiterhin manuellen Produktionsdeploy verständlich anleiten.
-- [ ] Endlos drehenden Ladeindikator im Bereich Einstellungen reproduzieren, Ursache in Datenabruf oder Berechtigungsprüfung beheben und einen verständlichen Fehlerzustand absichern.
+- [x] Aktuellen geprüften Projektstand sicher in das private Zielprojekt https://gitlab.rz.htw-berlin.de/luetters/thesis-match-maker übertragen, ohne Zugangsdaten in Projektdateien oder Chat zu speichern. Durch den ausdrücklich gewählten GitHub-Deployweg ersetzt; kein GitLab-Push ausgelöst.
+- [x] Nach dem erfolgreichen GitLab-Push die geschützten CI/CD-Variablen, den ersten Prüflauf und den weiterhin manuellen Produktionsdeploy verständlich anleiten. Durch den ausdrücklich gewählten GitHub-Deployweg ersetzt.
+- [x] Endlos drehenden Ladeindikator im Bereich Einstellungen reproduzieren, Ursache in Datenabruf oder Berechtigungsprüfung beheben und einen verständlichen Fehlerzustand absichern.
 - [x] GitHub-basierten Ubuntu-Deploy um ein idempotentes Installations- und Startskript ergänzen, das ohne Geheimnisse im Repository auskommt und die ersten Servervoraussetzungen verständlich dokumentiert.
 - [x] Passwortstärkeanzeige bei Registrierung, Passwort-Reset und Passwortänderung mit verständlichen Hinweisen und einer einheitlichen Mindestregel ergänzen.
 - [x] Sichere persönliche Konto- und Passwortverwaltung mit aktueller Passwortbestätigung, Sitzungsübersicht und Kontoeinstellungen im eigenen Profil ergänzen.
+- [x] Ohne Zielserverzugriff umsetzbare Restpunkte priorisiert abschließen und für die Administration klar von externen Produktionsschritten abgrenzen.
+- [x] Ausführbare Administrator-Übergabe für die verbleibenden Server-, DNS-, Daten- und E-Mail-Schritte ohne Geheimnisse im Repository konsolidieren.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.
 - [x] Manus-Favicon durch das bestehende Projektlogo ersetzen und die Browserauslieferung prüfen.
 - [x] Bestehendes Entwicklungskonto holger.luetters@htw-berlin.de erneut auf korrekten Rollentyp, Passwortlogin und mögliche Ursachen einer abgelehnten Anmeldung prüfen, ohne Zugangsdaten offenzulegen.
 - [x] Passwortanzeige im Loginformular barrierearm ergänzen und ihren Zustand klar beschriften.
 - [x] Sichere Funktion „Angemeldet bleiben“ mit serverseitig langlebiger, widerrufbarer Sitzung statt Speicherung von Zugangsdaten im Browser implementieren und prüfen.
-- [ ] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
+- [x] Fehlerhafte Shell-Quotierung der lesenden VPS-Kontodiagnose durch eine einfache, verifizierbare Abfrage ohne Passwort- oder Tokenausgabe ersetzen.
 - [ ] Tatsächlich vorhandene VPS-Nutzerkonto-Spalten und Migrationsprotokoll rein lesend mit dem aktuellen Projektmodell abgleichen, bevor ein Reset ausgelöst wird.
 - [x] Aktuelles geheimnisfreies Releasearchiv für den kontrollierten FileZilla-Deploy vorbereiten, vor Upload auf Geheimnisse prüfen und erst danach separat bereitstellen.
 - [ ] Serverseitigen Deploy-Status und Health-Check nach dem FileZilla-Auslöser unabhängig von FileZilla über den sicheren VPS-Betriebsweg prüfen.

@@ -224,6 +224,20 @@ describe("unabhängiges Übergabepaket", () => {
     expect(setup).toContain("thesis-sftp-deploy.path");
   });
 
+  it("liefert eine lesende Administrator-Diagnose ohne Ausgabe von Geheimnissen oder Passwort-Reset", () => {
+    const diagnostics = readProjectFile("scripts/selfhosted/verify-server-readonly.sh");
+    const handover = readProjectFile("docs/Administrator_Abnahme_und_Restschritte.md");
+
+    expect(diagnostics).toContain("--account-email");
+    expect(diagnostics).toContain("passwort_hinterlegt");
+    expect(diagnostics).toContain("HTTP %{http_code}");
+    expect(diagnostics).toContain("thesis-sftp-deploy.path");
+    expect(diagnostics).not.toContain("source \"$ENV_FILE\"");
+    expect(diagnostics).not.toContain("UPDATE users");
+    expect(handover).toContain("Bewusst noch nicht ausgeführte Schritte");
+    expect(handover).toContain("Passwort-Reset-E-Mails");
+  });
+
   it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {
     const mediaVerify = readProjectFile("scripts/selfhosted/verify-public-media.sh");
     const guide = readProjectFile("docs/IONOS_Migrationsleitfaden.md");
