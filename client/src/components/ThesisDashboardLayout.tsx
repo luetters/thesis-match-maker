@@ -9,6 +9,8 @@ import { buildFullName, getStatusBadge } from "@shared/const";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { GUIDE_PDF_URLS, getDashboardGuideAudience } from "@shared/guideAssets";
 import { BookOpenCheck, Download, X } from "lucide-react";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { getPasswordStrength } from "@shared/passwordPolicy";
 
 type GuideNoticeUser = { role?: string; roles?: string[] } | null | undefined;
 
@@ -75,13 +77,14 @@ function AppLogo({ className = "w-8 h-8" }: { className?: string }) {
 
 // ─── Passwort-ändern-Dialog ─────────────────────────────────────────────────
 function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const L = t.student;
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const passwordStrength = getPasswordStrength(newPassword);
   const changePassword = trpc.auth.changePassword.useMutation({
     onSuccess: () => setSuccess(true),
     onError: (e) => setError(e.message),
@@ -89,7 +92,10 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   const handleSubmit = () => {
     setError("");
     if (newPassword !== confirm) { setError(L.passwordMismatch2); return; }
-    if (newPassword.length < 8) { setError(L.passwordTooShort2); return; }
+    if (!passwordStrength.meetsRequirements) {
+      setError(lang === "de" ? "Bitte erfüllen Sie die angezeigten Passwortanforderungen." : "Please meet the displayed password requirements.");
+      return;
+    }
     changePassword.mutate({ currentPassword, newPassword });
   };
   return (
@@ -116,7 +122,9 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{L.newPasswordLabel}</label>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password" maxLength={128}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
+              <div className="mt-2"><PasswordStrengthIndicator password={newPassword} lang={lang} /></div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{L.confirmNewPasswordLabel}</label>
@@ -125,7 +133,7 @@ function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2" />
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
-            <button onClick={handleSubmit} disabled={changePassword.isPending}
+            <button onClick={handleSubmit} disabled={changePassword.isPending || !passwordStrength.meetsRequirements}
               className="w-full py-3 rounded-xl text-white font-semibold transition-all hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: "#76B900" }}>
               {changePassword.isPending ? L.passwordSaving : L.changePasswordTitle}

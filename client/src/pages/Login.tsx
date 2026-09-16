@@ -29,6 +29,8 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useLanguage, LanguageSwitcher } from "@/contexts/LanguageContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { getPasswordPolicyError, PASSWORD_MIN_LENGTH } from "@shared/passwordPolicy";
 
 type Role = "student" | "examiner" | "second_examiner" | "admin";
 type Department = "FB1" | "FB2" | "FB3" | "FB4" | "FB5";
@@ -36,14 +38,14 @@ type Department = "FB1" | "FB2" | "FB3" | "FB4" | "FB5";
 // ─── FAQ-Modal ────────────────────────────────────────────────────────────────
 const faqItems = (lang: string) => lang === "de" ? [
   { q: "Ich habe eine HTW Berlin E-Mail-Adresse. Kann ich mich damit direkt anmelden?", a: "Nein. Ihre HTW Berlin E-Mail-Adresse ist Ihr Benutzername in diesem System, aber Sie müssen sich zunächst einmalig registrieren. Erst nach der Registrierung und gegebenenfalls Freischaltung können Sie sich anmelden." },
-  { q: "Welches Passwort soll ich verwenden?", a: "Bitte wählen Sie ein neues, eigenes Passwort ausschließlich für dieses System. Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort. Das Passwort muss mindestens 8 Zeichen lang sein." },
+  { q: "Welches Passwort soll ich verwenden?", a: "Bitte wählen Sie ein neues, eigenes Passwort ausschließlich für dieses System. Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort. Das Passwort muss mindestens 12 Zeichen enthalten und mindestens drei Zeichengruppen kombinieren." },
   { q: "Ich habe mein Passwort vergessen. Was kann ich tun?", a: "Klicken Sie auf „Passwort vergessen?“. Geben Sie Ihre E-Mail-Adresse ein und Sie erhalten einen Link zum Zurücksetzen des Passworts." },
   { q: "Ich habe mich registriert, kann mich aber nicht anmelden.", a: "Prüfer:innen und Verwaltungsmitarbeitende werden nach der Registrierung durch die Verwaltung freigeschaltet. Studierende mit einer @student.htw-berlin.de-Adresse werden automatisch freigeschaltet." },
   { q: "Welche E-Mail-Adresse muss ich verwenden?", a: "Studierende verwenden @student.htw-berlin.de. Prüfer:innen und Verwaltungsmitarbeitende verwenden @htw-berlin.de oder @htw-berlin.com. Externe Zweitgutachter:innen können eine beliebige E-Mail-Adresse verwenden." },
   { q: "Ich erhalte keine E-Mail mit dem Passwort-Reset-Link.", a: "Bitte prüfen Sie Ihren Spam-Ordner. Falls die E-Mail dort nicht zu finden ist, wenden Sie sich an die Verwaltung der HTW Berlin." },
 ] : [
   { q: "I have an HTW Berlin email address. Can I sign in directly?", a: "No. Your HTW Berlin email address is your username in this system, but you must register first. You can sign in after registration and, where applicable, approval." },
-  { q: "Which password should I use?", a: "Please choose a new, personal password exclusively for this system. Never use your HTW Berlin password. The password must be at least 8 characters long." },
+  { q: "Which password should I use?", a: "Please choose a new, personal password exclusively for this system. Never use your HTW Berlin password. Use at least 12 characters and combine at least three character groups." },
   { q: "I forgot my password. What can I do?", a: "Select “Forgot password?”, enter your email address, and you will receive a reset link." },
   { q: "I registered but cannot sign in.", a: "Examiners and administration staff are activated by administration after registration. Students with a @student.htw-berlin.de address are activated automatically." },
   { q: "Which email address should I use?", a: "Students use @student.htw-berlin.de. Examiners and administration staff use @htw-berlin.de or @htw-berlin.com. External second examiners may use any email address." },
@@ -368,8 +370,9 @@ export default function Login() {
       showRegistrationError(L.passwordMismatch);
       return;
     }
-    if (regPassword.length < 8) {
-      showRegistrationError(L.passwordTooShort);
+    const passwordPolicyError = getPasswordPolicyError(regPassword);
+    if (passwordPolicyError) {
+      showRegistrationError(passwordPolicyError);
       return;
     }
     setRegEmailTouched(true);
@@ -1294,12 +1297,13 @@ export default function Login() {
                         <button
                           type="button"
                           onClick={() => setShowRegPw(!showRegPw)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                          tabIndex={-1}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/45 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#76b900]/50"
+                          aria-label={showRegPw ? L.hidePassword : L.showPassword}
                         >
                           {showRegPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      <PasswordStrengthIndicator password={regPassword} lang={lang} dark />
                       {/* Deutliche Passwort-Warnung */}
                       <div
                         className="rounded-xl p-3 text-sm"
@@ -1313,8 +1317,8 @@ export default function Login() {
                         </div>
                         <p className="text-xs leading-relaxed" style={{ color: "#fca5a5" }}>
                           {lang === 'de'
-                            ? <><strong>Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort!</strong> Wählen Sie ein eigenes, neues Passwort ausschließlich für dieses System. Mindestlänge: 8 Zeichen.</>
-                            : <><strong>Do not use your HTW Berlin password!</strong> Choose a new, unique password exclusively for this system. Minimum length: 8 characters.</>
+                            ? <><strong>Verwenden Sie auf keinen Fall Ihr HTW Berlin-Passwort!</strong> Wählen Sie ein eigenes, neues Passwort ausschließlich für dieses System. Mindestlänge: {PASSWORD_MIN_LENGTH} Zeichen und mindestens drei Zeichengruppen.</>
+                            : <><strong>Do not use your HTW Berlin password!</strong> Choose a new, unique password exclusively for this system. Minimum length: {PASSWORD_MIN_LENGTH} characters and at least three character groups.</>
                           }
                         </p>
                       </div>

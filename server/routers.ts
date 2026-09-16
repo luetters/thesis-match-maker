@@ -1,6 +1,7 @@
 import { BROWSER_SESSION_MAX_AGE_MS, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getPasswordPolicyError, PASSWORD_MAX_LENGTH } from "@shared/passwordPolicy";
 import { getRegistrationApprovalNotice } from "./registrationApprovalNotice";
 import { isEligibleForProgrammeDirector } from "./programmeDirectorEligibility";
 import { getThesisConsentFlags } from "./studentConsent";
@@ -728,11 +729,11 @@ export const appRouter = router({
     changePassword: protectedProcedure
       .input(z.object({
         currentPassword: z.string().min(1),
-        newPassword: z.string().min(8, "Das neue Passwort muss mindestens 8 Zeichen lang sein."),
+        newPassword: z.string().min(1).max(PASSWORD_MAX_LENGTH),
       }))
       .mutation(async ({ ctx, input }) => {
         // Aktuelles Passwort prüfen
-        const user = await getUserByEmail(ctx.user.email ?? "");
+        const user = await getUserById(ctx.user.id);
         if (!user || !user.passwordHash) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Kein Passwort-Login für dieses Konto eingerichtet." });
         }
@@ -740,6 +741,8 @@ export const appRouter = router({
         if (!valid) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Das aktuelle Passwort ist falsch." });
         }
+        const passwordPolicyError = getPasswordPolicyError(input.newPassword);
+        if (passwordPolicyError) throw new TRPCError({ code: "BAD_REQUEST", message: passwordPolicyError });
         const newHash = await bcrypt.hash(input.newPassword, 12);
         await setUserPasswordHash(ctx.user.id, newHash);
         return { success: true };
@@ -782,13 +785,15 @@ export const appRouter = router({
     resetPassword: publicProcedure
       .input(z.object({
         token: z.string().min(1),
-        newPassword: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
+        newPassword: z.string().min(1).max(PASSWORD_MAX_LENGTH),
       }))
       .mutation(async ({ input }) => {
         const record = await getPasswordResetToken(input.token);
         if (!record) throw new TRPCError({ code: "BAD_REQUEST", message: "Ungültiger oder abgelaufener Reset-Link." });
         if (record.used) throw new TRPCError({ code: "BAD_REQUEST", message: "Dieser Reset-Link wurde bereits verwendet." });
         if (new Date() > new Date(record.expiresAt as string)) throw new TRPCError({ code: "BAD_REQUEST", message: "Der Reset-Link ist abgelaufen. Bitte fordern Sie einen neuen an." });
+        const passwordPolicyError = getPasswordPolicyError(input.newPassword);
+        if (passwordPolicyError) throw new TRPCError({ code: "BAD_REQUEST", message: passwordPolicyError });
         const newHash = await bcrypt.hash(input.newPassword, 12);
         await setUserPasswordHash(record.userId, newHash);
         await markPasswordResetTokenUsed(input.token);
@@ -801,7 +806,7 @@ export const appRouter = router({
           firstName: z.string().max(128).optional(),
           lastName: z.string().max(128).optional(),
           email: z.string().email("Bitte eine gültige E-Mail-Adresse eingeben."),
-          password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
+          password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
           role: z.enum(["student", "examiner", "second_examiner", "admin"]),
           academicTitle: z.string().trim().max(64).optional(),
           matrikelNr: z.string().optional(),
@@ -843,6 +848,8 @@ export const appRouter = router({
           }
         }
         // second_examiner: externe E-Mails erlaubt – keine Domain-Einschränkung
+        const passwordPolicyError = getPasswordPolicyError(input.password);
+        if (passwordPolicyError) throw new TRPCError({ code: "BAD_REQUEST", message: passwordPolicyError });
         const existing = await getUserByEmail(input.email);
         if (existing) {
           throw new TRPCError({ code: "CONFLICT", message: "Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an." });
