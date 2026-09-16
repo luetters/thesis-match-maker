@@ -67,6 +67,26 @@ describe("unabhängiges Übergabepaket", () => {
     expect(backupTimer).toContain("OnCalendar=*-*-* 02:17:00");
   });
 
+  it("liefert eine image-basierte Produktionsvariante ohne Quellcode-Build auf dem Zielserver", () => {
+    const imageCompose = readProjectFile("deploy/docker-compose.image.yml");
+    const imageBuild = readProjectFile("deploy/build-thesis-image.sh");
+    const imageDeploy = readProjectFile("deploy/htw-ubuntu-image-deploy.sh");
+    const imageGuide = readProjectFile("docs/HTW_Berlin_Docker_Image_Bereitstellung.md");
+    const environment = readProjectFile("deploy/environment.example");
+
+    expect(imageCompose).toContain("image: ${THESIS_MATCH_IMAGE:?");
+    expect(imageCompose).not.toContain("build:");
+    expect(imageCompose).not.toContain('"3306:3306"');
+    expect(imageBuild).toContain("docker build --pull");
+    expect(imageBuild).toContain("docker image save");
+    expect(imageBuild).toContain(":latest");
+    expect(imageDeploy).toContain("docker compose --env-file");
+    expect(imageDeploy).toContain("THESIS_MATCH_IMAGE");
+    expect(imageDeploy).toContain("--confirm-empty-database");
+    expect(imageGuide).toContain("Thesis Match Maker als Docker-Image bereitstellen");
+    expect(environment).toContain("THESIS_MATCH_IMAGE=");
+  });
+
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
     const emptyTargetBootstrap = readProjectFile("scripts/selfhosted/bootstrap-empty-target.sh");
