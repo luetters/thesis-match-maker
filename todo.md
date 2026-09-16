@@ -2304,6 +2304,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Eigenständig betreibbares Ubuntu-Deploy-Artefakt und verständliche HTW-Berlin-Installationsanleitung mit kontrolliertem Build-, Backup-, Rollback- und Sicherheitsablauf fertigstellen.
 - [x] Docker-Image-Variante mit Registry-konfigurierbarer Compose-Datei, geheimnisfreier Build-Übergabe und verständlicher HTW-Berlin-Betriebsanleitung bereitstellen.
 - [x] Git-basierten Container-Deploy von GitHub auf gitlab.htw-berlin.de mit geschützter GitLab-CI/CD-Pipeline, Registry-Übergabe und dokumentiertem HTW-Berlin-Serverablauf umstellen.
+- [ ] Aktuellen geprüften Projektstand sicher in das private Zielprojekt https://gitlab.rz.htw-berlin.de/luetters/thesis-match-maker übertragen, ohne Zugangsdaten in Projektdateien oder Chat zu speichern.
+- [ ] Nach dem erfolgreichen GitLab-Push die geschützten CI/CD-Variablen, den ersten Prüflauf und den weiterhin manuellen Produktionsdeploy verständlich anleiten.
+- [ ] Endlos drehenden Ladeindikator im Bereich Einstellungen reproduzieren, Ursache in Datenabruf oder Berechtigungsprüfung beheben und einen verständlichen Fehlerzustand absichern.
+- [x] GitHub-basierten Ubuntu-Deploy um ein idempotentes Installations- und Startskript ergänzen, das ohne Geheimnisse im Repository auskommt und die ersten Servervoraussetzungen verständlich dokumentiert.
 - [x] Passwortstärkeanzeige bei Registrierung, Passwort-Reset und Passwortänderung mit verständlichen Hinweisen und einer einheitlichen Mindestregel ergänzen.
 - [x] Sichere persönliche Konto- und Passwortverwaltung mit aktueller Passwortbestätigung, Sitzungsübersicht und Kontoeinstellungen im eigenen Profil ergänzen.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.

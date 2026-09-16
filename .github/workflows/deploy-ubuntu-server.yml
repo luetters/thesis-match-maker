@@ -1,0 +1,107 @@
+name: "Deploy: Ubuntu-Server"
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_confirmation:
+        description: "Nur mit DEPLOY_STARTEN wird der kontrollierte Serverdeploy ausgeführt"
+        required: true
+        default: "ABBRECHEN"
+        type: choice
+        options:
+          - "ABBRECHEN"
+          - "DEPLOY_STARTEN"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thesis-match-maker-ubuntu-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: "Prüfen"
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Quellcode auschecken"
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: "Node.js einrichten"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: "Abhängigkeiten und Tests prüfen"
+        run: |
+          npm install --global pnpm@10.4.1
+          pnpm install --frozen-lockfile
+          pnpm check
+          pnpm test
+
+  deploy:
+    name: "Kontrolliert bereitstellen"
+    needs: verify
+    if: ${{ github.ref == 'refs/heads/main' && inputs.deployment_confirmation == 'DEPLOY_STARTEN' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ubuntu-production
+    steps:
+      - name: "Freigegebenen Quellcode auschecken"
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: "Eingeschränkten SSH-Zugang vorbereiten"
+        env:
+          UBUNTU_DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.UBUNTU_DEPLOY_SSH_PRIVATE_KEY }}
+          UBUNTU_DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.UBUNTU_DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$UBUNTU_DEPLOY_SSH_PRIVATE_KEY"
+          test -n "$UBUNTU_DEPLOY_SSH_KNOWN_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$UBUNTU_DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$UBUNTU_DEPLOY_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: "Geprüftes Releasearchiv erzeugen"
+        run: |
+          git archive --format=zip --output "$RUNNER_TEMP/thesis-source.zip" "$GITHUB_SHA"
+          unzip -tqq "$RUNNER_TEMP/thesis-source.zip"
+          unzip -l "$RUNNER_TEMP/thesis-source.zip" | grep -q 'deploy/htw-ubuntu-deploy.sh'
+          unzip -l "$RUNNER_TEMP/thesis-source.zip" | grep -q 'scripts/selfhosted/thesis-deploy'
+          unzip -l "$RUNNER_TEMP/thesis-source.zip" | grep -q 'vendor/xlsx-0.20.3.tgz'
+
+      - name: "Archiv über den eingeschränkten Deploy-Zugang hochladen"
+        env:
+          UBUNTU_DEPLOY_HOST: ${{ secrets.UBUNTU_DEPLOY_HOST }}
+          UBUNTU_DEPLOY_USER: ${{ secrets.UBUNTU_DEPLOY_USER }}
+        run: |
+          test -n "$UBUNTU_DEPLOY_HOST"
+          test -n "$UBUNTU_DEPLOY_USER"
+          scp -O -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            "$RUNNER_TEMP/thesis-source.zip" \
+            "$UBUNTU_DEPLOY_USER@$UBUNTU_DEPLOY_HOST:incoming/thesis-source.zip"
+
+      - name: "Deploy und Health-Check auslösen"
+        env:
+          UBUNTU_DEPLOY_HOST: ${{ secrets.UBUNTU_DEPLOY_HOST }}
+          UBUNTU_DEPLOY_USER: ${{ secrets.UBUNTU_DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            "$UBUNTU_DEPLOY_USER@$UBUNTU_DEPLOY_HOST" deploy
+          ssh -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            "$UBUNTU_DEPLOY_USER@$UBUNTU_DEPLOY_HOST" health

@@ -104,6 +104,28 @@ describe("unabhängiges Übergabepaket", () => {
     expect(guide).toContain("DEPLOY_SSH_KNOWN_HOSTS");
   });
 
+  it("stellt einen manuell bestätigten GitHub-Actions-Deploy mit eingeschränktem Ubuntu-Zugang bereit", () => {
+    const workflow = readProjectFile(".github/workflows/deploy-ubuntu-server.yml");
+    const bootstrap = readProjectFile("deploy/github-ubuntu-bootstrap.sh");
+    const guide = readProjectFile("docs/GitHub_Ubuntu_Deploy.md");
+
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("DEPLOY_STARTEN");
+    expect(workflow).toContain("github.ref == 'refs/heads/main'");
+    expect(workflow).toContain("environment:\n      name: ubuntu-production");
+    expect(workflow).toContain("UBUNTU_DEPLOY_SSH_PRIVATE_KEY");
+    expect(workflow).toContain("UBUNTU_DEPLOY_SSH_KNOWN_HOSTS");
+    expect(workflow).toContain("StrictHostKeyChecking=yes");
+    expect(workflow).toContain("git archive --format=zip");
+    expect(workflow).toContain("incoming/thesis-source.zip");
+    expect(bootstrap).toContain("setup-thesis-deploy-user.sh");
+    expect(bootstrap).toContain("deploy/.env");
+    expect(bootstrap).not.toContain("curl | bash");
+    expect(guide).toContain("UBUNTU_DEPLOY_HOST");
+    expect(guide).toContain("DEPLOY_STARTEN");
+    expect(guide).toContain("Port 3306 darf nicht öffentlich freigegeben werden");
+  });
+
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
     const emptyTargetBootstrap = readProjectFile("scripts/selfhosted/bootstrap-empty-target.sh");
