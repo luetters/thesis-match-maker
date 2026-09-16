@@ -2316,7 +2316,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] Serverseitigen Deploy-Status und Health-Check nach dem FileZilla-Auslöser unabhängig von FileZilla über den sicheren VPS-Betriebsweg prüfen.
 - [ ] Tatsächliche systemd-Auslöser, Containerstatus sowie Release- und Fehlerablage nach fehlendem Protokolleintrag risikofrei identifizieren.
 - [x] Release- und Rückfallablage des aktuellen FileZilla-Deploys verifizieren; das neue Archiv wurde als `applied.zip` abgelegt und ein Rückfallarchiv erzeugt.
-- [ ] Formale Präsentation zum Rechte- und Sicherheitskonzept des Thesis Match Maker mit Rollen, Berechtigungsgrenzen und Prüfpfaden erstellen.
+- [x] Formale Präsentation zum Rechte- und Sicherheitskonzept des Thesis Match Maker mit Rollen, Berechtigungsgrenzen und Prüfpfaden erstellen.
 - [x] Einmalige formale Passwort-Neuanmeldungsinformation für alle berechtigten VPS-Nutzer:innen mit geprüfter Zielgruppe, Versandvorschau und expliziter Freigabe vor dem Massenversand vorbereiten.
 - [x] Einmaligen Passwort-Neuanmeldungsprozess für alle freigegebenen VPS-Nutzer:innen unabhängig von vorhandenem Altpasswort mit Zielgruppenvorschau, doppelter Versandfreigabe und revisionssicherem Protokoll implementieren.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.
