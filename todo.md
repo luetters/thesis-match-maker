@@ -2303,6 +2303,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Lokale, vendorte Sicherheitsabhängigkeiten im selbst gehosteten und verwalteten Container-Build vor der Paketinstallation bereitstellen und den Build erfolgreich validieren.
 - [x] Eigenständig betreibbares Ubuntu-Deploy-Artefakt und verständliche HTW-Berlin-Installationsanleitung mit kontrolliertem Build-, Backup-, Rollback- und Sicherheitsablauf fertigstellen.
 - [x] Docker-Image-Variante mit Registry-konfigurierbarer Compose-Datei, geheimnisfreier Build-Übergabe und verständlicher HTW-Berlin-Betriebsanleitung bereitstellen.
+- [x] Git-basierten Container-Deploy von GitHub auf gitlab.htw-berlin.de mit geschützter GitLab-CI/CD-Pipeline, Registry-Übergabe und dokumentiertem HTW-Berlin-Serverablauf umstellen.
 - [x] Passwortstärkeanzeige bei Registrierung, Passwort-Reset und Passwortänderung mit verständlichen Hinweisen und einer einheitlichen Mindestregel ergänzen.
 - [x] Sichere persönliche Konto- und Passwortverwaltung mit aktueller Passwortbestätigung, Sitzungsübersicht und Kontoeinstellungen im eigenen Profil ergänzen.
 - [x] Dunkelgrüne Buttonvarianten aus der Login- und Zwei-Faktor-Authentifizierungsoberfläche entfernen und auf die helle Akzentfarbe umstellen.

@@ -1,0 +1,67 @@
+stages:
+  - verify
+  - build
+  - deploy
+
+workflow:
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+default:
+  interruptible: true
+
+verify:
+  stage: verify
+  image: node:22-bookworm-slim
+  before_script:
+    - corepack enable
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm check
+    - pnpm test
+
+build_production_image:
+  stage: build
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    IMAGE_REF: "$CI_REGISTRY_IMAGE/app:$CI_COMMIT_SHA"
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - docker build --pull --file deploy/Dockerfile --tag "$IMAGE_REF" .
+    - docker push "$IMAGE_REF"
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
+deploy_production:
+  stage: deploy
+  image: alpine:3.20
+  needs:
+    - build_production_image
+  variables:
+    IMAGE_REF: "$CI_REGISTRY_IMAGE/app:$CI_COMMIT_SHA"
+    DEPLOY_TARGET: "$DEPLOY_USER@$DEPLOY_HOST"
+  before_script:
+    - apk add --no-cache openssh-client
+    - test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_APP_DIR"
+    - test -f "$DEPLOY_SSH_PRIVATE_KEY" && test -f "$DEPLOY_SSH_KNOWN_HOSTS"
+    - eval "$(ssh-agent -s)"
+    - chmod 400 "$DEPLOY_SSH_PRIVATE_KEY"
+    - ssh-add "$DEPLOY_SSH_PRIVATE_KEY"
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - cp "$DEPLOY_SSH_KNOWN_HOSTS" ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+  script:
+    - ./deploy/gitlab-ci-deploy.sh
+  environment:
+    name: production
+  resource_group: thesis-match-maker-production
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: manual
+  allow_failure: false

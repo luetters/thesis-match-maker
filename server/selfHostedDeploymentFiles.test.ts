@@ -87,6 +87,23 @@ describe("unabhängiges Übergabepaket", () => {
     expect(environment).toContain("THESIS_MATCH_IMAGE=");
   });
 
+  it("stellt einen manuell freigegebenen GitLab-Registry-Deploy mit geschützten Schlüsseldateien bereit", () => {
+    const pipeline = readProjectFile(".gitlab-ci.yml");
+    const deploy = readProjectFile("deploy/gitlab-ci-deploy.sh");
+    const imageReference = readProjectFile("deploy/update-image-reference.sh");
+    const guide = readProjectFile("docs/GitLab_HTW_Berlin_Deploy.md");
+
+    expect(pipeline).toContain("when: manual");
+    expect(pipeline).toContain("resource_group: thesis-match-maker-production");
+    expect(pipeline).toContain("CI_COMMIT_SHA");
+    expect(pipeline).toContain("DEPLOY_SSH_PRIVATE_KEY");
+    expect(deploy).toContain("--password-stdin");
+    expect(deploy).toContain("update-image-reference.sh");
+    expect(imageReference).toContain("THESIS_MATCH_IMAGE");
+    expect(imageReference).toContain("install -o root -g root -m 600");
+    expect(guide).toContain("DEPLOY_SSH_KNOWN_HOSTS");
+  });
+
   it("stellt die leere Datenbankstruktur ohne Übernahme von Portaldaten bereit", () => {
     const schemaBootstrap = readProjectFile("scripts/selfhosted/bootstrap-schema.sh");
     const emptyTargetBootstrap = readProjectFile("scripts/selfhosted/bootstrap-empty-target.sh");
