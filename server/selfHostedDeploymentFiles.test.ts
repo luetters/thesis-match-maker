@@ -284,6 +284,8 @@ describe("unabhängiges Übergabepaket", () => {
     const databaseReset = readProjectFile("scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.mjs");
     const storageCleanup = readProjectFile("scripts/selfhosted/cleanup-user-storage.mjs");
     const guide = readProjectFile("docs/Nutzer_und_Vorgangsreset_HTW_Berlin.md");
+    const installer = readProjectFile("release/reset-tools/install-reset-tools.sh");
+    const packageGuide = readProjectFile("release/reset-tools/README.md");
     const dockerfile = readProjectFile("deploy/Dockerfile");
 
     expect(reset).toContain("NUTZERDATEN_UND_VORGAENGE_LOESCHEN");
@@ -302,6 +304,12 @@ describe("unabhängiges Übergabepaket", () => {
     expect(storageCleanup).toContain("Ungültiger lokaler Speicherpfad");
     expect(guide).toContain("Nutzer- und Vorgangsreset");
     expect(guide).toContain("holger@luetters.net");
+    expect(installer).toContain("sha256sum -c SHA256SUMS");
+    expect(installer).toContain("docker compose --env-file deploy/.env -f deploy/docker-compose.yml build app");
+    expect(installer).toContain("reset-user-data-and-bootstrap-superadmin.sh");
+    expect(installer).not.toContain("deploy/.env\" \"$APP_DIR/deploy/.env");
+    expect(packageGuide).toContain("FileZilla");
+    expect(packageGuide).toContain("repair-auth-schema.sh --check");
     expect(dockerfile).toContain("reset-user-data-and-bootstrap-superadmin.mjs");
     expect(dockerfile).toContain("cleanup-user-storage.mjs");
   });
