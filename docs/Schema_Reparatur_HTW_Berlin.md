@@ -51,7 +51,7 @@ sudo scripts/selfhosted/repair-auth-schema.sh \
   --backup-dir /opt/thesis-match-maker/backups/schema-repair-20260925T090000Z
 ```
 
-Das Werkzeug legt bei Bedarf unter anderem die fehlenden Felder der Tabelle `users`, die Tabellen `user_roles`, `login_attempts`, `password_reset_tokens`, `two_factor_recovery_codes`, `system_settings` und `audit_log` an. Vorhandene Rollen werden in das Mehrrollenmodell übernommen, ohne bestehende Rollen zu entfernen oder zu überschreiben. Fehlende technische `openId`-Werte historischer Datensätze erhalten ausschließlich eine interne `legacy_<id>`-Kennung.
+Das Werkzeug legt bei Bedarf unter anderem die fehlenden Felder der Tabelle `users`, die Tabellen `user_roles`, `login_attempts`, `password_reset_tokens`, `two_factor_recovery_codes`, `system_settings` und `audit_log` an. Für auditierbare Systemereignisse ohne konkreten Thesis-Fall wird `audit_log.thesisRequestId` additiv auf einen zulässigen Nullwert angepasst. Vorhandene Rollen werden in das Mehrrollenmodell übernommen, ohne bestehende Rollen zu entfernen oder zu überschreiben. Fehlende technische `openId`-Werte historischer Datensätze erhalten ausschließlich eine interne `legacy_<id>`-Kennung.
 
 ## 4. Technische Kontrolle nach der Reparatur
 

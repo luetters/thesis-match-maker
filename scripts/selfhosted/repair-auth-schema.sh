@@ -278,6 +278,12 @@ CREATE TABLE IF NOT EXISTS system_settings (
   KEY `key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE system_settings
+  ADD COLUMN IF NOT EXISTS `key` varchar(128) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS value text NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS updated_by_id int NULL;
+
 CREATE TABLE IF NOT EXISTS audit_log (
   id int NOT NULL AUTO_INCREMENT,
   thesisRequestId int NULL,
@@ -291,6 +297,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
   createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Auditereignisse ohne konkreten Thesis-Fall (z. B. ein kontrollierter
+-- Datenreset) müssen revisionssicher protokollierbar sein.
+ALTER TABLE audit_log MODIFY COLUMN thesisRequestId int NULL;
 
 -- Bereits vorhandene Hauptrollen werden als Mehrrollen übernommen, ohne vorhandene Einträge zu verändern.
 INSERT INTO user_roles (user_id, role, assigned_by, assigned_at)

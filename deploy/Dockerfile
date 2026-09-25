@@ -32,6 +32,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/scripts/selfhosted/bootstrap-superadmin.mjs ./scripts/selfhosted/bootstrap-superadmin.mjs
+COPY --from=builder /app/scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.mjs ./scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.mjs
+COPY --from=builder /app/scripts/selfhosted/cleanup-user-storage.mjs ./scripts/selfhosted/cleanup-user-storage.mjs
 RUN mkdir -p /app/storage-data && chown thesis:nodejs /app/storage-data
 USER thesis
 EXPOSE 3000

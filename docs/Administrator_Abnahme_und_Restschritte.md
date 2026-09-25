@@ -32,6 +32,8 @@ Für eine neue Installation ohne Superadmin-Datensatz oder für die kontrolliert
 
 Wenn die Anmeldung schon beim Lesen der Tabelle `users` mit `Failed query: select ... from users` scheitert, ist dies ein Schemafehler vor der Passwort- oder Zwei-Faktor-Prüfung. In diesem Fall werden weder Konten angelegt noch Kennwörter zurückgesetzt; die Administration folgt zuerst der datenbewahrenden [Schema_Reparatur_HTW_Berlin.md](./Schema_Reparatur_HTW_Berlin.md).
 
+Für den am 25. September 2026 fachlich bestätigten vollständigen Nutzer- und Vorgangsreset mit Erhalt der Studiengangs- und allgemeinen Systeminhalte gilt ausschließlich [Nutzer_und_Vorgangsreset_HTW_Berlin.md](./Nutzer_und_Vorgangsreset_HTW_Berlin.md). Das Reset-Skript fordert zwei sichtbare Serverbestätigungen, erstellt und prüft ein Backup, deaktiviert die globale 2FA-Pflicht und legt danach genau ein neues Superadmin-Konto an.
+
 ## 3. Reihenfolge für den ersten Produktivstart
 
 Die folgenden Schritte werden nacheinander und nur mit der jeweiligen fachlichen Freigabe ausgeführt.

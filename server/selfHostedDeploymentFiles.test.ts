@@ -268,6 +268,8 @@ describe("unabhängiges Übergabepaket", () => {
     expect(repair).toContain('"$VERIFY_BACKUP_SCRIPT" "$BACKUP_DIR"');
     expect(repair).toContain("ADD COLUMN IF NOT EXISTS");
     expect(repair).toContain("CREATE TABLE IF NOT EXISTS user_roles");
+    expect(repair).toContain("ALTER TABLE system_settings");
+    expect(repair).toContain("ALTER TABLE audit_log MODIFY COLUMN thesisRequestId int NULL");
     expect(repair).toContain("INSERT INTO user_roles");
     expect(repair).not.toContain("DROP TABLE");
     expect(repair).not.toContain("TRUNCATE TABLE");
@@ -275,6 +277,33 @@ describe("unabhängiges Übergabepaket", () => {
     expect(repair).not.toContain("drizzle-kit");
     expect(guide).toContain("Datenbewahrende Schema-Reparatur");
     expect(guide).toContain("--initialize-empty-database");
+  });
+
+  it("liefert einen doppelt bestätigten Nutzer- und Vorgangsreset mit neuem Superadmin und deaktivierter 2FA-Pflicht", () => {
+    const reset = readProjectFile("scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.sh");
+    const databaseReset = readProjectFile("scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.mjs");
+    const storageCleanup = readProjectFile("scripts/selfhosted/cleanup-user-storage.mjs");
+    const guide = readProjectFile("docs/Nutzer_und_Vorgangsreset_HTW_Berlin.md");
+    const dockerfile = readProjectFile("deploy/Dockerfile");
+
+    expect(reset).toContain("NUTZERDATEN_UND_VORGAENGE_LOESCHEN");
+    expect(reset).toContain("NUR_NEUEN_SUPERADMIN_ANLEGEN");
+    expect(reset).toContain('"$BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(reset).toContain('"$VERIFY_BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(reset).toContain("read -r -s password");
+    expect(reset).not.toContain("--password");
+    expect(databaseReset).toContain("USER_AND_PROCESS_DATA_RESET");
+    expect(databaseReset).toContain("'twoFactorRequiredRoles', '[]'");
+    expect(databaseReset).toContain("'superadmin'");
+    expect(databaseReset).toContain("connection.beginTransaction()");
+    expect(databaseReset).not.toContain("DROP TABLE");
+    expect(databaseReset).not.toContain("TRUNCATE TABLE");
+    expect(storageCleanup).toContain("privaten S3-Speicher");
+    expect(storageCleanup).toContain("Ungültiger lokaler Speicherpfad");
+    expect(guide).toContain("Nutzer- und Vorgangsreset");
+    expect(guide).toContain("holger@luetters.net");
+    expect(dockerfile).toContain("reset-user-data-and-bootstrap-superadmin.mjs");
+    expect(dockerfile).toContain("cleanup-user-storage.mjs");
   });
 
   it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {

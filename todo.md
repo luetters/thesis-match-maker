@@ -2341,3 +2341,10 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Additives Reparaturwerkzeug für fehlende Anmeldungs- und Mehrrollenfelder erstellen, das vor jeder Änderung ein Backup verlangt und niemals Tabellen oder Daten löscht.
 - [x] Kontrollierte Serveranleitung für Vorschau, Backup, Ausführung und anschließenden lokalen Login-Check dokumentieren.
 - [ ] Die Reparatur erst nach expliziter Rückmeldung der HTW-Berlin-Administration über die Vorprüfung auf dem Zielserver ausführen.
+
+## Bestätigter Nutzer- und Vorgangsreset auf `thesis.f3.htw-berlin.de`
+- [x] Doppelt bestätigtes Serverwerkzeug für den Reset aller Konten, Rollen, 2FA-Daten, Thesis-Vorgänge, Uploadreferenzen, Benachrichtigungen und Auditdaten erstellen; Studiengänge, öffentliche Studiengangsinhalte, E-Mail-Vorlagen und allgemeine Systemeinstellungen bleiben erhalten.
+- [x] Automatisches, geprüftes Backup vor dem Reset sowie datensparsame Entfernung ausschließlich referenzierter persönlicher Speicherobjekte integrieren.
+- [x] Nach dem Reset genau einen freigeschalteten Superadmin mit verdeckter Passwortabfrage anlegen und die globale 2FA-Rollenpflicht deaktivieren.
+- [x] Kontrollierte Serveranleitung für Vorschau, doppelte Bestätigung, Reset und Nachkontrolle dokumentieren.
+- [ ] Reset erst durch die HTW-Berlin-Administration auf dem Zielserver ausführen und Ergebnis der Nachkontrolle prüfen.
