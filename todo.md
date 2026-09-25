@@ -2357,3 +2357,6 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 ## Prüfer-Onboarding: fehlende öffentliche Ressourcenprozedur
 - [x] Laufzeitregistrierung von `examiner.myPublicResources` mit der aktuellen Routerdefinition abgleichen und den Onboardingfehler beheben.
 - [x] Regressionstest für die tatsächlich aufrufbare, geschützte Ressourcenprozedur ergänzen.
+
+## Sichtbarer Datenexportzugang für Superadmins
+- [x] Die Datenübernahme als direkten, nur für Superadmins sichtbaren Eintrag in der Verwaltungsseitenleiste ergänzen und mit dem korrekten Superadmin-Tab verbinden.

@@ -1473,9 +1473,8 @@ const navItems = [
 export default function SuperadminDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const { t } = useLanguage();
-  const [, navigate] = useLocation();
-  const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("stats");
+  const [location, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState(() => location === "/superadmin/portable-transfer" ? "portable_transfer" : "stats");
 
   const TABS = [
     { id: "role_approvals", label: "Rollenanfragen", icon: "✅" },
@@ -1496,9 +1495,13 @@ export default function SuperadminDashboard() {
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'superadmin')) {
-      navigate('/');
+      setLocation('/');
     }
-  }, [loading, isAuthenticated, user?.role]);
+  }, [loading, isAuthenticated, user?.role, setLocation]);
+
+  useEffect(() => {
+    if (location === "/superadmin/portable-transfer") setActiveTab("portable_transfer");
+  }, [location]);
 
   if (loading) return null;
   if (!isAuthenticated || user?.role !== 'superadmin') return null;

@@ -18,6 +18,16 @@ describe("Dashboard-Modulgrenzen", () => {
     expect(dashboard).toContain("<AdminAuditSection>");
     expect(dashboard).toContain("<AdminUserManagementSection>");
   });
+
+  it("verlinkt die Datenübernahme für Superadmins sichtbar aus der Verwaltungsnavigation", () => {
+    const adminDashboard = readFileSync(projectFile("client", "src", "pages", "AdminDashboard.tsx"), "utf8");
+    const superadminDashboard = readFileSync(projectFile("client", "src", "pages", "SuperadminDashboard.tsx"), "utf8");
+
+    expect(adminDashboard).toContain('href: "/superadmin/portable-transfer", label: "Datenübernahme"');
+    expect(adminDashboard).toContain("...(isSuperadmin ?");
+    expect(superadminDashboard).toContain('location === "/superadmin/portable-transfer" ? "portable_transfer" : "stats"');
+    expect(superadminDashboard).toContain('location === "/superadmin/portable-transfer") setActiveTab("portable_transfer")');
+  });
 });
 
 
