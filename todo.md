@@ -2360,3 +2360,8 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 
 ## Sichtbarer Datenexportzugang für Superadmins
 - [x] Die Datenübernahme als direkten, nur für Superadmins sichtbaren Eintrag in der Verwaltungsseitenleiste ergänzen und mit dem korrekten Superadmin-Tab verbinden.
+
+## Fehlende Studiengangstabellen auf `thesis.f3.htw-berlin.de`
+- [x] Additives, backup-gesichertes Serverwerkzeug erstellen, das die fehlenden Studiengangs-, Zuordnungs- und Inhaltsstabellen ohne Datenlöschung ergänzt.
+- [x] Eine knappe Serveranleitung für lesende Vorprüfung, bewusste Ausführung und anschließenden Import ergänzen.
+- [ ] Das Werkzeug erst nach lesender Vorprüfung und ausdrücklicher Freigabe auf dem Zielserver ausführen.

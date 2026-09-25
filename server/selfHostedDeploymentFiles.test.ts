@@ -279,6 +279,26 @@ describe("unabhängiges Übergabepaket", () => {
     expect(guide).toContain("--initialize-empty-database");
   });
 
+  it("liefert eine additive, backup-gesicherte Studiengangs-Schemaergänzung", () => {
+    const repair = readProjectFile("scripts/selfhosted/repair-programme-schema.sh");
+    const guide = readProjectFile("docs/Studiengangs_Schemaergaenzung_HTW_Berlin.md");
+
+    expect(repair).toContain("--confirm STUDIENGANG_SCHEMA_NACH_BACKUP");
+    expect(repair).toContain('"$BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(repair).toContain('"$VERIFY_BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(repair).toContain("CREATE TABLE IF NOT EXISTS programmes");
+    expect(repair).toContain("CREATE TABLE IF NOT EXISTS programme_content_managers");
+    expect(repair).toContain("CREATE TABLE IF NOT EXISTS programme_public_links");
+    expect(repair).toContain("CREATE TABLE IF NOT EXISTS programme_semester_deadlines");
+    expect(repair).toContain("ALTER TABLE users ADD COLUMN IF NOT EXISTS programme_id");
+    expect(repair).not.toContain("DROP TABLE");
+    expect(repair).not.toContain("TRUNCATE TABLE");
+    expect(repair).not.toContain("DELETE FROM");
+    expect(repair).not.toContain("drizzle-kit");
+    expect(guide).toContain("Studiengangstabellen");
+    expect(guide).toContain("repair-programme-schema.sh --check");
+  });
+
   it("liefert einen doppelt bestätigten Nutzer- und Vorgangsreset mit neuem Superadmin und deaktivierter 2FA-Pflicht", () => {
     const reset = readProjectFile("scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.sh");
     const databaseReset = readProjectFile("scripts/selfhosted/reset-user-data-and-bootstrap-superadmin.mjs");
