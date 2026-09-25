@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { appRouter } from "./routers";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const readProjectFile = (relativePath: string) => readFileSync(resolve(projectRoot, relativePath), "utf8");
@@ -21,6 +22,14 @@ describe("öffentliche Prüfer:innenressourcen", () => {
     expect(router).toContain("replacePublicRecommendations: anyExaminerProcedure");
     expect(router).toContain("removePublicTemplate: anyExaminerProcedure");
     expect(router).toContain(".max(12)");
+  });
+
+  it("registriert die Ressourcenabfrage tatsächlich im tRPC-Router", () => {
+    const procedures = (appRouter as any)._def.procedures as Record<string, unknown>;
+
+    expect(procedures["examiner.myPublicResources"]).toBeDefined();
+    expect(procedures["examiner.replacePublicRecommendations"]).toBeDefined();
+    expect(procedures["examiner.removePublicTemplate"]).toBeDefined();
   });
 
   it("begrenzt den Template-Upload auf authentifizierte Prüfer:innen und valide PDFs", () => {

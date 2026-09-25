@@ -2353,3 +2353,7 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Eine einzelne, transferfähige SH-Datei erstellen, die ausschließlich `holger@luetters.net` reaktiviert oder anlegt, ohne Nutzer-, Vorgangs- oder Inhaltsdaten zu löschen.
 - [x] Ausschließlich die für den Login fehlenden technischen Felder und Hilfstabellen additiv ergänzen sowie die 2FA dieses Kontos und die globale 2FA-Rollenpflicht zurücksetzen.
 - [ ] Das Einzelskript erst durch die HTW-Berlin-Administration auf dem Zielserver im Modus `--check` prüfen und danach bewusst im Modus `--apply` ausführen.
+
+## Prüfer-Onboarding: fehlende öffentliche Ressourcenprozedur
+- [x] Laufzeitregistrierung von `examiner.myPublicResources` mit der aktuellen Routerdefinition abgleichen und den Onboardingfehler beheben.
+- [x] Regressionstest für die tatsächlich aufrufbare, geschützte Ressourcenprozedur ergänzen.
