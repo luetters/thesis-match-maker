@@ -2347,4 +2347,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Automatisches, geprüftes Backup vor dem Reset sowie datensparsame Entfernung ausschließlich referenzierter persönlicher Speicherobjekte integrieren.
 - [x] Nach dem Reset genau einen freigeschalteten Superadmin mit verdeckter Passwortabfrage anlegen und die globale 2FA-Rollenpflicht deaktivieren.
 - [x] Kontrollierte Serveranleitung für Vorschau, doppelte Bestätigung, Reset und Nachkontrolle dokumentieren.
-- [ ] Reset erst durch die HTW-Berlin-Administration auf dem Zielserver ausführen und Ergebnis der Nachkontrolle prüfen.
+- [~] Der Reset wird auf ausdrückliche aktuelle Anweisung nicht ausgeführt; der Schritt ist durch die einzelne Superadmin-Reaktivierung ersetzt.
+
+## Einzelne Superadmin-Reaktivierung auf `thesis.f3.htw-berlin.de`
+- [x] Eine einzelne, transferfähige SH-Datei erstellen, die ausschließlich `holger@luetters.net` reaktiviert oder anlegt, ohne Nutzer-, Vorgangs- oder Inhaltsdaten zu löschen.
+- [x] Ausschließlich die für den Login fehlenden technischen Felder und Hilfstabellen additiv ergänzen sowie die 2FA dieses Kontos und die globale 2FA-Rollenpflicht zurücksetzen.
+- [ ] Das Einzelskript erst durch die HTW-Berlin-Administration auf dem Zielserver im Modus `--check` prüfen und danach bewusst im Modus `--apply` ausführen.

@@ -314,6 +314,24 @@ describe("unabhängiges Übergabepaket", () => {
     expect(dockerfile).toContain("cleanup-user-storage.mjs");
   });
 
+  it("liefert ein einzelnes Reaktivierungsskript ausschließlich für den gewünschten Superadmin", () => {
+    const recovery = readProjectFile("scripts/selfhosted/recover-or-create-holger-superadmin.sh");
+
+    expect(recovery).toContain('readonly ACCOUNT_EMAIL="holger@luetters.net"');
+    expect(recovery).toContain('readonly ACCOUNT_NAME="Holger Lütters"');
+    expect(recovery).toContain("SUPERADMIN_HOLGER_REAKTIVIEREN");
+    expect(recovery).toContain("2FA_FUER_HOLGER_DEAKTIVIEREN");
+    expect(recovery).toContain("read -r -s PASSWORD");
+    expect(recovery).toContain("SUPERADMIN_ACCOUNT_CREATED");
+    expect(recovery).toContain("SUPERADMIN_ACCOUNT_RECOVERED");
+    expect(recovery).toContain("'twoFactorRequiredRoles', '[]'");
+    expect(recovery).toContain("ADD COLUMN IF NOT EXISTS");
+    expect(recovery).not.toContain("DROP TABLE");
+    expect(recovery).not.toContain("TRUNCATE TABLE");
+    expect(recovery).not.toContain("DELETE FROM users");
+    expect(recovery).not.toContain("--password");
+  });
+
   it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {
     const mediaVerify = readProjectFile("scripts/selfhosted/verify-public-media.sh");
     const guide = readProjectFile("docs/IONOS_Migrationsleitfaden.md");
