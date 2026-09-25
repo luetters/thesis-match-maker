@@ -85,4 +85,6 @@ Vor einem Passwort-Reset, einer DNS-Änderung oder einem Go-live führt die Admi
 
 Wenn nach einem Umzug noch kein Superadmin-Konto vorhanden ist, wird **nicht** über direkte SQL-Befehle oder eine öffentliche Registrierung improvisiert. Die Administration prüft zuerst den vorgesehenen E-Mail-Datensatz und verwendet anschließend nur bei Bedarf den doppelt bestätigten, lokalen Erstzugang gemäß [Superadmin_Erstzugang_HTW_Berlin.md](./Superadmin_Erstzugang_HTW_Berlin.md). Das Kennwort wird dort ausschließlich verdeckt am Server eingegeben; es wird nicht in GitHub Actions, Secrets, Logs oder Chatnachrichten hinterlegt.
 
+Scheitert die Anmeldung bereits bei `select ... from users`, wird vor jedem Erstzugang die additive, backup-gesicherte [Schema_Reparatur_HTW_Berlin.md](./Schema_Reparatur_HTW_Berlin.md) ausgeführt. Sie ersetzt keine Datenübernahme und verändert keine Datenbankdaten außerhalb der fehlenden technischen Anmeldungs- und Rollenstruktur.
+
 Die vollständige Reihenfolge für Datenübernahme, E-Mail-Freigabe, Rollenabnahme und DNS ist in [Administrator_Abnahme_und_Restschritte.md](./Administrator_Abnahme_und_Restschritte.md) dokumentiert.

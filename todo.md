@@ -2335,3 +2335,9 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [ ] GitHub-Environment `ubuntu-production`, branchgebundene Freigabe und die vier eingeschränkten SSH-Secrets durch die HTW-Berlin-Administration setzen.
 - [ ] Eingeschränkten Servernutzer `thesis-deploy`, Gateway, Backup-Ziel sowie Wiederherstellungsprobe durch die HTW-Berlin-Administration einrichten und abnehmen.
 - [x] Jeden künftigen Produktionsdeploy weiterhin nur manuell, aus `main` und nach ausdrücklicher Freigabe auslösen.
+
+## Schema-Reparatur auf `thesis.f3.htw-berlin.de`
+- [ ] Exakte fehlende Spalte und Migrationsstand der produktiven `users`-Tabelle rein lesend erfassen; keine Konten oder Passwörter ändern.
+- [x] Additives Reparaturwerkzeug für fehlende Anmeldungs- und Mehrrollenfelder erstellen, das vor jeder Änderung ein Backup verlangt und niemals Tabellen oder Daten löscht.
+- [x] Kontrollierte Serveranleitung für Vorschau, Backup, Ausführung und anschließenden lokalen Login-Check dokumentieren.
+- [ ] Die Reparatur erst nach expliziter Rückmeldung der HTW-Berlin-Administration über die Vorprüfung auf dem Zielserver ausführen.

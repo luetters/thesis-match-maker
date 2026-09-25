@@ -30,6 +30,8 @@ Die Administration hält aus der Ausgabe nur die folgenden Ergebnisse fest: Cont
 
 Für eine neue Installation ohne Superadmin-Datensatz oder für die kontrollierte Wiederherstellung eines einzelnen vorhandenen Kontos gilt ausschließlich die Anleitung [Superadmin_Erstzugang_HTW_Berlin.md](./Superadmin_Erstzugang_HTW_Berlin.md). Sie verlangt eine doppelte lokale Bestätigung und gibt weder Kennwörter noch Hashes aus.
 
+Wenn die Anmeldung schon beim Lesen der Tabelle `users` mit `Failed query: select ... from users` scheitert, ist dies ein Schemafehler vor der Passwort- oder Zwei-Faktor-Prüfung. In diesem Fall werden weder Konten angelegt noch Kennwörter zurückgesetzt; die Administration folgt zuerst der datenbewahrenden [Schema_Reparatur_HTW_Berlin.md](./Schema_Reparatur_HTW_Berlin.md).
+
 ## 3. Reihenfolge für den ersten Produktivstart
 
 Die folgenden Schritte werden nacheinander und nur mit der jeweiligen fachlichen Freigabe ausgeführt.

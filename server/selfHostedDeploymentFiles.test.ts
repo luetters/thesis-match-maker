@@ -259,6 +259,24 @@ describe("unabhängiges Übergabepaket", () => {
     expect(dockerfile).toContain("bootstrap-superadmin.mjs");
   });
 
+  it("liefert eine additive, backup-gesicherte Schema-Reparatur ohne destruktive Datenbankbefehle", () => {
+    const repair = readProjectFile("scripts/selfhosted/repair-auth-schema.sh");
+    const guide = readProjectFile("docs/Schema_Reparatur_HTW_Berlin.md");
+
+    expect(repair).toContain("--confirm SCHEMA_REPARATUR_NACH_BACKUP");
+    expect(repair).toContain('"$BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(repair).toContain('"$VERIFY_BACKUP_SCRIPT" "$BACKUP_DIR"');
+    expect(repair).toContain("ADD COLUMN IF NOT EXISTS");
+    expect(repair).toContain("CREATE TABLE IF NOT EXISTS user_roles");
+    expect(repair).toContain("INSERT INTO user_roles");
+    expect(repair).not.toContain("DROP TABLE");
+    expect(repair).not.toContain("TRUNCATE TABLE");
+    expect(repair).not.toContain("DELETE FROM");
+    expect(repair).not.toContain("drizzle-kit");
+    expect(guide).toContain("Datenbewahrende Schema-Reparatur");
+    expect(guide).toContain("--initialize-empty-database");
+  });
+
   it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {
     const mediaVerify = readProjectFile("scripts/selfhosted/verify-public-media.sh");
     const guide = readProjectFile("docs/IONOS_Migrationsleitfaden.md");
