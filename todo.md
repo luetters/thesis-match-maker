@@ -2327,3 +2327,11 @@ Hinweis: LLM-Extraktion auf Wunsch des Nutzers gestoppt; Studierende tragen Schl
 - [x] Einmalige formale Passwort-Neuanmeldungsinformation für alle berechtigten VPS-Nutzer:innen mit geprüfter Zielgruppe, Versandvorschau und expliziter Freigabe vor dem Massenversand vorbereiten.
 - [x] Einmaligen Passwort-Neuanmeldungsprozess für alle freigegebenen VPS-Nutzer:innen unabhängig von vorhandenem Altpasswort mit Zielgruppenvorschau, doppelter Versandfreigabe und revisionssicherem Protokoll implementieren.
 - [x] Beim vereinbarten Kolloquium verpflichtend Titel, Abstract Deutsch, Abstract English, vorausgefüllten Studiengang, Fachbereich und Einreichsemester sowie tabulatorgestützte Schlagwörter erfassen; anonymisiert mit Fachbereichs- und Schlagwortfilter veröffentlichen.
+
+## Umzug auf `thesis.f3.htw-berlin.de`: Erstzugang und kontrollierter GitHub-Deploy
+- [ ] Lesenden Kontostatus für den vorgesehenen Superadmin auf dem neuen HTW-Berlin-Server prüfen, bevor ein Konto angelegt oder geändert wird.
+- [x] Lokal ausführbares, doppelt bestätigtes Werkzeug für den dokumentierten Superadmin-Erstzugang bereitstellen; Kennwort darf nur verdeckt am Server eingegeben werden.
+- [x] Anleitung für die sichere Kontowiederherstellung ohne Klartextkennwort, Tokens oder Datenbankbefehle im Chat ergänzen.
+- [ ] GitHub-Environment `ubuntu-production`, branchgebundene Freigabe und die vier eingeschränkten SSH-Secrets durch die HTW-Berlin-Administration setzen.
+- [ ] Eingeschränkten Servernutzer `thesis-deploy`, Gateway, Backup-Ziel sowie Wiederherstellungsprobe durch die HTW-Berlin-Administration einrichten und abnehmen.
+- [x] Jeden künftigen Produktionsdeploy weiterhin nur manuell, aus `main` und nach ausdrücklicher Freigabe auslösen.

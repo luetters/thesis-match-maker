@@ -11,6 +11,7 @@ Dieses Dokument trennt bewusst die bereits vorbereitete Anwendung von den Schrit
 | GitHub-Deploy | Manueller, auf `main` begrenzter Workflow mit geschütztem Environment | GitHub-Secrets und Environment-Freigabe einrichten |
 | Ubuntu-Start | Idempotentes Bootstrap- und Startskript | Ubuntu, Docker, Verzeichnisrechte und `deploy/.env` einrichten |
 | Betriebsdiagnose | Lesendes Diagnosewerkzeug ohne Ausgabe von Geheimnissen | Auf dem Zielserver ausführen und Ergebnis intern bewerten |
+| Superadmin-Erstzugang | Doppelt bestätigtes lokales Werkzeug mit verdeckter Passwortabfrage | Zuerst den Kontostatus prüfen, dann gegebenenfalls einen einzelnen Erstzugang oder eine Wiederherstellung durchführen |
 | Datenübernahme | Portabler Import sowie Backup-/Restore-Werkzeuge vorhanden | Datenquelle, Zielsystem und Wiederherstellungsweg fachlich freigeben |
 | E-Mail und Konten | Einzel- und Massen-Reset sind bewusst gesperrt vorbereitet | Versand erst nach Go-live-Abnahme ausdrücklich freigeben |
 
@@ -26,6 +27,8 @@ sudo scripts/selfhosted/verify-server-readonly.sh \
 ```
 
 Die Administration hält aus der Ausgabe nur die folgenden Ergebnisse fest: Containerstatus, HTTP-Status, vorhandene Releaseablage, aktivierte FileZilla-Deploy-Units sowie die angezeigten Kontometadaten. Bei einem HTTP-Status ungleich `200` oder nicht laufenden Containern darf kein Passwort-Reset und keine DNS-Änderung ausgelöst werden.
+
+Für eine neue Installation ohne Superadmin-Datensatz oder für die kontrollierte Wiederherstellung eines einzelnen vorhandenen Kontos gilt ausschließlich die Anleitung [Superadmin_Erstzugang_HTW_Berlin.md](./Superadmin_Erstzugang_HTW_Berlin.md). Sie verlangt eine doppelte lokale Bestätigung und gibt weder Kennwörter noch Hashes aus.
 
 ## 3. Reihenfolge für den ersten Produktivstart
 

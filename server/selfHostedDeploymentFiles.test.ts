@@ -238,6 +238,27 @@ describe("unabhängiges Übergabepaket", () => {
     expect(handover).toContain("Passwort-Reset-E-Mails");
   });
 
+  it("liefert einen doppelt bestätigten lokalen Superadmin-Erstzugang ohne Klartextpasswort", () => {
+    const bootstrap = readProjectFile("scripts/selfhosted/bootstrap-superadmin.sh");
+    const containerScript = readProjectFile("scripts/selfhosted/bootstrap-superadmin.mjs");
+    const guide = readProjectFile("docs/Superadmin_Erstzugang_HTW_Berlin.md");
+    const dockerfile = readProjectFile("deploy/Dockerfile");
+
+    expect(bootstrap).toContain("SUPERADMIN_ERSTZUGANG");
+    expect(bootstrap).toContain("SUPERADMIN_WIEDERHERSTELLEN");
+    expect(bootstrap).toContain("read -r -s password");
+    expect(bootstrap).not.toContain("--password");
+    expect(containerScript).toContain("bcrypt.hash(password, 12)");
+    expect(containerScript).toContain("SUPERADMIN_INITIAL_ACCESS_PROVISIONED");
+    expect(containerScript).toContain("SUPERADMIN_ACCESS_RECOVERED");
+    expect(containerScript).toContain("FOR UPDATE");
+    expect(containerScript).toContain("user_roles");
+    expect(containerScript).not.toContain("console.log(password");
+    expect(guide).toContain("Superadmin-Erstzugang auf dem HTW-Berlin-Server");
+    expect(guide).toContain("bootstrap-superadmin.sh");
+    expect(dockerfile).toContain("bootstrap-superadmin.mjs");
+  });
+
   it("prüft die fest referenzierten öffentlichen Markenmedien über den lokalen Storage-Proxy", () => {
     const mediaVerify = readProjectFile("scripts/selfhosted/verify-public-media.sh");
     const guide = readProjectFile("docs/IONOS_Migrationsleitfaden.md");

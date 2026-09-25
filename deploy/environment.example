@@ -1,5 +1,5 @@
 # Kopieren Sie diese Datei nach deploy/.env. Sie enthält keine echten Geheimwerte.
-SITE_DOMAIN=thesis.htw-berlin.com
+SITE_DOMAIN=thesis.f3.htw-berlin.de
 CADDY_EMAIL=it@example.org
 # Vorgebautes Anwendungsimage für deploy/docker-compose.image.yml.
 # Verwenden Sie einen unveränderlichen Release- oder Commit-Tag, nie :latest.
